@@ -1,0 +1,78 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --color-bg-main: #171717;
+    --color-bg-card: #1f1f1f;
+    --color-bg-hover: #262626;
+    --color-neon: #21F1A8;
+    --color-neon-dim: rgba(33, 241, 168, 0.15);
+    --color-neon-border: rgba(33, 241, 168, 0.35);
+  }
+
+  body {
+    background-color: #171717;
+    color: #f3f4f6;
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3, .font-heading {
+    font-family: 'Oswald', 'Anton', system-ui, sans-serif;
+    letter-spacing: 0.03em;
+  }
+
+  code, pre, .font-code {
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* Custom dark scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #171717;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #333333;
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #21F1A8;
+  }
+}
+
+.text-neon {
+  color: #21F1A8;
+}
+
+.bg-neon {
+  background-color: #21F1A8;
+}
+
+.border-neon {
+  border-color: #21F1A8;
+}
+
+.border-neon-subtle {
+  border-color: rgba(33, 241, 168, 0.25);
+}
+
+.glow-neon {
+  box-shadow: 0 0 15px rgba(33, 241, 168, 0.25);
+}
+
+.glow-neon-strong {
+  box-shadow: 0 0 25px rgba(33, 241, 168, 0.45);
+}
+
+.bg-card-dark {
+  background-color: #1c1c1c;
+  border: 1px solid #2d2d2d;
+}
+
+.bg-card-darker {
+  background-color: #141414;
+  border: 1px solid #262626;
+}
