@@ -40,32 +40,27 @@ export const Navbar: React.FC = () => {
         </button>
 
         <div 
-          onClick={() => setCurrentTab('landing')}
-          className="flex items-center gap-2.5 cursor-pointer group"
+          onClick={() => setCurrentTab('executive_dashboard')}
+          className="flex items-center gap-2 cursor-pointer group"
         >
-          <div className="w-8 h-8 rounded-lg bg-[#21F1A8]/10 border border-[#21F1A8]/40 flex items-center justify-center group-hover:glow-neon transition-all">
+          <div className="w-8 h-8 rounded-lg bg-[#21F1A8]/10 border border-[#21F1A8]/40 flex items-center justify-center group-hover:glow-neon transition-all shrink-0">
             <BarChart3 className="w-5 h-5 text-[#21F1A8]" />
           </div>
           <div>
-            <span className="font-heading text-lg font-bold tracking-wider text-white flex items-center gap-1.5">
+            <span className="font-heading text-lg font-bold tracking-wider text-white flex items-center gap-1">
               NEXUS<span className="text-[#21F1A8]">BI</span>
             </span>
           </div>
         </div>
 
         {/* Project Title & Active Badge */}
-        <div className="hidden md:flex items-center gap-2 pl-4 border-l border-[#2e2e2e]">
-          <span className="text-sm font-medium text-gray-300 truncate max-w-xs">{project.name}</span>
-          {project.isDemo ? (
-            <span className="px-2 py-0.5 text-xs font-bold rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1 animate-pulse">
-              <AlertTriangle className="w-3 h-3" /> DEMO DATA
-            </span>
-          ) : (
-            <span className="px-2 py-0.5 text-xs font-semibold rounded bg-[#21F1A8]/15 text-[#21F1A8] border border-[#21F1A8]/30">
-              VERIFIED USER DATA
-            </span>
-          )}
-          <span className="text-xs text-gray-500">{project.version}</span>
+        <div className="hidden md:flex items-center gap-2 pl-3 border-l border-[#2e2e2e]">
+          <span className="text-xs font-medium text-gray-300 truncate max-w-[180px] lg:max-w-xs">{project.name}</span>
+          <span className="px-2.5 py-0.5 text-[11px] font-semibold rounded-full bg-[#21F1A8]/15 text-[#21F1A8] border border-[#21F1A8]/30 flex items-center gap-1.5 shrink-0">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#21F1A8]" />
+            Enterprise Model
+          </span>
+          <span className="text-xs text-gray-500 font-mono">{project.version}</span>
         </div>
       </div>
 

@@ -143,6 +143,7 @@ export interface Trend {
   peakPoint: { period: string; value: number };
   troughPoint: { period: string; value: number };
   summary: string;
+  dataPoints?: { period: string; value: number }[];
 }
 
 export interface ForecastPoint {

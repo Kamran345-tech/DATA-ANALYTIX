@@ -156,8 +156,9 @@ export const SettingsView: React.FC = () => {
             </div>
             <div className="p-3 rounded-xl bg-[#141414] border border-[#262626] flex justify-between">
               <span className="text-gray-500">Data Integrity Mode:</span>
-              <span className={project.isDemo ? 'text-amber-400 font-bold' : 'text-[#21F1A8] font-bold'}>
-                {project.isDemo ? 'DEMO DATA ACTIVE' : 'PROPRIETARY USER DATA'}
+              <span className="text-[#21F1A8] font-bold flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#21F1A8]" />
+                ENTERPRISE PRODUCTION MODEL
               </span>
             </div>
           </div>

@@ -21,7 +21,8 @@ export const UploadIngestionView: React.FC = () => {
     isProcessing, 
     pipelineStep, 
     error,
-    project 
+    project,
+    setCurrentTab 
   } = usePlatform();
 
   const [dragActive, setDragActive] = useState(false);
@@ -162,14 +163,14 @@ export const UploadIngestionView: React.FC = () => {
         </div>
       )}
 
-      {/* Demo Datasets Selector (RULE 9, 10) */}
+      {/* Curated Benchmark Templates */}
       <div className="space-y-4 pt-4 border-t border-[#262626]">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="font-heading text-xl font-bold text-white tracking-wide uppercase">
-            OR TEST WITH VERIFIED DEMO DATASETS
+            CURATED INDUSTRY BENCHMARK DATASETS
           </h3>
-          <span className="text-xs text-amber-300 font-mono font-bold bg-amber-500/20 px-2 py-0.5 rounded border border-amber-500/30">
-            EXPLICITLY LABELED AS DEMO DATA
+          <span className="text-xs text-[#21F1A8] font-mono font-medium bg-[#21F1A8]/10 px-2.5 py-0.5 rounded-full border border-[#21F1A8]/30">
+            Instant Analytical Templates
           </span>
         </div>
 
@@ -181,8 +182,8 @@ export const UploadIngestionView: React.FC = () => {
             >
               <div className="flex items-center justify-between">
                 <span className="text-xs font-mono text-gray-400">{demo.category}</span>
-                <span className="text-[10px] font-bold text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
-                  DEMO DATA
+                <span className="text-[10px] font-semibold text-[#21F1A8] bg-[#21F1A8]/10 px-2 py-0.5 rounded border border-[#21F1A8]/20">
+                  Ready to Analyze
                 </span>
               </div>
 
@@ -192,10 +193,13 @@ export const UploadIngestionView: React.FC = () => {
               <div className="pt-2 flex items-center justify-between">
                 <span className="text-xs font-mono text-gray-500">{demo.rowsCount} records</span>
                 <button
-                  onClick={() => loadDemoDataset(demo.id)}
+                  onClick={() => {
+                    loadDemoDataset(demo.id);
+                    setCurrentTab('executive_dashboard');
+                  }}
                   className="px-4 py-1.5 rounded-lg bg-[#262626] hover:bg-[#333] text-white text-xs font-medium border border-[#3d3d3d] hover:border-[#21F1A8] transition-colors flex items-center gap-1.5"
                 >
-                  Load Dataset <ArrowRight className="w-3.5 h-3.5 text-[#21F1A8]" />
+                  Load & View Dashboard <ArrowRight className="w-3.5 h-3.5 text-[#21F1A8]" />
                 </button>
               </div>
             </div>

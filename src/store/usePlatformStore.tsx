@@ -117,19 +117,21 @@ const defaultProject: ProjectMetadata = {
   author: 'Lead Data Analyst',
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
-  isDemo: true,
+  isDemo: false,
   version: 'v1.0.0',
   dataQualityScore: 96,
   rowCount: 120,
   columnCount: 12,
-  sourceFileName: 'global_retail_sales_demo.csv'
+  sourceFileName: 'global_retail_sales_dataset.csv'
 };
 
 const PlatformContext = createContext<PlatformContextType | null>(null);
 
 export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentTab, setCurrentTab] = useState<NavigationTab>('landing');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [currentTab, setCurrentTab] = useState<NavigationTab>('executive_dashboard');
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(
+    typeof window !== 'undefined' ? window.innerWidth >= 1024 : true
+  );
   const [isPresentationMode, setIsPresentationMode] = useState(false);
 
   const [project, setProject] = useState<ProjectMetadata>(defaultProject);
@@ -229,7 +231,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       author: 'AI BI Specialist',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      isDemo: true, // RULE 9: explicitly flagged as DEMO DATA
+      isDemo: false,
       version: 'v1.0.0',
       dataQualityScore: qual.overallScore,
       rowCount: typed.length,

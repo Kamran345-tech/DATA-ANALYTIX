@@ -1,5 +1,23 @@
 import { ColumnProfile, KPI, Anomaly, Opportunity, Trend, ForecastResult, AIInsight, VisualConfig } from '../types';
 
+export interface DetailedStat {
+  column: string;
+  count: number;
+  mean: number;
+  median: number;
+  stdDev: number;
+  variance: number;
+  min: number;
+  q1: number;
+  q3: number;
+  max: number;
+  iqr: number;
+  skewness: number;
+  kurtosis: number;
+  nullCount: number;
+  nullPct: number;
+}
+
 export interface AnalyticsSummary {
   kpis: KPI[];
   trends: Trend[];
@@ -11,6 +29,7 @@ export interface AnalyticsSummary {
   correlationMatrix: { x: string; y: string; correlation: number }[];
   categoryPerformance: Record<string, { category: string; value: number; share: number }[]>;
   businessHealthScore?: { score: number; rating: string; methodology: string };
+  descriptiveStats?: DetailedStat[];
 }
 
 export function computeAnalytics(
@@ -28,7 +47,8 @@ export function computeAnalytics(
       insights: [],
       visuals: [],
       correlationMatrix: [],
-      categoryPerformance: {}
+      categoryPerformance: {},
+      descriptiveStats: []
     };
   }
 
@@ -36,7 +56,14 @@ export function computeAnalytics(
   const dateCols = columns.filter(c => c.dataType === 'date');
   const stringCols = columns.filter(c => c.dataType === 'string' && !c.isPrimaryKeyCandidate && !c.name.toLowerCase().includes('id'));
 
-  const primaryDateCol = dateCols[0]?.name;
+  // Detect primary date column or fallback to string column with date/time semantics
+  let primaryDateCol = dateCols[0]?.name;
+  if (!primaryDateCol) {
+    const candidate = columns.find(c => /date|time|year|month|quarter|period|day|week|dt|timestamp/i.test(c.name));
+    if (candidate) {
+      primaryDateCol = candidate.name;
+    }
+  }
 
   // 1. KPI Calculation
   const kpis: KPI[] = [];
@@ -128,7 +155,7 @@ export function computeAnalytics(
   const primaryMetric = numericCols[0]?.name;
 
   if (primaryMetric && stringCols.length > 0) {
-    stringCols.slice(0, 3).forEach(sc => {
+    stringCols.slice(0, 6).forEach(sc => {
       const aggMap = new Map<string, number>();
       let totalSum = 0;
       rows.forEach(r => {
@@ -140,7 +167,7 @@ export function computeAnalytics(
 
       const sorted = Array.from(aggMap.entries())
         .sort((a, b) => b[1] - a[1])
-        .slice(0, 7)
+        .slice(0, 10)
         .map(([cat, val]) => ({
           category: cat,
           value: Math.round(val * 100) / 100,
@@ -151,41 +178,81 @@ export function computeAnalytics(
     });
   }
 
-  // 3. Trends Detection
+  // 3. Trends Detection across top numeric metrics
   const trends: Trend[] = [];
-  if (primaryDateCol && primaryMetric) {
-    const dateAggMap = new Map<string, number>();
-    rows.forEach(r => {
-      const d = String(r[primaryDateCol]);
-      const v = Number(r[primaryMetric]) || 0;
-      dateAggMap.set(d, (dateAggMap.get(d) || 0) + v);
+  if (primaryDateCol && numericCols.length > 0) {
+    numericCols.slice(0, 4).forEach(numCol => {
+      const metricName = numCol.name;
+      const dateAggMap = new Map<string, number>();
+      rows.forEach(r => {
+        const d = String(r[primaryDateCol]);
+        const v = Number(r[metricName]) || 0;
+        dateAggMap.set(d, (dateAggMap.get(d) || 0) + v);
+      });
+
+      const sortedPeriods = Array.from(dateAggMap.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+      if (sortedPeriods.length >= 2) {
+        const firstVal = sortedPeriods[0][1];
+        const lastVal = sortedPeriods[sortedPeriods.length - 1][1];
+        const diffPct = firstVal !== 0 ? ((lastVal - firstVal) / firstVal) * 100 : 0;
+
+        let peak = sortedPeriods[0];
+        let trough = sortedPeriods[0];
+        sortedPeriods.forEach(p => {
+          if (p[1] > peak[1]) peak = p;
+          if (p[1] < trough[1]) trough = p;
+        });
+
+        const direction: Trend['direction'] = diffPct > 5 ? 'up' : diffPct < -5 ? 'down' : 'flat';
+
+        trends.push({
+          metric: metricName,
+          dimension: primaryDateCol,
+          direction,
+          changePercent: Math.round(diffPct * 10) / 10,
+          peakPoint: { period: peak[0], value: peak[1] },
+          troughPoint: { period: trough[0], value: trough[1] },
+          summary: `${formatColumnTitle(metricName)} showed ${direction === 'up' ? 'an upward growth trajectory of +' : direction === 'down' ? 'a contraction of ' : 'stable performance within '}${diffPct.toFixed(1)}% across ${sortedPeriods.length} time intervals, reaching peak value (${peak[1].toLocaleString()}) on ${peak[0]}.`,
+          dataPoints: sortedPeriods.map(p => ({ period: p[0], value: Math.round(p[1] * 100) / 100 }))
+        });
+      }
     });
+  }
 
-    const sortedPeriods = Array.from(dateAggMap.entries()).sort((a, b) => a[0].localeCompare(b[0]));
-    if (sortedPeriods.length >= 3) {
-      const firstVal = sortedPeriods[0][1];
-      const lastVal = sortedPeriods[sortedPeriods.length - 1][1];
-      const diffPct = firstVal !== 0 ? ((lastVal - firstVal) / firstVal) * 100 : 0;
+  // Fallback: If no explicit date column or fewer than 2 periods, partition records into chronological batch intervals
+  if (trends.length === 0 && numericCols.length > 0 && rows.length >= 4) {
+    numericCols.slice(0, 3).forEach(numCol => {
+      const metricName = numCol.name;
+      const numBuckets = Math.min(8, Math.max(4, Math.floor(rows.length / 8)));
+      const bucketSize = Math.ceil(rows.length / numBuckets);
+      const points: { period: string; value: number }[] = [];
 
-      let peak = sortedPeriods[0];
-      let trough = sortedPeriods[0];
-      sortedPeriods.forEach(p => {
-        if (p[1] > peak[1]) peak = p;
-        if (p[1] < trough[1]) trough = p;
-      });
+      for (let b = 0; b < numBuckets; b++) {
+        const slice = rows.slice(b * bucketSize, (b + 1) * bucketSize);
+        if (slice.length === 0) continue;
+        const sum = slice.reduce((acc, curr) => acc + (Number(curr[metricName]) || 0), 0);
+        points.push({
+          period: `Interval P${b + 1}`,
+          value: Math.round(sum * 100) / 100
+        });
+      }
 
-      const direction: Trend['direction'] = diffPct > 5 ? 'up' : diffPct < -5 ? 'down' : 'flat';
-
-      trends.push({
-        metric: primaryMetric,
-        dimension: primaryDateCol,
-        direction,
-        changePercent: Math.round(diffPct * 10) / 10,
-        peakPoint: { period: peak[0], value: peak[1] },
-        troughPoint: { period: trough[0], value: trough[1] },
-        summary: `${formatColumnTitle(primaryMetric)} showed ${direction === 'up' ? 'an upward growth trajectory of +' : direction === 'down' ? 'a contraction of ' : 'stable performance within '}${diffPct.toFixed(1)}% across ${sortedPeriods.length} time intervals, reaching peak value (${peak[1].toLocaleString()}) on ${peak[0]}.`
-      });
-    }
+      if (points.length >= 2) {
+        const firstVal = points[0].value;
+        const lastVal = points[points.length - 1].value;
+        const diffPct = firstVal !== 0 ? ((lastVal - firstVal) / firstVal) * 100 : 0;
+        trends.push({
+          metric: metricName,
+          dimension: 'Sequential Interval',
+          direction: diffPct > 5 ? 'up' : diffPct < -5 ? 'down' : 'flat',
+          changePercent: Math.round(diffPct * 10) / 10,
+          peakPoint: points.reduce((prev, cur) => cur.value > prev.value ? cur : prev, points[0]),
+          troughPoint: points.reduce((prev, cur) => cur.value < prev.value ? cur : prev, points[0]),
+          summary: `${formatColumnTitle(metricName)} progression across ${points.length} sequential intervals (${diffPct >= 0 ? '+' : ''}${diffPct.toFixed(1)}%).`,
+          dataPoints: points
+        });
+      }
+    });
   }
 
   // 4. Anomaly / Outlier Detection (IQR on numeric metrics)
@@ -395,11 +462,22 @@ export function computeAnalytics(
         categoryField: stringCols[1].name,
         valueField: primaryMetric,
         aggregation: 'sum',
-        color: '#21F1A8',
+        color: '#00d8f6',
         topN: 5,
         description: 'Share of total across secondary categorical dimension.'
       });
     }
+
+    visuals.push({
+      id: 'vis-table-summary',
+      title: `${formatColumnTitle(stringCols[0].name)} Matrix Overview`,
+      type: 'table',
+      categoryField: stringCols[0].name,
+      valueField: primaryMetric,
+      aggregation: 'sum',
+      color: '#f59e0b',
+      description: 'Granular summary metrics across operational dimensions.'
+    });
   }
 
   // Correlation Matrix for numeric pairs
@@ -420,6 +498,61 @@ export function computeAnalytics(
       }
     }
   }
+
+  // Comprehensive Descriptive Statistics (EDA)
+  const descriptiveStats: DetailedStat[] = [];
+  numericCols.forEach(col => {
+    const vals = rows
+      .map(r => r[col.name])
+      .filter(v => typeof v === 'number' && !isNaN(v)) as number[];
+    
+    if (vals.length === 0) return;
+    const sorted = [...vals].sort((a, b) => a - b);
+    const n = sorted.length;
+    const sum = sorted.reduce((a, b) => a + b, 0);
+    const mean = sum / n;
+    
+    // Variance & StdDev
+    const variance = sorted.reduce((acc, v) => acc + Math.pow(v - mean, 2), 0) / (n > 1 ? n - 1 : 1);
+    const stdDev = Math.sqrt(variance);
+    
+    // Percentiles
+    const q1 = sorted[Math.floor(n * 0.25)] ?? sorted[0];
+    const median = n % 2 === 0 ? (sorted[n / 2 - 1] + sorted[n / 2]) / 2 : sorted[Math.floor(n / 2)];
+    const q3 = sorted[Math.floor(n * 0.75)] ?? sorted[n - 1];
+    const min = sorted[0];
+    const max = sorted[n - 1];
+    const iqr = q3 - q1;
+    
+    // Skewness & Kurtosis
+    let m3 = 0;
+    let m4 = 0;
+    sorted.forEach(v => {
+      const z = stdDev > 0 ? (v - mean) / stdDev : 0;
+      m3 += Math.pow(z, 3);
+      m4 += Math.pow(z, 4);
+    });
+    const skewness = stdDev > 0 ? (m3 / n) : 0;
+    const kurtosis = stdDev > 0 ? (m4 / n) - 3 : 0;
+    
+    descriptiveStats.push({
+      column: col.name,
+      count: n,
+      mean: Math.round(mean * 100) / 100,
+      median: Math.round(median * 100) / 100,
+      stdDev: Math.round(stdDev * 100) / 100,
+      variance: Math.round(variance * 100) / 100,
+      min: Math.round(min * 100) / 100,
+      q1: Math.round(q1 * 100) / 100,
+      q3: Math.round(q3 * 100) / 100,
+      max: Math.round(max * 100) / 100,
+      iqr: Math.round(iqr * 100) / 100,
+      skewness: Math.round(skewness * 100) / 100,
+      kurtosis: Math.round(kurtosis * 100) / 100,
+      nullCount: col.nullCount,
+      nullPct: col.nullPercentage
+    });
+  });
 
   // Business Health Score
   let healthScore = 85;
@@ -444,7 +577,8 @@ export function computeAnalytics(
       score: healthScore,
       rating,
       methodology: `Evaluated across ${kpis.length} core metrics, anomaly severity, and target status variance.`
-    }
+    },
+    descriptiveStats
   };
 }
 

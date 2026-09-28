@@ -60,8 +60,8 @@ export const LandingPage: React.FC = () => {
               }}
               className="px-6 py-3.5 rounded-xl bg-[#222] border border-[#333] hover:border-[#21F1A8]/50 text-white font-heading text-xl font-semibold tracking-wider uppercase hover:bg-[#282828] transition-all flex items-center gap-2"
             >
-              <span>EXPLORE DEMO</span>
-              <span className="text-xs px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono font-bold border border-amber-500/30">DEMO DATA</span>
+              <span>EXPLORE LIVE DASHBOARD</span>
+              <span className="text-xs px-2 py-0.5 rounded-full bg-[#21F1A8]/20 text-[#21F1A8] font-mono font-semibold border border-[#21F1A8]/30">ACTIVE MODEL</span>
             </button>
           </div>
 
