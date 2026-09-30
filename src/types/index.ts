@@ -42,6 +42,19 @@ export interface DataQualityReport {
   }[];
 }
 
+export interface MessyDataIssue {
+  id: string;
+  category: 'whitespace' | 'duplicates' | 'missing' | 'casing' | 'dirty_numbers' | 'outliers' | 'constant_column';
+  column: string;
+  title: string;
+  description: string;
+  affectedCount: number;
+  severity: 'high' | 'medium' | 'low';
+  recommendedAction: string;
+  suggestedActionType: TransformationStep['action'];
+  actionParameters: Record<string, any>;
+}
+
 export interface TransformationStep {
   id: string;
   timestamp: string;
@@ -55,7 +68,11 @@ export interface TransformationStep {
     | 'standardize_text'
     | 'filter_rows'
     | 'replace_value'
-    | 'calculated_column';
+    | 'calculated_column'
+    | 'clean_dirty_numbers'
+    | 'cap_outliers'
+    | 'drop_null_rows'
+    | 'auto_clean_all';
   column?: string;
   parameters: Record<string, any>;
   description: string;
@@ -109,7 +126,65 @@ export interface KPI {
   aggregation: 'sum' | 'avg' | 'count' | 'distinct_count' | 'min' | 'max';
   calculation: string;
   traceableSource: string;
+  definition?: string;
+  formulaExpression?: string;
+  businessImpact?: string;
+  unit?: string;
 }
+
+export interface PriceVolumeMixAnalysis {
+  category: string;
+  priorRevenue: number;
+  currentRevenue: number;
+  revenueVariance: number;
+  priceVariance: number;
+  volumeVariance: number;
+  mixVariance: number;
+  driverSummary: string;
+}
+
+export interface CohortMatrixRow {
+  cohort: string;
+  customers: number;
+  month0: number;
+  month1: number;
+  month2: number;
+  month3: number;
+  month4: number;
+}
+
+export interface PerformerItem {
+  name: string;
+  category: string;
+  metricValue: number;
+  formattedValue: string;
+  marginPct?: number;
+  sharePct: number;
+  status: 'top' | 'bottom';
+  recommendation: string;
+}
+
+export interface DashboardVersion {
+  id: string;
+  version: string;
+  timestamp: string;
+  author: string;
+  changeNote: string;
+  visualsCount: number;
+}
+
+export interface ChartAnnotation {
+  id: string;
+  chartId: string;
+  author: string;
+  timestamp: string;
+  text: string;
+  pointPeriod?: string;
+}
+
+export type UserRole = 'admin' | 'analyst' | 'viewer';
+export type ThemeMode = 'dark' | 'light';
+export type ColorBlindMode = 'default' | 'deuteranopia' | 'high_contrast';
 
 export interface Anomaly {
   id: string;
@@ -177,9 +252,28 @@ export interface DAXMeasure {
 export interface VisualConfig {
   id: string;
   title: string;
-  type: 'line' | 'bar' | 'horizontal_bar' | 'stacked_bar' | 'donut' | 'scatter' | 'kpi_card' | 'table';
+  type: 
+    | 'line' 
+    | 'area'
+    | 'bar' 
+    | 'horizontal_bar' 
+    | 'stacked_bar' 
+    | 'donut' 
+    | 'pie'
+    | 'scatter' 
+    | 'heatmap' 
+    | 'radar' 
+    | 'funnel' 
+    | 'waterfall' 
+    | 'treemap' 
+    | 'gauge' 
+    | 'kpi_card' 
+    | 'table';
   categoryField: string;
   valueField: string;
+  secondaryValueField?: string;
+  secondaryCategoryField?: string;
+  targetValue?: number;
   aggregation: 'sum' | 'avg' | 'count' | 'min' | 'max';
   color?: string;
   sortBy?: 'value_desc' | 'value_asc' | 'category_asc' | 'category_desc';
@@ -234,3 +328,33 @@ export interface BrandConfig {
   backgroundColor: string;
   accentColor: string;
 }
+
+export interface DrillThroughBreadcrumb {
+  id: string;
+  depth: number;
+  label: string;
+  subLabel?: string;
+  filterColumn?: string;
+  filterValue?: any;
+  kpiId?: string;
+  kpiName?: string;
+  rowCount: number;
+  metricSummary?: {
+    name: string;
+    sum: number;
+    avg: number;
+    min: number;
+    max: number;
+  };
+}
+
+export interface DrillThroughState {
+  isOpen: boolean;
+  title: string;
+  subtitle?: string;
+  kpi?: KPI;
+  breadcrumbs: DrillThroughBreadcrumb[];
+  activeBreadcrumbIndex: number;
+  sourceContext?: 'kpi_card' | 'chart_bar' | 'donut_slice' | 'pareto_bar' | 'table_row' | 'general';
+}
+

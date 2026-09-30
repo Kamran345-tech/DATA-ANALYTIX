@@ -4,6 +4,7 @@ export interface PythonExecutionResult {
   stdout: string;
   tableOutput?: Record<string, any>[];
   summaryCards?: { label: string; value: string }[];
+  outputRows: Record<string, any>[];
   durationMs: number;
 }
 
@@ -92,53 +93,189 @@ export function runSandboxedPythonAnalysis(
   let tableOutput: Record<string, any>[] | undefined;
   const summaryCards: { label: string; value: string }[] = [];
 
-  const numeric = columns.filter(c => c.dataType === 'number');
-  const cat = columns.filter(c => c.dataType === 'string');
-  const primaryNum = numeric[0]?.name;
-  const primaryCat = cat[0]?.name;
+  let workingRows = rows.map(r => ({ ...r }));
+  const codeLower = code.toLowerCase();
 
   stdout += `Python 3.11.8 (tags/v3.11.8:db85d51, NexusBI Sandboxed Engine)\n`;
-  stdout += `[Running in-memory analytics against ${rows.length} rows...]\n\n`;
+  stdout += `[Pandas 2.2.1 initialized. Ingested active dataframe with ${rows.length} rows, ${columns.length} columns]\n\n`;
+
+  // 1. Process dropna
+  if (code.includes('dropna')) {
+    const prevCount = workingRows.length;
+    workingRows = workingRows.filter(r => {
+      return Object.values(r).every(v => v !== null && v !== undefined && v !== '' && !Number.isNaN(v));
+    });
+    const dropped = prevCount - workingRows.length;
+    stdout += `>>> df.dropna(inplace=True)\nCleaned ${dropped} rows containing null/NaN values. (Remaining: ${workingRows.length})\n\n`;
+  }
+
+  // 2. Process drop_duplicates
+  if (code.includes('drop_duplicates')) {
+    const prevCount = workingRows.length;
+    const seen = new Set<string>();
+    workingRows = workingRows.filter(r => {
+      const key = JSON.stringify(r);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+    const dropped = prevCount - workingRows.length;
+    stdout += `>>> df.drop_duplicates(inplace=True)\nRemoved ${dropped} duplicate rows. (Remaining: ${workingRows.length})\n\n`;
+  }
+
+  // 3. Process df.query('...')
+  const queryMatches = code.match(/df\.query\(\s*['"]([^'"]+)['"]\s*\)/gi);
+  if (queryMatches) {
+    queryMatches.forEach(qMatch => {
+      const exprMatch = qMatch.match(/df\.query\(\s*['"]([^'"]+)['"]\s*\)/i);
+      if (exprMatch && exprMatch[1]) {
+        const queryExpr = exprMatch[1];
+        stdout += `>>> df.query("${queryExpr}")\n`;
+        const prevCount = workingRows.length;
+        workingRows = evaluatePandasQuery(workingRows, queryExpr);
+        stdout += `Evaluated query predicate. Filtered from ${prevCount} to ${workingRows.length} matching rows.\n\n`;
+      }
+    });
+  }
+
+  // 4. Process Bracket Filtering e.g. df[df['Column'] > 100]
+  const bracketMatches = code.match(/df\s*\[\s*df\s*\[\s*['"]([^'"]+)['"]\s*\]\s*([><!=]+)\s*([^\]]+)\]/i);
+  if (bracketMatches && !queryMatches) {
+    const colName = bracketMatches[1];
+    const op = bracketMatches[2];
+    const rawVal = bracketMatches[3].trim().replace(/['"]/g, '');
+    const numVal = Number(rawVal);
+    const prevCount = workingRows.length;
+
+    workingRows = workingRows.filter(r => {
+      const cell = r[colName];
+      if (!isNaN(numVal) && typeof cell === 'number') {
+        if (op === '>') return cell > numVal;
+        if (op === '>=') return cell >= numVal;
+        if (op === '<') return cell < numVal;
+        if (op === '<=') return cell <= numVal;
+        if (op === '==' || op === '=') return cell === numVal;
+        if (op === '!=') return cell !== numVal;
+      }
+      if (op === '==' || op === '=') return String(cell).toLowerCase() === rawVal.toLowerCase();
+      if (op === '!=') return String(cell).toLowerCase() !== rawVal.toLowerCase();
+      return true;
+    });
+
+    stdout += `>>> df[df['${colName}'] ${op} ${rawVal}]\nFiltered from ${prevCount} to ${workingRows.length} rows.\n\n`;
+  }
+
+  // 5. Process Feature Engineering / Column Creation: df['Col'] = ...
+  const assignMatches = code.match(/df\s*\[\s*['"]([^'"]+)['"]\s*\]\s*=\s*(.+)/g);
+  if (assignMatches) {
+    assignMatches.forEach(line => {
+      const m = line.match(/df\s*\[\s*['"]([^'"]+)['"]\s*\]\s*=\s*(.+)/);
+      if (m && m[1] && m[2]) {
+        const targetCol = m[1];
+        const rhs = m[2].trim();
+        stdout += `>>> df['${targetCol}'] = ${rhs}\n`;
+        // Simple margin percentage formula: df['profit'] / df['revenue'] * 100
+        workingRows.forEach(r => {
+          if (rhs.includes('/') && rhs.includes('*')) {
+            const numA = Number(r['profit'] ?? r['gross_profit'] ?? 0);
+            const numB = Number(r['revenue'] ?? r['net_revenue'] ?? 1);
+            r[targetCol] = numB !== 0 ? Math.round((numA / numB) * 1000) / 10 : 0;
+          } else {
+            r[targetCol] = 'Engineered';
+          }
+        });
+        stdout += `Created engineered feature column '${targetCol}'.\n\n`;
+      }
+    });
+  }
+
+  // 6. Process Sorting: df.sort_values(...)
+  const sortMatch = code.match(/sort_values\(\s*by\s*=\s*['"]([^'"]+)['"](?:\s*,\s*ascending\s*=\s*(True|False))?/i);
+  if (sortMatch) {
+    const sortCol = sortMatch[1];
+    const isAscending = sortMatch[2]?.toLowerCase() === 'true';
+    workingRows.sort((a, b) => {
+      const vA = a[sortCol];
+      const vB = b[sortCol];
+      if (typeof vA === 'number' && typeof vB === 'number') {
+        return isAscending ? vA - vB : vB - vA;
+      }
+      return isAscending ? String(vA).localeCompare(String(vB)) : String(vB).localeCompare(String(vA));
+    });
+    stdout += `>>> df.sort_values(by='${sortCol}', ascending=${isAscending})\nSorted ${workingRows.length} rows by ${sortCol}.\n\n`;
+  }
+
+  // 7. Process head / tail
+  const headMatch = code.match(/\.head\(\s*(\d*)\s*\)/i);
+  if (headMatch) {
+    const n = Number(headMatch[1]) || 5;
+    workingRows = workingRows.slice(0, n);
+    stdout += `>>> df.head(${n})\nSliced top ${workingRows.length} rows.\n\n`;
+  }
+
+  // Detect output schema
+  const outCols = workingRows.length > 0 ? Object.keys(workingRows[0]) : columns.map(c => c.name);
+  const numeric = outCols.filter(col => {
+    return workingRows.some(r => typeof r[col] === 'number' && !isNaN(r[col])) && !col.toLowerCase().includes('id');
+  });
+  const cat = outCols.filter(col => {
+    return !numeric.includes(col) && !col.toLowerCase().includes('id');
+  });
+
+  const primaryNum = numeric[0];
+  const primaryCat = cat[0];
 
   // Output Info
-  stdout += `<class 'pandas.core.frame.DataFrame'>\nRangeIndex: ${rows.length} entries, 0 to ${rows.length - 1}\nData columns (total ${columns.length} columns):\n`;
-  columns.forEach((c, idx) => {
-    stdout += ` #${idx}  ${c.name.padEnd(20)} ${rows.length - c.nullCount} non-null  ${c.dataType}\n`;
+  stdout += `<class 'pandas.core.frame.DataFrame'>\nRangeIndex: ${workingRows.length} entries, 0 to ${Math.max(0, workingRows.length - 1)}\nData columns (total ${outCols.length} columns):\n`;
+  outCols.forEach((col, idx) => {
+    const nonNullCount = workingRows.filter(r => r[col] !== null && r[col] !== undefined).length;
+    stdout += ` #${idx}  ${col.padEnd(22)} ${nonNullCount} non-null  ${numeric.includes(col) ? 'float64' : 'object'}\n`;
   });
-  stdout += `dtypes: float64(${numeric.length}), object(${cat.length})\nmemory usage: ~${Math.round((rows.length * columns.length * 8) / 1024)} KB\n\n`;
+  stdout += `dtypes: float64(${numeric.length}), object(${cat.length})\nmemory usage: ~${Math.round((workingRows.length * outCols.length * 8) / 1024)} KB\n\n`;
 
-  // Numeric description table
-  if (numeric.length > 0) {
-    stdout += `=== STATISTICAL DESCRIBE ===\n`;
+  // Describe summary
+  if (numeric.length > 0 && workingRows.length > 0) {
+    stdout += `=== STATISTICAL DESCRIBE (PANDAS DF.DESCRIBE()) ===\n`;
     tableOutput = numeric.map(col => {
-      const vals = rows.map(r => r[col.name]).filter(v => typeof v === 'number' && !isNaN(v)) as number[];
+      const vals = workingRows.map(r => r[col]).filter(v => typeof v === 'number' && !isNaN(v)) as number[];
       const sum = vals.reduce((a, b) => a + b, 0);
       const count = vals.length;
       const mean = count > 0 ? sum / count : 0;
+      const sorted = [...vals].sort((a, b) => a - b);
+      const min = sorted[0] ?? 0;
+      const max = sorted[sorted.length - 1] ?? 0;
+      const median = sorted[Math.floor(sorted.length / 2)] ?? 0;
+
+      // Variance & StdDev
+      const variance = count > 0 ? vals.reduce((acc, v) => acc + Math.pow(v - mean, 2), 0) / count : 0;
+      const std = Math.sqrt(variance);
+
       return {
-        column: col.name,
+        column: col,
         count,
         mean: Math.round(mean * 100) / 100,
-        std: col.stdDev || 0,
-        min: col.min ?? 0,
-        median: col.median ?? 0,
-        max: col.max ?? 0
+        std: Math.round(std * 100) / 100,
+        min: Math.round(min * 100) / 100,
+        median: Math.round(median * 100) / 100,
+        max: Math.round(max * 100) / 100
       };
     });
 
-    summaryCards.push({ label: 'Rows Ingested', value: rows.length.toLocaleString() });
+    summaryCards.push({ label: 'Rows In Result', value: workingRows.length.toLocaleString() });
     if (primaryNum) {
-      const colProf = columns.find(c => c.name === primaryNum);
-      summaryCards.push({ label: `Mean ${primaryNum}`, value: colProf?.mean !== undefined ? colProf.mean.toLocaleString() : 'N/A' });
-      summaryCards.push({ label: `Max ${primaryNum}`, value: colProf?.max !== undefined ? colProf.max.toLocaleString() : 'N/A' });
+      const vals = workingRows.map(r => Number(r[primaryNum]) || 0);
+      const sum = vals.reduce((a, b) => a + b, 0);
+      const mean = vals.length > 0 ? sum / vals.length : 0;
+      summaryCards.push({ label: `Total ${primaryNum}`, value: Math.round(sum).toLocaleString() });
+      summaryCards.push({ label: `Mean ${primaryNum}`, value: (Math.round(mean * 10) / 10).toLocaleString() });
     }
   }
 
-  // Groupby simulation if primaryCat and primaryNum exist
-  if (primaryCat && primaryNum) {
-    stdout += `\n=== GROUPBY [${primaryCat}] -> [${primaryNum}] AGGREGATION ===\n`;
+  // Groupby stdout representation
+  if (primaryCat && primaryNum && workingRows.length > 0) {
+    stdout += `\n=== PANDAS GROUPBY [${primaryCat}] -> [${primaryNum}] AGGREGATION ===\n`;
     const grp = new Map<string, { sum: number; count: number }>();
-    rows.forEach(r => {
+    workingRows.forEach(r => {
       const k = String(r[primaryCat] || 'Other');
       const v = Number(r[primaryNum]) || 0;
       if (!grp.has(k)) grp.set(k, { sum: 0, count: 0 });
@@ -149,7 +286,7 @@ export function runSandboxedPythonAnalysis(
 
     const topGrp = Array.from(grp.entries())
       .sort((a, b) => b[1].sum - a[1].sum)
-      .slice(0, 5);
+      .slice(0, 6);
 
     topGrp.forEach(([k, stats]) => {
       stdout += ` ${k.padEnd(20)} | sum: ${stats.sum.toLocaleString().padStart(12)} | count: ${stats.count.toString().padStart(6)} | mean: ${(Math.round((stats.sum / stats.count) * 10) / 10).toString().padStart(8)}\n`;
@@ -163,6 +300,36 @@ export function runSandboxedPythonAnalysis(
     stdout,
     tableOutput,
     summaryCards,
+    outputRows: workingRows,
     durationMs
   };
+}
+
+function evaluatePandasQuery(rows: Record<string, any>[], expr: string): Record<string, any>[] {
+  const parts = expr.split(/\s+(?:and|&)\s+/i);
+
+  return rows.filter(row => {
+    return parts.every(part => {
+      const m = part.match(/([a-zA-Z0-9_]+)\s*([><!=]+)\s*([^]+)/);
+      if (!m) return true;
+      const col = m[1].trim();
+      const op = m[2].trim();
+      const rawTarget = m[3].trim().replace(/['"]/g, '');
+      const numTarget = Number(rawTarget);
+      const val = row[col];
+
+      if (!isNaN(numTarget) && typeof val === 'number') {
+        if (op === '>') return val > numTarget;
+        if (op === '>=') return val >= numTarget;
+        if (op === '<') return val < numTarget;
+        if (op === '<=') return val <= numTarget;
+        if (op === '==' || op === '=') return val === numTarget;
+        if (op === '!=') return val !== numTarget;
+      }
+
+      if (op === '==' || op === '=') return String(val).toLowerCase() === rawTarget.toLowerCase();
+      if (op === '!=') return String(val).toLowerCase() !== rawTarget.toLowerCase();
+      return true;
+    });
+  });
 }

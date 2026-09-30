@@ -131,3 +131,194 @@ export function evaluateDataQuality(profiles: ColumnProfile[], rows: Record<stri
     issues
   };
 }
+
+import { MessyDataIssue } from '../types';
+
+export function detectMessyIssues(profiles: ColumnProfile[], rows: Record<string, any>[]): MessyDataIssue[] {
+  const issues: MessyDataIssue[] = [];
+  const totalRows = rows.length;
+  if (totalRows === 0 || profiles.length === 0) return issues;
+
+  // 1. Detect Duplicate Rows
+  const seen = new Set<string>();
+  let dupCount = 0;
+  rows.forEach(r => {
+    const k = JSON.stringify(r);
+    if (seen.has(k)) dupCount++;
+    else seen.add(k);
+  });
+
+  if (dupCount > 0) {
+    issues.push({
+      id: 'messy-duplicates',
+      category: 'duplicates',
+      column: 'All Columns',
+      title: `${dupCount} Exact Duplicate Records Found`,
+      description: `Detected ${dupCount} duplicate rows that artificially inflate volumetric and financial aggregates.`,
+      affectedCount: dupCount,
+      severity: dupCount > totalRows * 0.05 ? 'high' : 'medium',
+      recommendedAction: 'Remove duplicate rows to maintain transaction integrity and prevent double-counting.',
+      suggestedActionType: 'remove_duplicates',
+      actionParameters: {}
+    });
+  }
+
+  // 2. Detect Whitespace Padding in Strings
+  profiles.forEach(p => {
+    if (p.dataType === 'string') {
+      let spaceCount = 0;
+      rows.forEach(r => {
+        const v = r[p.name];
+        if (typeof v === 'string' && v !== v.trim()) {
+          spaceCount++;
+        }
+      });
+
+      if (spaceCount > 0) {
+        issues.push({
+          id: `messy-whitespace-${p.name}`,
+          category: 'whitespace',
+          column: p.name,
+          title: `Untrimmed Whitespaces in [${p.name}]`,
+          description: `${spaceCount} text values contain leading or trailing spaces (e.g. " ${p.name} "), which fragments group-by aggregations and filters in Power BI and SQL.`,
+          affectedCount: spaceCount,
+          severity: 'medium',
+          recommendedAction: `Trim all leading and trailing whitespace from [${p.name}].`,
+          suggestedActionType: 'trim_whitespace',
+          actionParameters: { column: p.name }
+        });
+      }
+    }
+  });
+
+  // 3. Detect Inconsistent Text Casing
+  profiles.forEach(p => {
+    if (p.dataType === 'string') {
+      const lowerMap = new Map<string, Set<string>>();
+      rows.forEach(r => {
+        const v = r[p.name];
+        if (typeof v === 'string' && v.trim().length > 0) {
+          const trimmed = v.trim();
+          const lower = trimmed.toLowerCase();
+          if (!lowerMap.has(lower)) lowerMap.set(lower, new Set());
+          lowerMap.get(lower)!.add(trimmed);
+        }
+      });
+
+      let inconsistentCount = 0;
+      const examples: string[] = [];
+      lowerMap.forEach((variations, lower) => {
+        if (variations.size > 1) {
+          inconsistentCount += variations.size;
+          if (examples.length < 3) {
+            examples.push(`"${Array.from(variations).join('" vs "')}"`);
+          }
+        }
+      });
+
+      if (inconsistentCount > 0) {
+        issues.push({
+          id: `messy-casing-${p.name}`,
+          category: 'casing',
+          column: p.name,
+          title: `Inconsistent Text Casing in [${p.name}]`,
+          description: `Discovered mixed casing variations such as ${examples.join(', ')}. This creates duplicate categories on charts.`,
+          affectedCount: inconsistentCount,
+          severity: 'medium',
+          recommendedAction: `Standardize all values in [${p.name}] to Proper / Title Case.`,
+          suggestedActionType: 'standardize_text',
+          actionParameters: { column: p.name, format: 'titlecase' }
+        });
+      }
+    }
+  });
+
+  // 4. Detect Dirty Number Strings (e.g. "$1,250.00" stored as string)
+  profiles.forEach(p => {
+    if (p.dataType === 'string') {
+      let dirtyNumCount = 0;
+      rows.forEach(r => {
+        const v = String(r[p.name] ?? '').trim();
+        if (/^[\$€£¥₹\s]*[0-9]{1,3}(,[0-9]{3})*(\.[0-9]+)?[\s%]*$/.test(v) && /[$,€£¥₹%]/.test(v)) {
+          dirtyNumCount++;
+        }
+      });
+
+      if (dirtyNumCount >= 3 || (totalRows > 0 && dirtyNumCount / totalRows > 0.2)) {
+        issues.push({
+          id: `messy-dirty-numbers-${p.name}`,
+          category: 'dirty_numbers',
+          column: p.name,
+          title: `Dirty Currency / Number Symbols in [${p.name}]`,
+          description: `${dirtyNumCount} values contain currency signs ($), thousand commas (,), or percentage marks that prevent numeric summation and averaging.`,
+          affectedCount: dirtyNumCount,
+          severity: 'high',
+          recommendedAction: `Strip currency symbols and commas, casting [${p.name}] into a clean floating-point numerical column.`,
+          suggestedActionType: 'clean_dirty_numbers',
+          actionParameters: { column: p.name }
+        });
+      }
+    }
+  });
+
+  // 5. Detect Missing / Null Cells
+  profiles.forEach(p => {
+    if (p.nullCount > 0) {
+      issues.push({
+        id: `messy-missing-${p.name}`,
+        category: 'missing',
+        column: p.name,
+        title: `Incomplete / Missing Values in [${p.name}]`,
+        description: `Column has ${p.nullCount} empty or null records (${p.nullPercentage}% missing rate).`,
+        affectedCount: p.nullCount,
+        severity: p.nullPercentage > 15 ? 'high' : 'medium',
+        recommendedAction: p.dataType === 'number'
+          ? `Impute with column mean (${p.mean ?? 0}) or median (${p.median ?? 0}) to preserve sample size.`
+          : `Fill empty text cells with "Unknown" or drop incomplete records.`,
+        suggestedActionType: 'fill_missing',
+        actionParameters: { 
+          column: p.name, 
+          method: p.dataType === 'number' ? 'mean' : 'unknown' 
+        }
+      });
+    }
+  });
+
+  // 6. Detect Extreme Statistical Outliers
+  profiles.forEach(p => {
+    if (p.dataType === 'number' && p.outliersCount > 0) {
+      issues.push({
+        id: `messy-outliers-${p.name}`,
+        category: 'outliers',
+        column: p.name,
+        title: `${p.outliersCount} Extreme Outliers in [${p.name}]`,
+        description: `Values exceed the 1.5x Interquartile Range fence (bounds: ${p.min} to ${p.max}). Outliers can heavily distort regression models and mean KPIs.`,
+        affectedCount: p.outliersCount,
+        severity: p.outliersCount > totalRows * 0.05 ? 'high' : 'low',
+        recommendedAction: `Cap extreme values at the 98th percentile (Winsorization) to stabilize variance.`,
+        suggestedActionType: 'cap_outliers',
+        actionParameters: { column: p.name, percentile: 98 }
+      });
+    }
+  });
+
+  // 7. Detect Zero-Variance Constant Columns
+  profiles.forEach(p => {
+    if (p.distinctCount <= 1 && totalRows > 10) {
+      issues.push({
+        id: `messy-constant-${p.name}`,
+        category: 'constant_column',
+        column: p.name,
+        title: `Redundant Constant Column [${p.name}]`,
+        description: `This column contains only 1 unique value across all rows. It adds zero predictive or analytical value.`,
+        affectedCount: totalRows,
+        severity: 'low',
+        recommendedAction: `Drop redundant column [${p.name}] to optimize memory and simplify schemas.`,
+        suggestedActionType: 'delete_column',
+        actionParameters: { column: p.name }
+      });
+    }
+  });
+
+  return issues;
+}

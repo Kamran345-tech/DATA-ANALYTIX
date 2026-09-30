@@ -21,7 +21,7 @@ import { usePlatform } from '../../store/usePlatformStore';
 type AnalysisTab = 'eda' | 'correlation' | 'distribution' | 'outliers' | 'forecast';
 
 export const AnalysisView: React.FC = () => {
-  const { analytics, columns, cleanRows } = usePlatform();
+  const { analytics, columns, cleanRows, openDrillThrough } = usePlatform();
   const [activeTab, setActiveTab] = useState<AnalysisTab>('eda');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -502,7 +502,19 @@ export const AnalysisView: React.FC = () => {
                     const x = 45 + i * barWidth;
                     const y = 170 - h;
                     return (
-                      <g key={i} className="group cursor-pointer">
+                      <g 
+                        key={i} 
+                        className="group cursor-pointer"
+                        onClick={() => {
+                          openDrillThrough({
+                            title: `Histogram: ${selectedHistCol} [${bin.binLabel}]`,
+                            subtitle: `${bin.count} records where ${selectedHistCol} is within interval ${bin.binLabel}`,
+                            filterColumn: selectedHistCol,
+                            sourceContext: 'chart_bar'
+                          });
+                        }}
+                      >
+                        <title>{`${bin.binLabel}: ${bin.count} records (Click to drill-through)`}</title>
                         <rect
                           x={x + 2}
                           y={y}

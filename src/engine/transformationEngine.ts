@@ -183,6 +183,135 @@ export function applyTransformation(
       });
     }
 
+    case 'clean_dirty_numbers': {
+      const targetCol = column;
+      return rows.map(r => {
+        const copy = { ...r };
+        const colsToClean = targetCol ? [targetCol] : Object.keys(copy);
+        colsToClean.forEach(colName => {
+          const raw = copy[colName];
+          if (raw !== null && raw !== undefined && raw !== '') {
+            const strVal = String(raw).trim();
+            if (/[$,€£¥₹%]/.test(strVal) || (typeof raw === 'string' && /^[0-9,.]+$/.test(strVal))) {
+              const cleanStr = strVal.replace(/[\$€£¥₹,\s%]/g, '');
+              const num = Number(cleanStr);
+              if (!isNaN(num) && cleanStr !== '') {
+                copy[colName] = Math.round(num * 100) / 100;
+              }
+            }
+          }
+        });
+        return copy;
+      });
+    }
+
+    case 'cap_outliers': {
+      const targetCol = column;
+      const numCols = targetCol ? [targetCol] : Object.keys(rows[0] || {}).filter(k => typeof rows[0][k] === 'number');
+      let result = [...rows];
+
+      numCols.forEach(cName => {
+        const nums = result.map(r => Number(r[cName])).filter(v => typeof v === 'number' && !isNaN(v));
+        if (nums.length >= 4) {
+          nums.sort((a, b) => a - b);
+          const q1 = nums[Math.floor(nums.length * 0.25)];
+          const q3 = nums[Math.floor(nums.length * 0.75)];
+          const iqr = q3 - q1;
+          const lower = q1 - 1.5 * iqr;
+          const upper = q3 + 1.5 * iqr;
+
+          result = result.map(r => {
+            const copy = { ...r };
+            const v = Number(copy[cName]);
+            if (!isNaN(v)) {
+              if (v < lower) copy[cName] = Math.round(lower * 100) / 100;
+              else if (v > upper) copy[cName] = Math.round(upper * 100) / 100;
+            }
+            return copy;
+          });
+        }
+      });
+      return result;
+    }
+
+    case 'drop_null_rows': {
+      const targetCol = column;
+      return rows.filter(r => {
+        if (targetCol) {
+          const v = r[targetCol];
+          return v !== null && v !== undefined && String(v).trim() !== '';
+        }
+        return Object.values(r).every(v => v !== null && v !== undefined && String(v).trim() !== '');
+      });
+    }
+
+    case 'auto_clean_all': {
+      // 1. Remove duplicate rows
+      const seen = new Set<string>();
+      const deduplicated = rows.filter(r => {
+        const key = JSON.stringify(r);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+
+      // 2. Identify column types and patterns
+      if (deduplicated.length === 0) return deduplicated;
+      const sample = deduplicated[0];
+      const allCols = Object.keys(sample);
+
+      // 3. Trim all whitespace & clean dirty numbers
+      let cleaned = deduplicated.map(r => {
+        const copy = { ...r };
+        allCols.forEach(col => {
+          let val = copy[col];
+          if (typeof val === 'string') {
+            val = val.trim();
+            // Check if dirty currency/number
+            if (/^[\$€£¥₹\s]*[0-9]{1,3}(,[0-9]{3})*(\.[0-9]+)?[\s%]*$/.test(val) && /[$,€£¥₹%]/.test(val)) {
+              const numStr = val.replace(/[\$€£¥₹,\s%]/g, '');
+              const parsed = Number(numStr);
+              if (!isNaN(parsed) && numStr !== '') {
+                val = Math.round(parsed * 100) / 100;
+              }
+            } else if (!/id|code|date|email|url/i.test(col) && val.length > 0 && val.length < 50) {
+              // Standardize text to Title Case
+              val = val.replace(/\w\S*/g, (txt: string) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+            }
+            copy[col] = val;
+          }
+        });
+        return copy;
+      });
+
+      // 4. Impute missing values
+      allCols.forEach(col => {
+        const nums = cleaned.map(r => Number(r[col])).filter(v => typeof v === 'number' && !isNaN(v));
+        const isNumeric = nums.length > cleaned.length * 0.5;
+
+        if (isNumeric && nums.length > 0) {
+          const mean = Math.round((nums.reduce((a, b) => a + b, 0) / nums.length) * 100) / 100;
+          cleaned = cleaned.map(r => {
+            const copy = { ...r };
+            if (copy[col] === null || copy[col] === undefined || copy[col] === '' || isNaN(Number(copy[col]))) {
+              copy[col] = mean;
+            }
+            return copy;
+          });
+        } else {
+          cleaned = cleaned.map(r => {
+            const copy = { ...r };
+            if (copy[col] === null || copy[col] === undefined || String(copy[col]).trim() === '') {
+              copy[col] = 'Unknown';
+            }
+            return copy;
+          });
+        }
+      });
+
+      return cleaned;
+    }
+
     default:
       return rows;
   }

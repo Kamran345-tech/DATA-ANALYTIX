@@ -13,7 +13,8 @@ import {
   Loader2,
   Sparkles,
   ArrowRight,
-  Printer
+  Printer,
+  SlidersHorizontal
 } from 'lucide-react';
 import { usePlatform } from '../../store/usePlatformStore';
 import { 
@@ -23,8 +24,10 @@ import {
   generatePowerBIMSemanticModel, 
   generatePowerBIThemeJSON,
   generateEnterpriseReportPDF,
+  downloadDashboardAndReportBundle,
   ExportDataPayload
 } from '../../engine/exportEngine';
+import { EditableDashboardTitle } from '../common/EditableDashboardTitle';
 
 export const ExportCenterView: React.FC = () => {
   const { 
@@ -38,11 +41,13 @@ export const ExportCenterView: React.FC = () => {
     daxMeasures, 
     transformations, 
     qualityReport,
+    customVisuals,
     setCurrentTab
   } = usePlatform();
 
   const [isZipping, setIsZipping] = useState(false);
   const [isPdfGenerating, setIsPdfGenerating] = useState(false);
+  const [isBundleGenerating, setIsBundleGenerating] = useState(false);
   const [downloadSuccess, setDownloadSuccess] = useState<string | null>(null);
 
   const payload: ExportDataPayload = {
@@ -59,10 +64,35 @@ export const ExportCenterView: React.FC = () => {
     qualityReport
   };
 
+  const handleDownloadDashboardAndReportBundle = async () => {
+    setIsBundleGenerating(true);
+    try {
+      await downloadDashboardAndReportBundle(payload, {
+        customVisuals,
+        categoryPerformance: analytics.categoryPerformance,
+        trends: analytics.trends,
+        anomalies: analytics.anomalies,
+        opportunities: analytics.opportunities
+      });
+      setDownloadSuccess('Created Dashboard & Executive Report bundle downloaded successfully!');
+      setTimeout(() => setDownloadSuccess(null), 4000);
+    } catch (e: any) {
+      alert(`Bundle export failed: ${e?.message}`);
+    } finally {
+      setIsBundleGenerating(false);
+    }
+  };
+
   const handleDownloadReportPDF = () => {
     setIsPdfGenerating(true);
     try {
-      const doc = generateEnterpriseReportPDF(payload);
+      const doc = generateEnterpriseReportPDF(payload, {
+        customVisuals,
+        categoryPerformance: analytics.categoryPerformance,
+        trends: analytics.trends,
+        anomalies: analytics.anomalies,
+        opportunities: analytics.opportunities
+      });
       const safeProjectName = project.name.replace(/[^a-zA-Z0-9_]/g, '_');
       const filename = `${safeProjectName}_Executive_Report.pdf`;
       doc.save(filename);
@@ -142,42 +172,65 @@ export const ExportCenterView: React.FC = () => {
     <div className="space-y-8 pb-16 animate-fadeIn max-w-5xl mx-auto">
       {/* Header */}
       <div className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-6 flex flex-wrap items-center justify-between gap-4">
-        <div className="space-y-1">
+        <div className="space-y-1.5">
           <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#21F1A8] font-mono">
             <FolderDown className="w-4 h-4" /> Sovereign User Package Center
           </div>
           <h1 className="font-heading text-3xl sm:text-4xl font-bold text-white tracking-wide uppercase">
             ENTERPRISE EXPORT CENTER
           </h1>
+          <div className="py-1">
+            <EditableDashboardTitle className="text-base font-semibold" showLabelPrefix={true} />
+          </div>
           <p className="text-xs text-gray-400">
-            Rule 14 Guarantee: Zero vendor lock-in. Export boardroom-ready PDF reports, Power BI projects, structured Excel workbooks, and reproducible scripts.
+            Export boardroom-ready PDF reports, created dashboards, combined bundles, and structured Excel workbooks.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Direct Download Report as PDF CTA */}
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          {/* Download Dashboard + Executive Report Bundle */}
           <button
-            onClick={handleDownloadReportPDF}
-            disabled={isPdfGenerating}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#21F1A8] text-black font-semibold text-xs hover:bg-[#1cdb97] hover:glow-neon transition-all disabled:opacity-50"
+            onClick={handleDownloadDashboardAndReportBundle}
+            disabled={isBundleGenerating}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#21F1A8] text-black font-semibold text-xs hover:bg-[#1cdb97] hover:glow-neon transition-all disabled:opacity-50 shadow-md shadow-[#21F1A8]/20"
+            title="Download both the created dashboard specification/HTML and executive report in a single ZIP package"
           >
-            {isPdfGenerating ? (
+            {isBundleGenerating ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Compiling PDF...</span>
+                <Loader2 className="w-4 h-4 animate-spin text-black" />
+                <span>Compiling Bundle...</span>
               </>
             ) : (
               <>
-                <FileText className="w-4 h-4" />
-                <span>Download Report as PDF</span>
+                <Package className="w-4 h-4 stroke-[2.5]" />
+                <span>Download Dashboard + Report Bundle</span>
               </>
             )}
           </button>
 
-          {/* Validation Status Indicator (Rule 115) */}
+          {/* Direct Download Report as PDF CTA */}
+          <button
+            onClick={handleDownloadReportPDF}
+            disabled={isPdfGenerating}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#252525] hover:bg-[#303030] text-gray-200 hover:text-white font-medium text-xs border border-[#3a3a3a] transition-all disabled:opacity-50"
+          >
+            {isPdfGenerating ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin text-cyan-400" />
+                <span>Compiling PDF...</span>
+              </>
+            ) : (
+              <>
+                <FileText className="w-4 h-4 text-cyan-400" />
+                <span>Executive Report (PDF)</span>
+              </>
+            )}
+          </button>
+
+          {/* Validation Status Indicator */}
           <div className="flex items-center gap-2 bg-[#141414] border border-[#21F1A8]/40 px-3.5 py-2.5 rounded-xl text-xs font-mono text-[#21F1A8]">
             <ShieldCheck className="w-4 h-4" />
-            <span>Export Validation: PASSED</span>
+            <span>Audit: PASSED</span>
           </div>
         </div>
       </div>

@@ -58,13 +58,37 @@ export const UploadIngestionView: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-16 animate-fadeIn">
       {/* View Header */}
-      <div className="text-center space-y-2">
-        <h1 className="font-heading text-4xl font-bold text-white tracking-wide uppercase">
-          INGEST & ANALYZE BUSINESS DATA
-        </h1>
-        <p className="text-sm text-gray-400 max-w-xl mx-auto">
-          Upload your raw file or choose a verified test dataset. The engine validates structure, evaluates data quality, models star schemas, and compiles dashboards.
-        </p>
+      <div className="text-center space-y-4">
+        <div className="space-y-2">
+          <h1 className="font-heading text-4xl font-bold text-white tracking-wide uppercase">
+            INGEST & ANALYZE BUSINESS DATA
+          </h1>
+          <p className="text-sm text-gray-400 max-w-xl mx-auto">
+            Upload your raw file or connect directly to any live database server. The engine validates structure, evaluates data quality, models star schemas, and compiles dashboards.
+          </p>
+        </div>
+
+        {/* Ingestion Mode Switcher */}
+        <div className="inline-flex p-1 rounded-2xl bg-[#141414] border border-[#2d2d2d] gap-1 shadow-md">
+          <button
+            type="button"
+            className="px-5 py-2 rounded-xl text-xs font-bold transition-all bg-[#21F1A8] text-black shadow-md flex items-center gap-2"
+          >
+            <UploadCloud className="w-4 h-4 text-black" />
+            <span>Local Flat File Upload</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setCurrentTab('live_connector')}
+            className="px-5 py-2 rounded-xl text-xs font-semibold transition-all text-gray-400 hover:text-white hover:bg-[#202020] flex items-center gap-2"
+          >
+            <Database className="w-4 h-4 text-[#21F1A8]" />
+            <span>Live Server & Database Connector</span>
+            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#21F1A8]/10 text-[#21F1A8] border border-[#21F1A8]/30 animate-pulse">
+              Live
+            </span>
+          </button>
+        </div>
       </div>
 
       {/* Upload Dropzone */}

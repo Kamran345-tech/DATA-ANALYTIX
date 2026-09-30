@@ -5,6 +5,7 @@ import { Sidebar } from './components/layout/Sidebar';
 import { LandingPage } from './components/views/LandingPage';
 import { ExecutiveDashboard } from './components/views/ExecutiveDashboard';
 import { UploadIngestionView } from './components/views/UploadIngestionView';
+import { LiveServerConnectorView } from './components/views/LiveServerConnectorView';
 import { DataPreviewView } from './components/views/DataPreviewView';
 import { DataQualityView } from './components/views/DataQualityView';
 import { DataCleaningLabView } from './components/views/DataCleaningLabView';
@@ -21,9 +22,10 @@ import { ExportCenterView } from './components/views/ExportCenterView';
 import { HowToModifyView } from './components/views/HowToModifyView';
 import { SettingsView } from './components/views/SettingsView';
 import { BlogView } from './components/views/BlogView';
+import { DrillThroughModal } from './components/common/DrillThroughModal';
 
 const MainContent: React.FC = () => {
-  const { currentTab, setCurrentTab, isPresentationMode } = usePlatform();
+  const { currentTab, setCurrentTab, isPresentationMode, themeMode } = usePlatform();
 
   const renderActiveView = () => {
     switch (currentTab) {
@@ -33,6 +35,8 @@ const MainContent: React.FC = () => {
         return <ExecutiveDashboard />;
       case 'upload':
         return <UploadIngestionView />;
+      case 'live_connector':
+        return <LiveServerConnectorView />;
       case 'preview':
         return <DataPreviewView />;
       case 'quality':
@@ -71,7 +75,7 @@ const MainContent: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#171717] text-gray-100 flex flex-col font-sans">
+    <div className={`min-h-screen ${themeMode === 'light' ? 'bg-[#f8fafc] text-slate-900 theme-light' : 'bg-[#171717] text-gray-100 theme-dark'} flex flex-col font-sans transition-colors duration-200`}>
       {!isPresentationMode && <Navbar />}
 
       <div className="flex flex-1 overflow-hidden relative">
@@ -80,6 +84,9 @@ const MainContent: React.FC = () => {
           {renderActiveView()}
         </main>
       </div>
+
+      {/* Global Drill-Through Modal with Breadcrumb Depth Tracking */}
+      <DrillThroughModal />
     </div>
   );
 };

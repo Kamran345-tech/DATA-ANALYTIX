@@ -12,7 +12,14 @@ import {
   Sparkles,
   Info,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  CircleDot,
+  Grid,
+  Gauge,
+  Compass,
+  Layers,
+  ArrowRight,
+  Filter
 } from 'lucide-react';
 import { ColumnProfile, ForecastPoint } from '../../types';
 
@@ -1276,6 +1283,1404 @@ export const MultiDimensionalPivotTable: React.FC<PivotProps> = ({ rows, columns
             </tr>
           </tfoot>
         </table>
+      </div>
+    </div>
+  );
+};
+
+// ============================================================================
+// 7. MULTI-VARIABLE SCATTER PLOT & CORRELATION REGRESSION
+// ============================================================================
+export interface ScatterPointData {
+  id: string;
+  category: string;
+  xVal: number;
+  yVal: number;
+  sizeVal?: number;
+  rawRow: Record<string, any>;
+}
+
+export interface ScatterPlotProps {
+  rows: Record<string, any>[];
+  columns: ColumnProfile[];
+  defaultXField?: string;
+  defaultYField?: string;
+  defaultCategoryField?: string;
+  defaultSizeField?: string;
+  onPointClick?: (point: ScatterPointData) => void;
+  title?: string;
+}
+
+export const ScatterPlotChart: React.FC<ScatterPlotProps> = ({
+  rows,
+  columns,
+  defaultXField,
+  defaultYField,
+  defaultCategoryField,
+  defaultSizeField,
+  onPointClick,
+  title = 'SCATTER PLOT & CORRELATION REGRESSION'
+}) => {
+  const numericCols = useMemo(() => {
+    return columns.filter(c => c.dataType === 'number' && !c.isPrimaryKeyCandidate && !c.name.toLowerCase().includes('id'));
+  }, [columns]);
+
+  const stringCols = useMemo(() => {
+    return columns.filter(c => c.dataType === 'string' && !c.name.toLowerCase().includes('id'));
+  }, [columns]);
+
+  const [xField, setXField] = useState<string>(defaultXField || numericCols[0]?.name || '');
+  const [yField, setYField] = useState<string>(defaultYField || numericCols[1]?.name || numericCols[0]?.name || '');
+  const [catField, setCatField] = useState<string>(defaultCategoryField || stringCols[0]?.name || '');
+  const [sizeField, setSizeField] = useState<string>(defaultSizeField || '');
+  const [showRegression, setShowRegression] = useState(true);
+  const [hoverPoint, setHoverPoint] = useState<ScatterPointData | null>(null);
+
+  // Compute Scatter Data & Linear Regression
+  const { points, xMin, xMax, yMin, yMax, correlation, slope, intercept, rSquared } = useMemo(() => {
+    if (!xField || !yField || rows.length === 0) {
+      return { points: [], xMin: 0, xMax: 1, yMin: 0, yMax: 1, correlation: 0, slope: 0, intercept: 0, rSquared: 0 };
+    }
+
+    const validPoints: ScatterPointData[] = [];
+    rows.forEach((r, idx) => {
+      const x = Number(r[xField]);
+      const y = Number(r[yField]);
+      const sz = sizeField ? Number(r[sizeField]) : undefined;
+      const cat = catField ? String(r[catField] ?? `Record ${idx + 1}`) : `Record ${idx + 1}`;
+
+      if (!isNaN(x) && !isNaN(y)) {
+        validPoints.push({
+          id: `pt-${idx}`,
+          category: cat,
+          xVal: x,
+          yVal: y,
+          sizeVal: !isNaN(sz!) ? sz : undefined,
+          rawRow: r
+        });
+      }
+    });
+
+    if (validPoints.length < 2) {
+      return { points: validPoints, xMin: 0, xMax: 1, yMin: 0, yMax: 1, correlation: 0, slope: 0, intercept: 0, rSquared: 0 };
+    }
+
+    const xVals = validPoints.map(p => p.xVal);
+    const yVals = validPoints.map(p => p.yVal);
+
+    const xMinRaw = Math.min(...xVals);
+    const xMaxRaw = Math.max(...xVals);
+    const yMinRaw = Math.min(...yVals);
+    const yMaxRaw = Math.max(...yVals);
+
+    const xPad = (xMaxRaw - xMinRaw) * 0.08 || 1;
+    const yPad = (yMaxRaw - yMinRaw) * 0.08 || 1;
+
+    const xMinVal = Math.max(0, xMinRaw - xPad);
+    const xMaxVal = xMaxRaw + xPad;
+    const yMinVal = Math.max(0, yMinRaw - yPad);
+    const yMaxVal = yMaxRaw + yPad;
+
+    // Linear Regression & Pearson Correlation
+    const n = validPoints.length;
+    const sumX = xVals.reduce((a, b) => a + b, 0);
+    const sumY = yVals.reduce((a, b) => a + b, 0);
+    const meanX = sumX / n;
+    const meanY = sumY / n;
+
+    let numerator = 0;
+    let denomX = 0;
+    let denomY = 0;
+
+    for (let i = 0; i < n; i++) {
+      const dx = xVals[i] - meanX;
+      const dy = yVals[i] - meanY;
+      numerator += dx * dy;
+      denomX += dx * dx;
+      denomY += dy * dy;
+    }
+
+    const r = (denomX > 0 && denomY > 0) ? numerator / Math.sqrt(denomX * denomY) : 0;
+    const m = denomX > 0 ? numerator / denomX : 0;
+    const b = meanY - m * meanX;
+
+    return {
+      points: validPoints,
+      xMin: xMinVal,
+      xMax: xMaxVal,
+      yMin: yMinVal,
+      yMax: yMaxVal,
+      correlation: Math.round(r * 1000) / 1000,
+      slope: m,
+      intercept: b,
+      rSquared: Math.round(r * r * 1000) / 1000
+    };
+  }, [rows, xField, yField, catField, sizeField]);
+
+  const sizeMin = useMemo(() => {
+    if (!sizeField) return 1;
+    const vals = points.map(p => p.sizeVal || 0);
+    return Math.min(...vals, 1);
+  }, [points, sizeField]);
+
+  const sizeMax = useMemo(() => {
+    if (!sizeField) return 1;
+    const vals = points.map(p => p.sizeVal || 0);
+    return Math.max(...vals, 1);
+  }, [points, sizeField]);
+
+  if (numericCols.length < 2) {
+    return (
+      <div className="p-8 text-center text-xs text-gray-500 bg-[#1c1c1c] rounded-2xl border border-[#2d2d2d]">
+        Scatter Plot requires at least 2 numerical dimensions in the schema to analyze correlation.
+      </div>
+    );
+  }
+
+  // Chart dimensions
+  const width = 800;
+  const height = 360;
+  const paddingLeft = 65;
+  const paddingRight = 40;
+  const paddingTop = 30;
+  const paddingBottom = 55;
+
+  const innerWidth = width - paddingLeft - paddingRight;
+  const innerHeight = height - paddingTop - paddingBottom;
+
+  const getSvgX = (val: number) => paddingLeft + ((val - xMin) / (xMax - xMin || 1)) * innerWidth;
+  const getSvgY = (val: number) => paddingTop + innerHeight - ((val - yMin) / (yMax - yMin || 1)) * innerHeight;
+
+  // Trendline Coordinates
+  const trendX1 = xMin;
+  const trendY1 = slope * trendX1 + intercept;
+  const trendX2 = xMax;
+  const trendY2 = slope * trendX2 + intercept;
+
+  const svgTrendX1 = getSvgX(trendX1);
+  const svgTrendY1 = getSvgY(Math.max(yMin, Math.min(yMax, trendY1)));
+  const svgTrendX2 = getSvgX(trendX2);
+  const svgTrendY2 = getSvgY(Math.max(yMin, Math.min(yMax, trendY2)));
+
+  const corrMagnitude = Math.abs(correlation);
+  const corrText = corrMagnitude >= 0.7 
+    ? (correlation > 0 ? 'Strong Positive Correlation' : 'Strong Negative Correlation')
+    : corrMagnitude >= 0.4
+    ? (correlation > 0 ? 'Moderate Positive' : 'Moderate Negative')
+    : corrMagnitude >= 0.2
+    ? 'Weak Relationship'
+    : 'No Linear Correlation';
+
+  const corrColor = corrMagnitude >= 0.7 
+    ? '#21F1A8' 
+    : corrMagnitude >= 0.4 
+    ? '#00d8f6' 
+    : corrMagnitude >= 0.2 
+    ? '#f59e0b' 
+    : '#888';
+
+  const exportCSV = () => {
+    const csvLines = [`Category,${xField},${yField}${sizeField ? `,${sizeField}` : ''}`];
+    points.forEach(p => {
+      csvLines.push(`"${p.category.replace(/"/g, '""')}",${p.xVal},${p.yVal}${sizeField ? `,${p.sizeVal || ''}` : ''}`);
+    });
+    const blob = new Blob([csvLines.join('\n')], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Scatter_${xField}_vs_${yField}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-5 space-y-4">
+      {/* Header & Controls */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="space-y-0.5">
+          <h3 className="font-heading text-lg font-bold text-white tracking-wide uppercase flex items-center gap-2">
+            <CircleDot className="w-4 h-4 text-[#21F1A8]" />
+            {title}
+          </h3>
+          <p className="text-xs text-gray-400">
+            Bivariate statistical dispersion and linear ordinary least-squares regression trendline.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {/* Correlation Badge */}
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#141414] border border-[#2d2d2d] text-xs font-mono">
+            <span className="text-gray-400">Pearson r:</span>
+            <span className="font-bold" style={{ color: corrColor }}>
+              {correlation > 0 ? `+${correlation}` : correlation}
+            </span>
+            <span className="text-[10px] text-gray-500 hidden sm:inline">({corrText})</span>
+            <span className="text-[10px] text-gray-500 font-mono pl-1 border-l border-[#333]">R²: {rSquared}</span>
+          </div>
+
+          <button
+            onClick={exportCSV}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#252525] hover:bg-[#333] text-gray-300 text-xs transition-colors"
+            title="Export scatter dataset to CSV"
+          >
+            <Download className="w-3.5 h-3.5 text-[#21F1A8]" />
+          </button>
+        </div>
+      </div>
+
+      {/* Axis Selectors */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-[#141414] p-3 rounded-xl border border-[#262626] text-xs">
+        <div>
+          <label className="text-gray-400 block text-[10px] mb-1 uppercase font-mono">X-Axis (Horizontal)</label>
+          <select
+            value={xField}
+            onChange={(e) => setXField(e.target.value)}
+            className="w-full bg-[#1b1b1b] text-[#21F1A8] font-mono p-2 rounded-lg border border-[#333] focus:border-[#21F1A8] focus:outline-none"
+          >
+            {numericCols.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
+          </select>
+        </div>
+
+        <div>
+          <label className="text-gray-400 block text-[10px] mb-1 uppercase font-mono">Y-Axis (Vertical)</label>
+          <select
+            value={yField}
+            onChange={(e) => setYField(e.target.value)}
+            className="w-full bg-[#1b1b1b] text-cyan-400 font-mono p-2 rounded-lg border border-[#333] focus:border-cyan-400 focus:outline-none"
+          >
+            {numericCols.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
+          </select>
+        </div>
+
+        <div>
+          <label className="text-gray-400 block text-[10px] mb-1 uppercase font-mono">Label / Dimension</label>
+          <select
+            value={catField}
+            onChange={(e) => setCatField(e.target.value)}
+            className="w-full bg-[#1b1b1b] text-white p-2 rounded-lg border border-[#333] focus:border-[#21F1A8] focus:outline-none"
+          >
+            <option value="">(Row Index)</option>
+            {stringCols.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
+          </select>
+        </div>
+
+        <div>
+          <label className="text-gray-400 block text-[10px] mb-1 uppercase font-mono">Bubble Size (Optional)</label>
+          <select
+            value={sizeField}
+            onChange={(e) => setSizeField(e.target.value)}
+            className="w-full bg-[#1b1b1b] text-amber-400 font-mono p-2 rounded-lg border border-[#333] focus:border-amber-400 focus:outline-none"
+          >
+            <option value="">(Uniform Size)</option>
+            {numericCols.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
+          </select>
+        </div>
+      </div>
+
+      {/* SVG Scatterplot Canvas */}
+      <div className="relative w-full bg-[#141414] rounded-2xl border border-[#262626] p-2 overflow-hidden select-none">
+        <svg 
+          viewBox={`0 0 ${width} ${height}`} 
+          className="w-full h-72 sm:h-80 overflow-visible"
+          onMouseLeave={() => setHoverPoint(null)}
+        >
+          <defs>
+            <linearGradient id="scatterGlow" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor="#21F1A8" stopOpacity="0.8" />
+              <stop offset="100%" stopColor="#00d8f6" stopOpacity="0.8" />
+            </linearGradient>
+          </defs>
+
+          {/* Gridlines Horizontal */}
+          {[0, 0.25, 0.5, 0.75, 1].map((pct, i) => {
+            const y = paddingTop + innerHeight * (1 - pct);
+            const val = yMin + (yMax - yMin) * pct;
+            return (
+              <g key={`y-grid-${i}`}>
+                <line x1={paddingLeft} y1={y} x2={width - paddingRight} y2={y} stroke="#222" strokeDasharray="3,3" />
+                <text x={paddingLeft - 8} y={y + 3.5} textAnchor="end" fill="#666" fontSize="10" fontFamily="monospace">
+                  {Math.round(val).toLocaleString()}
+                </text>
+              </g>
+            );
+          })}
+
+          {/* Gridlines Vertical */}
+          {[0, 0.25, 0.5, 0.75, 1].map((pct, i) => {
+            const x = paddingLeft + innerWidth * pct;
+            const val = xMin + (xMax - xMin) * pct;
+            return (
+              <g key={`x-grid-${i}`}>
+                <line x1={x} y1={paddingTop} x2={x} y2={paddingTop + innerHeight} stroke="#222" strokeDasharray="3,3" />
+                <text x={x} y={paddingTop + innerHeight + 18} textAnchor="middle" fill="#666" fontSize="10" fontFamily="monospace">
+                  {Math.round(val).toLocaleString()}
+                </text>
+              </g>
+            );
+          })}
+
+          {/* X and Y Axis Titles */}
+          <text 
+            x={paddingLeft + innerWidth / 2} 
+            y={paddingTop + innerHeight + 38} 
+            textAnchor="middle" 
+            fill="#aaa" 
+            fontSize="11" 
+            fontFamily="monospace"
+            fontWeight="bold"
+          >
+            {xField} →
+          </text>
+
+          <text 
+            x={-(paddingTop + innerHeight / 2)} 
+            y={18} 
+            transform="rotate(-90)" 
+            textAnchor="middle" 
+            fill="#aaa" 
+            fontSize="11" 
+            fontFamily="monospace"
+            fontWeight="bold"
+          >
+            ↑ {yField}
+          </text>
+
+          {/* Regression Line */}
+          {showRegression && points.length >= 2 && (
+            <line
+              x1={svgTrendX1}
+              y1={svgTrendY1}
+              x2={svgTrendX2}
+              y2={svgTrendY2}
+              stroke="#fbbf24"
+              strokeWidth="2"
+              strokeDasharray="5,4"
+              className="opacity-80"
+            />
+          )}
+
+          {/* Scatter Data Points */}
+          {points.map((pt) => {
+            const cx = getSvgX(pt.xVal);
+            const cy = getSvgY(pt.yVal);
+            let r = 5;
+            if (sizeField && pt.sizeVal !== undefined) {
+              const szNorm = (pt.sizeVal - sizeMin) / (sizeMax - sizeMin || 1);
+              r = 4 + szNorm * 12;
+            }
+
+            const isHovered = hoverPoint?.id === pt.id;
+
+            return (
+              <g 
+                key={pt.id} 
+                className="cursor-pointer group"
+                onClick={() => onPointClick?.(pt)}
+                onMouseEnter={() => setHoverPoint(pt)}
+              >
+                {/* Crosshair guide on hover */}
+                {isHovered && (
+                  <>
+                    <line x1={paddingLeft} y1={cy} x2={width - paddingRight} y2={cy} stroke="#21F1A8" strokeWidth="1" strokeDasharray="2,2" />
+                    <line x1={cx} y1={paddingTop} x2={cx} y2={paddingTop + innerHeight} stroke="#21F1A8" strokeWidth="1" strokeDasharray="2,2" />
+                  </>
+                )}
+
+                {/* Outer Glow Halo */}
+                <circle
+                  cx={cx}
+                  cy={cy}
+                  r={isHovered ? r + 5 : r + 1}
+                  fill={isHovered ? '#21F1A8' : 'transparent'}
+                  opacity={isHovered ? 0.35 : 0}
+                  className="transition-all"
+                />
+
+                {/* Main Scatter Bubble */}
+                <circle
+                  cx={cx}
+                  cy={cy}
+                  r={r}
+                  fill={isHovered ? '#21F1A8' : '#00d8f6'}
+                  stroke={isHovered ? '#ffffff' : '#21F1A8'}
+                  strokeWidth={isHovered ? 2 : 1.5}
+                  className="transition-transform duration-200"
+                />
+              </g>
+            );
+          })}
+        </svg>
+
+        {/* Hover Tooltip Overlay */}
+        {hoverPoint && (
+          <div className="absolute top-4 right-4 bg-[#181818]/95 border border-[#21F1A8]/60 backdrop-blur-md rounded-xl p-3 text-xs font-mono space-y-1 shadow-2xl pointer-events-none max-w-xs animate-fadeIn">
+            <div className="font-bold text-white border-b border-[#2d2d2d] pb-1 truncate">
+              {hoverPoint.category}
+            </div>
+            <div className="flex justify-between gap-4 text-gray-400">
+              <span>{xField}:</span>
+              <span className="text-[#21F1A8] font-bold">{hoverPoint.xVal.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between gap-4 text-gray-400">
+              <span>{yField}:</span>
+              <span className="text-cyan-400 font-bold">{hoverPoint.yVal.toLocaleString()}</span>
+            </div>
+            {sizeField && hoverPoint.sizeVal !== undefined && (
+              <div className="flex justify-between gap-4 text-gray-400">
+                <span>{sizeField} (Size):</span>
+                <span className="text-amber-400 font-bold">{hoverPoint.sizeVal.toLocaleString()}</span>
+              </div>
+            )}
+            <div className="pt-1 text-[10px] text-gray-500 italic">Click point to drill-through</div>
+          </div>
+        )}
+      </div>
+
+      {/* Regression & Trendline Controls */}
+      <div className="flex flex-wrap items-center justify-between text-xs text-gray-400 pt-1 border-t border-[#262626]">
+        <label className="flex items-center gap-2 cursor-pointer hover:text-white">
+          <input
+            type="checkbox"
+            checked={showRegression}
+            onChange={(e) => setShowRegression(e.target.checked)}
+            className="rounded accent-[#21F1A8]"
+          />
+          <span className="flex items-center gap-1.5 font-mono text-[11px]">
+            <span className="w-3 h-0.5 border-t border-dashed border-amber-400"></span>
+            Linear Ordinary Least-Squares Fit: 
+            <strong className="text-white">y = {slope >= 0 ? `${slope.toFixed(2)}x + ${intercept.toFixed(1)}` : `${slope.toFixed(2)}x - ${Math.abs(intercept).toFixed(1)}`}</strong>
+          </span>
+        </label>
+        <span className="text-[11px] font-mono text-gray-500">
+          Showing {points.length} observed coordinates
+        </span>
+      </div>
+    </div>
+  );
+};
+
+// ============================================================================
+// 8. 2D HEAT MAP MATRIX (CATEGORICAL DENSITY & PEARSON CORRELATION)
+// ============================================================================
+export interface HeatMapProps {
+  rows: Record<string, any>[];
+  columns: ColumnProfile[];
+  defaultRowDim?: string;
+  defaultColDim?: string;
+  defaultMetric?: string;
+  onCellClick?: (rowDim: string, rowVal: string, colDim: string, colVal: string, metricVal: number) => void;
+  title?: string;
+}
+
+export const HeatMapChart: React.FC<HeatMapProps> = ({
+  rows,
+  columns,
+  defaultRowDim,
+  defaultColDim,
+  defaultMetric,
+  onCellClick,
+  title = '2D MULTIVARIATE HEAT MAP DENSITY & CORRELATION'
+}) => {
+  const stringCols = useMemo(() => columns.filter(c => c.dataType === 'string'), [columns]);
+  const numCols = useMemo(() => columns.filter(c => c.dataType === 'number' && !c.isPrimaryKeyCandidate), [columns]);
+
+  const [mode, setMode] = useState<'matrix' | 'correlation'>('matrix');
+  const [rowDim, setRowDim] = useState<string>(defaultRowDim || stringCols[0]?.name || '');
+  const [colDim, setColDim] = useState<string>(defaultColDim || stringCols[1]?.name || stringCols[0]?.name || '');
+  const [metric, setMetric] = useState<string>(defaultMetric || numCols[0]?.name || '');
+  const [agg, setAgg] = useState<'sum' | 'avg' | 'count'>('sum');
+  const [hoverCell, setHoverCell] = useState<{ r: string; c: string; val: number; count: number } | null>(null);
+
+  // 1. Categorical Density Matrix Computation
+  const matrixData = useMemo(() => {
+    if (mode !== 'matrix' || !rowDim || !colDim || rows.length === 0) {
+      return { rowHeaders: [], colHeaders: [], grid: {}, minVal: 0, maxVal: 1, grandTotal: 0 };
+    }
+
+    const rowSet = new Set<string>();
+    const colSet = new Set<string>();
+    const cellMap: Record<string, Record<string, { sum: number; count: number }>> = {};
+
+    rows.forEach(r => {
+      const rKey = String(r[rowDim] ?? 'Unassigned');
+      const cKey = String(r[colDim] ?? 'Unassigned');
+      const val = Number(r[metric]) || 0;
+
+      rowSet.add(rKey);
+      colSet.add(cKey);
+
+      if (!cellMap[rKey]) cellMap[rKey] = {};
+      if (!cellMap[rKey][cKey]) cellMap[rKey][cKey] = { sum: 0, count: 0 };
+      cellMap[rKey][cKey].sum += val;
+      cellMap[rKey][cKey].count += 1;
+    });
+
+    const rHeaders = Array.from(rowSet).slice(0, 12);
+    const cHeaders = Array.from(colSet).slice(0, 10);
+
+    const g: Record<string, Record<string, { val: number; count: number }>> = {};
+    let min = Infinity;
+    let max = -Infinity;
+    let total = 0;
+
+    rHeaders.forEach(rh => {
+      g[rh] = {};
+      cHeaders.forEach(ch => {
+        const cell = cellMap[rh]?.[ch];
+        const computed = cell
+          ? (agg === 'sum' ? cell.sum : agg === 'avg' ? cell.sum / (cell.count || 1) : cell.count)
+          : 0;
+
+        const val = Math.round(computed * 100) / 100;
+        const count = cell?.count || 0;
+        g[rh][ch] = { val, count };
+
+        if (val > 0) {
+          if (val < min) min = val;
+          if (val > max) max = val;
+        }
+        total += val;
+      });
+    });
+
+    return {
+      rowHeaders: rHeaders,
+      colHeaders: cHeaders,
+      grid: g,
+      minVal: min === Infinity ? 0 : min,
+      maxVal: max === -Infinity ? 1 : max,
+      grandTotal: Math.round(total * 100) / 100
+    };
+  }, [mode, rowDim, colDim, metric, agg, rows]);
+
+  // 2. Pairwise Correlation Matrix Computation (All Numeric Columns)
+  const correlationData = useMemo(() => {
+    if (mode !== 'correlation' || numCols.length < 2 || rows.length === 0) {
+      return { variables: [], matrix: {} };
+    }
+
+    const vars = numCols.slice(0, 8).map(c => c.name);
+    const m: Record<string, Record<string, number>> = {};
+
+    vars.forEach(v1 => {
+      m[v1] = {};
+      vars.forEach(v2 => {
+        if (v1 === v2) {
+          m[v1][v2] = 1.0;
+        } else {
+          // Pearson Correlation
+          const pairs = rows
+            .map(r => ({ x: Number(r[v1]), y: Number(r[v2]) }))
+            .filter(p => !isNaN(p.x) && !isNaN(p.y));
+
+          if (pairs.length < 2) {
+            m[v1][v2] = 0;
+          } else {
+            const n = pairs.length;
+            const meanX = pairs.reduce((acc, p) => acc + p.x, 0) / n;
+            const meanY = pairs.reduce((acc, p) => acc + p.y, 0) / n;
+
+            let num = 0;
+            let denX = 0;
+            let denY = 0;
+
+            pairs.forEach(p => {
+              const dx = p.x - meanX;
+              const dy = p.y - meanY;
+              num += dx * dy;
+              denX += dx * dx;
+              denY += dy * dy;
+            });
+
+            const r = denX > 0 && denY > 0 ? num / Math.sqrt(denX * denY) : 0;
+            m[v1][v2] = Math.round(r * 100) / 100;
+          }
+        }
+      });
+    });
+
+    return { variables: vars, matrix: m };
+  }, [mode, numCols, rows]);
+
+  // Interpolate color for heat map cell
+  const getCellColor = (val: number, min: number, max: number) => {
+    if (val === 0 || min === max) return '#181818';
+    const norm = Math.max(0, Math.min(1, (val - min) / (max - min || 1)));
+    // Color scale: #14241d (low) -> #0f5132 -> #21F1A8 (peak)
+    return `rgba(33, 241, 168, ${0.15 + norm * 0.8})`;
+  };
+
+  const getCorrColor = (r: number) => {
+    if (r === 1) return 'rgba(33, 241, 168, 0.95)';
+    if (r > 0) {
+      return `rgba(33, 241, 168, ${0.15 + r * 0.75})`;
+    }
+    const abs = Math.abs(r);
+    return `rgba(239, 68, 68, ${0.15 + abs * 0.75})`;
+  };
+
+  return (
+    <div className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-5 space-y-4">
+      {/* Header */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="space-y-0.5">
+          <h3 className="font-heading text-lg font-bold text-white tracking-wide uppercase flex items-center gap-2">
+            <Grid className="w-4 h-4 text-[#21F1A8]" />
+            {title}
+          </h3>
+          <p className="text-xs text-gray-400">
+            {mode === 'matrix' 
+              ? 'Multi-dimensional categorical co-occurrence heat intensity.' 
+              : 'Pairwise Pearson correlation coefficients between all schema numerical metrics.'}
+          </p>
+        </div>
+
+        {/* View Mode Switcher */}
+        <div className="flex items-center gap-1 bg-[#141414] p-1 rounded-xl border border-[#2d2d2d] text-xs">
+          <button
+            onClick={() => setMode('matrix')}
+            className={`px-3 py-1.5 rounded-lg font-medium transition-all ${
+              mode === 'matrix' ? 'bg-[#21F1A8] text-black font-semibold' : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            Dimensional Density Grid
+          </button>
+          <button
+            onClick={() => setMode('correlation')}
+            className={`px-3 py-1.5 rounded-lg font-medium transition-all ${
+              mode === 'correlation' ? 'bg-[#21F1A8] text-black font-semibold' : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            Correlation Matrix
+          </button>
+        </div>
+      </div>
+
+      {/* Controls for Dimensional Matrix mode */}
+      {mode === 'matrix' && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-[#141414] p-3 rounded-xl border border-[#262626] text-xs">
+          <div>
+            <label className="text-gray-400 block text-[10px] mb-1 uppercase font-mono">Row Dimension (Y)</label>
+            <select
+              value={rowDim}
+              onChange={(e) => setRowDim(e.target.value)}
+              className="w-full bg-[#1b1b1b] text-white p-2 rounded-lg border border-[#333] focus:border-[#21F1A8] focus:outline-none"
+            >
+              {stringCols.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
+            </select>
+          </div>
+
+          <div>
+            <label className="text-gray-400 block text-[10px] mb-1 uppercase font-mono">Column Dimension (X)</label>
+            <select
+              value={colDim}
+              onChange={(e) => setColDim(e.target.value)}
+              className="w-full bg-[#1b1b1b] text-white p-2 rounded-lg border border-[#333] focus:border-[#21F1A8] focus:outline-none"
+            >
+              {stringCols.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
+            </select>
+          </div>
+
+          <div>
+            <label className="text-gray-400 block text-[10px] mb-1 uppercase font-mono">Metric Field</label>
+            <select
+              value={metric}
+              onChange={(e) => setMetric(e.target.value)}
+              className="w-full bg-[#1b1b1b] text-[#21F1A8] font-mono p-2 rounded-lg border border-[#333] focus:border-[#21F1A8] focus:outline-none"
+            >
+              {numCols.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
+            </select>
+          </div>
+
+          <div>
+            <label className="text-gray-400 block text-[10px] mb-1 uppercase font-mono">Aggregation</label>
+            <select
+              value={agg}
+              onChange={(e) => setAgg(e.target.value as any)}
+              className="w-full bg-[#1b1b1b] text-[#21F1A8] font-bold p-2 rounded-lg border border-[#333] focus:border-[#21F1A8] focus:outline-none"
+            >
+              <option value="sum">SUM</option>
+              <option value="avg">AVERAGE</option>
+              <option value="count">RECORD COUNT</option>
+            </select>
+          </div>
+        </div>
+      )}
+
+      {/* Heat Map Visualization Table */}
+      {mode === 'matrix' ? (
+        <div className="overflow-x-auto rounded-xl border border-[#262626]">
+          <table className="w-full text-xs text-left border-collapse select-none">
+            <thead>
+              <tr className="bg-[#141414] text-gray-400 border-b border-[#282828] font-mono">
+                <th className="p-3 font-semibold text-white sticky left-0 bg-[#141414] z-10">
+                  {rowDim} \ {colDim}
+                </th>
+                {matrixData.colHeaders.map(ch => (
+                  <th key={ch} className="p-3 font-semibold text-center truncate max-w-[120px]" title={ch}>
+                    {ch}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#222] font-mono">
+              {matrixData.rowHeaders.map(rh => (
+                <tr key={rh} className="hover:brightness-110 transition-all">
+                  <td className="p-3 font-medium text-gray-200 bg-[#161616] sticky left-0 z-10 whitespace-nowrap border-r border-[#262626]">
+                    {rh}
+                  </td>
+                  {matrixData.colHeaders.map(ch => {
+                    const cell = matrixData.grid[rh]?.[ch] || { val: 0, count: 0 };
+                    const cellBg = getCellColor(cell.val, matrixData.minVal, matrixData.maxVal);
+                    const isHovered = hoverCell?.r === rh && hoverCell?.c === ch;
+
+                    return (
+                      <td
+                        key={ch}
+                        onClick={() => onCellClick?.(rowDim, rh, colDim, ch, cell.val)}
+                        onMouseEnter={() => setHoverCell({ r: rh, c: ch, val: cell.val, count: cell.count })}
+                        onMouseLeave={() => setHoverCell(null)}
+                        className="p-3 text-center cursor-pointer transition-all border border-[#222]"
+                        style={{
+                          backgroundColor: cellBg,
+                          outline: isHovered ? '2px solid #ffffff' : undefined,
+                          color: cell.val > (matrixData.maxVal * 0.4) ? '#ffffff' : '#9ca3af'
+                        }}
+                        title={`Click to drilldown: ${rh} × ${ch} = ${cell.val.toLocaleString()} (${cell.count} records)`}
+                      >
+                        <span className="font-semibold text-[11px]">
+                          {cell.val > 0 ? cell.val.toLocaleString() : '-'}
+                        </span>
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        /* Correlation Heat Map Matrix */
+        <div className="overflow-x-auto rounded-xl border border-[#262626]">
+          <table className="w-full text-xs text-left border-collapse select-none font-mono">
+            <thead>
+              <tr className="bg-[#141414] text-gray-400 border-b border-[#282828]">
+                <th className="p-3 font-semibold text-white sticky left-0 bg-[#141414] z-10">Metric</th>
+                {correlationData.variables.map(v => (
+                  <th key={v} className="p-3 font-semibold text-center truncate max-w-[100px]" title={v}>
+                    {v}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#222]">
+              {correlationData.variables.map(v1 => (
+                <tr key={v1}>
+                  <td className="p-3 font-semibold text-white bg-[#161616] sticky left-0 z-10 whitespace-nowrap border-r border-[#262626]">
+                    {v1}
+                  </td>
+                  {correlationData.variables.map(v2 => {
+                    const r = correlationData.matrix[v1]?.[v2] ?? 0;
+                    const bg = getCorrColor(r);
+
+                    return (
+                      <td
+                        key={v2}
+                        className="p-3 text-center border border-[#222] font-bold text-white transition-transform hover:scale-105"
+                        style={{ backgroundColor: bg }}
+                        title={`${v1} vs ${v2}: Pearson r = ${r > 0 ? `+${r}` : r}`}
+                      >
+                        {r > 0 ? `+${r.toFixed(2)}` : r.toFixed(2)}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Heat Scale Legend */}
+      <div className="flex flex-wrap items-center justify-between gap-3 text-xs pt-2 border-t border-[#262626] font-mono">
+        <div className="flex items-center gap-2 text-gray-400">
+          <span>Heat Scale:</span>
+          {mode === 'matrix' ? (
+            <div className="flex items-center gap-1">
+              <span className="text-[10px]">Min ({matrixData.minVal})</span>
+              <div className="w-24 h-3 rounded-full bg-gradient-to-r from-[#181818] via-[#0f5132] to-[#21F1A8] border border-[#333]"></div>
+              <span className="text-[10px] text-[#21F1A8]">Max ({matrixData.maxVal.toLocaleString()})</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1">
+              <span className="text-[10px] text-red-400">-1.0 (Inverse)</span>
+              <div className="w-28 h-3 rounded-full bg-gradient-to-r from-red-500 via-[#181818] to-[#21F1A8] border border-[#333]"></div>
+              <span className="text-[10px] text-[#21F1A8]">+1.0 (Positive)</span>
+            </div>
+          )}
+        </div>
+
+        <span className="text-[11px] text-gray-500">
+          Click any cell to drill-through to matching granular records
+        </span>
+      </div>
+    </div>
+  );
+};
+
+// ============================================================================
+// 9. RADAR / SPIDER WEB MULTI-AXIS CHART
+// ============================================================================
+export interface RadarProps {
+  data: { label: string; value: number; max?: number }[];
+  metricName?: string;
+  color?: string;
+  onAxisClick?: (label: string) => void;
+  title?: string;
+}
+
+export const RadarSpiderChart: React.FC<RadarProps> = ({
+  data,
+  metricName = 'Score',
+  color = '#21F1A8',
+  onAxisClick,
+  title = 'RADAR / MULTI-DIMENSIONAL SPIDER FOOTPRINT'
+}) => {
+  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
+
+  const cleanData = useMemo(() => {
+    return (data || []).slice(0, 8);
+  }, [data]);
+
+  const maxVal = useMemo(() => {
+    return Math.max(...cleanData.map(d => d.max || d.value), 1);
+  }, [cleanData]);
+
+  if (cleanData.length < 3) {
+    return (
+      <div className="p-8 text-center text-xs text-gray-500 bg-[#1c1c1c] rounded-2xl border border-[#2d2d2d]">
+        Radar / Spider chart requires at least 3 dimensional metrics to plot multi-axial polygon.
+      </div>
+    );
+  }
+
+  const size = 320;
+  const center = size / 2;
+  const radius = center - 50;
+  const numAxes = cleanData.length;
+  const angleStep = (2 * Math.PI) / numAxes;
+
+  // Compute vertices for regular polygon rings (20%, 40%, 60%, 80%, 100%)
+  const levels = [0.2, 0.4, 0.6, 0.8, 1.0];
+
+  // Value Polygon Coordinates
+  const polygonCoords = cleanData.map((d, i) => {
+    const angle = i * angleStep - Math.PI / 2;
+    const r = (d.value / maxVal) * radius;
+    return {
+      x: center + r * Math.cos(angle),
+      y: center + r * Math.sin(angle),
+      label: d.label,
+      value: d.value
+    };
+  });
+
+  const polygonPath = polygonCoords.reduce((acc, curr, idx) => 
+    idx === 0 ? `M ${curr.x},${curr.y}` : `${acc} L ${curr.x},${curr.y}`, ''
+  ) + ' Z';
+
+  return (
+    <div className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-5 space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="space-y-0.5">
+          <h3 className="font-heading text-lg font-bold text-white tracking-wide uppercase flex items-center gap-2">
+            <Compass className="w-4 h-4 text-[#21F1A8]" />
+            {title}
+          </h3>
+          <p className="text-xs text-gray-400">Radial balanced footprint across {numAxes} orthogonal categorical dimensions.</p>
+        </div>
+      </div>
+
+      <div className="flex flex-col sm:flex-row items-center justify-around gap-6 bg-[#141414] rounded-xl p-4 border border-[#262626]">
+        {/* SVG Spider Canvas */}
+        <div className="relative">
+          <svg viewBox={`0 0 ${size} ${size}`} className="w-72 h-72 sm:w-80 sm:h-80 overflow-visible select-none">
+            {/* Concentric rings */}
+            {levels.map((lvl, lIdx) => {
+              const ringPoints = cleanData.map((_, i) => {
+                const angle = i * angleStep - Math.PI / 2;
+                const r = lvl * radius;
+                return `${center + r * Math.cos(angle)},${center + r * Math.sin(angle)}`;
+              }).join(' ');
+
+              return (
+                <polygon
+                  key={lIdx}
+                  points={ringPoints}
+                  fill="none"
+                  stroke="#282828"
+                  strokeWidth="1"
+                  strokeDasharray={lIdx === levels.length - 1 ? 'none' : '3,3'}
+                />
+              );
+            })}
+
+            {/* Radial Spokes */}
+            {cleanData.map((_, i) => {
+              const angle = i * angleStep - Math.PI / 2;
+              const x2 = center + radius * Math.cos(angle);
+              const y2 = center + radius * Math.sin(angle);
+              return <line key={i} x1={center} y1={center} x2={x2} y2={y2} stroke="#333" strokeWidth="1" />;
+            })}
+
+            {/* Value Area Polygon */}
+            <path
+              d={polygonPath}
+              fill={color}
+              fillOpacity="0.25"
+              stroke={color}
+              strokeWidth="2.5"
+              strokeLinejoin="round"
+            />
+
+            {/* Vertices & Axis Labels */}
+            {polygonCoords.map((pt, i) => {
+              const angle = i * angleStep - Math.PI / 2;
+              const labelRadius = radius + 22;
+              const lx = center + labelRadius * Math.cos(angle);
+              const ly = center + labelRadius * Math.sin(angle);
+              const isHovered = hoverIdx === i;
+
+              return (
+                <g key={i} className="cursor-pointer" onClick={() => onAxisClick?.(pt.label)}>
+                  <circle
+                    cx={pt.x}
+                    cy={pt.y}
+                    r={isHovered ? 6 : 4}
+                    fill="#141414"
+                    stroke={color}
+                    strokeWidth={isHovered ? 3 : 2}
+                    onMouseEnter={() => setHoverIdx(i)}
+                    onMouseLeave={() => setHoverIdx(null)}
+                  />
+                  <text
+                    x={lx}
+                    y={ly}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    fill={isHovered ? '#21F1A8' : '#888'}
+                    fontSize="10"
+                    fontFamily="monospace"
+                    className="transition-colors hover:fill-white font-medium"
+                    onMouseEnter={() => setHoverIdx(i)}
+                    onMouseLeave={() => setHoverIdx(null)}
+                  >
+                    {pt.label.length > 10 ? `${pt.label.slice(0, 8)}..` : pt.label}
+                  </text>
+                </g>
+              );
+            })}
+          </svg>
+        </div>
+
+        {/* Legend / Values List */}
+        <div className="space-y-2 text-xs font-mono w-full sm:w-48">
+          <div className="text-[11px] text-gray-400 uppercase border-b border-[#2d2d2d] pb-1 font-bold">
+            Axes Summary
+          </div>
+          {cleanData.map((d, i) => (
+            <div
+              key={i}
+              onMouseEnter={() => setHoverIdx(i)}
+              onMouseLeave={() => setHoverIdx(null)}
+              className={`flex justify-between items-center p-1.5 rounded-lg cursor-pointer transition-colors ${
+                hoverIdx === i ? 'bg-[#222]' : 'hover:bg-[#1a1a1a]'
+              }`}
+            >
+              <span className="text-gray-300 truncate max-w-[110px]">{d.label}</span>
+              <span className="text-[#21F1A8] font-bold">{d.value.toLocaleString()}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ============================================================================
+// 10. STAGE-BY-STAGE FUNNEL CONVERSION CHART
+// ============================================================================
+export interface FunnelProps {
+  stages: { stage: string; value: number; subtext?: string }[];
+  metricName?: string;
+  onStageClick?: (stage: string) => void;
+  title?: string;
+}
+
+export const FunnelConversionChart: React.FC<FunnelProps> = ({
+  stages,
+  metricName = 'Volume',
+  onStageClick,
+  title = 'FUNNEL STAGE RETENTION & DROP-OFF FLOW'
+}) => {
+  const topVal = stages[0]?.value || 1;
+
+  if (!stages || stages.length === 0) {
+    return <div className="p-4 text-xs text-gray-500">No funnel stage pipeline data available.</div>;
+  }
+
+  const colors = ['#21F1A8', '#00d8f6', '#818cf8', '#f59e0b', '#ec4899', '#ef4444'];
+
+  return (
+    <div className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-5 space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="space-y-0.5">
+          <h3 className="font-heading text-lg font-bold text-white tracking-wide uppercase flex items-center gap-2">
+            <Filter className="w-4 h-4 text-[#21F1A8]" />
+            {title}
+          </h3>
+          <p className="text-xs text-gray-400">Sequential stage drop-off and conversion efficiency flow.</p>
+        </div>
+      </div>
+
+      <div className="space-y-3 bg-[#141414] p-4 rounded-xl border border-[#262626]">
+        {stages.map((stg, idx) => {
+          const widthPct = Math.max(15, Math.min(100, (stg.value / topVal) * 100));
+          const prevVal = idx > 0 ? stages[idx - 1].value : stg.value;
+          const dropOffPct = prevVal > 0 ? ((prevVal - stg.value) / prevVal) * 100 : 0;
+          const overallRetention = topVal > 0 ? (stg.value / topVal) * 100 : 0;
+          const stageColor = colors[idx % colors.length];
+
+          return (
+            <div
+              key={idx}
+              onClick={() => onStageClick?.(stg.stage)}
+              className="space-y-1.5 cursor-pointer group"
+              title={`Stage: ${stg.stage} - ${stg.value.toLocaleString()}`}
+            >
+              <div className="flex items-center justify-between text-xs font-mono">
+                <span className="text-gray-200 font-semibold group-hover:text-[#21F1A8] transition-colors flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: stageColor }}></span>
+                  {idx + 1}. {stg.stage}
+                </span>
+
+                <div className="flex items-center gap-3">
+                  <span className="text-white font-bold">{stg.value.toLocaleString()}</span>
+                  <span className="text-gray-400 text-[11px]">({overallRetention.toFixed(1)}% of Top)</span>
+                  {idx > 0 && dropOffPct > 0 && (
+                    <span className="text-red-400 text-[10px] bg-red-500/10 px-1.5 py-0.5 rounded">
+                      ↓ -{dropOffPct.toFixed(1)}% drop
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Centered Funnel Bar */}
+              <div className="flex justify-center w-full">
+                <div 
+                  className="h-8 rounded-lg flex items-center justify-center font-mono text-xs font-bold text-black transition-all duration-300 group-hover:brightness-125 shadow-md"
+                  style={{
+                    width: `${widthPct}%`,
+                    backgroundColor: stageColor
+                  }}
+                >
+                  <span className="truncate px-2">{stg.value.toLocaleString()}</span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+// ============================================================================
+// 11. WATERFALL FINANCIAL VARIANCE CHART
+// ============================================================================
+export interface WaterfallProps {
+  steps: { label: string; value: number; isTotal?: boolean; description?: string }[];
+  baseValue?: number;
+  metricName?: string;
+  title?: string;
+  onStepClick?: (step: string) => void;
+}
+
+export const WaterfallChart: React.FC<WaterfallProps> = ({
+  steps,
+  baseValue = 0,
+  metricName = 'Value',
+  title = 'WATERFALL CUMULATIVE VARIANCE WALK',
+  onStepClick
+}) => {
+  // Compute running balance
+  const { enrichedSteps, maxRunning } = useMemo(() => {
+    let running = baseValue;
+    let max = Math.abs(baseValue);
+
+    const enriched = steps.map((s, idx) => {
+      const isStart = idx === 0 && !s.isTotal;
+      const start = s.isTotal ? 0 : running;
+      const change = s.value;
+      const end = s.isTotal ? s.value : start + change;
+      if (!s.isTotal) running = end;
+
+      if (Math.abs(start) > max) max = Math.abs(start);
+      if (Math.abs(end) > max) max = Math.abs(end);
+
+      return {
+        ...s,
+        start,
+        end,
+        isPositive: change >= 0
+      };
+    });
+
+    return { enrichedSteps: enriched, maxRunning: max || 1 };
+  }, [steps, baseValue]);
+
+  return (
+    <div className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-5 space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="space-y-0.5">
+          <h3 className="font-heading text-lg font-bold text-white tracking-wide uppercase flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 text-[#21F1A8]" />
+            {title}
+          </h3>
+          <p className="text-xs text-gray-400">Step-by-step sequential delta additions, deductions, and ending reconciliation balance.</p>
+        </div>
+      </div>
+
+      <div className="bg-[#141414] p-4 rounded-xl border border-[#262626] overflow-x-auto">
+        <div className="flex items-end justify-between gap-2 min-w-[500px] h-56 pt-6 pb-8 border-b border-[#282828] relative">
+          {enrichedSteps.map((step, idx) => {
+            const h = Math.max(4, (Math.abs(step.value) / maxRunning) * 160);
+            const bottomOffset = (Math.min(step.start, step.end) / maxRunning) * 160;
+            const barColor = step.isTotal ? '#00d8f6' : step.isPositive ? '#21F1A8' : '#ef4444';
+
+            return (
+              <div 
+                key={idx} 
+                className="flex-1 flex flex-col items-center h-full justify-end cursor-pointer group"
+                onClick={() => onStepClick?.(step.label)}
+              >
+                {/* Floating Bar Container */}
+                <div className="w-full max-w-[48px] relative h-full flex flex-col justify-end">
+                  <div
+                    className="w-full rounded transition-all duration-300 group-hover:brightness-125"
+                    style={{
+                      height: `${h}px`,
+                      marginBottom: `${Math.max(0, bottomOffset)}px`,
+                      backgroundColor: barColor
+                    }}
+                  />
+                  {/* Delta text on top */}
+                  <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[10px] font-mono font-bold whitespace-nowrap text-white">
+                    {step.isTotal ? '' : step.isPositive ? '+' : ''}{step.value.toLocaleString()}
+                  </span>
+                </div>
+
+                {/* Step Label */}
+                <span className="text-[10px] text-gray-400 font-mono truncate max-w-[70px] mt-2 group-hover:text-white" title={step.label}>
+                  {step.label}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ============================================================================
+// 12. GAUGE / SPEEDOMETER PERFORMANCE DIAL
+// ============================================================================
+export interface GaugeProps {
+  value: number;
+  target?: number;
+  min?: number;
+  max?: number;
+  metricName: string;
+  unit?: string;
+  title?: string;
+}
+
+export const GaugeSpeedometerChart: React.FC<GaugeProps> = ({
+  value,
+  target,
+  min = 0,
+  max,
+  metricName,
+  unit = '',
+  title = 'PERFORMANCE GAUGE & TARGET ATTAINMENT'
+}) => {
+  const maxScale = max || (target ? target * 1.3 : value * 1.5) || 100;
+  const pct = Math.max(0, Math.min(100, ((value - min) / (maxScale - min || 1)) * 100));
+  const attainment = target && target > 0 ? Math.round((value / target) * 100) : null;
+
+  // Gauge needle rotation (-90 to +90 degrees)
+  const rotation = -90 + (pct / 100) * 180;
+
+  const statusColor = attainment 
+    ? (attainment >= 100 ? '#21F1A8' : attainment >= 80 ? '#f59e0b' : '#ef4444')
+    : '#21F1A8';
+
+  return (
+    <div className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-5 space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="space-y-0.5">
+          <h3 className="font-heading text-lg font-bold text-white tracking-wide uppercase flex items-center gap-2">
+            <Gauge className="w-4 h-4 text-[#21F1A8]" />
+            {title}
+          </h3>
+          <p className="text-xs text-gray-400">Real-time target pacing against defined threshold milestones.</p>
+        </div>
+        {attainment !== null && (
+          <span className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold" style={{ backgroundColor: `${statusColor}22`, color: statusColor }}>
+            {attainment}% of Target
+          </span>
+        )}
+      </div>
+
+      <div className="flex flex-col items-center justify-center bg-[#141414] rounded-xl p-4 border border-[#262626] relative">
+        <svg viewBox="0 0 240 130" className="w-60 h-32 overflow-visible select-none">
+          <defs>
+            <linearGradient id="gaugeArc" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor="#ef4444" />
+              <stop offset="50%" stopColor="#f59e0b" />
+              <stop offset="85%" stopColor="#21F1A8" />
+              <stop offset="100%" stopColor="#00d8f6" />
+            </linearGradient>
+          </defs>
+
+          {/* Background Track Arc */}
+          <path
+            d="M 30 115 A 90 90 0 0 1 210 115"
+            fill="none"
+            stroke="#262626"
+            strokeWidth="16"
+            strokeLinecap="round"
+          />
+
+          {/* Color Gradient Filled Arc */}
+          <path
+            d="M 30 115 A 90 90 0 0 1 210 115"
+            fill="none"
+            stroke="url(#gaugeArc)"
+            strokeWidth="16"
+            strokeLinecap="round"
+            strokeDasharray="283"
+            strokeDashoffset={283 - (pct / 100) * 283}
+            className="transition-all duration-700 ease-out"
+          />
+
+          {/* Needle Center Pivot */}
+          <circle cx="120" cy="115" r="7" fill="#ffffff" />
+
+          {/* Needle Pointer */}
+          <g transform={`rotate(${rotation}, 120, 115)`} className="transition-transform duration-700 ease-out">
+            <line x1="120" y1="115" x2="120" y2="35" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" />
+            <polygon points="116,45 124,45 120,30" fill="#ffffff" />
+          </g>
+
+          {/* Min & Max Labels */}
+          <text x="30" y="130" fill="#777" fontSize="10" fontFamily="monospace" textAnchor="middle">
+            {min.toLocaleString()}
+          </text>
+          <text x="210" y="130" fill="#777" fontSize="10" fontFamily="monospace" textAnchor="middle">
+            {maxScale.toLocaleString()}
+          </text>
+        </svg>
+
+        {/* Value Callout */}
+        <div className="text-center mt-2">
+          <div className="font-heading text-2xl font-extrabold text-white font-mono">
+            {unit}{value.toLocaleString()}
+          </div>
+          <div className="text-xs text-gray-400 font-mono">
+            {metricName} {target ? `(Target: ${unit}${target.toLocaleString()})` : ''}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ============================================================================
+// 13. PROPORTIONAL TREEMAP HIERARCHY CHART
+// ============================================================================
+export interface TreemapProps {
+  items: { label: string; value: number; category?: string }[];
+  metricName?: string;
+  title?: string;
+  onItemClick?: (label: string) => void;
+}
+
+export const TreemapChart: React.FC<TreemapProps> = ({
+  items,
+  metricName = 'Value',
+  title = 'PROPORTIONAL TREEMAP HIERARCHY',
+  onItemClick
+}) => {
+  const sorted = useMemo(() => {
+    return [...(items || [])].sort((a, b) => b.value - a.value).slice(0, 8);
+  }, [items]);
+
+  const total = useMemo(() => sorted.reduce((acc, c) => acc + c.value, 0), [sorted]);
+
+  const palette = ['#21F1A8', '#00d8f6', '#818cf8', '#f59e0b', '#ec4899', '#10b981', '#a855f7', '#64748b'];
+
+  if (sorted.length === 0) {
+    return <div className="p-4 text-xs text-gray-500">No data to render Treemap.</div>;
+  }
+
+  return (
+    <div className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-5 space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="space-y-0.5">
+          <h3 className="font-heading text-lg font-bold text-white tracking-wide uppercase flex items-center gap-2">
+            <Layers className="w-4 h-4 text-[#21F1A8]" />
+            {title}
+          </h3>
+          <p className="text-xs text-gray-400">Proportional hierarchical area tiles representing contribution weight.</p>
+        </div>
+        <span className="text-xs font-mono text-[#21F1A8] font-bold">Total: {total.toLocaleString()}</span>
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 bg-[#141414] p-3 rounded-xl border border-[#262626]">
+        {sorted.map((item, idx) => {
+          const share = total > 0 ? (item.value / total) * 100 : 0;
+          const color = palette[idx % palette.length];
+          const isLarge = idx === 0 || idx === 1;
+
+          return (
+            <div
+              key={idx}
+              onClick={() => onItemClick?.(item.label)}
+              className={`p-3.5 rounded-xl border border-[#2d2d2d] cursor-pointer transition-all hover:scale-[1.02] flex flex-col justify-between ${
+                isLarge ? 'sm:col-span-2 sm:row-span-2 min-h-[120px]' : 'min-h-[85px]'
+              }`}
+              style={{ backgroundColor: `${color}18`, borderColor: `${color}44` }}
+            >
+              <div className="flex justify-between items-start gap-2">
+                <span className="font-bold text-white text-xs truncate" title={item.label}>
+                  {item.label}
+                </span>
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-black/40 font-bold" style={{ color }}>
+                  {share.toFixed(1)}%
+                </span>
+              </div>
+
+              <div>
+                <div className="font-heading text-base sm:text-lg font-bold text-white font-mono">
+                  {item.value.toLocaleString()}
+                </div>
+                <div className="text-[10px] text-gray-400 font-mono">{metricName}</div>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

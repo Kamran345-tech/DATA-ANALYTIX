@@ -43,6 +43,7 @@ const navSections: { title: string; items: NavItem[] }[] = [
     title: 'DATA INGESTION & PIPELINE',
     items: [
       { id: 'upload', label: 'Upload Data', icon: UploadCloud },
+      { id: 'live_connector', label: 'Live Server & DB', icon: Database, badge: 'Live' },
       { id: 'preview', label: 'Data Preview & Profile', icon: Table2 },
       { id: 'quality', label: 'Data Quality Auditor', icon: ShieldAlert },
       { id: 'cleaning', label: 'Data Cleaning Lab', icon: Wand2 },

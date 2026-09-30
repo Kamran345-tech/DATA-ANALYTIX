@@ -76,3 +76,329 @@
   background-color: #141414;
   border: 1px solid #262626;
 }
+
+/* ========================================================================== */
+/* COMPREHENSIVE LIGHT THEME ENGINE (HIGH CONTRAST & WCAG AAA LEGIBILITY)     */
+/* ========================================================================== */
+
+html.theme-light,
+.theme-light {
+  color-scheme: light;
+  --color-bg-main: #f8fafc;
+  --color-bg-card: #ffffff;
+  --color-bg-hover: #f1f5f9;
+  --color-neon: #047857; /* Deep emerald-700 for high-contrast on light background */
+  --color-neon-dim: rgba(4, 120, 87, 0.12);
+  --color-neon-border: rgba(4, 120, 87, 0.3);
+}
+
+html.theme-light body,
+.theme-light,
+.theme-light body {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+/* Header, Navbar, Aside, Sidebar */
+.theme-light header,
+.theme-light nav,
+.theme-light aside {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+/* ========================================================================== */
+/* 1. CARDS, SURFACES & CONTAINERS                                            */
+/* ========================================================================== */
+.theme-light .bg-\[\#1c1c1c\],
+.theme-light .bg-\[\#191919\],
+.theme-light .bg-\[\#1f1f1f\],
+.theme-light .bg-\[\#1a1a1a\],
+.theme-light .bg-\[\#181818\],
+.theme-light .bg-\[\#1b1b1b\],
+.theme-light .bg-\[\#202020\],
+.theme-light .bg-\[\#242424\],
+.theme-light .bg-\[\#252525\],
+.theme-light .bg-\[\#262626\],
+.theme-light .bg-\[\#282828\],
+.theme-light .bg-\[\#2a2a2a\],
+.theme-light .bg-\[\#2b2b2b\],
+.theme-light .bg-\[\#2c2c2c\],
+.theme-light .bg-\[\#2d2d2d\],
+.theme-light .bg-\[\#2e2e2e\],
+.theme-light .bg-\[\#2f2f2f\],
+.theme-light .bg-card-dark {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* 2. SUB-PANELS, INNER WELLS & CODE CONTAINERS */
+.theme-light .bg-\[\#171717\],
+.theme-light .bg-\[\#171717\]\/95,
+.theme-light .bg-\[\#141414\],
+.theme-light .bg-\[\#121212\],
+.theme-light .bg-\[\#101010\],
+.theme-light .bg-\[\#131313\],
+.theme-light .bg-\[\#0e0e0e\],
+.theme-light .bg-\[\#0a0a0a\],
+.theme-light .bg-\[\#161616\],
+.theme-light .bg-card-darker {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+/* 3. INTERACTIVE CHIPS, PILLS, INACTIVE TABS & HOVER STATES */
+.theme-light .bg-\[\#222\],
+.theme-light .bg-\[\#222222\],
+.theme-light .bg-\[\#303030\],
+.theme-light .bg-\[\#333\],
+.theme-light .bg-\[\#383838\],
+.theme-light .bg-\[\#3e3e3e\],
+.theme-light .bg-\[\#444\] {
+  background-color: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #1e293b !important;
+}
+
+.theme-light .hover\:bg-\[\#222\]:hover,
+.theme-light .hover\:bg-\[\#252525\]:hover,
+.theme-light .hover\:bg-\[\#282828\]:hover,
+.theme-light .hover\:bg-\[\#303030\]:hover,
+.theme-light .hover\:bg-\[\#333\]:hover,
+.theme-light .hover\:bg-\[\#1f1f1f\]:hover {
+  background-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+/* 4. BRAND PRIMARY ACCENTS & BUTTONS */
+.theme-light .bg-\[\#21F1A8\] {
+  background-color: #059669 !important;
+  color: #ffffff !important;
+  border-color: #047857 !important;
+}
+.theme-light .bg-\[\#21F1A8\] * {
+  color: #ffffff !important;
+}
+.theme-light button.bg-\[\#21F1A8\]:hover,
+.theme-light .hover\:bg-\[\#1cdb97\]:hover {
+  background-color: #047857 !important;
+}
+
+/* Badges with neon tint */
+.theme-light .bg-\[\#21F1A8\]\/10,
+.theme-light .bg-\[\#21F1A8\]\/15,
+.theme-light .bg-\[\#21F1A8\]\/20,
+.theme-light .bg-\[\#21F1A8\]\/25,
+.theme-light .bg-\[\#21F1A8\]\/30,
+.theme-light .bg-\[\#162920\],
+.theme-light .bg-\[\#1a231f\],
+.theme-light .bg-\[\#1e2722\],
+.theme-light .bg-\[\#1b2722\] {
+  background-color: #ecfdf5 !important;
+  border-color: #a7f3d0 !important;
+  color: #047857 !important;
+}
+
+/* ========================================================================== */
+/* 5. TYPOGRAPHY & FONT COLORS (WCAG AAA HIGHEST READABILITY)                 */
+/* ========================================================================== */
+/* Titles, Headings, Bold KPI Values */
+.theme-light .text-white,
+.theme-light .text-gray-100,
+.theme-light .text-slate-100,
+.theme-light .text-zinc-100,
+.theme-light h1,
+.theme-light h2,
+.theme-light h3,
+.theme-light h4 {
+  color: #0f172a !important; /* Pitch dark navy/slate */
+}
+
+/* Main body text & values */
+.theme-light .text-gray-200,
+.theme-light .text-slate-200,
+.theme-light .text-zinc-200,
+.theme-light p {
+  color: #1e293b !important; /* Slate-800 */
+}
+
+/* Secondary descriptions, active labels */
+.theme-light .text-gray-300,
+.theme-light .text-slate-300,
+.theme-light .text-zinc-300 {
+  color: #334155 !important; /* Slate-700 - very crisp */
+}
+
+/* Subtitles, table headers, column names, metric labels */
+.theme-light .text-gray-400,
+.theme-light .text-slate-400,
+.theme-light .text-zinc-400 {
+  color: #475569 !important; /* Slate-600 - zero wash-out */
+}
+
+/* Metadata, timestamps, helper footnotes, sources */
+.theme-light .text-gray-500,
+.theme-light .text-slate-500,
+.theme-light .text-zinc-500 {
+  color: #64748b !important; /* Slate-500 */
+}
+
+/* Brand neon text transformed to deep readable emerald in light mode */
+.theme-light .text-\[\#21F1A8\],
+.theme-light .text-neon {
+  color: #047857 !important; /* Contrast ratio > 5.8:1 on white! */
+}
+
+/* Status colors in light mode (deepened for AA/AAA contrast on light backgrounds) */
+.theme-light .text-cyan-400 { color: #0284c7 !important; }
+.theme-light .text-amber-400 { color: #b45309 !important; }
+.theme-light .text-red-400 { color: #dc2626 !important; }
+.theme-light .text-emerald-400 { color: #047857 !important; }
+.theme-light .text-blue-400 { color: #1d4ed8 !important; }
+.theme-light .text-purple-400 { color: #7e22ce !important; }
+
+/* Status badge backgrounds in light mode */
+.theme-light .bg-red-500\/15 { background-color: #fef2f2 !important; color: #b91c1c !important; border-color: #fecaca !important; }
+.theme-light .bg-amber-500\/15 { background-color: #fffbeb !important; color: #b45309 !important; border-color: #fde68a !important; }
+.theme-light .bg-blue-500\/15 { background-color: #eff6ff !important; color: #1d4ed8 !important; border-color: #bfdbfe !important; }
+.theme-light .bg-purple-500\/15 { background-color: #faf5ff !important; color: #7e22ce !important; border-color: #e9d5ff !important; }
+
+/* ========================================================================== */
+/* 6. BORDERS & DIVIDERS                                                      */
+/* ========================================================================== */
+.theme-light .border-\[\#2d2d2d\],
+.theme-light .border-\[\#333\],
+.theme-light .border-\[\#262626\],
+.theme-light .border-\[\#2a2a2a\],
+.theme-light .border-\[\#383838\],
+.theme-light .border-\[\#3e3e3e\],
+.theme-light .border-\[\#444\],
+.theme-light .border-\[\#282828\],
+.theme-light .border-\[\#2e2e2e\],
+.theme-light .border-\[\#252525\],
+.theme-light .border-\[\#2b2b2b\],
+.theme-light .border-\[\#1f1f1f\],
+.theme-light .border-\[\#1b1b1b\],
+.theme-light .border-\[\#161616\],
+.theme-light .border-neon-subtle {
+  border-color: #e2e8f0 !important;
+}
+
+.theme-light .divide-\[\#222\] > :not([hidden]) ~ :not([hidden]),
+.theme-light .divide-\[\#1e1e1e\] > :not([hidden]) ~ :not([hidden]),
+.theme-light .divide-\[\#2d2d2d\] > :not([hidden]) ~ :not([hidden]),
+.theme-light .divide-\[\#333\] > :not([hidden]) ~ :not([hidden]) {
+  border-color: #f1f5f9 !important;
+}
+
+/* ========================================================================== */
+/* 7. TABLES, GRIDS & DATA PROFILING                                          */
+/* ========================================================================== */
+.theme-light table {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+.theme-light thead th {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+  font-weight: 700 !important;
+  border-bottom: 2px solid #cbd5e1 !important;
+}
+
+.theme-light tbody td {
+  color: #0f172a !important;
+  border-color: #f1f5f9 !important;
+}
+
+.theme-light tbody tr:hover td {
+  background-color: #f8fafc !important;
+}
+
+/* ========================================================================== */
+/* 8. FORM INPUTS, TEXTAREAS, SELECTS & SEARCH                                */
+/* ========================================================================== */
+.theme-light input:not([type="checkbox"]):not([type="radio"]),
+.theme-light textarea,
+.theme-light select {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+.theme-light input::placeholder,
+.theme-light textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+.theme-light input:focus,
+.theme-light textarea:focus,
+.theme-light select:focus {
+  border-color: #059669 !important;
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.2) !important;
+}
+
+/* ========================================================================== */
+/* 9. CODE EDITORS & LAB TERMINALS (PYTHON, SQL, DAX)                         */
+/* ========================================================================== */
+.theme-light pre,
+.theme-light code {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
+}
+
+.theme-light .font-mono {
+  color: inherit;
+}
+
+/* ========================================================================== */
+/* 10. INTERACTIVE SVG CHARTS & DIAGRAMS                                      */
+/* ========================================================================== */
+.theme-light svg text {
+  fill: #334155 !important;
+  font-weight: 500;
+}
+
+.theme-light svg line {
+  stroke: #e2e8f0 !important;
+}
+
+.theme-light .recharts-cartesian-grid line {
+  stroke: #e2e8f0 !important;
+}
+
+.theme-light .recharts-tooltip-wrapper,
+.theme-light .chart-tooltip {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Glow effects in light mode */
+.theme-light .glow-neon {
+  box-shadow: 0 0 15px rgba(5, 150, 105, 0.2) !important;
+}
+.theme-light .glow-neon-strong {
+  box-shadow: 0 0 20px rgba(5, 150, 105, 0.3) !important;
+}
+
+/* Light Scrollbar */
+.theme-light ::-webkit-scrollbar-track {
+  background: #f1f5f9 !important;
+}
+
+.theme-light ::-webkit-scrollbar-thumb {
+  background: #cbd5e1 !important;
+  border-radius: 3px;
+}
+
+.theme-light ::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8 !important;
+}
