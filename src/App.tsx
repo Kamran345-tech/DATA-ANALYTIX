@@ -25,6 +25,8 @@ import { SettingsView } from './components/views/SettingsView';
 import { BlogView } from './components/views/BlogView';
 import { DrillThroughModal } from './components/common/DrillThroughModal';
 
+import { ErrorBoundary } from './components/common/ErrorBoundary';
+
 const MainContent: React.FC = () => {
   const { currentTab, setCurrentTab, isPresentationMode, themeMode } = usePlatform();
 
@@ -78,13 +80,15 @@ const MainContent: React.FC = () => {
   };
 
   return (
-    <div className={`min-h-screen ${themeMode === 'light' ? 'bg-[#f8fafc] text-slate-900 theme-light' : 'bg-[#171717] text-gray-100 theme-dark'} flex flex-col font-sans transition-colors duration-200`}>
+    <div className={`min-h-screen ${themeMode === 'light' ? 'bg-[#f8fafc] text-slate-900 theme-light' : 'bg-surface-base text-on-surface theme-dark'} flex flex-col font-sans transition-colors duration-200`}>
       {!isPresentationMode && <Navbar />}
 
       <div className="flex flex-1 overflow-hidden relative">
         <Sidebar />
         <main className={`flex-1 overflow-y-auto w-full min-w-0 ${isPresentationMode ? 'p-3 sm:p-6' : 'p-3 sm:p-5 lg:p-7'}`}>
-          {renderActiveView()}
+          <ErrorBoundary>
+            {renderActiveView()}
+          </ErrorBoundary>
         </main>
       </div>
 
@@ -96,9 +100,11 @@ const MainContent: React.FC = () => {
 
 export function App() {
   return (
-    <PlatformProvider>
-      <MainContent />
-    </PlatformProvider>
+    <ErrorBoundary>
+      <PlatformProvider>
+        <MainContent />
+      </PlatformProvider>
+    </ErrorBoundary>
   );
 }
 

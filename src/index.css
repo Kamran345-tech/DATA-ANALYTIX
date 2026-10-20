@@ -2,24 +2,24 @@
 
 @layer base {
   :root {
-    --color-bg-main: #171717;
-    --color-bg-card: #1f1f1f;
-    --color-bg-hover: #262626;
-    --color-neon: #21F1A8;
-    --color-neon-dim: rgba(33, 241, 168, 0.15);
-    --color-neon-border: rgba(33, 241, 168, 0.35);
+    --color-bg-main: #0B0F17;
+    --color-bg-card: #111827;
+    --color-bg-hover: #172033;
+    --color-neon: #00F5A0;
+    --color-neon-dim: rgba(0, 245, 160, 0.15);
+    --color-neon-border: rgba(0, 245, 160, 0.35);
   }
 
   body {
-    background-color: #171717;
-    color: #f3f4f6;
+    background-color: #0B0F17;
+    color: #dfe2ee;
     font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     overflow-x: hidden;
   }
 
-  h1, h2, h3, .font-heading {
-    font-family: 'Oswald', 'Anton', system-ui, sans-serif;
-    letter-spacing: 0.03em;
+  h1, h2, h3, h4, h5, h6, .font-heading {
+    font-family: 'Inter', system-ui, sans-serif;
+    letter-spacing: -0.015em;
   }
 
   code, pre, .font-code {
@@ -32,49 +32,111 @@
     height: 6px;
   }
   ::-webkit-scrollbar-track {
-    background: #171717;
+    background: #0B0F17;
   }
   ::-webkit-scrollbar-thumb {
-    background: #333333;
+    background: #1F2937;
     border-radius: 3px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #21F1A8;
+    background: #00F5A0;
   }
 }
 
-.text-neon {
-  color: #21F1A8;
-}
+/* 1. SURFACE & BACKGROUND UTILITY TOKENS */
+.bg-surface-base { background-color: #0B0F17; }
+.bg-surface-card { background-color: #111827; }
+.bg-surface-panel { background-color: #172033; }
+.bg-surface-elevated { background-color: #1E293B; }
+.border-border-subtle { border-color: #1F2937; }
+.border-border-prominent { border-color: #374151; }
 
-.bg-neon {
-  background-color: #21F1A8;
-}
+/* 2. TEXT TOKENS */
+.text-on-surface { color: #dfe2ee; }
+.text-on-surface-variant { color: #94a3b8; }
 
-.border-neon {
-  border-color: #21F1A8;
-}
+/* 3. METRIC COLOR TOKENS */
+.text-metric-emerald { color: #00F5A0; }
+.bg-metric-emerald { background-color: #00F5A0; }
+.text-metric-cyan { color: #00D2FF; }
+.bg-metric-cyan { background-color: #00D2FF; }
+.text-metric-amber { color: #F59E0B; }
+.bg-metric-amber { background-color: #F59E0B; }
+.text-metric-coral { color: #EF4444; }
+.bg-metric-coral { background-color: #EF4444; }
+.text-metric-indigo { color: #6366F1; }
+.bg-metric-indigo { background-color: #6366F1; }
 
-.border-neon-subtle {
-  border-color: rgba(33, 241, 168, 0.25);
-}
+/* 4. PRIMARY ACCENTS & CONTAINERS */
+.bg-primary-container { background-color: #00F5A0; color: #003921; }
+.text-on-primary-container { color: #003921; }
+.text-neon { color: #00F5A0; }
+.bg-neon { background-color: #00F5A0; }
+.border-neon { border-color: #00F5A0; }
+.border-neon-subtle { border-color: rgba(0, 245, 160, 0.25); }
 
 .glow-neon {
-  box-shadow: 0 0 15px rgba(33, 241, 168, 0.25);
+  box-shadow: 0 0 15px rgba(0, 245, 160, 0.25);
 }
-
 .glow-neon-strong {
-  box-shadow: 0 0 25px rgba(33, 241, 168, 0.45);
+  box-shadow: 0 0 25px rgba(0, 245, 160, 0.45);
 }
 
 .bg-card-dark {
-  background-color: #1c1c1c;
-  border: 1px solid #2d2d2d;
+  background-color: #111827;
+  border: 1px solid #1F2937;
+}
+.bg-card-darker {
+  background-color: #0B0F17;
+  border: 1px solid #1F2937;
 }
 
-.bg-card-darker {
-  background-color: #141414;
-  border: 1px solid #262626;
+/* 5. TYPOGRAPHIC SCALE */
+.font-headline-xl {
+  font-size: 1.875rem;
+  line-height: 2.25rem;
+  letter-spacing: -0.025em;
+  font-weight: 800;
+}
+.font-headline-lg {
+  font-size: 1.5rem;
+  line-height: 2rem;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+}
+.font-headline-sm {
+  font-size: 0.9375rem;
+  line-height: 1.375rem;
+  letter-spacing: -0.01em;
+  font-weight: 600;
+}
+.font-metric-display {
+  font-size: 1.875rem;
+  line-height: 2.25rem;
+  letter-spacing: -0.03em;
+  font-weight: 800;
+}
+.font-label-caps {
+  font-size: 0.625rem;
+  line-height: 0.875rem;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+}
+.font-label-sm {
+  font-size: 0.6875rem;
+  line-height: 0.9375rem;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+.font-body-md {
+  font-size: 0.8125rem;
+  line-height: 1.25rem;
+  font-weight: 400;
+}
+.font-body-sm {
+  font-size: 0.75rem;
+  line-height: 1.125rem;
+  font-weight: 400;
 }
 
 /* ========================================================================== */
@@ -111,6 +173,11 @@ html.theme-light body,
 /* ========================================================================== */
 /* 1. CARDS, SURFACES & CONTAINERS                                            */
 /* ========================================================================== */
+.theme-light .bg-surface-base {
+  background-color: #f8fafc !important;
+}
+
+.theme-light .bg-surface-card,
 .theme-light .bg-\[\#1c1c1c\],
 .theme-light .bg-\[\#191919\],
 .theme-light .bg-\[\#1f1f1f\],
@@ -136,6 +203,8 @@ html.theme-light body,
 }
 
 /* 2. SUB-PANELS, INNER WELLS & CODE CONTAINERS */
+.theme-light .bg-surface-panel,
+.theme-light .bg-surface-elevated,
 .theme-light .bg-\[\#171717\],
 .theme-light .bg-\[\#171717\]\/95,
 .theme-light .bg-\[\#141414\],
@@ -146,9 +215,22 @@ html.theme-light body,
 .theme-light .bg-\[\#0a0a0a\],
 .theme-light .bg-\[\#161616\],
 .theme-light .bg-card-darker {
-  background-color: #f8fafc !important;
+  background-color: #f1f5f9 !important;
   border-color: #e2e8f0 !important;
   color: #0f172a !important;
+}
+
+.theme-light .text-on-surface {
+  color: #0f172a !important;
+}
+.theme-light .text-on-surface-variant {
+  color: #475569 !important;
+}
+.theme-light .border-border-subtle {
+  border-color: #e2e8f0 !important;
+}
+.theme-light .border-border-prominent {
+  border-color: #cbd5e1 !important;
 }
 
 /* 3. INTERACTIVE CHIPS, PILLS, INACTIVE TABS & HOVER STATES */

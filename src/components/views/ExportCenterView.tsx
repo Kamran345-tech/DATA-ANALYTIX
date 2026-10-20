@@ -77,7 +77,9 @@ export const ExportCenterView: React.FC = () => {
       setDownloadSuccess('Created Dashboard & Executive Report bundle downloaded successfully!');
       setTimeout(() => setDownloadSuccess(null), 4000);
     } catch (e: any) {
-      alert(`Bundle export failed: ${e?.message}`);
+      console.error(e);
+      setDownloadSuccess(`Bundle export note: ${e?.message || 'Failed to export bundle'}`);
+      setTimeout(() => setDownloadSuccess(null), 4000);
     } finally {
       setIsBundleGenerating(false);
     }
@@ -99,7 +101,9 @@ export const ExportCenterView: React.FC = () => {
       setDownloadSuccess(`Enterprise Report "${filename}" compiled and downloaded successfully.`);
       setTimeout(() => setDownloadSuccess(null), 4000);
     } catch (e: any) {
-      alert(`PDF report compilation failed: ${e?.message}`);
+      console.error(e);
+      setDownloadSuccess(`PDF compilation note: ${e?.message || 'Error compiling PDF'}`);
+      setTimeout(() => setDownloadSuccess(null), 4000);
     } finally {
       setIsPdfGenerating(false);
     }
@@ -118,7 +122,9 @@ export const ExportCenterView: React.FC = () => {
       setDownloadSuccess('Complete 14-Folder Project ZIP successfully created and downloaded.');
       setTimeout(() => setDownloadSuccess(null), 4000);
     } catch (e: any) {
-      alert(`Export failed: ${e?.message}`);
+      console.error(e);
+      setDownloadSuccess(`Export note: ${e?.message || 'Failed to generate ZIP'}`);
+      setTimeout(() => setDownloadSuccess(null), 4000);
     } finally {
       setIsZipping(false);
     }

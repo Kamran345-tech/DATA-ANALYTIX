@@ -503,7 +503,8 @@ export const DashboardBuilderView: React.FC = () => {
       setTimeout(() => setDownloadSuccess(null), 3000);
     } catch (err: any) {
       console.error(err);
-      alert('PDF generation error: ' + (err?.message || 'Failed to compile report'));
+      setDownloadSuccess(`PDF generation note: ${err?.message || 'Failed to compile report'}`);
+      setTimeout(() => setDownloadSuccess(null), 4000);
     } finally {
       setIsPdfGenerating(false);
     }
@@ -657,7 +658,8 @@ export const DashboardBuilderView: React.FC = () => {
       setTimeout(() => setDownloadSuccess(null), 3500);
     } catch (err: any) {
       console.error(err);
-      alert('Bundle export failed: ' + (err?.message || 'Error creating ZIP package'));
+      setDownloadSuccess(`Bundle export note: ${err?.message || 'Error creating ZIP package'}`);
+      setTimeout(() => setDownloadSuccess(null), 4000);
     } finally {
       setIsBundleGenerating(false);
     }

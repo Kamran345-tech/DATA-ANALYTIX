@@ -63,8 +63,12 @@ export const ReportsView: React.FC = () => {
         opportunities: analytics.opportunities
       });
       doc.save(`${project.name.replace(/[^a-zA-Z0-9_]/g, '_')}_Executive_Report.pdf`);
+      setDownloadSuccess('Executive PDF Report downloaded successfully!');
+      setTimeout(() => setDownloadSuccess(null), 3000);
     } catch (err: any) {
-      alert(`PDF compilation failed: ${err?.message}`);
+      console.error(err);
+      setDownloadSuccess(`PDF compilation note: ${err?.message || 'Error compiling PDF'}`);
+      setTimeout(() => setDownloadSuccess(null), 4000);
     } finally {
       setIsPdfGenerating(false);
     }
@@ -96,7 +100,9 @@ export const ReportsView: React.FC = () => {
       setDownloadSuccess('Combined Dashboard & Executive Report bundle downloaded successfully!');
       setTimeout(() => setDownloadSuccess(null), 3500);
     } catch (err: any) {
-      alert(`Bundle export failed: ${err?.message}`);
+      console.error(err);
+      setDownloadSuccess(`Bundle export note: ${err?.message || 'Failed to create bundle'}`);
+      setTimeout(() => setDownloadSuccess(null), 4000);
     } finally {
       setIsBundleGenerating(false);
     }

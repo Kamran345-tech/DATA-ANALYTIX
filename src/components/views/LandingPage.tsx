@@ -19,6 +19,7 @@ import {
   HelpCircle
 } from 'lucide-react';
 import { usePlatform } from '../../store/usePlatformStore';
+import { Tooltip } from '../common/Tooltip';
 
 export const LandingPage: React.FC = () => {
   const { setCurrentTab, loadDemoDataset } = usePlatform();
@@ -134,101 +135,155 @@ export const LandingPage: React.FC = () => {
       {/* 3. Deep Features Grid */}
       <section className="max-w-6xl mx-auto px-4 sm:px-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="p-6 rounded-2xl bg-[#1c1c1c] border border-[#2e2e2e] space-y-4">
-            <div className="w-12 h-12 rounded-xl bg-[#21F1A8]/10 text-[#21F1A8] flex items-center justify-center">
-              <Database className="w-6 h-6" />
+          <Tooltip
+            side="top"
+            title="Live SQL Sandbox"
+            tag="In-Browser Engine"
+            content="Execute ANSI SQL queries with SELECT, GROUP BY, JOINs, and window functions directly over your active dataset in milliseconds."
+          >
+            <div className="p-6 rounded-2xl bg-[#1c1c1c] border border-[#2e2e2e] space-y-4 hover:border-[#21F1A8]/50 transition-colors h-full flex flex-col justify-between">
+              <div className="space-y-4">
+                <div className="w-12 h-12 rounded-xl bg-[#21F1A8]/10 text-[#21F1A8] flex items-center justify-center">
+                  <Database className="w-6 h-6" />
+                </div>
+                <h3 className="font-heading text-xl font-bold text-white">LIVE SQL LAB IN-BROWSER</h3>
+                <p className="text-xs text-gray-400 leading-relaxed">
+                  Query your active dataset using full SQL syntax with instant millisecond execution time and table inspections.
+                </p>
+              </div>
+              <button 
+                onClick={() => setCurrentTab('sql_lab')}
+                className="text-xs text-[#21F1A8] hover:underline flex items-center gap-1 font-semibold pt-2"
+              >
+                Open SQL Lab <ArrowRight className="w-3.5 h-3.5" />
+              </button>
             </div>
-            <h3 className="font-heading text-xl font-bold text-white">LIVE SQL LAB IN-BROWSER</h3>
-            <p className="text-xs text-gray-400 leading-relaxed">
-              Query your active dataset using full SQL syntax with instant millisecond execution time and table inspections.
-            </p>
-            <button 
-              onClick={() => setCurrentTab('sql_lab')}
-              className="text-xs text-[#21F1A8] hover:underline flex items-center gap-1 font-semibold"
-            >
-              Open SQL Lab <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
+          </Tooltip>
 
-          <div className="p-6 rounded-2xl bg-[#1c1c1c] border border-[#2e2e2e] space-y-4">
-            <div className="w-12 h-12 rounded-xl bg-[#21F1A8]/10 text-[#21F1A8] flex items-center justify-center">
-              <Code2 className="w-6 h-6" />
+          <Tooltip
+            side="top"
+            title="Production DAX Studio"
+            tag="Power BI Measures"
+            content="Automated generation of TOTALYTD, SAMEPERIODLASTYEAR, variance %, and financial margin measures ready to copy directly into Power BI Desktop."
+          >
+            <div className="p-6 rounded-2xl bg-[#1c1c1c] border border-[#2e2e2e] space-y-4 hover:border-[#21F1A8]/50 transition-colors h-full flex flex-col justify-between">
+              <div className="space-y-4">
+                <div className="w-12 h-12 rounded-xl bg-[#21F1A8]/10 text-[#21F1A8] flex items-center justify-center">
+                  <Code2 className="w-6 h-6" />
+                </div>
+                <h3 className="font-heading text-xl font-bold text-white">PRODUCTION DAX LAB</h3>
+                <p className="text-xs text-gray-400 leading-relaxed">
+                  Automated generation of TOTALYTD, SAMEPERIODLASTYEAR, variance %, and financial margin measures mapped to your schema.
+                </p>
+              </div>
+              <button 
+                onClick={() => setCurrentTab('dax_lab')}
+                className="text-xs text-[#21F1A8] hover:underline flex items-center gap-1 font-semibold pt-2"
+              >
+                Explore DAX Lab <ArrowRight className="w-3.5 h-3.5" />
+              </button>
             </div>
-            <h3 className="font-heading text-xl font-bold text-white">PRODUCTION DAX LAB</h3>
-            <p className="text-xs text-gray-400 leading-relaxed">
-              Automated generation of TOTALYTD, SAMEPERIODLASTYEAR, variance %, and financial margin measures mapped to your schema.
-            </p>
-            <button 
-              onClick={() => setCurrentTab('dax_lab')}
-              className="text-xs text-[#21F1A8] hover:underline flex items-center gap-1 font-semibold"
-            >
-              Explore DAX Lab <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
+          </Tooltip>
 
-          <div className="p-6 rounded-2xl bg-[#1c1c1c] border border-[#2e2e2e] space-y-4">
-            <div className="w-12 h-12 rounded-xl bg-[#21F1A8]/10 text-[#21F1A8] flex items-center justify-center">
-              <Terminal className="w-6 h-6" />
+          <Tooltip
+            side="top"
+            title="Reproducible Python"
+            tag="Pandas & NumPy"
+            content="Sandbox for Python scripts: run descriptive statistics, mathematical transforms, and export scripts to automate production jobs."
+          >
+            <div className="p-6 rounded-2xl bg-[#1c1c1c] border border-[#2e2e2e] space-y-4 hover:border-[#21F1A8]/50 transition-colors h-full flex flex-col justify-between">
+              <div className="space-y-4">
+                <div className="w-12 h-12 rounded-xl bg-[#21F1A8]/10 text-[#21F1A8] flex items-center justify-center">
+                  <Terminal className="w-6 h-6" />
+                </div>
+                <h3 className="font-heading text-xl font-bold text-white">REPRODUCIBLE PYTHON</h3>
+                <p className="text-xs text-gray-400 leading-relaxed">
+                  Generates executable pandas, numpy, and matplotlib scripts. Run sandboxed statistical descriptions directly in the UI.
+                </p>
+              </div>
+              <button 
+                onClick={() => setCurrentTab('python_lab')}
+                className="text-xs text-[#21F1A8] hover:underline flex items-center gap-1 font-semibold pt-2"
+              >
+                Open Python Lab <ArrowRight className="w-3.5 h-3.5" />
+              </button>
             </div>
-            <h3 className="font-heading text-xl font-bold text-white">REPRODUCIBLE PYTHON</h3>
-            <p className="text-xs text-gray-400 leading-relaxed">
-              Generates executable pandas, numpy, and matplotlib scripts. Run sandboxed statistical descriptions directly in the UI.
-            </p>
-            <button 
-              onClick={() => setCurrentTab('python_lab')}
-              className="text-xs text-[#21F1A8] hover:underline flex items-center gap-1 font-semibold"
-            >
-              Open Python Lab <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
+          </Tooltip>
 
-          <div className="p-6 rounded-2xl bg-[#1c1c1c] border border-[#2e2e2e] space-y-4">
-            <div className="w-12 h-12 rounded-xl bg-[#21F1A8]/10 text-[#21F1A8] flex items-center justify-center">
-              <Sparkles className="w-6 h-6" />
+          <Tooltip
+            side="top"
+            title="Grounded AI Copilot"
+            tag="Zero Hallucination"
+            content="Ask business inquiries in plain English. The AI agent evaluates underlying mathematical engines and cites verifiable records."
+          >
+            <div className="p-6 rounded-2xl bg-[#1c1c1c] border border-[#2e2e2e] space-y-4 hover:border-[#21F1A8]/50 transition-colors h-full flex flex-col justify-between">
+              <div className="space-y-4">
+                <div className="w-12 h-12 rounded-xl bg-[#21F1A8]/10 text-[#21F1A8] flex items-center justify-center">
+                  <Sparkles className="w-6 h-6" />
+                </div>
+                <h3 className="font-heading text-xl font-bold text-white">GROUNDED AI ANALYST</h3>
+                <p className="text-xs text-gray-400 leading-relaxed">
+                  Ask natural language business questions. The AI references exact calculation engine outputs with zero hallucination.
+                </p>
+              </div>
+              <button 
+                onClick={() => setCurrentTab('ai_insights')}
+                className="text-xs text-[#21F1A8] hover:underline flex items-center gap-1 font-semibold pt-2"
+              >
+                Ask Your Data <ArrowRight className="w-3.5 h-3.5" />
+              </button>
             </div>
-            <h3 className="font-heading text-xl font-bold text-white">GROUNDED AI ANALYST</h3>
-            <p className="text-xs text-gray-400 leading-relaxed">
-              Ask natural language business questions. The AI references exact calculation engine outputs with zero hallucination.
-            </p>
-            <button 
-              onClick={() => setCurrentTab('ai_insights')}
-              className="text-xs text-[#21F1A8] hover:underline flex items-center gap-1 font-semibold"
-            >
-              Ask Your Data <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
+          </Tooltip>
 
-          <div className="p-6 rounded-2xl bg-[#1c1c1c] border border-[#2e2e2e] space-y-4">
-            <div className="w-12 h-12 rounded-xl bg-[#21F1A8]/10 text-[#21F1A8] flex items-center justify-center">
-              <FileSpreadsheet className="w-6 h-6" />
+          <Tooltip
+            side="top"
+            title="Power BI & Excel Source"
+            tag="PBIP & Multi-Tab"
+            content="Generate true multi-tab Excel spreadsheets with structured tbl* tables and modern Power BI PBIP tabular projects."
+          >
+            <div className="p-6 rounded-2xl bg-[#1c1c1c] border border-[#2e2e2e] space-y-4 hover:border-[#21F1A8]/50 transition-colors h-full flex flex-col justify-between">
+              <div className="space-y-4">
+                <div className="w-12 h-12 rounded-xl bg-[#21F1A8]/10 text-[#21F1A8] flex items-center justify-center">
+                  <FileSpreadsheet className="w-6 h-6" />
+                </div>
+                <h3 className="font-heading text-xl font-bold text-white">POWER BI & EXCEL SOURCE</h3>
+                <p className="text-xs text-gray-400 leading-relaxed">
+                  Generates genuine multi-tab Excel workbooks with structured tbl* tables and editable Power BI PBIP tabular models.
+                </p>
+              </div>
+              <button 
+                onClick={() => setCurrentTab('export_center')}
+                className="text-xs text-[#21F1A8] hover:underline flex items-center gap-1 font-semibold pt-2"
+              >
+                View Export Center <ArrowRight className="w-3.5 h-3.5" />
+              </button>
             </div>
-            <h3 className="font-heading text-xl font-bold text-white">POWER BI & EXCEL SOURCE</h3>
-            <p className="text-xs text-gray-400 leading-relaxed">
-              Generates genuine multi-tab Excel workbooks with structured tbl* tables and editable Power BI PBIP tabular models.
-            </p>
-            <button 
-              onClick={() => setCurrentTab('export_center')}
-              className="text-xs text-[#21F1A8] hover:underline flex items-center gap-1 font-semibold"
-            >
-              View Export Center <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
+          </Tooltip>
 
-          <div className="p-6 rounded-2xl bg-[#1c1c1c] border border-[#2e2e2e] space-y-4">
-            <div className="w-12 h-12 rounded-xl bg-[#21F1A8]/10 text-[#21F1A8] flex items-center justify-center">
-              <ShieldCheck className="w-6 h-6" />
+          <Tooltip
+            side="top"
+            title="Cleaning Audit Log"
+            tag="ETL Traceability"
+            content="Maintain immutable separation between raw ingested data and cleaned data. Every imputation, filter, and cast is logged and reversible."
+          >
+            <div className="p-6 rounded-2xl bg-[#1c1c1c] border border-[#2e2e2e] space-y-4 hover:border-[#21F1A8]/50 transition-colors h-full flex flex-col justify-between">
+              <div className="space-y-4">
+                <div className="w-12 h-12 rounded-xl bg-[#21F1A8]/10 text-[#21F1A8] flex items-center justify-center">
+                  <ShieldCheck className="w-6 h-6" />
+                </div>
+                <h3 className="font-heading text-xl font-bold text-white">CLEANING AUDIT LOG</h3>
+                <p className="text-xs text-gray-400 leading-relaxed">
+                  Immutable separation between 01_Original_Data and 02_Cleaned_Data with full step-by-step undo, redo, and replay.
+                </p>
+              </div>
+              <button 
+                onClick={() => setCurrentTab('cleaning')}
+                className="text-xs text-[#21F1A8] hover:underline flex items-center gap-1 font-semibold pt-2"
+              >
+                Open Cleaning Lab <ArrowRight className="w-3.5 h-3.5" />
+              </button>
             </div>
-            <h3 className="font-heading text-xl font-bold text-white">CLEANING AUDIT LOG</h3>
-            <p className="text-xs text-gray-400 leading-relaxed">
-              Immutable separation between 01_Original_Data and 02_Cleaned_Data with full step-by-step undo, redo, and replay.
-            </p>
-            <button 
-              onClick={() => setCurrentTab('cleaning')}
-              className="text-xs text-[#21F1A8] hover:underline flex items-center gap-1 font-semibold"
-            >
-              Open Cleaning Lab <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
+          </Tooltip>
         </div>
       </section>
 

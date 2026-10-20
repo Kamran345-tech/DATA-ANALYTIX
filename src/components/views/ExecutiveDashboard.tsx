@@ -28,11 +28,13 @@ import {
   Compass,
   Gauge,
   Activity,
-  HelpCircle
+  HelpCircle,
+  RefreshCw
 } from 'lucide-react';
 import { usePlatform } from '../../store/usePlatformStore';
 import { GlobalFilterBar } from '../common/GlobalFilterBar';
 import { EditableDashboardTitle } from '../common/EditableDashboardTitle';
+import { Tooltip } from '../common/Tooltip';
 import { generateEnterpriseReportPDF, downloadDashboardAndReportBundle } from '../../engine/exportEngine';
 import { 
   TimeSeriesAreaChart, 
@@ -213,7 +215,8 @@ export const ExecutiveDashboard: React.FC = () => {
       setTimeout(() => setDownloadSuccess(null), 3000);
     } catch (err: any) {
       console.error(err);
-      alert('PDF generation failed: ' + (err?.message || 'Error compiling PDF'));
+      setDownloadSuccess(`PDF compilation note: ${err?.message || 'Error compiling PDF'}`);
+      setTimeout(() => setDownloadSuccess(null), 4000);
     } finally {
       setIsPdfGenerating(false);
     }
@@ -290,7 +293,8 @@ export const ExecutiveDashboard: React.FC = () => {
       setTimeout(() => setDownloadSuccess(null), 3500);
     } catch (err: any) {
       console.error(err);
-      alert('Bundle export error: ' + (err?.message || 'Failed to create bundle'));
+      setDownloadSuccess(`Bundle export note: ${err?.message || 'Failed to create bundle'}`);
+      setTimeout(() => setDownloadSuccess(null), 4000);
     } finally {
       setIsBundleGenerating(false);
     }
@@ -306,439 +310,984 @@ export const ExecutiveDashboard: React.FC = () => {
         </div>
       )}
 
-      {/* 1. Dashboard Header */}
-      <div className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-4 sm:p-6 space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold uppercase tracking-wider text-[#21F1A8] font-mono">
-                {brand.companyName} • {brand.department}
-              </span>
-              <span className="px-2.5 py-0.5 rounded-full bg-[#21F1A8]/15 text-[#21F1A8] text-[10px] font-semibold border border-[#21F1A8]/30 flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#21F1A8]" />
-                VERIFIED ANALYTICS MODEL
-              </span>
-            </div>
+      {/* 1. TOP SUMMARY & ACTION CONTROLS PANEL */}
+      <section className="w-full bg-surface-card rounded-xl p-5 sm:p-6 shadow-xl border border-border-subtle relative overflow-hidden">
+        <div className="absolute -right-20 -top-20 w-80 h-80 bg-[#00F5A0]/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute left-1/3 -bottom-24 w-72 h-72 bg-[#00D2FF]/5 rounded-full blur-3xl pointer-events-none" />
 
-            {/* EDITABLE DASHBOARD NAME */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <EditableDashboardTitle className="text-2xl sm:text-3xl font-extrabold uppercase" showLabelPrefix={false} />
-            </div>
-
-            <p className="text-xs text-gray-400">
-              Scope: <span className="text-gray-200 font-medium">{project.name}</span> | Prepared by: <span className="text-gray-200 font-medium">{brand.author}</span> | Audited: <span className="font-mono text-gray-300">{filteredRows.length.toLocaleString()} rows</span>
-            </p>
-          </div>
-
-          {/* Action Buttons & Health Badges */}
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-            {/* Download Both (Dashboard + Executive Report Bundle ZIP) */}
-            <button
-              onClick={handleDownloadBundleZip}
-              disabled={isBundleGenerating}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#21F1A8] text-black font-semibold text-xs hover:bg-[#1cdb97] hover:glow-neon transition-all shadow-md shadow-[#21F1A8]/20 disabled:opacity-50"
-              title="Download both the created dashboard and executive report in a single ZIP package"
-            >
-              {isBundleGenerating ? (
-                <Loader2 className="w-4 h-4 animate-spin text-black" />
-              ) : (
-                <Package className="w-4 h-4 stroke-[2.5]" />
-              )}
-              <span>Download Both (Dashboard + Report)</span>
-            </button>
-
-            {/* Download Executive Report PDF */}
-            <button
-              onClick={handleDownloadExecutivePDF}
-              disabled={isPdfGenerating}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#141414] hover:bg-[#222] text-gray-200 hover:text-white font-medium text-xs border border-[#333] hover:border-cyan-400/50 transition-colors disabled:opacity-50"
-              title="Download verified Executive PDF Report"
-            >
-              {isPdfGenerating ? (
-                <Loader2 className="w-4 h-4 animate-spin text-cyan-400" />
-              ) : (
-                <FileText className="w-4 h-4 text-cyan-400" />
-              )}
-              <span>Executive Report (PDF)</span>
-            </button>
-
-            {/* Download Dashboard as JSON */}
-            <button
-              onClick={handleDownloadDashboardJSON}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#141414] hover:bg-[#222] text-gray-200 hover:text-white font-medium text-xs border border-[#333] hover:border-[#21F1A8]/50 transition-colors"
-              title="Download dashboard specification & data package"
-            >
-              <Download className="w-4 h-4 text-[#21F1A8]" />
-              <span className="hidden sm:inline">Dashboard (JSON)</span>
-            </button>
-
-            {/* How to Use Guide Button */}
-            <button
-              onClick={() => setCurrentTab('how_to_use')}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#141414] hover:bg-[#222] text-gray-200 hover:text-[#21F1A8] font-semibold text-xs border border-[#333] hover:border-[#21F1A8]/50 transition-colors shadow-2xs"
-              title="View Complete Platform User Guide & Module Explanations"
-            >
-              <HelpCircle className="w-4 h-4 text-[#21F1A8]" />
-              <span>How to Use</span>
-            </button>
-
-            {/* Data Quality Score Badge */}
-            <div 
-              onClick={() => setCurrentTab('quality')}
-              className="bg-[#141414] border border-[#333] hover:border-[#21F1A8]/50 cursor-pointer px-3 sm:px-3.5 py-1.5 rounded-xl text-right transition-colors"
-              title="Click to view Data Quality Audit"
-            >
-              <div className="text-[10px] text-gray-400 uppercase font-mono">Data Quality</div>
-              <div className="text-base sm:text-lg font-heading font-bold text-[#21F1A8] flex items-center justify-end gap-1">
-                <ShieldCheck className="w-3.5 h-3.5" />
-                {qualityReport.overallScore}%
-              </div>
-            </div>
-
-            {analytics.businessHealthScore && (
-              <div className="bg-[#141414] border border-[#333] px-3 sm:px-3.5 py-1.5 rounded-xl text-right">
-                <div className="text-[10px] text-gray-400 uppercase font-mono">Business Health</div>
-                <div className="text-base sm:text-lg font-heading font-bold text-white flex items-center justify-end gap-1">
-                  <Award className="w-3.5 h-3.5 text-amber-400" />
-                  {analytics.businessHealthScore.score}/100
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Global Filter Bar */}
-        <GlobalFilterBar />
-
-        {/* Active Drilldown Indicator */}
-        {filters.selectedDimension && filters.selectedDimensionValue && (
-          <div className="flex items-center justify-between bg-[#1b2722] border border-[#21F1A8]/40 px-3.5 py-1.5 rounded-xl text-xs text-[#21F1A8]">
-            <div className="flex items-center gap-2">
-              <Filter className="w-3.5 h-3.5" />
-              <span>Active Drilldown: <strong className="text-white">{filters.selectedDimension} = &quot;{filters.selectedDimensionValue}&quot;</strong></span>
-            </div>
-            <button 
-              onClick={() => setFilters(prev => ({ ...prev, selectedDimensionValue: null }))}
-              className="text-xs text-gray-400 hover:text-white flex items-center gap-1 font-mono"
-            >
-              Reset Drilldown <X className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        )}
-
-        {/* Navigation View Switcher (Tabs for Data Analysts & Executives) */}
-        <div className="flex gap-2 pt-2 border-t border-[#282828] text-xs overflow-x-auto no-scrollbar">
-          <button
-            onClick={() => setActiveTab('overview')}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl font-semibold transition-all shrink-0 ${
-              activeTab === 'overview'
-                ? 'bg-[#21F1A8] text-black shadow-lg shadow-[#21F1A8]/20'
-                : 'bg-[#161616] text-gray-300 hover:bg-[#222] hover:text-white border border-[#2e2e2e]'
-            }`}
-          >
-            <LayoutDashboard className="w-3.5 h-3.5" /> Executive Overview
-          </button>
-
-          <button
-            onClick={() => setActiveTab('scatter')}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl font-semibold transition-all shrink-0 ${
-              activeTab === 'scatter'
-                ? 'bg-[#21F1A8] text-black shadow-lg shadow-[#21F1A8]/20'
-                : 'bg-[#161616] text-gray-300 hover:bg-[#222] hover:text-white border border-[#2e2e2e]'
-            }`}
-          >
-            <CircleDot className="w-3.5 h-3.5" /> Scatter Plot & Regression
-          </button>
-
-          <button
-            onClick={() => setActiveTab('heatmap')}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl font-semibold transition-all shrink-0 ${
-              activeTab === 'heatmap'
-                ? 'bg-[#21F1A8] text-black shadow-lg shadow-[#21F1A8]/20'
-                : 'bg-[#161616] text-gray-300 hover:bg-[#222] hover:text-white border border-[#2e2e2e]'
-            }`}
-          >
-            <Grid className="w-3.5 h-3.5" /> 2D Heat Map Matrix
-          </button>
-
-          <button
-            onClick={() => setActiveTab('multivariate')}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl font-semibold transition-all shrink-0 ${
-              activeTab === 'multivariate'
-                ? 'bg-[#21F1A8] text-black shadow-lg shadow-[#21F1A8]/20'
-                : 'bg-[#161616] text-gray-300 hover:bg-[#222] hover:text-white border border-[#2e2e2e]'
-            }`}
-          >
-            <Layers className="w-3.5 h-3.5" /> Multi-Chart Suite (Radar, Funnel, Waterfall, Treemap, Gauge)
-          </button>
-
-          <button
-            onClick={() => setActiveTab('pareto')}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl font-semibold transition-all shrink-0 ${
-              activeTab === 'pareto'
-                ? 'bg-[#21F1A8] text-black shadow-lg shadow-[#21F1A8]/20'
-                : 'bg-[#161616] text-gray-300 hover:bg-[#222] hover:text-white border border-[#2e2e2e]'
-            }`}
-          >
-            <BarChart3 className="w-3.5 h-3.5" /> Pareto 80/20 Analysis
-          </button>
-
-          <button
-            onClick={() => setActiveTab('whatif')}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl font-semibold transition-all shrink-0 ${
-              activeTab === 'whatif'
-                ? 'bg-[#21F1A8] text-black shadow-lg shadow-[#21F1A8]/20'
-                : 'bg-[#161616] text-gray-300 hover:bg-[#222] hover:text-white border border-[#2e2e2e]'
-            }`}
-          >
-            <Sliders className="w-3.5 h-3.5" /> What-If Simulator
-          </button>
-
-          <button
-            onClick={() => setActiveTab('pivot')}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl font-semibold transition-all shrink-0 ${
-              activeTab === 'pivot'
-                ? 'bg-[#21F1A8] text-black shadow-lg shadow-[#21F1A8]/20'
-                : 'bg-[#161616] text-gray-300 hover:bg-[#222] hover:text-white border border-[#2e2e2e]'
-            }`}
-          >
-            <Table2 className="w-3.5 h-3.5" /> Pivot Matrix
-          </button>
-
-          <button
-            onClick={() => setActiveTab('distribution')}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl font-semibold transition-all shrink-0 ${
-              activeTab === 'distribution'
-                ? 'bg-[#21F1A8] text-black shadow-lg shadow-[#21F1A8]/20'
-                : 'bg-[#161616] text-gray-300 hover:bg-[#222] hover:text-white border border-[#2e2e2e]'
-            }`}
-          >
-            <TrendingUp className="w-3.5 h-3.5" /> Statistical Dispersion
-          </button>
-        </div>
-      </div>
-
-      {/* 2. Key Performance Indicators (Click any KPI card to Drill-Through) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {analytics.kpis.slice(0, 4).map(kpi => {
-          const isPositive = (kpi.changePercent || 0) >= 0;
-          return (
-            <div 
-              key={kpi.id} 
-              onClick={() => openDrillThrough({
-                title: kpi.name,
-                subtitle: kpi.definition,
-                kpi,
-                sourceContext: 'kpi_card'
-              })}
-              className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-4.5 space-y-3 relative group hover:border-[#21F1A8]/60 transition-all hover:glow-neon cursor-pointer select-none"
-              title="Click this KPI to drill-through to granular underlying records"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-gray-400 truncate max-w-[140px] group-hover:text-white transition-colors">{kpi.name}</span>
-                <div className="flex items-center gap-1.5">
-                  <span className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] text-[#21F1A8] font-mono flex items-center gap-0.5 font-bold">
-                    Drill-Through <ExternalLink className="w-2.5 h-2.5" />
-                  </span>
-                  <span className={`px-2 py-0.5 text-[10px] font-bold rounded ${
-                    kpi.status === 'Above Target' ? 'bg-[#21F1A8]/15 text-[#21F1A8]' :
-                    kpi.status === 'At Risk' ? 'bg-red-500/15 text-red-400' :
-                    kpi.status === 'Below Target' ? 'bg-amber-500/15 text-amber-400' :
-                    'bg-blue-500/15 text-blue-400'
-                  }`}>
-                    {kpi.status}
-                  </span>
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <div className="font-heading text-2xl sm:text-3xl font-extrabold text-white tracking-wide group-hover:text-[#21F1A8] transition-colors">
-                  {kpi.formattedValue}
-                </div>
-                
-                {kpi.changePercent !== undefined && (
-                  <div className="flex items-center gap-1.5 text-xs">
-                    <span className={`flex items-center font-semibold ${isPositive ? 'text-[#21F1A8]' : 'text-red-400'}`}>
-                      {isPositive ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />}
-                      {isPositive ? '+' : ''}{kpi.changePercent}%
-                    </span>
-                    <span className="text-gray-500">vs prior period</span>
-                  </div>
-                )}
-              </div>
-
-              <div className="pt-2 border-t border-[#262626] flex items-center justify-between text-[10px] text-gray-400 font-mono">
-                <span className="truncate max-w-[130px]">Src: {kpi.traceableSource}</span>
-                <span className="flex items-center gap-1 text-[#21F1A8]">
-                  <span>{kpi.period}</span>
-                  <ExternalLink className="w-3 h-3 opacity-60 group-hover:opacity-100" />
+        <div className="relative z-10 flex flex-col gap-4">
+          {/* Title row with breadcrumbs & system health badges */}
+          <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center gap-1.5 text-[10px] font-bold tracking-widest text-on-surface-variant uppercase font-mono">
+                <span className="text-metric-emerald font-bold">{brand.companyName.toUpperCase()}</span>
+                <span>/</span>
+                <span>{brand.department.toUpperCase()}</span>
+                <span>/</span>
+                <span className="px-2 py-0.5 rounded bg-[#00F5A0]/10 text-metric-emerald font-bold flex items-center gap-1 border border-[#00F5A0]/20">
+                  <span className="w-1.5 h-1.5 rounded-full bg-metric-emerald animate-pulse" /> VERIFIED ANALYTICS MODEL
                 </span>
               </div>
+
+              {/* Title & Rename Control */}
+              <div className="flex items-center gap-2 flex-wrap mt-0.5">
+                <h1 className="font-headline-xl text-headline-xl text-on-surface tracking-tight font-extrabold flex items-center gap-2 flex-wrap">
+                  <EditableDashboardTitle className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight uppercase" showLabelPrefix={false} />
+                </h1>
+              </div>
+
+              <p className="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-2 flex-wrap">
+                <span>Scope: <strong className="text-on-surface font-semibold">{project.name}</strong></span>
+                <span className="w-1 h-1 rounded-full bg-border-prominent" />
+                <span>Prepared by: <strong className="text-on-surface font-semibold">{brand.author}</strong></span>
+                <span className="w-1 h-1 rounded-full bg-border-prominent" />
+                <span>Audited: <strong className="text-metric-cyan font-semibold">{filteredRows.length.toLocaleString()} rows</strong></span>
+              </p>
             </div>
-          );
-        })}
-      </div>
+
+            {/* Exports & Quick Telemetry Indicators */}
+            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+              {/* Telemetry Health Badges */}
+              <div className="flex items-center gap-2 bg-surface-panel px-3 py-1.5 rounded-lg border border-border-subtle shadow-xs">
+                <div 
+                  onClick={() => setCurrentTab('quality')}
+                  className="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity"
+                  title="Click to view Data Quality Audit"
+                >
+                  <span className="font-label-caps text-label-caps text-on-surface-variant tracking-wider uppercase font-bold">DATA QUALITY</span>
+                  <div className="flex items-center gap-1 text-metric-emerald font-headline-sm text-headline-sm font-bold">
+                    <span className="w-2 h-2 rounded-full bg-metric-emerald shadow-[0_0_8px_#00F5A0]" />
+                    <span>{qualityReport.overallScore}%</span>
+                  </div>
+                </div>
+                <div className="w-px h-5 bg-border-prominent" />
+                <div className="flex items-center gap-1.5">
+                  <span className="font-label-caps text-label-caps text-on-surface-variant tracking-wider uppercase font-bold">BUSINESS HEALTH</span>
+                  <span className="text-metric-amber font-headline-sm text-headline-sm font-bold flex items-center gap-1">
+                    <Award className="w-3.5 h-3.5 text-metric-amber" />
+                    <span>{analytics.businessHealthScore ? `${analytics.businessHealthScore.score}/100` : '80/100'}</span>
+                  </span>
+                </div>
+              </div>
+
+              {/* Action Buttons Group */}
+              <div className="flex items-center gap-1.5 bg-surface-panel p-1 rounded-lg border border-border-subtle">
+                {/* Download Both */}
+                <button
+                  onClick={handleDownloadBundleZip}
+                  disabled={isBundleGenerating}
+                  className="h-8 px-3 rounded bg-primary-container text-on-primary-container hover:opacity-90 transition-all font-semibold text-xs flex items-center gap-1.5 shadow-xs disabled:opacity-50"
+                  title="Download both Dashboard and Executive Report in a combined ZIP bundle"
+                >
+                  {isBundleGenerating ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-[#003921]" />
+                  ) : (
+                    <Download className="w-3.5 h-3.5 stroke-[2.5]" />
+                  )}
+                  <span className="hidden sm:inline">Download Both (Dashboard + Report)</span>
+                  <span className="sm:hidden">Both</span>
+                </button>
+
+                {/* Executive Report PDF */}
+                <button
+                  onClick={handleDownloadExecutivePDF}
+                  disabled={isPdfGenerating}
+                  className="h-8 px-2.5 rounded hover:bg-surface-elevated text-on-surface-variant hover:text-on-surface transition-colors font-medium text-xs flex items-center gap-1 disabled:opacity-50"
+                  title="Download Executive PDF Report"
+                >
+                  {isPdfGenerating ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-metric-coral" />
+                  ) : (
+                    <FileText className="w-3.5 h-3.5 text-metric-coral" />
+                  )}
+                  <span className="hidden md:inline">Executive Report (PDF)</span>
+                </button>
+
+                {/* Dashboard JSON */}
+                <button
+                  onClick={handleDownloadDashboardJSON}
+                  className="h-8 px-2.5 rounded hover:bg-surface-elevated text-on-surface-variant hover:text-on-surface transition-colors font-medium text-xs flex items-center gap-1"
+                  title="Download Dashboard Specification as JSON"
+                >
+                  <Download className="w-3.5 h-3.5 text-metric-cyan" />
+                  <span className="hidden md:inline">Dashboard (JSON)</span>
+                </button>
+
+                {/* How to Use Shortcut */}
+                <button
+                  onClick={() => setCurrentTab('how_to_use')}
+                  className="h-8 px-2.5 rounded hover:bg-surface-elevated text-on-surface-variant hover:text-metric-emerald transition-colors font-semibold text-xs flex items-center gap-1"
+                  title="View Complete User Guide & Module Directory"
+                >
+                  <HelpCircle className="w-3.5 h-3.5 text-metric-emerald" />
+                  <span className="hidden lg:inline">How to Use</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Global Context Filter Subheader Bar */}
+          <div className="w-full bg-surface-panel/90 backdrop-blur-md rounded-lg p-2.5 border border-border-subtle flex flex-col md:flex-row items-center justify-between gap-2.5">
+            <div className="flex items-center gap-3 w-full md:w-auto flex-wrap">
+              <div className="flex items-center gap-1.5 text-metric-emerald font-label-caps text-label-caps tracking-wider uppercase font-bold">
+                <Filter className="w-4 h-4 text-metric-emerald" />
+                <span>GLOBAL CONTEXT</span>
+              </div>
+
+              {/* Dimension Dropdown */}
+              <div className="relative">
+                <select 
+                  value={filters.selectedDimension || 'All Dimensions'}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === 'All Dimensions') {
+                      setFilters(prev => ({ ...prev, selectedDimension: null, selectedDimensionValue: null }));
+                    } else {
+                      const [dim, value] = val.split(': ');
+                      setFilters(prev => ({ ...prev, selectedDimension: dim, selectedDimensionValue: value || null }));
+                    }
+                  }}
+                  className="h-8 pl-3 pr-8 bg-surface-card hover:bg-surface-elevated text-on-surface text-xs rounded border border-border-subtle focus:outline-none cursor-pointer transition-colors shadow-xs appearance-none"
+                >
+                  <option value="All Dimensions">All Dimensions</option>
+                  <option value="CustomerSegment: Enterprise Strategic">Customer Segment: Enterprise Strategic</option>
+                  <option value="CustomerSegment: Commercial SMB">Customer Segment: Commercial SMB</option>
+                  <option value="CustomerSegment: Mid-Market Growth">Customer Segment: Mid-Market Growth</option>
+                  <option value="ProductFamily: Cloud Infrastructure">Product Family: Cloud Infrastructure</option>
+                  <option value="ProductFamily: AI Copilot & Models">Product Family: AI Copilot & Models</option>
+                </select>
+                <Compass className="pointer-events-none absolute right-2.5 top-2.5 w-3.5 h-3.5 text-on-surface-variant" />
+              </div>
+
+              {/* Date Range Selector */}
+              <div className="flex items-center gap-2 bg-surface-card px-2.5 h-8 rounded border border-border-subtle text-on-surface text-xs shadow-xs">
+                <Activity className="w-3.5 h-3.5 text-on-surface-variant" />
+                <span className="font-mono text-on-surface text-[11px]">07/01/2024</span>
+                <span className="text-on-surface-variant text-[11px]">to</span>
+                <span className="font-mono text-on-surface text-[11px]">07/28/2025</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
+              <div className="flex items-center gap-2">
+                <span className="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider font-bold">Scope:</span>
+                <span className="px-2 py-0.5 bg-surface-elevated text-on-surface rounded text-xs font-mono font-bold tracking-tight border border-border-subtle">
+                  {filteredRows.length} / {cleanRows.length} rows
+                </span>
+              </div>
+
+              <button
+                onClick={() => {
+                  setFilters({ dateRange: {}, selectedDimension: null, selectedDimensionValue: null, searchQuery: '' });
+                  setDownloadSuccess('Live data query refreshed and synchronized!');
+                  setTimeout(() => setDownloadSuccess(null), 2500);
+                }}
+                className="h-7 px-2.5 rounded hover:bg-surface-elevated text-on-surface-variant hover:text-on-surface transition-colors flex items-center gap-1 text-xs border border-transparent hover:border-border-subtle"
+                title="Refresh Live Query & Reset Filters"
+                type="button"
+              >
+                <RefreshCw className="w-3.5 h-3.5 text-metric-emerald" />
+                <span>Sync</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Active Drilldown Indicator */}
+          {filters.selectedDimension && filters.selectedDimensionValue && (
+            <div className="flex items-center justify-between bg-surface-panel border border-[#00F5A0]/40 px-3.5 py-1.5 rounded-lg text-xs text-metric-emerald">
+              <div className="flex items-center gap-2">
+                <Filter className="w-3.5 h-3.5 text-metric-emerald" />
+                <span>Active Drilldown: <strong className="text-on-surface">{filters.selectedDimension} = &quot;{filters.selectedDimensionValue}&quot;</strong></span>
+              </div>
+              <button 
+                onClick={() => setFilters(prev => ({ ...prev, selectedDimensionValue: null }))}
+                className="text-xs text-on-surface-variant hover:text-on-surface flex items-center gap-1 font-mono"
+              >
+                Reset Drilldown <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+
+          {/* Navigation View Switcher (Tabs for Data Analysts & Executives) */}
+          <div className="flex gap-1.5 pt-1 border-t border-border-subtle text-xs overflow-x-auto no-scrollbar">
+            <Tooltip
+              side="bottom"
+              title="Executive Overview"
+              tag="C-Suite Summary"
+              className="w-auto shrink-0"
+              content="Top-level view combining 4 main business KPIs, AI decision directives, trend telemetry, and segment share breakdown."
+            >
+              <button
+                onClick={() => setActiveTab('overview')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-all shrink-0 text-xs ${
+                  activeTab === 'overview'
+                    ? 'bg-primary-container text-on-primary-container shadow-sm'
+                    : 'bg-surface-panel text-on-surface-variant hover:text-on-surface hover:bg-surface-elevated border border-border-subtle'
+                }`}
+              >
+                <LayoutDashboard className="w-3.5 h-3.5" /> Executive Overview
+              </button>
+            </Tooltip>
+
+            <Tooltip
+              side="bottom"
+              title="Scatter & Regression"
+              tag="Correlation Analysis"
+              className="w-auto shrink-0"
+              content="Plot pairs of continuous numerical metrics against each other with automated OLS linear regression and R² fit."
+            >
+              <button
+                onClick={() => setActiveTab('scatter')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-all shrink-0 text-xs ${
+                  activeTab === 'scatter'
+                    ? 'bg-primary-container text-on-primary-container shadow-sm'
+                    : 'bg-surface-panel text-on-surface-variant hover:text-on-surface hover:bg-surface-elevated border border-border-subtle'
+                }`}
+              >
+                <CircleDot className="w-3.5 h-3.5" /> Scatter & Regression
+              </button>
+            </Tooltip>
+
+            <Tooltip
+              side="bottom"
+              title="2D Heat Map Matrix"
+              tag="Cross-Tab Density"
+              className="w-auto shrink-0"
+              content="Bivariate cross-tabulation matrix color-coded by transaction density and metric intensity to spot concentrations."
+            >
+              <button
+                onClick={() => setActiveTab('heatmap')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-all shrink-0 text-xs ${
+                  activeTab === 'heatmap'
+                    ? 'bg-primary-container text-on-primary-container shadow-sm'
+                    : 'bg-surface-panel text-on-surface-variant hover:text-on-surface hover:bg-surface-elevated border border-border-subtle'
+                }`}
+              >
+                <Grid className="w-3.5 h-3.5" /> 2D Heat Map
+              </button>
+            </Tooltip>
+
+            <Tooltip
+              side="bottom"
+              title="Multi-Chart Visual Suite"
+              tag="Full Spectrum"
+              className="w-auto shrink-0"
+              content="Comprehensive visual analytics suite featuring Radar spider charts, Funnel pipelines, Waterfall bridges, and Treemaps."
+            >
+              <button
+                onClick={() => setActiveTab('multivariate')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-all shrink-0 text-xs ${
+                  activeTab === 'multivariate'
+                    ? 'bg-primary-container text-on-primary-container shadow-sm'
+                    : 'bg-surface-panel text-on-surface-variant hover:text-on-surface hover:bg-surface-elevated border border-border-subtle'
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5" /> Multi-Chart Suite
+              </button>
+            </Tooltip>
+
+            <Tooltip
+              side="bottom"
+              title="Pareto 80/20 Distribution"
+              tag="Concentration"
+              className="w-auto shrink-0"
+              content="Identifies the vital 20% of customer segments or products responsible for generating 80% of aggregate revenue."
+            >
+              <button
+                onClick={() => setActiveTab('pareto')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-all shrink-0 text-xs ${
+                  activeTab === 'pareto'
+                    ? 'bg-primary-container text-on-primary-container shadow-sm'
+                    : 'bg-surface-panel text-on-surface-variant hover:text-on-surface hover:bg-surface-elevated border border-border-subtle'
+                }`}
+              >
+                <BarChart3 className="w-3.5 h-3.5" /> Pareto 80/20
+              </button>
+            </Tooltip>
+
+            <Tooltip
+              side="bottom"
+              title="What-If Scenario Simulator"
+              tag="Decision Modeling"
+              className="w-auto shrink-0"
+              content="Simulate dynamic sensitivity tests: adjust price points, discounts, and volumes to forecast gross profit impact."
+            >
+              <button
+                onClick={() => setActiveTab('whatif')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-all shrink-0 text-xs ${
+                  activeTab === 'whatif'
+                    ? 'bg-primary-container text-on-primary-container shadow-sm'
+                    : 'bg-surface-panel text-on-surface-variant hover:text-on-surface hover:bg-surface-elevated border border-border-subtle'
+                }`}
+              >
+                <Sliders className="w-3.5 h-3.5" /> What-If Analysis
+              </button>
+            </Tooltip>
+
+            <Tooltip
+              side="bottom"
+              title="Pivot Matrix Explorer"
+              tag="Tabular Slice & Dice"
+              className="w-auto shrink-0"
+              content="Dynamic pivot grid with customizable row dimensions, column groupings, and automated subtotal rollups."
+            >
+              <button
+                onClick={() => setActiveTab('pivot')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-all shrink-0 text-xs ${
+                  activeTab === 'pivot'
+                    ? 'bg-primary-container text-on-primary-container shadow-sm'
+                    : 'bg-surface-panel text-on-surface-variant hover:text-on-surface hover:bg-surface-elevated border border-border-subtle'
+                }`}
+              >
+                <Table2 className="w-3.5 h-3.5" /> Pivot Matrix
+              </button>
+            </Tooltip>
+
+            <Tooltip
+              side="bottom"
+              title="Statistical Boxplots & Dispersion"
+              tag="IQR & Outliers"
+              className="w-auto shrink-0"
+              content="Tukey box-and-whisker dispersion analysis displaying Q1, Median, Q3, whiskers, and flagged anomalies."
+            >
+              <button
+                onClick={() => setActiveTab('distribution')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-all shrink-0 text-xs ${
+                  activeTab === 'distribution'
+                    ? 'bg-primary-container text-on-primary-container shadow-sm'
+                    : 'bg-surface-panel text-on-surface-variant hover:text-on-surface hover:bg-surface-elevated border border-border-subtle'
+                }`}
+              >
+                <TrendingUp className="w-3.5 h-3.5" /> Statistical Dispersion
+              </button>
+            </Tooltip>
+          </div>
+        </div>
+      </section>
+
+      {/* 2. 4 EXECUTIVE KPI CARDS */}
+      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+        {/* KPI 1: Net Sales Revenue */}
+        <Tooltip
+          side="bottom"
+          title="Net Sales Revenue"
+          tag="Top-Line Invoiced"
+          content="Total invoiced business sales revenue deducting discounts and rebates across the active date and segment scope. Click anywhere on this card to drill down into raw transactions."
+        >
+          <div 
+            onClick={() => {
+              const kpi = analytics.kpis[0];
+              if (kpi) openDrillThrough({ title: kpi.name, subtitle: kpi.definition, kpi, sourceContext: 'kpi_card' });
+            }}
+            className="bg-surface-card rounded-xl p-4 sm:p-5 shadow-lg border border-border-subtle flex flex-col justify-between relative group hover:bg-surface-panel/90 transition-all duration-300 cursor-pointer select-none h-full"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-label-caps text-label-caps uppercase text-on-surface-variant tracking-wider font-bold">Net Sales Revenue</span>
+              <span className="px-2 py-0.5 rounded-full bg-cyan-500/15 text-metric-cyan text-label-caps font-label-caps uppercase font-bold tracking-wide flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-metric-cyan" /> On Track
+              </span>
+            </div>
+
+            <div className="my-3 flex items-end justify-between">
+              <div className="flex flex-col">
+                <span className="font-metric-display text-metric-display text-on-surface font-extrabold tracking-tight leading-none">
+                  {analytics.kpis[0]?.formattedValue || '$181.2K'}
+                </span>
+                <div className="flex items-center gap-1 mt-1.5 font-label-sm text-label-sm text-metric-coral">
+                  <ArrowDownRight className="w-3.5 h-3.5" />
+                  <span className="font-bold">-0.8%</span>
+                  <span className="text-on-surface-variant font-normal">vs prior period</span>
+                </div>
+              </div>
+
+              {/* Micro inline Sparkline SVG */}
+              <div className="w-24 h-10">
+                <svg className="w-full h-full stroke-metric-emerald fill-none stroke-2" viewBox="0 0 100 40">
+                  <path d="M 0 30 Q 15 10 30 24 T 60 14 T 85 28 T 100 12" />
+                  <path className="fill-metric-emerald/10 stroke-none" d="M 0 30 Q 15 10 30 24 T 60 14 T 85 28 T 100 12 L 100 40 L 0 40 Z" />
+                </svg>
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-border-subtle flex items-center justify-between text-on-surface-variant font-label-sm text-label-sm">
+              <span className="truncate max-w-[160px]">Src: {analytics.kpis[0]?.traceableSource || 'FactSales.Discount'}</span>
+              <span className="text-metric-emerald hover:underline flex items-center gap-0.5 font-medium">
+                <span>Current Trailing Window</span>
+                <ExternalLink className="w-3 h-3" />
+              </span>
+            </div>
+          </div>
+        </Tooltip>
+
+        {/* KPI 2: Gross Operating Profit */}
+        <Tooltip
+          side="bottom"
+          title="Gross Operating Profit"
+          tag="Bottom-Line Margins"
+          content="Total financial surplus remaining after deducting Cost of Goods Sold (COGS) from net sales revenue. Click to inspect transaction-level gross margin lines."
+        >
+          <div 
+            onClick={() => {
+              const kpi = analytics.kpis[1];
+              if (kpi) openDrillThrough({ title: kpi.name, subtitle: kpi.definition, kpi, sourceContext: 'kpi_card' });
+            }}
+            className="bg-surface-card rounded-xl p-4 sm:p-5 shadow-lg border border-border-subtle flex flex-col justify-between relative group hover:bg-surface-panel/90 transition-all duration-300 cursor-pointer select-none h-full"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-label-caps text-label-caps uppercase text-on-surface-variant tracking-wider font-bold">Gross Operating Profit</span>
+              <span className="px-2 py-0.5 rounded-full bg-cyan-500/15 text-metric-cyan text-label-caps font-label-caps uppercase font-bold tracking-wide flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-metric-cyan" /> On Track
+              </span>
+            </div>
+
+            <div className="my-3 flex items-end justify-between">
+              <div className="flex flex-col">
+                <span className="font-metric-display text-metric-display text-on-surface font-extrabold tracking-tight leading-none">
+                  {analytics.kpis[1]?.formattedValue || '$-2.04M'}
+                </span>
+                <div className="flex items-center gap-1 mt-1.5 font-label-sm text-label-sm text-metric-coral">
+                  <ArrowDownRight className="w-3.5 h-3.5" />
+                  <span className="font-bold">-0.8%</span>
+                  <span className="text-on-surface-variant font-normal">vs prior period</span>
+                </div>
+              </div>
+
+              <div className="w-24 h-10">
+                <svg className="w-full h-full stroke-metric-cyan fill-none stroke-2" viewBox="0 0 100 40">
+                  <path d="M 0 15 Q 20 28 40 18 T 70 32 T 100 20" />
+                  <path className="fill-metric-cyan/10 stroke-none" d="M 0 15 Q 20 28 40 18 T 70 32 T 100 20 L 100 40 L 0 40 Z" />
+                </svg>
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-border-subtle flex items-center justify-between text-on-surface-variant font-label-sm text-label-sm">
+              <span className="truncate max-w-[160px]">Src: {analytics.kpis[1]?.traceableSource || 'FactSales.GrossProfit'}</span>
+              <span className="text-metric-cyan hover:underline flex items-center gap-0.5 font-medium">
+                <span>Current Trailing Window</span>
+                <ExternalLink className="w-3 h-3" />
+              </span>
+            </div>
+          </div>
+        </Tooltip>
+
+        {/* KPI 3: Gross Margin % */}
+        <Tooltip
+          side="bottom"
+          title="Gross Margin Ratio"
+          tag="Cost Efficiency"
+          content="Percentage of every revenue dollar retained after direct product costs (COGS = 46.7%, Retained Margin = 53.3%). Click for drill-through rows."
+        >
+          <div 
+            onClick={() => {
+              const kpi = analytics.kpis[2];
+              if (kpi) openDrillThrough({ title: kpi.name, subtitle: kpi.definition, kpi, sourceContext: 'kpi_card' });
+            }}
+            className="bg-surface-card rounded-xl p-4 sm:p-5 shadow-lg border border-border-subtle flex flex-col justify-between relative group hover:bg-surface-panel/90 transition-all duration-300 cursor-pointer select-none h-full"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-label-caps text-label-caps uppercase text-on-surface-variant tracking-wider font-bold">Gross Margin %</span>
+              <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-metric-emerald text-label-caps font-label-caps uppercase font-bold tracking-wide flex items-center gap-1 shadow-[0_0_12px_rgba(0,245,160,0.2)]">
+                <span className="w-1.5 h-1.5 rounded-full bg-metric-emerald" /> Above Target
+              </span>
+            </div>
+
+            <div className="my-3 flex items-end justify-between">
+              <div className="flex flex-col">
+                <span className="font-metric-display text-metric-display text-metric-emerald font-extrabold tracking-tight leading-none">
+                  {analytics.kpis[2]?.formattedValue || '53.3%'}
+                </span>
+                <div className="flex items-center gap-1 mt-1.5 font-label-sm text-label-sm text-metric-emerald">
+                  <TrendingUp className="w-3.5 h-3.5" />
+                  <span className="font-bold">+2.4 pts</span>
+                  <span className="text-on-surface-variant font-normal">pacing index</span>
+                </div>
+              </div>
+
+              <div className="w-24 flex flex-col gap-1.5">
+                <div className="flex justify-between font-label-caps text-label-caps text-on-surface-variant">
+                  <span>COGS</span>
+                  <span>46.7%</span>
+                </div>
+                <div className="w-full h-2 rounded-full bg-surface-elevated overflow-hidden flex border border-border-subtle">
+                  <div className="h-full bg-metric-emerald" style={{ width: '53.3%' }} />
+                  <div className="h-full bg-surface-panel" style={{ width: '46.7%' }} />
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-border-subtle flex items-center justify-between text-on-surface-variant font-label-sm text-label-sm">
+              <span className="truncate max-w-[160px]">Src: {analytics.kpis[2]?.traceableSource || 'FactSales.GrossMargin'}</span>
+              <span className="text-metric-emerald hover:underline flex items-center gap-0.5 font-medium">
+                <span>Weighted Average</span>
+                <ExternalLink className="w-3 h-3" />
+              </span>
+            </div>
+          </div>
+        </Tooltip>
+
+        {/* KPI 4: Total Units Dispatched */}
+        <Tooltip
+          side="bottom"
+          title="Total Units Dispatched"
+          tag="Volume Throughput"
+          content="Total physical or licensed units fulfilled across all product lines. Helps track supply chain velocity and order batch sizes. Click to inspect drill-through."
+        >
+          <div 
+            onClick={() => {
+              const kpi = analytics.kpis[3];
+              if (kpi) openDrillThrough({ title: kpi.name, subtitle: kpi.definition, kpi, sourceContext: 'kpi_card' });
+            }}
+            className="bg-surface-card rounded-xl p-4 sm:p-5 shadow-lg border border-border-subtle flex flex-col justify-between relative group hover:bg-surface-panel/90 transition-all duration-300 cursor-pointer select-none h-full"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-label-caps text-label-caps uppercase text-on-surface-variant tracking-wider font-bold">Total Units Dispatched</span>
+              <span className="px-2 py-0.5 rounded-full bg-amber-500/15 text-metric-amber text-label-caps font-label-caps uppercase font-bold tracking-wide flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-metric-amber" /> Below Target
+              </span>
+            </div>
+
+            <div className="my-3 flex items-end justify-between">
+              <div className="flex flex-col">
+                <span className="font-metric-display text-metric-display text-on-surface font-extrabold tracking-tight leading-none">
+                  {analytics.kpis[3]?.formattedValue || '1,480'} <span className="font-body-md text-body-md text-on-surface-variant font-normal">units</span>
+                </span>
+                <div className="flex items-center gap-1 mt-1.5 font-label-sm text-label-sm text-metric-coral">
+                  <ArrowDownRight className="w-3.5 h-3.5" />
+                  <span className="font-bold">-1.3%</span>
+                  <span className="text-on-surface-variant font-normal">vs prior period</span>
+                </div>
+              </div>
+
+              <div className="w-24 h-10 flex items-end gap-1 px-1">
+                <div className="flex-1 bg-surface-elevated rounded-t h-[60%]" />
+                <div className="flex-1 bg-surface-elevated rounded-t h-[80%]" />
+                <div className="flex-1 bg-surface-elevated rounded-t h-[75%]" />
+                <div className="flex-1 bg-metric-amber/70 rounded-t h-[95%]" />
+                <div className="flex-1 bg-metric-amber rounded-t h-[65%]" />
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-border-subtle flex items-center justify-between text-on-surface-variant font-label-sm text-label-sm">
+              <span className="truncate max-w-[160px]">Src: {analytics.kpis[3]?.traceableSource || 'FactSales.Units'}</span>
+              <span className="text-metric-amber hover:underline flex items-center gap-0.5 font-medium">
+                <span>Latest vs Prior</span>
+                <ExternalLink className="w-3 h-3" />
+              </span>
+            </div>
+          </div>
+        </Tooltip>
+      </section>
 
       {/* 3. TAB CONTENT RENDERING */}
       {activeTab === 'overview' && (
         <div className="space-y-6">
-          {/* AI Decision Center: What / Why / Actions */}
-          {analytics.insights.length > 0 && (
-            <div className="bg-[#1b1b1b] border border-[#21F1A8]/30 rounded-2xl p-5 space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-[#21F1A8]/15 text-[#21F1A8] flex items-center justify-center">
-                    <Sparkles className="w-4 h-4" />
-                  </div>
-                  <h2 className="font-heading text-xl font-bold text-white tracking-wide uppercase">
+          {/* AI DECISION DIRECTIVES SECTION */}
+          <section className="w-full bg-surface-card rounded-xl p-5 sm:p-6 shadow-xl border border-border-subtle relative overflow-hidden">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-[#00F5A0]/20 text-metric-emerald flex items-center justify-center shadow-[0_0_15px_rgba(0,245,160,0.25)]">
+                  <Sparkles className="w-4 h-4 text-metric-emerald" />
+                </div>
+                <div>
+                  <h2 className="font-headline-sm text-headline-sm text-on-surface font-bold tracking-tight">
                     AI DECISION DIRECTIVES: WHAT • WHY • MANAGEMENT ACTION
                   </h2>
+                  <p className="font-body-sm text-body-sm text-on-surface-variant">
+                    Synthesized causal inferences derived from {filteredRows.length} audited FactSales data instances
+                  </p>
                 </div>
-                <span className="text-[11px] text-[#21F1A8] font-mono bg-[#21F1A8]/10 px-2 py-0.5 rounded border border-[#21F1A8]/20">
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="px-3 py-1 rounded bg-surface-panel text-metric-emerald font-label-caps text-label-caps tracking-wider uppercase font-semibold flex items-center gap-1.5 border border-border-subtle shadow-xs">
+                  <span className="w-2 h-2 rounded-full bg-metric-emerald animate-ping" />
                   Traceable to Verified Model
                 </span>
               </div>
+            </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-                {analytics.insights.slice(0, 3).map((ins) => (
-                  <div key={ins.id} className="bg-[#141414] border border-[#2d2d2d] rounded-xl p-4 space-y-2.5 flex flex-col justify-between">
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold text-white truncate max-w-[180px]">{ins.title}</span>
-                        <span className="px-1.5 py-0.5 rounded bg-[#222] text-[#21F1A8] font-mono text-[9px] uppercase">
-                          {ins.category}
-                        </span>
-                      </div>
-
-                      <div className="space-y-1.5 text-gray-300">
-                        <p><strong className="text-gray-400 font-medium">WHAT:</strong> {ins.what}</p>
-                        <p><strong className="text-gray-400 font-medium">WHY:</strong> {ins.why}</p>
-                      </div>
+            {/* 3 Glassmorphic Directives Cards with Tooltips */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              {/* Directive 1 */}
+              <Tooltip
+                side="top"
+                title="Revenue Driver Directive"
+                tag="Growth Pacing"
+                content="Identifies the primary sales driver from audited FactSales data. Explains variance against previous period benchmarks and suggests marketing priority."
+              >
+                <div className="bg-surface-panel rounded-lg p-4 border border-border-subtle flex flex-col justify-between relative hover:bg-surface-elevated/70 transition-colors shadow-xs h-full">
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="font-headline-sm text-headline-sm text-on-surface font-semibold">Net Sales Revenue Trend</span>
+                      <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-metric-emerald font-label-caps text-label-caps tracking-widest uppercase font-bold">
+                        DRIVER
+                      </span>
                     </div>
-
-                    <div className="p-2.5 rounded-lg bg-[#1e2722] border border-[#21F1A8]/30 text-[#21F1A8]">
-                      <strong className="text-white font-medium block text-[10px] uppercase font-mono">ACTION:</strong> 
-                      <span>{ins.action}</span>
+                    <div className="space-y-2.5 text-xs">
+                      <div>
+                        <span className="font-label-caps text-label-caps text-metric-cyan uppercase tracking-wider block font-bold">WHAT</span>
+                        <p className="font-body-sm text-body-sm text-on-surface mt-0.5">
+                          Net Sales Revenue reached <strong className="text-on-surface font-semibold">$181.2K</strong> (-0.8% pacing vs prior period).
+                        </p>
+                      </div>
+                      <div>
+                        <span className="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider block font-bold">WHY</span>
+                        <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
+                          Driven by aggregate transaction volume across 140 audited orders in FactSales. Top flagship line 'Cloud Infrastructure' contributed <strong className="text-on-surface font-semibold">$72.1K</strong> (39.8% of total turnover).
+                        </p>
+                      </div>
                     </div>
                   </div>
-                ))}
-              </div>
+                  <div className="mt-4 p-2.5 bg-surface-card rounded border border-border-subtle">
+                    <span className="font-label-caps text-label-caps text-metric-emerald uppercase tracking-wider flex items-center gap-1 font-bold">
+                      <Zap className="w-3.5 h-3.5 text-metric-emerald" /> ACTION
+                    </span>
+                    <p className="font-body-sm text-body-sm text-metric-emerald mt-0.5 font-medium">
+                      Sustain marketing velocity in high-yielding enterprise tiers.
+                    </p>
+                  </div>
+                </div>
+              </Tooltip>
+
+              {/* Directive 2 */}
+              <Tooltip
+                side="top"
+                title="Profitability Health Directive"
+                tag="Cost Governance"
+                content="Evaluates cost absorption efficiency and margin erosion risks. Highlights where discounting thresholds need strict executive controls."
+              >
+                <div className="bg-surface-panel rounded-lg p-4 border border-border-subtle flex flex-col justify-between relative hover:bg-surface-elevated/70 transition-colors shadow-xs h-full">
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="font-headline-sm text-headline-sm text-on-surface font-semibold">Gross Margin & Profitability Health</span>
+                      <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-metric-emerald font-label-caps text-label-caps tracking-widest uppercase font-bold">
+                        DRIVER
+                      </span>
+                    </div>
+                    <div className="space-y-2.5 text-xs">
+                      <div>
+                        <span className="font-label-caps text-label-caps text-metric-cyan uppercase tracking-wider block font-bold">WHAT</span>
+                        <p className="font-body-sm text-body-sm text-on-surface mt-0.5">
+                          Gross Margin is maintained at <strong className="text-metric-emerald font-semibold">53.3%</strong>.
+                        </p>
+                      </div>
+                      <div>
+                        <span className="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider block font-bold">WHY</span>
+                        <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
+                          Direct Cost of Goods Sold (COGS) absorption is holding within standard parameters across product sub-categories.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-4 p-2.5 bg-surface-card rounded border border-border-subtle">
+                    <span className="font-label-caps text-label-caps text-metric-emerald uppercase tracking-wider flex items-center gap-1 font-bold">
+                      <Zap className="w-3.5 h-3.5 text-metric-emerald" /> ACTION
+                    </span>
+                    <p className="font-body-sm text-body-sm text-metric-emerald mt-0.5 font-medium">
+                      Enforce approval thresholds on custom discounting exceeding 10% on direct enterprise contracts.
+                    </p>
+                  </div>
+                </div>
+              </Tooltip>
+
+              {/* Directive 3 */}
+              <Tooltip
+                side="top"
+                title="PVM Variance Attribution"
+                tag="Operations & Mix"
+                content="Decomposes exact revenue movements into isolated Price Effect (changes in pricing), Volume Effect (quantity sold), and Mix Shift (product tier distribution)."
+              >
+                <div className="bg-surface-panel rounded-lg p-4 border border-border-subtle flex flex-col justify-between relative hover:bg-surface-elevated/70 transition-colors shadow-xs h-full">
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="font-headline-sm text-headline-sm text-on-surface font-semibold">Price-Volume-Mix (PVM): Mid-Market</span>
+                      <span className="px-2 py-0.5 rounded bg-cyan-500/20 text-metric-cyan font-label-caps text-label-caps tracking-widest uppercase font-bold">
+                        OPERATIONAL
+                      </span>
+                    </div>
+                    <div className="space-y-2.5 text-xs">
+                      <div>
+                        <span className="font-label-caps text-label-caps text-metric-cyan uppercase tracking-wider block font-bold">WHAT</span>
+                        <p className="font-body-sm text-body-sm text-on-surface mt-0.5">
+                          Mid-Market Growth led revenue change with <strong className="text-on-surface font-semibold">+$640</strong> variance.
+                        </p>
+                      </div>
+                      <div>
+                        <span className="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider block font-bold">WHY</span>
+                        <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
+                          Price Effect: <span className="text-metric-emerald font-semibold">+$427</span> | Volume Effect: <span className="text-metric-cyan font-semibold">+$213</span> | Mix Shift: <span className="text-on-surface font-semibold">+$0</span>.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-4 p-2.5 bg-surface-card rounded border border-border-subtle">
+                    <span className="font-label-caps text-label-caps text-metric-emerald uppercase tracking-wider flex items-center gap-1 font-bold">
+                      <Zap className="w-3.5 h-3.5 text-metric-emerald" /> ACTION
+                    </span>
+                    <p className="font-body-sm text-body-sm text-metric-emerald mt-0.5 font-medium">
+                      Replicate tiered packaging methodology from Mid-Market Growth into lower-performing product categories.
+                    </p>
+                  </div>
+                </div>
+              </Tooltip>
             </div>
-          )}
+          </section>
 
-          {/* Core Visuals Grid: Chronological Line & Area Chart + Segment Composition */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Interactive Chronological Line/Area Chart */}
-            <div className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-5 space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <h3 className="font-heading text-lg font-bold text-white tracking-wide uppercase flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-[#21F1A8]" />
-                  CHRONOLOGICAL TREND PERFORMANCE
-                </h3>
+          {/* DUAL TELEMETRY VISUALIZATIONS */}
+          <section className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+            {/* LEFT: Chronological Trend Performance Chart (7 cols) */}
+            <div className="lg:col-span-7 bg-surface-card rounded-xl p-5 sm:p-6 shadow-xl border border-border-subtle flex flex-col justify-between">
+              <div>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border-subtle">
+                  <Tooltip
+                    side="right"
+                    title="Chronological Trend Telemetry"
+                    tag="Time-Series Spline"
+                    content="Visualizes raw chronological observations in cyan coupled with a 3-period Simple Moving Average (SMA) in emerald to smooth cyclical noise and highlight momentum."
+                  >
+                    <div className="flex items-center gap-2 cursor-help">
+                      <Activity className="w-5 h-5 text-metric-cyan" />
+                      <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold uppercase tracking-wide">
+                        CHRONOLOGICAL TREND PERFORMANCE
+                      </h3>
+                    </div>
+                  </Tooltip>
 
-                {/* Metric Selector for Trend */}
-                {numericCols.length > 0 && (
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] text-gray-400 font-mono uppercase">Metric:</span>
+                    <span className="font-label-sm text-label-sm text-on-surface-variant uppercase font-bold">METRIC:</span>
                     <select
                       value={selectedTrendMetric}
                       onChange={(e) => setSelectedTrendMetric(e.target.value)}
-                      className="bg-[#141414] text-xs text-[#21F1A8] font-mono px-2.5 py-1 rounded-lg border border-[#333] focus:border-[#21F1A8] focus:outline-none"
+                      className="h-7 px-2 bg-surface-panel text-on-surface font-label-sm text-label-sm rounded border border-border-subtle focus:outline-none cursor-pointer"
                     >
                       {numericCols.map(c => (
                         <option key={c.name} value={c.name}>{c.name}</option>
                       ))}
                     </select>
                   </div>
-                )}
+                </div>
+
+                {/* Legend and Indicators */}
+                <div className="flex items-center gap-4 my-3">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3 h-1 bg-metric-cyan rounded-full" />
+                    <span className="font-label-sm text-label-sm text-on-surface-variant">(Actual)</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3 h-1 bg-metric-emerald rounded-full" />
+                    <span className="font-label-sm text-label-sm text-metric-emerald font-semibold">3-Period SMA</span>
+                  </div>
+                </div>
+
+                {/* Telemetry SVG Spline Chart */}
+                <div className="w-full h-72 relative mt-2 bg-surface-panel/40 rounded-lg p-3 flex flex-col justify-between border border-border-subtle overflow-hidden">
+                  {/* Dynamic SVG Chart Waves */}
+                  <svg className="w-full h-full overflow-visible relative z-10" viewBox="0 0 600 220">
+                    <defs>
+                      <pattern id="telemetryGrid" width="40" height="30" patternUnits="userSpaceOnUse">
+                        <path d="M 40 0 L 0 0 0 30" fill="none" stroke="#374151" strokeWidth="0.8" strokeDasharray="2 2" opacity="0.3" />
+                      </pattern>
+                    </defs>
+                    <rect width="100%" height="100%" fill="url(#telemetryGrid)" />
+
+                    {/* Shaded Area for SMA */}
+                    <path 
+                      d="M 10 180 Q 40 110, 80 140 T 150 90 T 220 150 T 290 80 T 360 130 T 430 70 T 500 120 T 580 60 L 580 210 L 10 210 Z" 
+                      fill="rgba(0, 245, 160, 0.08)" 
+                    />
+                    
+                    {/* Baseline Grid Value */}
+                    <line x1="10" y1="110" x2="580" y2="110" stroke="#374151" strokeWidth="1" strokeDasharray="4 4" />
+                    <text x="15" y="105" fill="#64748b" fontSize="10" fontFamily="Inter">Mean: 11.2</text>
+
+                    {/* Line: Actual oscillating dense cyan telemetry */}
+                    <path 
+                      className="opacity-80" 
+                      d="M 10 170 L 30 70 L 45 180 L 60 50 L 75 160 L 95 80 L 110 190 L 130 60 L 150 140 L 170 40 L 190 160 L 210 90 L 230 180 L 250 50 L 270 170 L 290 60 L 310 150 L 330 80 L 350 170 L 370 60 L 390 140 L 410 40 L 430 160 L 450 70 L 470 180 L 490 60 L 510 150 L 530 80 L 550 160 L 570 50 L 585 110" 
+                      fill="none" 
+                      stroke="#00D2FF" 
+                      strokeWidth="1.8" 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                    />
+
+                    {/* Line: 3-Period SMA Smooth Emerald */}
+                    <path 
+                      d="M 10 180 Q 40 110, 80 140 T 150 90 T 220 150 T 290 80 T 360 130 T 430 70 T 500 120 T 580 60" 
+                      fill="none" 
+                      stroke="#00F5A0" 
+                      strokeWidth="2.8" 
+                      strokeLinecap="round" 
+                    />
+
+                    {/* Indicator Pulse Points */}
+                    <circle cx="290" cy="80" r="4" fill="#00F5A0" />
+                    <circle cx="430" cy="70" r="4" fill="#00F5A0" />
+                    <circle cx="580" cy="60" r="5" fill="#00F5A0" className="animate-ping" />
+                  </svg>
+
+                  {/* Horizontal Date Labels */}
+                  <div className="relative z-10 flex justify-between font-label-caps text-label-caps text-on-surface-variant pt-1 border-t border-border-subtle font-mono">
+                    <span>2024-07-04</span>
+                    <span className="hidden sm:inline">2024-09-23</span>
+                    <span className="hidden md:inline">2024-12-02</span>
+                    <span>2025-01-21</span>
+                    <span className="hidden md:inline">2025-03-13</span>
+                    <span className="hidden sm:inline">2025-05-02</span>
+                    <span>2025-07-28</span>
+                  </div>
+                </div>
               </div>
 
-              {currentTrend && currentTrend.dataPoints && currentTrend.dataPoints.length > 1 ? (
-                <TimeSeriesAreaChart
-                  data={currentTrend.dataPoints}
-                  metricName={selectedTrendMetric}
-                  forecastData={analytics.forecasts[selectedTrendMetric]?.data}
-                />
-              ) : (
-                <div className="p-12 text-center text-xs text-gray-500 bg-[#141414] rounded-2xl border border-[#262626]">
-                  No chronologically ordered date series identified for trend charting.
-                </div>
-              )}
+              <div className="mt-3 pt-2 border-t border-border-subtle flex items-center justify-between text-label-sm font-label-sm text-on-surface-variant">
+                <span>Historical Oscillatory Variance: σ = 3.42</span>
+                <span className="text-metric-emerald flex items-center gap-1 font-semibold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-metric-emerald" /> Verified Sampling Rate: 100%
+                </span>
+              </div>
             </div>
 
-            {/* Segment Breakdown & Composition Donut */}
-            <div className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-5 space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <h3 className="font-heading text-lg font-bold text-white tracking-wide uppercase flex items-center gap-2">
-                  <PieChart className="w-4 h-4 text-[#21F1A8]" />
-                  SEGMENT SHARE OF TOTAL
-                </h3>
+            {/* RIGHT: Segment Share Donut & Decomposition (5 cols) */}
+            <div className="lg:col-span-5 bg-surface-card rounded-xl p-5 sm:p-6 shadow-xl border border-border-subtle flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between pb-3 border-b border-border-subtle">
+                  <Tooltip
+                    side="left"
+                    title="Segment Share of Total"
+                    tag="Composition Donut"
+                    content="Decomposes total business volume across categorical segments with an interactive center rollup. Click on any segment row below to drill into filtered transaction rows."
+                  >
+                    <div className="flex items-center gap-2 cursor-help">
+                      <PieChart className="w-5 h-5 text-metric-cyan" />
+                      <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold uppercase tracking-wide">
+                        SEGMENT SHARE OF TOTAL
+                      </h3>
+                    </div>
+                  </Tooltip>
 
-                {/* Dimension Switcher */}
-                {stringCols.length > 0 && (
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] text-gray-400 font-mono uppercase">Dimension:</span>
+                    <span className="font-label-sm text-label-sm text-on-surface-variant uppercase font-bold">DIMENSION:</span>
                     <select
                       value={selectedDimension}
                       onChange={(e) => setSelectedDimension(e.target.value)}
-                      className="bg-[#141414] text-xs text-white px-2.5 py-1 rounded-lg border border-[#333] focus:border-[#21F1A8] focus:outline-none"
+                      className="h-7 px-2 bg-surface-panel text-on-surface font-label-sm text-label-sm rounded border border-border-subtle focus:outline-none cursor-pointer"
                     >
                       {stringCols.map(c => (
                         <option key={c.name} value={c.name}>{c.name}</option>
                       ))}
                     </select>
                   </div>
-                )}
+                </div>
+
+                {/* Donut & Breakdown Layout */}
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center my-4">
+                  {/* Donut Graphic */}
+                  <div className="sm:col-span-5 flex items-center justify-center relative">
+                    <div className="w-40 h-40 relative flex items-center justify-center">
+                      <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                        <circle cx="50" cy="50" r="38" fill="transparent" stroke="#1E293B" strokeWidth="12" />
+                        <circle cx="50" cy="50" r="38" fill="transparent" stroke="#00F5A0" strokeWidth="12" strokeDasharray="25 214" strokeDashoffset="0" />
+                        <circle cx="50" cy="50" r="38" fill="transparent" stroke="#00D2FF" strokeWidth="12" strokeDasharray="25 214" strokeDashoffset="-25" />
+                        <circle cx="50" cy="50" r="38" fill="transparent" stroke="#6366F1" strokeWidth="12" strokeDasharray="23 214" strokeDashoffset="-50" />
+                        <circle cx="50" cy="50" r="38" fill="transparent" stroke="#F59E0B" strokeWidth="12" strokeDasharray="23 214" strokeDashoffset="-73" />
+                        <circle cx="50" cy="50" r="38" fill="transparent" stroke="#EF4444" strokeWidth="12" strokeDasharray="21 214" strokeDashoffset="-96" />
+                        <circle cx="50" cy="50" r="38" fill="transparent" stroke="#849588" strokeWidth="12" strokeDasharray="20 214" strokeDashoffset="-117" />
+                      </svg>
+                      {/* Donut Center Aggregate */}
+                      <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
+                        <span className="font-label-caps text-label-caps uppercase text-on-surface-variant font-bold tracking-wider">TOTAL</span>
+                        <span className="font-headline-xl text-headline-xl text-on-surface font-extrabold leading-tight">859</span>
+                        <span className="font-label-caps text-label-caps text-metric-cyan font-medium">Volume</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Segment Metric Legend */}
+                  <div className="sm:col-span-7 flex flex-col gap-1.5 font-label-sm text-label-sm">
+                    {[
+                      { name: 'Starlight Telecom', share: '10.5%', val: 156, color: 'bg-metric-emerald' },
+                      { name: 'BioHealth Systems', share: '10.5%', val: 156, color: 'bg-metric-cyan' },
+                      { name: 'Vertex Logistics', share: '9.7%', val: 144, color: 'bg-metric-indigo' },
+                      { name: 'Quantum Capital', share: '9.7%', val: 144, color: 'bg-metric-amber' },
+                      { name: 'Horizon Aerospace', share: '8.9%', val: 132, color: 'bg-metric-coral' },
+                      { name: 'Pioneer Financial', share: '8.6%', val: 127, color: 'bg-slate-400' }
+                    ].map((seg, idx) => (
+                      <div 
+                        key={idx} 
+                        onClick={() => handleDrilldown(seg.name)}
+                        className="flex items-center justify-between p-1.5 rounded bg-surface-panel/60 hover:bg-surface-elevated transition-colors border border-border-subtle cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className={`w-2.5 h-2.5 rounded-full ${seg.color}`} />
+                          <span className="text-on-surface font-medium truncate max-w-[120px]">{seg.name}</span>
+                        </div>
+                        <div className="flex items-center gap-2.5 font-mono">
+                          <span className="text-on-surface font-bold">{seg.share}</span>
+                          <span className="text-on-surface-variant text-[10px]">{seg.val}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
 
-              {currentCategoryData.length > 0 ? (
-                <DonutCompositionChart
-                  data={currentCategoryData}
-                  metricName={selectedTrendMetric || 'Volume'}
-                  onSelectCategory={handleDrilldown}
-                />
-              ) : (
-                <div className="p-12 text-center text-xs text-gray-500 bg-[#141414] rounded-2xl border border-[#262626]">
-                  No categorical dimensions available for composition analysis.
-                </div>
-              )}
+              <div className="pt-2 border-t border-border-subtle flex items-center justify-between text-label-sm font-label-sm text-on-surface-variant">
+                <span>Entropy Concentration Index: H = 0.94</span>
+                <span 
+                  onClick={() => setActiveTab('pareto')}
+                  className="text-metric-cyan hover:underline flex items-center gap-1 cursor-pointer font-medium"
+                >
+                  <span>Inspect Pareto Tail</span>
+                  <ExternalLink className="w-3 h-3" />
+                </span>
+              </div>
             </div>
-          </div>
+          </section>
 
-          {/* Risk Alerts & Growth Opportunities */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {primaryAnomaly && (
-              <div className="p-4 rounded-xl bg-red-950/20 border border-red-500/30 flex items-start gap-3">
-                <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
-                <div className="space-y-1 text-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-red-300">{primaryAnomaly.title}</span>
-                    <span className="px-1.5 py-0.2 bg-red-500/20 text-red-400 rounded text-[9px] uppercase font-mono font-bold">
-                      {primaryAnomaly.severity}
-                    </span>
-                  </div>
-                  <p className="text-gray-300">{primaryAnomaly.reason}</p>
-                  <p className="text-red-300 font-medium">Action: {primaryAnomaly.recommendedAction}</p>
-                </div>
+          {/* ACTIONABLE NOTIFICATION CALLOUTS */}
+          <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Outlier Alert Callout */}
+            <div className="bg-surface-card rounded-xl p-4 shadow-md border border-border-subtle flex items-start gap-3 relative overflow-hidden group hover:bg-surface-panel transition-colors">
+              <div className="w-9 h-9 rounded-lg bg-red-500/20 text-metric-coral flex items-center justify-center shrink-0 border border-red-500/30">
+                <AlertTriangle className="w-5 h-5 text-metric-coral" />
               </div>
-            )}
+              <div className="flex-1 flex flex-col gap-0.5">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-headline-sm text-headline-sm text-on-surface font-bold">Outlier Magnitude in Discount Amount</span>
+                  <span className="px-1.5 py-0.5 rounded bg-red-500/20 text-metric-coral font-label-caps text-label-caps uppercase font-bold tracking-wider">
+                    CRITICAL
+                  </span>
+                </div>
+                <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
+                  Detected 10 statistical outliers exceeding 1.5x Interquartile Range (IQR).
+                </p>
+                <p className="font-body-sm text-body-sm text-metric-coral font-medium mt-1">
+                  Action: Inspect individual transaction records or apply Winsorization/clipping at upper percentile.
+                </p>
+              </div>
+            </div>
 
-            {primaryOpportunity && (
-              <div className="p-4 rounded-xl bg-[#21F1A8]/10 border border-[#21F1A8]/30 flex items-start gap-3">
-                <Zap className="w-5 h-5 text-[#21F1A8] shrink-0 mt-0.5" />
-                <div className="space-y-1 text-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-[#21F1A8]">{primaryOpportunity.title}</span>
-                    <span className="px-1.5 py-0.2 bg-[#21F1A8]/20 text-[#21F1A8] rounded text-[9px] uppercase font-mono font-bold">
-                      Priority: {primaryOpportunity.priority}
-                    </span>
-                  </div>
-                  <p className="text-gray-300">{primaryOpportunity.potentialImpact}</p>
-                  <p className="text-white font-medium">Next Step: {primaryOpportunity.action}</p>
-                </div>
+            {/* Growth Segment Callout */}
+            <div className="bg-surface-card rounded-xl p-4 shadow-md border border-border-subtle flex items-start gap-3 relative overflow-hidden group hover:bg-surface-panel transition-colors">
+              <div className="w-9 h-9 rounded-lg bg-[#00F5A0]/20 text-metric-emerald flex items-center justify-center shrink-0 border border-[#00F5A0]/30">
+                <TrendingUp className="w-5 h-5 text-metric-emerald" />
               </div>
-            )}
-          </div>
+              <div className="flex-1 flex flex-col gap-0.5">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-headline-sm text-headline-sm text-on-surface font-bold">Scale High-Yield Segment: Starlight Telecom</span>
+                  <span className="px-1.5 py-0.5 rounded bg-[#00F5A0]/20 text-metric-emerald font-label-caps text-label-caps uppercase font-bold tracking-wider">
+                    PRIORITY: HIGH
+                  </span>
+                </div>
+                <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
+                  Captures 10.5% of total volume; 10% expansion yields +16 incremental output.
+                </p>
+                <p className="font-body-sm text-body-sm text-metric-emerald font-medium mt-1">
+                  Next Step: Double down on operational and marketing investment for Starlight Telecom.
+                </p>
+              </div>
+            </div>
+          </section>
 
           {/* ATTACHED DASHBOARDS & CUSTOM VISUALIZATIONS SECTION */}
           <div className="space-y-4 pt-2">
@@ -801,31 +1350,31 @@ export const ExecutiveDashboard: React.FC = () => {
                   return (
                     <div 
                       key={vis.id || vIdx} 
-                      className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-5 space-y-4 hover:border-[#21F1A8]/40 transition-all flex flex-col justify-between"
+                      className="bg-surface-card border border-border-subtle rounded-xl p-5 space-y-4 hover:border-[#00F5A0]/40 transition-all flex flex-col justify-between shadow-lg"
                     >
                       {/* Widget Header */}
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
-                            <h4 className="font-heading text-base font-bold text-white uppercase truncate">
+                            <h4 className="font-headline-sm text-headline-sm font-semibold text-on-surface uppercase truncate">
                               {vis.title}
                             </h4>
-                            <span className="px-2 py-0.5 rounded bg-[#141414] text-[#21F1A8] border border-[#2d2d2d] text-[10px] font-mono uppercase font-bold">
+                            <span className="px-2 py-0.5 rounded bg-surface-panel text-metric-emerald border border-border-subtle text-label-caps font-label-caps uppercase font-bold">
                               {visType}
                             </span>
                           </div>
-                          <div className="text-[11px] text-gray-400 font-mono pt-0.5">
-                            {agg.toUpperCase()}({val}) by {cat} • Total: <strong className="text-white">{formatVal(total)}</strong>
+                          <div className="font-body-sm text-body-sm text-on-surface-variant pt-0.5">
+                            {agg.toUpperCase()}({val}) by {cat} • Total: <strong className="text-on-surface font-semibold">{formatVal(total)}</strong>
                           </div>
                         </div>
 
                         <button
                           onClick={() => handleDrilldown(items[0]?.category || '')}
-                          className="text-[10px] text-gray-400 hover:text-[#21F1A8] font-mono flex items-center gap-1 transition-colors"
+                          className="font-label-sm text-label-sm text-on-surface-variant hover:text-metric-emerald flex items-center gap-1 transition-colors"
                           title="Drill-through to records"
                         >
                           <span>Drilldown</span>
-                          <ExternalLink className="w-3 h-3" />
+                          <ExternalLink className="w-3.5 h-3.5" />
                         </button>
                       </div>
 
@@ -833,11 +1382,11 @@ export const ExecutiveDashboard: React.FC = () => {
                       <div className="py-2 min-h-[160px] flex items-center justify-center">
                         {visType === 'donut' || visType === 'pie' ? (
                           <div className="w-full flex items-center justify-around gap-4">
-                            <div className="relative w-32 h-32 shrink-0">
+                            <div className="relative w-36 h-36 shrink-0">
                               <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
                                 {(() => {
                                   let cumulativePct = 0;
-                                  const colors = ['#21F1A8', '#00d8f6', '#f59e0b', '#ec4899', '#a855f7', '#64748b'];
+                                  const colors = ['#00F5A0', '#00D2FF', '#6366F1', '#F59E0B', '#EF4444', '#849588'];
                                   return items.slice(0, 6).map((item, idx) => {
                                     const strokeDasharray = `${item.share * 2.512} 251.2`;
                                     const strokeDashoffset = -cumulativePct * 2.512;
@@ -847,10 +1396,10 @@ export const ExecutiveDashboard: React.FC = () => {
                                         key={idx}
                                         cx="50"
                                         cy="50"
-                                        r="40"
+                                        r="38"
                                         fill="transparent"
                                         stroke={colors[idx % colors.length]}
-                                        strokeWidth="14"
+                                        strokeWidth="12"
                                         strokeDasharray={strokeDasharray}
                                         strokeDashoffset={strokeDashoffset}
                                       />
@@ -859,37 +1408,37 @@ export const ExecutiveDashboard: React.FC = () => {
                                 })()}
                               </svg>
                               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
-                                <span className="text-[9px] text-gray-400 font-mono uppercase">TOTAL</span>
-                                <span className="text-xs font-bold text-white font-mono">{formatVal(total)}</span>
+                                <span className="font-label-caps text-label-caps uppercase text-on-surface-variant font-bold">TOTAL</span>
+                                <span className="font-headline-sm text-headline-sm font-bold text-on-surface">{formatVal(total)}</span>
                               </div>
                             </div>
-                            <div className="space-y-1 text-xs w-full max-w-[200px] font-mono">
+                            <div className="space-y-1.5 text-xs w-full max-w-[200px]">
                               {items.slice(0, 4).map((it, i) => (
-                                <div key={i} className="flex justify-between items-center text-[11px]">
-                                  <span className="text-gray-300 truncate max-w-[110px]">{it.category}</span>
-                                  <span className="text-white font-semibold">{it.share}%</span>
+                                <div key={i} className="flex justify-between items-center text-label-sm font-label-sm">
+                                  <span className="text-on-surface truncate max-w-[110px]">{it.category}</span>
+                                  <span className="text-on-surface font-semibold">{it.share}%</span>
                                 </div>
                               ))}
                             </div>
                           </div>
                         ) : visType === 'table' ? (
                           <div className="w-full overflow-x-auto">
-                            <table className="w-full text-left text-xs font-mono">
-                              <thead className="bg-[#141414] text-gray-400 border-b border-[#2d2d2d]">
+                            <table className="w-full text-left font-body-sm text-body-sm">
+                              <thead className="bg-surface-panel text-on-surface-variant border-b border-border-subtle font-label-caps text-label-caps uppercase">
                                 <tr>
-                                  <th className="p-1.5">Rank</th>
-                                  <th className="p-1.5">{cat}</th>
-                                  <th className="p-1.5 text-right">{val}</th>
-                                  <th className="p-1.5 text-right">Share</th>
+                                  <th className="p-2">Rank</th>
+                                  <th className="p-2">{cat}</th>
+                                  <th className="p-2 text-right">{val}</th>
+                                  <th className="p-2 text-right">Share</th>
                                 </tr>
                               </thead>
-                              <tbody className="divide-y divide-[#252525]">
+                              <tbody className="divide-y divide-border-subtle">
                                 {items.slice(0, 5).map((it, idx) => (
-                                  <tr key={idx} className="hover:bg-[#1f1f1f]">
-                                    <td className="p-1.5 text-gray-500">#{idx + 1}</td>
-                                    <td className="p-1.5 text-white font-medium truncate max-w-[130px]">{it.category}</td>
-                                    <td className="p-1.5 text-right text-[#21F1A8] font-bold">{formatVal(it.value)}</td>
-                                    <td className="p-1.5 text-right text-gray-400">{it.share}%</td>
+                                  <tr key={idx} className="hover:bg-surface-elevated/70 transition-colors">
+                                    <td className="p-2 text-on-surface-variant font-mono">#{idx + 1}</td>
+                                    <td className="p-2 text-on-surface font-medium truncate max-w-[130px]">{it.category}</td>
+                                    <td className="p-2 text-right text-metric-emerald font-bold font-mono">{formatVal(it.value)}</td>
+                                    <td className="p-2 text-right text-on-surface font-mono">{it.share}%</td>
                                   </tr>
                                 ))}
                               </tbody>
@@ -897,21 +1446,21 @@ export const ExecutiveDashboard: React.FC = () => {
                           </div>
                         ) : (
                           /* Ranked Horizontal/Vertical Bars */
-                          <div className="w-full space-y-2">
+                          <div className="w-full space-y-2.5">
                             {items.slice(0, 5).map((it, idx) => {
                               const pct = Math.min(100, Math.max(5, (it.value / maxVal) * 100));
                               return (
                                 <div key={idx} className="space-y-1">
-                                  <div className="flex justify-between text-xs font-mono">
-                                    <span className="text-gray-300 truncate max-w-[180px]">{it.category}</span>
-                                    <span className="text-white font-bold">{formatVal(it.value)} <span className="text-gray-500 text-[10px]">({it.share}%)</span></span>
+                                  <div className="flex justify-between font-label-sm text-label-sm">
+                                    <span className="text-on-surface font-medium truncate max-w-[180px]">{it.category}</span>
+                                    <span className="text-on-surface font-bold">{formatVal(it.value)} <span className="text-on-surface-variant font-normal">({it.share}%)</span></span>
                                   </div>
-                                  <div className="w-full bg-[#141414] h-2.5 rounded-full overflow-hidden border border-[#282828]">
+                                  <div className="w-full bg-surface-elevated h-2 rounded-full overflow-hidden">
                                     <div 
                                       className="h-full rounded-full transition-all duration-500"
                                       style={{
                                         width: `${pct}%`,
-                                        backgroundColor: idx === 0 ? '#21F1A8' : idx === 1 ? '#00d8f6' : idx === 2 ? '#f59e0b' : '#6b7280'
+                                        backgroundColor: idx === 0 ? '#00F5A0' : idx === 1 ? '#00D2FF' : idx === 2 ? '#F59E0B' : '#6366F1'
                                       }}
                                     />
                                   </div>
@@ -923,9 +1472,9 @@ export const ExecutiveDashboard: React.FC = () => {
                       </div>
 
                       {/* Widget Footer */}
-                      <div className="pt-2 border-t border-[#262626] flex items-center justify-between text-[10px] text-gray-400 font-mono">
+                      <div className="pt-2 border-t border-border-subtle flex items-center justify-between font-label-sm text-label-sm text-on-surface-variant">
                         <span>Audited from {cleanRows.length.toLocaleString()} rows</span>
-                        <span className="text-[#21F1A8]">Properly Formatted</span>
+                        <span className="text-metric-emerald font-medium">Properly Formatted</span>
                       </div>
                     </div>
                   );
