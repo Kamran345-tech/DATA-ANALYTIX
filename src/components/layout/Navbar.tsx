@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { usePlatform } from '../../store/usePlatformStore';
 import { EditableDashboardTitle } from '../common/EditableDashboardTitle';
+import { Tooltip } from '../common/Tooltip';
 
 export const Navbar: React.FC = () => {
   const { 
@@ -169,75 +170,116 @@ export const Navbar: React.FC = () => {
         </div>
 
         {/* How to Use Platform Guide Button */}
-        <button
-          onClick={() => setCurrentTab('how_to_use')}
-          className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all ${
-            currentTab === 'how_to_use'
-              ? isLight ? 'bg-emerald-100 text-emerald-800 border-emerald-400 font-bold shadow-xs' : 'bg-[#21F1A8]/20 text-[#21F1A8] border-[#21F1A8] font-bold'
-              : isLight ? 'bg-white border-slate-300 text-slate-800 hover:bg-slate-100 hover:text-emerald-700 shadow-2xs' : 'bg-[#1a1a1a] border-[#333] text-gray-300 hover:bg-[#222] hover:text-[#21F1A8]'
-          }`}
-          title="Complete Platform Guide & How to Use (تمام ماڈیولز کا طریقہ کار)"
+        <Tooltip
+          side="bottom"
+          title="Platform Guide & Manual"
+          tag="Documentation"
+          className="w-auto"
+          content="Open the complete module directory, end-to-end data lifecycle steps, and enterprise best practices."
         >
-          <HelpCircle className={`w-3.5 h-3.5 ${isLight ? 'text-emerald-700' : 'text-[#21F1A8]'}`} />
-          <span className="font-medium">How to Use</span>
-        </button>
+          <button
+            onClick={() => setCurrentTab('how_to_use')}
+            className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all ${
+              currentTab === 'how_to_use'
+                ? isLight ? 'bg-emerald-100 text-emerald-800 border-emerald-400 font-bold shadow-xs' : 'bg-[#21F1A8]/20 text-[#21F1A8] border-[#21F1A8] font-bold'
+                : isLight ? 'bg-white border-slate-300 text-slate-800 hover:bg-slate-100 hover:text-emerald-700 shadow-2xs' : 'bg-[#1a1a1a] border-[#333] text-gray-300 hover:bg-[#222] hover:text-[#21F1A8]'
+            }`}
+          >
+            <HelpCircle className={`w-3.5 h-3.5 ${isLight ? 'text-emerald-700' : 'text-[#21F1A8]'}`} />
+            <span className="font-medium">How to Use</span>
+          </button>
+        </Tooltip>
 
         {/* Quality Score Indicator */}
-        <button
-          onClick={() => setCurrentTab('quality')}
-          className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg border transition-colors text-xs ${
-            isLight
-              ? 'bg-slate-50 border-slate-200 text-slate-700 hover:border-emerald-500'
-              : 'bg-[#1f1f1f] border-[#333] hover:border-[#21F1A8]/50'
-          }`}
-          title="Data Quality Audit"
-        >
-          <ShieldCheck className={`w-3.5 h-3.5 ${isLight ? 'text-emerald-700' : 'text-[#21F1A8]'}`} />
-          <span className={isLight ? 'text-slate-500' : 'text-gray-400'}>Quality:</span>
-          <span className={`font-semibold ${isLight ? 'text-slate-900' : 'text-white'}`}>
-            {qualityReport.overallScore}%
-          </span>
-        </button>
+        <div className="hidden sm:block">
+          <Tooltip
+            side="bottom"
+            title="Data Quality Audit"
+            tag="Governance"
+            className="w-auto"
+            content="Real-time data health score evaluating Completeness, Uniqueness, Validity, and Consistency across all active dataset rows."
+          >
+            <button
+              onClick={() => setCurrentTab('quality')}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border transition-colors text-xs ${
+                isLight
+                  ? 'bg-slate-50 border-slate-200 text-slate-700 hover:border-emerald-500'
+                  : 'bg-[#1f1f1f] border-[#333] hover:border-[#21F1A8]/50'
+              }`}
+            >
+              <ShieldCheck className={`w-3.5 h-3.5 ${isLight ? 'text-emerald-700' : 'text-[#21F1A8]'}`} />
+              <span className={isLight ? 'text-slate-500' : 'text-gray-400'}>Quality:</span>
+              <span className={`font-semibold ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                {qualityReport.overallScore}%
+              </span>
+            </button>
+          </Tooltip>
+        </div>
 
         {/* Presentation Mode Toggle */}
-        <button
-          onClick={() => setIsPresentationMode(!isPresentationMode)}
-          className={`p-1.5 sm:p-2 rounded-lg border transition-colors ${
-            isPresentationMode 
-              ? isLight ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-[#21F1A8]/20 text-[#21F1A8] border-[#21F1A8]' 
-              : isLight ? 'text-slate-600 border-slate-300 hover:bg-slate-100' : 'text-gray-400 border-[#333] hover:bg-[#222]'
-          }`}
-          title={isPresentationMode ? 'Exit Presentation Mode' : 'Enter Presentation Mode'}
+        <Tooltip
+          side="bottom"
+          title={isPresentationMode ? 'Exit Presentation View' : 'Full-Screen Presentation'}
+          tag="C-Suite View"
+          className="w-auto"
+          content="Expands telemetry dashboards to full viewport, hiding sidebars and headers for clean executive board presentations."
         >
-          {isPresentationMode ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-        </button>
+          <button
+            onClick={() => setIsPresentationMode(!isPresentationMode)}
+            className={`p-1.5 sm:p-2 rounded-lg border transition-colors ${
+              isPresentationMode 
+                ? isLight ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-[#21F1A8]/20 text-[#21F1A8] border-[#21F1A8]' 
+                : isLight ? 'text-slate-600 border-slate-300 hover:bg-slate-100' : 'text-gray-400 border-[#333] hover:bg-[#222]'
+            }`}
+            aria-label="Toggle Presentation Mode"
+          >
+            {isPresentationMode ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+          </button>
+        </Tooltip>
 
         {/* Quick Upload CTA */}
-        <button
-          onClick={() => setCurrentTab('upload')}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-xs transition-all shadow-xs ${
-            isLight
-              ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20'
-              : 'bg-[#21F1A8] hover:bg-[#1cdb97] text-black hover:glow-neon'
-          }`}
+        <Tooltip
+          side="bottom"
+          title="Data Ingestion"
+          tag="Intake"
+          className="w-auto"
+          content="Upload custom business CSV, Excel (XLSX), or JSON files or switch to enterprise demo datasets."
         >
-          <UploadCloud className="w-4 h-4" />
-          <span className="hidden sm:inline">Upload Data</span>
-        </button>
+          <button
+            onClick={() => setCurrentTab('upload')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-xs transition-all shadow-xs ${
+              isLight
+                ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20'
+                : 'bg-[#21F1A8] hover:bg-[#1cdb97] text-black hover:glow-neon'
+            }`}
+          >
+            <UploadCloud className="w-4 h-4" />
+            <span className="hidden sm:inline">Upload Data</span>
+          </button>
+        </Tooltip>
 
         {/* Export Center CTA */}
-        <button
-          onClick={() => setCurrentTab('export_center')}
-          className={`hidden md:flex items-center gap-1 px-2.5 py-1.5 rounded-lg border text-xs transition-colors ${
-            isLight
-              ? 'bg-slate-50 border-slate-300 hover:border-emerald-600 text-slate-700'
-              : 'bg-[#1f1f1f] border-[#333] hover:border-[#21F1A8] text-gray-200'
-          }`}
-          title="Export Packages & Power BI ZIP"
-        >
-          <DownloadCloud className={`w-4 h-4 ${isLight ? 'text-emerald-700' : 'text-[#21F1A8]'}`} />
-          <span>Export</span>
-        </button>
+        <div className="hidden md:block">
+          <Tooltip
+            side="bottom"
+            title="Production Export Center"
+            tag="Handoff"
+            className="w-auto"
+            content="Download the complete 14-folder enterprise archive including native Power BI PBIP developer files, Excel models, and PDF executive reports."
+          >
+            <button
+              onClick={() => setCurrentTab('export_center')}
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg border text-xs transition-colors ${
+                isLight
+                  ? 'bg-slate-50 border-slate-300 hover:border-emerald-600 text-slate-700'
+                  : 'bg-[#1f1f1f] border-[#333] hover:border-[#21F1A8] text-gray-200'
+              }`}
+            >
+              <DownloadCloud className={`w-4 h-4 ${isLight ? 'text-emerald-700' : 'text-[#21F1A8]'}`} />
+              <span>Export</span>
+            </button>
+          </Tooltip>
+        </div>
       </div>
     </header>
   );

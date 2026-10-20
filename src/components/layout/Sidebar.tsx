@@ -239,7 +239,8 @@ const navSections: { title: string; items: NavItem[] }[] = [
 ];
 
 export const Sidebar: React.FC = () => {
-  const { currentTab, setCurrentTab, isSidebarOpen, setIsSidebarOpen, isPresentationMode } = usePlatform();
+  const { currentTab, setCurrentTab, isSidebarOpen, setIsSidebarOpen, isPresentationMode, themeMode } = usePlatform();
+  const isLight = themeMode === 'light';
 
   if (isPresentationMode || !isSidebarOpen) {
     return null;
@@ -261,15 +262,25 @@ export const Sidebar: React.FC = () => {
         aria-hidden="true"
       />
 
-      <aside className="fixed lg:sticky top-0 lg:top-[53px] left-0 z-50 lg:z-30 w-72 lg:w-64 bg-[#141414] border-r border-[#262626] flex flex-col h-full lg:h-[calc(100vh-53px)] overflow-y-auto select-none shrink-0 shadow-2xl lg:shadow-none transition-all">
+      <aside className={`fixed lg:sticky top-0 lg:top-[53px] left-0 z-50 lg:z-30 w-72 lg:w-64 flex flex-col h-full lg:h-[calc(100vh-53px)] overflow-y-auto select-none shrink-0 shadow-2xl lg:shadow-none transition-all ${
+        isLight
+          ? 'bg-white border-r border-slate-200'
+          : 'bg-[#141414] border-r border-[#262626]'
+      }`}>
         {/* Mobile Header with Close button */}
-        <div className="flex lg:hidden items-center justify-between p-4 border-b border-[#262626]">
-          <span className="font-heading text-lg font-bold tracking-wider text-white">
-            NEXUS<span className="text-[#21F1A8]">BI</span> MENU
+        <div className={`flex lg:hidden items-center justify-between p-4 border-b ${
+          isLight ? 'border-slate-200 bg-slate-50' : 'border-[#262626] bg-[#141414]'
+        }`}>
+          <span className={`font-heading text-lg font-bold tracking-wider ${
+            isLight ? 'text-slate-900' : 'text-white'
+          }`}>
+            NEXUS<span className={isLight ? 'text-emerald-700' : 'text-[#21F1A8]'}>BI</span> MENU
           </span>
           <button 
             onClick={() => setIsSidebarOpen(false)}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-[#222]"
+            className={`p-1.5 rounded-lg ${
+              isLight ? 'text-slate-500 hover:text-slate-900 hover:bg-slate-200' : 'text-gray-400 hover:text-white hover:bg-[#222]'
+            }`}
           >
             ✕
           </button>
@@ -278,7 +289,9 @@ export const Sidebar: React.FC = () => {
         <div className="p-3 space-y-6">
           {navSections.map((section, idx) => (
             <div key={idx} className="space-y-1">
-              <h4 className="px-3 text-[10px] font-bold tracking-wider text-gray-400 uppercase font-mono">
+              <h4 className={`px-3 text-[10px] font-bold tracking-wider uppercase font-mono ${
+                isLight ? 'text-slate-400' : 'text-gray-400'
+              }`}>
                 {section.title}
               </h4>
               <div className="space-y-0.5 pt-1">
@@ -295,7 +308,9 @@ export const Sidebar: React.FC = () => {
                         <div className="space-y-1.5">
                           <p>{item.description}</p>
                           {item.proTip && (
-                            <div className="pt-1.5 border-t border-gray-700/60 text-[10px] text-[#00F5A0] font-mono flex items-start gap-1">
+                            <div className={`pt-1.5 border-t text-[10px] font-mono flex items-start gap-1 ${
+                              isLight ? 'border-slate-200 text-emerald-800' : 'border-gray-700/60 text-[#00F5A0]'
+                            }`}>
                               <span className="shrink-0">💡</span>
                               <span>{item.proTip}</span>
                             </div>
@@ -307,12 +322,20 @@ export const Sidebar: React.FC = () => {
                         onClick={() => handleSelectTab(item.id)}
                         className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-all group ${
                           isActive 
-                            ? 'bg-[#21F1A8]/10 text-[#21F1A8] border border-[#21F1A8]/30 font-semibold' 
-                            : 'text-gray-300 hover:text-white hover:bg-[#1f1f1f] border border-transparent'
+                            ? isLight
+                              ? 'bg-emerald-50 text-emerald-900 border border-emerald-300 font-bold shadow-2xs'
+                              : 'bg-[#21F1A8]/10 text-[#21F1A8] border border-[#21F1A8]/30 font-semibold' 
+                            : isLight
+                              ? 'text-slate-700 hover:text-slate-900 hover:bg-slate-100 border border-transparent'
+                              : 'text-gray-300 hover:text-white hover:bg-[#1f1f1f] border border-transparent'
                         }`}
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
-                          <Icon className={`w-4 h-4 shrink-0 transition-transform ${isActive ? 'text-[#21F1A8]' : 'text-gray-400 group-hover:text-gray-200'}`} />
+                          <Icon className={`w-4 h-4 shrink-0 transition-transform ${
+                            isActive 
+                              ? isLight ? 'text-emerald-700' : 'text-[#21F1A8]' 
+                              : isLight ? 'text-slate-500 group-hover:text-slate-900' : 'text-gray-400 group-hover:text-gray-200'
+                          }`} />
                           <span className="truncate">{item.label}</span>
                         </div>
 
@@ -320,13 +343,19 @@ export const Sidebar: React.FC = () => {
                           {item.badge && (
                             <span className={`px-1.5 py-0.5 text-[9px] font-bold rounded uppercase tracking-wider ${
                               isActive 
-                                ? 'bg-[#21F1A8] text-black' 
-                                : 'bg-[#262626] text-gray-400 border border-[#333]'
+                                ? isLight
+                                  ? 'bg-emerald-700 text-white'
+                                  : 'bg-[#21F1A8] text-black' 
+                                : isLight
+                                  ? 'bg-slate-100 text-slate-700 border border-slate-200'
+                                  : 'bg-[#262626] text-gray-400 border border-[#333]'
                             }`}>
                               {item.badge}
                             </span>
                           )}
-                          {isActive && <ChevronRight className="w-3 h-3 text-[#21F1A8]" />}
+                          {isActive && (
+                            <ChevronRight className={`w-3 h-3 ${isLight ? 'text-emerald-700' : 'text-[#21F1A8]'}`} />
+                          )}
                         </div>
                       </button>
                     </Tooltip>
@@ -337,11 +366,19 @@ export const Sidebar: React.FC = () => {
           ))}
         </div>
 
-        <div className="mt-auto p-3 border-t border-[#262626] bg-[#121212]/80">
-          <div className="flex items-center justify-between text-[11px] text-gray-400">
+        <div className={`mt-auto p-3 border-t ${
+          isLight
+            ? 'border-slate-200 bg-slate-50/80 text-slate-600'
+            : 'border-[#262626] bg-[#121212]/80 text-gray-400'
+        }`}>
+          <div className="flex items-center justify-between text-[11px]">
             <span>Engine Status</span>
-            <span className="flex items-center gap-1 text-[#21F1A8] font-mono">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#21F1A8] animate-pulse"></span>
+            <span className={`flex items-center gap-1 font-mono font-medium ${
+              isLight ? 'text-emerald-700' : 'text-[#21F1A8]'
+            }`}>
+              <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${
+                isLight ? 'bg-emerald-600' : 'bg-[#21F1A8]'
+              }`}></span>
               Deterministic Online
             </span>
           </div>
