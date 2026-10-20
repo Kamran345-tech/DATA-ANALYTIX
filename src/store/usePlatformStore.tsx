@@ -27,6 +27,7 @@ import { DEMO_DATASETS, DemoDatasetInfo } from '../data/demoDatasets';
 export type NavigationTab = 
   | 'landing'
   | 'executive_dashboard'
+  | 'how_to_use'
   | 'upload'
   | 'live_connector'
   | 'preview'

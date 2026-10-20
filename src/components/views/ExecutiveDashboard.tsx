@@ -27,7 +27,8 @@ import {
   Grid,
   Compass,
   Gauge,
-  Activity
+  Activity,
+  HelpCircle
 } from 'lucide-react';
 import { usePlatform } from '../../store/usePlatformStore';
 import { GlobalFilterBar } from '../common/GlobalFilterBar';
@@ -369,6 +370,16 @@ export const ExecutiveDashboard: React.FC = () => {
             >
               <Download className="w-4 h-4 text-[#21F1A8]" />
               <span className="hidden sm:inline">Dashboard (JSON)</span>
+            </button>
+
+            {/* How to Use Guide Button */}
+            <button
+              onClick={() => setCurrentTab('how_to_use')}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#141414] hover:bg-[#222] text-gray-200 hover:text-[#21F1A8] font-semibold text-xs border border-[#333] hover:border-[#21F1A8]/50 transition-colors shadow-2xs"
+              title="View Complete Platform User Guide & Module Explanations"
+            >
+              <HelpCircle className="w-4 h-4 text-[#21F1A8]" />
+              <span>How to Use</span>
             </button>
 
             {/* Data Quality Score Badge */}

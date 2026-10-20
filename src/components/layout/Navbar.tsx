@@ -9,13 +9,15 @@ import {
   ShieldCheck, 
   DownloadCloud, 
   Sun,
-  Moon
+  Moon,
+  HelpCircle
 } from 'lucide-react';
 import { usePlatform } from '../../store/usePlatformStore';
 import { EditableDashboardTitle } from '../common/EditableDashboardTitle';
 
 export const Navbar: React.FC = () => {
   const { 
+    currentTab,
     project, 
     qualityReport, 
     setCurrentTab, 
@@ -165,6 +167,20 @@ export const Navbar: React.FC = () => {
             <span className="text-[11px] sm:text-xs">Dark</span>
           </button>
         </div>
+
+        {/* How to Use Platform Guide Button */}
+        <button
+          onClick={() => setCurrentTab('how_to_use')}
+          className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all ${
+            currentTab === 'how_to_use'
+              ? isLight ? 'bg-emerald-100 text-emerald-800 border-emerald-400 font-bold shadow-xs' : 'bg-[#21F1A8]/20 text-[#21F1A8] border-[#21F1A8] font-bold'
+              : isLight ? 'bg-white border-slate-300 text-slate-800 hover:bg-slate-100 hover:text-emerald-700 shadow-2xs' : 'bg-[#1a1a1a] border-[#333] text-gray-300 hover:bg-[#222] hover:text-[#21F1A8]'
+          }`}
+          title="Complete Platform Guide & How to Use (تمام ماڈیولز کا طریقہ کار)"
+        >
+          <HelpCircle className={`w-3.5 h-3.5 ${isLight ? 'text-emerald-700' : 'text-[#21F1A8]'}`} />
+          <span className="font-medium">How to Use</span>
+        </button>
 
         {/* Quality Score Indicator */}
         <button

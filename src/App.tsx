@@ -20,6 +20,7 @@ import { ReportsView } from './components/views/ReportsView';
 import { DataDictionaryLineageView } from './components/views/DataDictionaryLineageView';
 import { ExportCenterView } from './components/views/ExportCenterView';
 import { HowToModifyView } from './components/views/HowToModifyView';
+import { HowToUseView } from './components/views/HowToUseView';
 import { SettingsView } from './components/views/SettingsView';
 import { BlogView } from './components/views/BlogView';
 import { DrillThroughModal } from './components/common/DrillThroughModal';
@@ -33,6 +34,8 @@ const MainContent: React.FC = () => {
         return <LandingPage />;
       case 'executive_dashboard':
         return <ExecutiveDashboard />;
+      case 'how_to_use':
+        return <HowToUseView />;
       case 'upload':
         return <UploadIngestionView />;
       case 'live_connector':

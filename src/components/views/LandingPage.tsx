@@ -15,7 +15,8 @@ import {
   TrendingUp,
   FileCode,
   Terminal,
-  Zap
+  Zap,
+  HelpCircle
 } from 'lucide-react';
 import { usePlatform } from '../../store/usePlatformStore';
 
@@ -62,6 +63,15 @@ export const LandingPage: React.FC = () => {
             >
               <span>EXPLORE LIVE DASHBOARD</span>
               <span className="text-xs px-2 py-0.5 rounded-full bg-[#21F1A8]/20 text-[#21F1A8] font-mono font-semibold border border-[#21F1A8]/30">ACTIVE MODEL</span>
+            </button>
+
+            <button
+              onClick={() => setCurrentTab('how_to_use')}
+              className="px-6 py-3.5 rounded-xl bg-[#191919] border border-[#333] hover:border-emerald-400/50 text-white font-heading text-xl font-semibold tracking-wider uppercase hover:bg-[#252525] transition-all flex items-center gap-2"
+            >
+              <HelpCircle className="w-5 h-5 text-[#21F1A8]" />
+              <span>HOW TO USE GUIDE</span>
+              <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-mono font-semibold">TUTORIAL</span>
             </button>
           </div>
 

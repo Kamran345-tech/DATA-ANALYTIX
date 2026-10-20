@@ -19,7 +19,8 @@ import {
   Wrench, 
   Settings, 
   Newspaper,
-  ChevronRight
+  ChevronRight,
+  HelpCircle
 } from 'lucide-react';
 import { usePlatform, NavigationTab } from '../../store/usePlatformStore';
 
@@ -36,6 +37,7 @@ const navSections: { title: string; items: NavItem[] }[] = [
     items: [
       { id: 'landing', label: 'Home / Overview', icon: Home },
       { id: 'executive_dashboard', label: 'Executive Dashboard', icon: LayoutDashboard, badge: 'Auto' },
+      { id: 'how_to_use', label: 'How to Use Platform', icon: HelpCircle, badge: 'Guide' },
       { id: 'dashboard_builder', label: 'Dashboard Builder', icon: SlidersHorizontal }
     ]
   },
