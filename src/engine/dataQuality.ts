@@ -80,8 +80,9 @@ export function evaluateDataQuality(profiles: ColumnProfile[], rows: Record<stri
     }
   });
 
-  const validityPenalty = Math.min(30, (totalOutliers / (totalRows || 1)) * 50);
-  const validityScore = Math.max(70, Math.round(100 - validityPenalty));
+  const numColCount = profiles.filter(p => p.dataType === 'number').length || 1;
+  const outlierRate = totalOutliers / (Math.max(1, totalRows * numColCount));
+  const validityScore = Math.max(0, Math.min(100, Math.round(100 - outlierRate * 100)));
 
   // 4. Consistency Calculation
   let inconsistentCount = 0;
@@ -111,7 +112,9 @@ export function evaluateDataQuality(profiles: ColumnProfile[], rows: Record<stri
       });
     }
   });
-  const consistencyScore = Math.max(75, Math.round(100 - Math.min(25, inconsistentCount * 5)));
+  const stringColCount = profiles.filter(p => p.dataType === 'string').length || 1;
+  const inconsistencyPenalty = Math.min(100, (inconsistentCount / stringColCount) * 20);
+  const consistencyScore = Math.max(0, Math.min(100, Math.round(100 - inconsistencyPenalty)));
 
   // Weighted overall quality score
   const overallScore = Math.round(

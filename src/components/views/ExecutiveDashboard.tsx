@@ -1071,7 +1071,7 @@ export const ExecutiveDashboard: React.FC = () => {
                 <div className="flex items-center gap-4 my-3">
                   <div className="flex items-center gap-1.5">
                     <span className="w-3 h-1 bg-metric-cyan rounded-full" />
-                    <span className="font-label-sm text-label-sm text-on-surface-variant">(Actual)</span>
+                    <span className="font-label-sm text-label-sm text-on-surface-variant">Actual ({selectedTrendMetric || 'Series'})</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <span className="w-3 h-1 bg-metric-emerald rounded-full" />
@@ -1079,70 +1079,131 @@ export const ExecutiveDashboard: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Telemetry SVG Spline Chart */}
-                <div className="w-full h-72 relative mt-2 bg-surface-panel/40 rounded-lg p-3 flex flex-col justify-between border border-border-subtle overflow-hidden">
-                  {/* Dynamic SVG Chart Waves */}
-                  <svg className="w-full h-full overflow-visible relative z-10" viewBox="0 0 600 220">
-                    <defs>
-                      <pattern id="telemetryGrid" width="40" height="30" patternUnits="userSpaceOnUse">
-                        <path d="M 40 0 L 0 0 0 30" fill="none" stroke="#374151" strokeWidth="0.8" strokeDasharray="2 2" opacity="0.3" />
-                      </pattern>
-                    </defs>
-                    <rect width="100%" height="100%" fill="url(#telemetryGrid)" />
+                {/* Telemetry SVG Chart - Strictly Bounded & Clamped (No Overflow) */}
+                <div className="w-full h-72 relative mt-2 bg-surface-panel/30 rounded-lg p-3 flex flex-col justify-between border border-border-subtle overflow-hidden">
+                  {/* Dynamic SVG with safe viewBox bounds */}
+                  {(() => {
+                    const dataPoints = currentTrend?.dataPoints || [];
+                    if (dataPoints.length < 2) {
+                      return (
+                        <div className="h-48 flex items-center justify-center text-on-surface-variant font-label-sm text-label-sm">
+                          Insufficient data points to render time series trend.
+                        </div>
+                      );
+                    }
 
-                    {/* Shaded Area for SMA */}
-                    <path 
-                      d="M 10 180 Q 40 110, 80 140 T 150 90 T 220 150 T 290 80 T 360 130 T 430 70 T 500 120 T 580 60 L 580 210 L 10 210 Z" 
-                      fill="rgba(0, 245, 160, 0.08)" 
-                    />
-                    
-                    {/* Baseline Grid Value */}
-                    <line x1="10" y1="110" x2="580" y2="110" stroke="#374151" strokeWidth="1" strokeDasharray="4 4" />
-                    <text x="15" y="105" fill="#64748b" fontSize="10" fontFamily="Inter">Mean: 11.2</text>
+                    const rawVals = dataPoints.map(p => p.value);
+                    const minVal = Math.min(...rawVals);
+                    const maxVal = Math.max(...rawVals);
+                    const range = maxVal === minVal ? (maxVal === 0 ? 1 : Math.abs(maxVal) * 0.2) : maxVal - minVal;
+                    const meanVal = rawVals.reduce((a, b) => a + b, 0) / rawVals.length;
 
-                    {/* Line: Actual oscillating dense cyan telemetry */}
-                    <path 
-                      className="opacity-80" 
-                      d="M 10 170 L 30 70 L 45 180 L 60 50 L 75 160 L 95 80 L 110 190 L 130 60 L 150 140 L 170 40 L 190 160 L 210 90 L 230 180 L 250 50 L 270 170 L 290 60 L 310 150 L 330 80 L 350 170 L 370 60 L 390 140 L 410 40 L 430 160 L 450 70 L 470 180 L 490 60 L 510 150 L 530 80 L 550 160 L 570 50 L 585 110" 
-                      fill="none" 
-                      stroke="#00D2FF" 
-                      strokeWidth="1.8" 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round" 
-                    />
+                    // Coordinate system bounds: X in [30, 570], Y in [20, 150]
+                    const xMin = 30, xMax = 570;
+                    const yMin = 20, yMax = 150;
 
-                    {/* Line: 3-Period SMA Smooth Emerald */}
-                    <path 
-                      d="M 10 180 Q 40 110, 80 140 T 150 90 T 220 150 T 290 80 T 360 130 T 430 70 T 500 120 T 580 60" 
-                      fill="none" 
-                      stroke="#00F5A0" 
-                      strokeWidth="2.8" 
-                      strokeLinecap="round" 
-                    />
+                    const scaleX = (i: number) => xMin + (i / (dataPoints.length - 1)) * (xMax - xMin);
+                    const scaleY = (v: number) => Math.max(yMin, Math.min(yMax, yMax - ((v - minVal) / range) * (yMax - yMin)));
 
-                    {/* Indicator Pulse Points */}
-                    <circle cx="290" cy="80" r="4" fill="#00F5A0" />
-                    <circle cx="430" cy="70" r="4" fill="#00F5A0" />
-                    <circle cx="580" cy="60" r="5" fill="#00F5A0" className="animate-ping" />
-                  </svg>
+                    const actualCoords = dataPoints.map((p, i) => ({ x: scaleX(i), y: scaleY(p.value) }));
 
-                  {/* Horizontal Date Labels */}
-                  <div className="relative z-10 flex justify-between font-label-caps text-label-caps text-on-surface-variant pt-1 border-t border-border-subtle font-mono">
-                    <span>2024-07-04</span>
-                    <span className="hidden sm:inline">2024-09-23</span>
-                    <span className="hidden md:inline">2024-12-02</span>
-                    <span>2025-01-21</span>
-                    <span className="hidden md:inline">2025-03-13</span>
-                    <span className="hidden sm:inline">2025-05-02</span>
-                    <span>2025-07-28</span>
-                  </div>
+                    // Compute 3-period simple moving average
+                    const smaCoords = dataPoints.map((p, i) => {
+                      const window = dataPoints.slice(Math.max(0, i - 2), i + 1);
+                      const avg = window.reduce((acc, curr) => acc + curr.value, 0) / window.length;
+                      return { x: scaleX(i), y: scaleY(avg) };
+                    });
+
+                    // Build path strings
+                    const dActual = actualCoords.map((c, i) => `${i === 0 ? 'M' : 'L'} ${c.x.toFixed(1)} ${c.y.toFixed(1)}`).join(' ');
+                    const dSma = smaCoords.map((c, i) => `${i === 0 ? 'M' : 'L'} ${c.x.toFixed(1)} ${c.y.toFixed(1)}`).join(' ');
+                    const dArea = `${dSma} L ${smaCoords[smaCoords.length - 1].x.toFixed(1)} 165 L ${smaCoords[0].x.toFixed(1)} 165 Z`;
+                    const yMean = scaleY(meanVal);
+                    const lastPt = actualCoords[actualCoords.length - 1];
+
+                    // Date tick marks (up to 6 evenly distributed)
+                    const tickStep = Math.max(1, Math.floor((dataPoints.length - 1) / 5));
+                    const labelIndices: number[] = [];
+                    for (let i = 0; i < dataPoints.length; i += tickStep) {
+                      labelIndices.push(i);
+                    }
+                    if (labelIndices[labelIndices.length - 1] !== dataPoints.length - 1) {
+                      labelIndices.push(dataPoints.length - 1);
+                    }
+
+                    return (
+                      <>
+                        <div className="w-full flex-1 relative overflow-hidden">
+                          <svg className="w-full h-full overflow-hidden" viewBox="0 0 600 170" preserveAspectRatio="none">
+                            <defs>
+                              <pattern id="telemetryGrid" width="40" height="28" patternUnits="userSpaceOnUse">
+                                <path d="M 40 0 L 0 0 0 28" fill="none" stroke="currentColor" className="text-border-subtle" strokeWidth="0.8" strokeDasharray="2 2" opacity="0.4" />
+                              </pattern>
+                              <linearGradient id="smaFillGrad" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="#10B981" stopOpacity="0.18" />
+                                <stop offset="100%" stopColor="#10B981" stopOpacity="0.0" />
+                              </linearGradient>
+                            </defs>
+                            <rect width="100%" height="100%" fill="url(#telemetryGrid)" />
+
+                            {/* Shaded Area for SMA */}
+                            <path d={dArea} fill="url(#smaFillGrad)" />
+
+                            {/* Baseline Mean Grid Value */}
+                            <line x1={xMin - 5} y1={yMean} x2={xMax + 5} y2={yMean} stroke="#64748b" strokeWidth="1" strokeDasharray="3 3" opacity="0.5" />
+                            <text x={xMin} y={Math.max(14, yMean - 5)} fill="#94a3b8" fontSize="10" fontFamily="Inter" fontWeight="600">
+                              Mean: {meanVal >= 1000 ? `${(meanVal / 1000).toFixed(1)}k` : meanVal.toFixed(1)}
+                            </text>
+
+                            {/* Line: Actual telemetry */}
+                            <path
+                              d={dActual}
+                              fill="none"
+                              stroke="#38BDF8"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              className="opacity-90"
+                            />
+
+                            {/* Line: 3-Period SMA */}
+                            <path
+                              d={dSma}
+                              fill="none"
+                              stroke="#10B981"
+                              strokeWidth="2.5"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+
+                            {/* Indicator Pulse Point on the latest observation */}
+                            {lastPt && (
+                              <g>
+                                <circle cx={lastPt.x} cy={lastPt.y} r="4" fill="#10B981" />
+                                <circle cx={lastPt.x} cy={lastPt.y} r="8" fill="#10B981" opacity="0.3" className="animate-pulse" />
+                              </g>
+                            )}
+                          </svg>
+                        </div>
+
+                        {/* Horizontal Date Labels - Clean, non-overlapping, strictly aligned */}
+                        <div className="flex justify-between items-center font-mono text-[11px] text-on-surface-variant pt-2 border-t border-border-subtle select-none px-1">
+                          {labelIndices.map(idx => (
+                            <span key={idx} className={idx === 0 ? 'text-left' : idx === dataPoints.length - 1 ? 'text-right' : 'text-center'}>
+                              {dataPoints[idx]?.period}
+                            </span>
+                          ))}
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
 
               <div className="mt-3 pt-2 border-t border-border-subtle flex items-center justify-between text-label-sm font-label-sm text-on-surface-variant">
-                <span>Historical Oscillatory Variance: σ = 3.42</span>
+                <span>Direction: <strong className="text-on-surface capitalize">{currentTrend?.direction || 'stable'}</strong> ({currentTrend?.changePercent !== undefined ? `${currentTrend.changePercent >= 0 ? '+' : ''}${currentTrend.changePercent}%` : 'N/A'})</span>
                 <span className="text-metric-emerald flex items-center gap-1 font-semibold">
-                  <span className="w-1.5 h-1.5 rounded-full bg-metric-emerald" /> Verified Sampling Rate: 100%
+                  <span className="w-1.5 h-1.5 rounded-full bg-metric-emerald" /> Verified Telemetry Rate: 100%
                 </span>
               </div>
             </div>
@@ -1180,59 +1241,95 @@ export const ExecutiveDashboard: React.FC = () => {
                 </div>
 
                 {/* Donut & Breakdown Layout */}
-                <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center my-4">
-                  {/* Donut Graphic */}
-                  <div className="sm:col-span-5 flex items-center justify-center relative">
-                    <div className="w-40 h-40 relative flex items-center justify-center">
-                      <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                        <circle cx="50" cy="50" r="38" fill="transparent" stroke="#1E293B" strokeWidth="12" />
-                        <circle cx="50" cy="50" r="38" fill="transparent" stroke="#00F5A0" strokeWidth="12" strokeDasharray="25 214" strokeDashoffset="0" />
-                        <circle cx="50" cy="50" r="38" fill="transparent" stroke="#00D2FF" strokeWidth="12" strokeDasharray="25 214" strokeDashoffset="-25" />
-                        <circle cx="50" cy="50" r="38" fill="transparent" stroke="#6366F1" strokeWidth="12" strokeDasharray="23 214" strokeDashoffset="-50" />
-                        <circle cx="50" cy="50" r="38" fill="transparent" stroke="#F59E0B" strokeWidth="12" strokeDasharray="23 214" strokeDashoffset="-73" />
-                        <circle cx="50" cy="50" r="38" fill="transparent" stroke="#EF4444" strokeWidth="12" strokeDasharray="21 214" strokeDashoffset="-96" />
-                        <circle cx="50" cy="50" r="38" fill="transparent" stroke="#849588" strokeWidth="12" strokeDasharray="20 214" strokeDashoffset="-117" />
-                      </svg>
-                      {/* Donut Center Aggregate */}
-                      <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
-                        <span className="font-label-caps text-label-caps uppercase text-on-surface-variant font-bold tracking-wider">TOTAL</span>
-                        <span className="font-headline-xl text-headline-xl text-on-surface font-extrabold leading-tight">859</span>
-                        <span className="font-label-caps text-label-caps text-metric-cyan font-medium">Volume</span>
+                {(() => {
+                  const segments = (currentCategoryData || []).slice(0, 6);
+                  const totalCatValue = segments.reduce((acc, curr) => acc + (curr.value || 0), 0);
+                  const colors = [
+                    { stroke: '#10B981', dot: 'bg-metric-emerald' },
+                    { stroke: '#38BDF8', dot: 'bg-metric-cyan' },
+                    { stroke: '#818CF8', dot: 'bg-metric-indigo' },
+                    { stroke: '#F59E0B', dot: 'bg-metric-amber' },
+                    { stroke: '#F43F5E', dot: 'bg-metric-coral' },
+                    { stroke: '#94A3B8', dot: 'bg-slate-400' }
+                  ];
+
+                  const circumference = 2 * Math.PI * 38; // ~238.76
+                  let runningOffset = 0;
+
+                  return (
+                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center my-4">
+                      {/* Donut Graphic */}
+                      <div className="sm:col-span-5 flex items-center justify-center relative">
+                        <div className="w-40 h-40 relative flex items-center justify-center">
+                          <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                            <circle cx="50" cy="50" r="38" fill="transparent" stroke="#1E293B" strokeWidth="12" />
+                            {totalCatValue > 0 && segments.map((seg, idx) => {
+                              const shareRatio = seg.value / totalCatValue;
+                              const dash = shareRatio * circumference;
+                              const offset = runningOffset;
+                              runningOffset += dash;
+                              return (
+                                <circle
+                                  key={idx}
+                                  cx="50"
+                                  cy="50"
+                                  r="38"
+                                  fill="transparent"
+                                  stroke={colors[idx % colors.length].stroke}
+                                  strokeWidth="12"
+                                  strokeDasharray={`${dash.toFixed(2)} ${(circumference - dash).toFixed(2)}`}
+                                  strokeDashoffset={-offset}
+                                  className="transition-all duration-300"
+                                />
+                              );
+                            })}
+                          </svg>
+                          {/* Donut Center Aggregate */}
+                          <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none px-2">
+                            <span className="font-label-caps text-label-caps uppercase text-on-surface-variant font-bold tracking-wider">TOTAL</span>
+                            <span className="font-headline-lg text-headline-lg text-on-surface font-extrabold leading-tight">
+                              {totalCatValue >= 1000000 ? `${(totalCatValue / 1000000).toFixed(1)}M` : totalCatValue >= 1000 ? `${(totalCatValue / 1000).toFixed(1)}k` : Math.round(totalCatValue).toLocaleString()}
+                            </span>
+                            <span className="font-label-caps text-label-caps text-metric-cyan font-medium truncate max-w-[80px]">
+                              {selectedDimension || 'Volume'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Segment Metric Legend */}
+                      <div className="sm:col-span-7 flex flex-col gap-1.5 font-label-sm text-label-sm">
+                        {segments.length > 0 ? (
+                          segments.map((seg, idx) => (
+                            <div 
+                              key={idx} 
+                              onClick={() => handleDrilldown(seg.category)}
+                              className="flex items-center justify-between p-1.5 rounded bg-surface-panel/60 hover:bg-surface-elevated transition-colors border border-border-subtle cursor-pointer"
+                              title={`Click to filter granular rows by ${seg.category}`}
+                            >
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${colors[idx % colors.length].dot}`} />
+                                <span className="text-on-surface font-medium truncate max-w-[130px]">{seg.category}</span>
+                              </div>
+                              <div className="flex items-center gap-2.5 font-mono flex-shrink-0">
+                                <span className="text-on-surface font-bold">{seg.share ? `${seg.share.toFixed(1)}%` : '0%'}</span>
+                                <span className="text-on-surface-variant text-[10px]">{seg.value >= 1000 ? `${(seg.value / 1000).toFixed(1)}k` : seg.value.toLocaleString()}</span>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-xs text-on-surface-variant p-2 text-center">
+                            No categorical dimensions found in current dataset.
+                          </div>
+                        )}
                       </div>
                     </div>
-                  </div>
-
-                  {/* Segment Metric Legend */}
-                  <div className="sm:col-span-7 flex flex-col gap-1.5 font-label-sm text-label-sm">
-                    {[
-                      { name: 'Starlight Telecom', share: '10.5%', val: 156, color: 'bg-metric-emerald' },
-                      { name: 'BioHealth Systems', share: '10.5%', val: 156, color: 'bg-metric-cyan' },
-                      { name: 'Vertex Logistics', share: '9.7%', val: 144, color: 'bg-metric-indigo' },
-                      { name: 'Quantum Capital', share: '9.7%', val: 144, color: 'bg-metric-amber' },
-                      { name: 'Horizon Aerospace', share: '8.9%', val: 132, color: 'bg-metric-coral' },
-                      { name: 'Pioneer Financial', share: '8.6%', val: 127, color: 'bg-slate-400' }
-                    ].map((seg, idx) => (
-                      <div 
-                        key={idx} 
-                        onClick={() => handleDrilldown(seg.name)}
-                        className="flex items-center justify-between p-1.5 rounded bg-surface-panel/60 hover:bg-surface-elevated transition-colors border border-border-subtle cursor-pointer"
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className={`w-2.5 h-2.5 rounded-full ${seg.color}`} />
-                          <span className="text-on-surface font-medium truncate max-w-[120px]">{seg.name}</span>
-                        </div>
-                        <div className="flex items-center gap-2.5 font-mono">
-                          <span className="text-on-surface font-bold">{seg.share}</span>
-                          <span className="text-on-surface-variant text-[10px]">{seg.val}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                  );
+                })()}
               </div>
 
               <div className="pt-2 border-t border-border-subtle flex items-center justify-between text-label-sm font-label-sm text-on-surface-variant">
-                <span>Entropy Concentration Index: H = 0.94</span>
+                <span>Active Segments: {currentCategoryData?.length || 0}</span>
                 <span 
                   onClick={() => setActiveTab('pareto')}
                   className="text-metric-cyan hover:underline flex items-center gap-1 cursor-pointer font-medium"

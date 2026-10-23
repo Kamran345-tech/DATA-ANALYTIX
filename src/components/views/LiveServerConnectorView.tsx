@@ -296,7 +296,7 @@ export const LiveServerConnectorView: React.FC = () => {
             CONNECT TO ANY DATABASE & SERVER
           </h1>
           <p className="text-xs sm:text-sm text-gray-400 leading-relaxed">
-            Attach credentials for any server: <span className="text-white font-medium">PostgreSQL, MySQL, SQL Server, MongoDB, Snowflake, Oracle, or REST APIs</span>. Stream live records directly into the analytical pipeline for in-browser SQL or Python cleaning.
+            Attach credentials for any server: <span className="text-white font-medium">PostgreSQL, MySQL, SQL Server, MongoDB, Snowflake, Oracle, or REST APIs</span>. Stream live records directly into the analytical pipeline for in-browser SQL or Python cleaning. *(Note: Direct database wire protocols operate in sandbox demo mode; use REST API for live external HTTP endpoints).*
           </p>
         </div>
 

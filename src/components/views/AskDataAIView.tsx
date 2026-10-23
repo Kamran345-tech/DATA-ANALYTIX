@@ -76,13 +76,14 @@ export const AskDataAIView: React.FC = () => {
       });
 
       const data = await res.json();
+      const isAi = data.model === 'gemini-2.5-flash';
       const assistantMsg: ChatMessage = {
         id: `ai-${Date.now()}`,
         sender: 'assistant',
         text: data.text || 'Unable to interpret query.',
         timestamp: new Date().toLocaleTimeString(),
-        grounded: true,
-        sourceMetrics: data.sourceMetrics || ['Verified Analytical Engine']
+        grounded: isAi,
+        sourceMetrics: data.sourceMetrics || ['Verified Metric Engine']
       };
 
       setMessages(prev => [...prev, assistantMsg]);
@@ -90,9 +91,9 @@ export const AskDataAIView: React.FC = () => {
       const fallbackMsg: ChatMessage = {
         id: `ai-${Date.now()}`,
         sender: 'assistant',
-        text: `### Verified Calculation Engine Response\n\n- **Analyzed Records**: ${cleanRows.length} active transactions\n- **Primary Metrics**: ${analytics.kpis.slice(0, 3).map(k => `${k.name}: ${k.formattedValue}`).join(', ')}\n- **Risk Status**: ${analytics.anomalies.length > 0 ? analytics.anomalies[0].title : 'Stable'}\n\n*Note: Calculations verified directly against underlying model.*`,
+        text: `### Offline Deterministic Analysis\n\n*Server note: Cloud AI endpoint unavailable (${err?.message || 'Offline mode'}). Displaying computed dataset metrics:*\n\n- **Audited Dataset**: ${cleanRows.length.toLocaleString()} active transaction records\n- **Verified Core KPIs**: ${analytics.kpis.slice(0, 3).map(k => `${k.name}: ${k.formattedValue}`).join(', ')}\n- **Risk Status**: ${analytics.anomalies.length > 0 ? analytics.anomalies[0].title : 'Normal operational variation'}\n\n*Source: Analytical values calculated directly from in-memory engine without generative extrapolation.*`,
         timestamp: new Date().toLocaleTimeString(),
-        grounded: true
+        grounded: false
       };
       setMessages(prev => [...prev, fallbackMsg]);
     } finally {

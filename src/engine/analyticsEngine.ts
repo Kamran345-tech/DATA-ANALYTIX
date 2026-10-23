@@ -80,9 +80,11 @@ export function computeAnalytics(
     };
   }
 
-  const numericCols = columns.filter(c => c.dataType === 'number' && !c.isPrimaryKeyCandidate && !c.name.toLowerCase().includes('id') && !c.name.toLowerCase().includes('zip'));
+  // Fix A6: Word-boundary ID check so columns like paid_amount, width, provider, video are retained
+  const isIdColumn = (colName: string) => /(^|[_\s-])(id|pk|uuid|guid)([_\s-]|$)/i.test(colName);
+  const numericCols = columns.filter(c => c.dataType === 'number' && !c.isPrimaryKeyCandidate && !isIdColumn(c.name) && !/(^|[_\s-])zip([_\s-]|$)/i.test(c.name));
   const dateCols = columns.filter(c => c.dataType === 'date');
-  const stringCols = columns.filter(c => c.dataType === 'string' && !c.isPrimaryKeyCandidate && !c.name.toLowerCase().includes('id'));
+  const stringCols = columns.filter(c => c.dataType === 'string' && !c.isPrimaryKeyCandidate && !isIdColumn(c.name));
 
   // Detect primary date column or fallback to string column with date/time semantics
   let primaryDateCol = dateCols[0]?.name;
@@ -93,22 +95,43 @@ export function computeAnalytics(
     }
   }
 
-  // Identify key domain columns for business analytics
-  const revCol = numericCols.find(c => /net.*rev|rev|sales|turnover|income|amount/i.test(c.name))?.name || numericCols[0]?.name;
-  const profitCol = numericCols.find(c => /gross.*profit|profit|margin_amt|net_income/i.test(c.name))?.name;
-  const costCol = numericCols.find(c => /cogs|cost|expense/i.test(c.name))?.name;
-  const marginPctCol = numericCols.find(c => /margin.*pct|margin_rate|profit_margin/i.test(c.name))?.name;
-  const unitsCol = numericCols.find(c => /units.*sold|units|quantity|qty|volume/i.test(c.name))?.name;
-  const targetCol = numericCols.find(c => /target|budget|quota/i.test(c.name))?.name;
+  // Fix A10: Prioritized revenue detection (net_revenue > revenue > sales > turnover > amount > first numeric)
+  const revCol = 
+    numericCols.find(c => /(^|[_\s-])(net[_\s-]?revenue|revenue|net[_\s-]?sales|turnover)([_\s-]|$)/i.test(c.name))?.name ||
+    numericCols.find(c => /(^|[_\s-])(sales|income|gross[_\s-]?sales)([_\s-]|$)/i.test(c.name))?.name ||
+    numericCols.find(c => /(^|[_\s-])amount([_\s-]|$)/i.test(c.name))?.name ||
+    numericCols[0]?.name;
 
-  // Split rows chronologically for prior vs current comparison
+  const profitCol = numericCols.find(c => /(^|[_\s-])(gross[_\s-]?profit|profit|net[_\s-]?profit|margin_amt|net_income)([_\s-]|$)/i.test(c.name))?.name;
+  const costCol = numericCols.find(c => /(^|[_\s-])(cogs|cost|expense|total_cost)([_\s-]|$)/i.test(c.name))?.name;
+  const marginPctCol = numericCols.find(c => /(^|[_\s-])(margin[_\s-]?pct|margin_rate|profit_margin|gross_margin)([_\s-]|$)/i.test(c.name))?.name;
+  const unitsCol = numericCols.find(c => /(^|[_\s-])(units[_\s-]?sold|units|quantity|qty|volume)([_\s-]|$)/i.test(c.name))?.name;
+  const targetCol = numericCols.find(c => /(^|[_\s-])(target|budget|quota)([_\s-]|$)/i.test(c.name))?.name;
+
+  // Fix A12: Sort dates by real timestamp before splitting into prior vs current, avoiding text sort bugs
   let priorRows: Record<string, any>[] = [];
   let currentRows: Record<string, any>[] = [];
   if (primaryDateCol && rows.length >= 4) {
-    const sorted = [...rows].sort((a, b) => String(a[primaryDateCol]).localeCompare(String(b[primaryDateCol])));
-    const half = Math.floor(sorted.length / 2);
-    priorRows = sorted.slice(0, half);
-    currentRows = sorted.slice(half);
+    const rowsWithDates = rows.filter(r => r[primaryDateCol] != null && String(r[primaryDateCol]).trim() !== '');
+    const sorted = [...rowsWithDates].sort((a, b) => {
+      const ta = new Date(a[primaryDateCol]).getTime();
+      const tb = new Date(b[primaryDateCol]).getTime();
+      if (!isNaN(ta) && !isNaN(tb)) return ta - tb;
+      return String(a[primaryDateCol]).localeCompare(String(b[primaryDateCol]));
+    });
+
+    const timestamps = sorted.map(r => new Date(r[primaryDateCol]).getTime()).filter(t => !isNaN(t));
+    if (timestamps.length >= 4 && timestamps[timestamps.length - 1] > timestamps[0]) {
+      const minT = timestamps[0];
+      const maxT = timestamps[timestamps.length - 1];
+      const midT = minT + (maxT - minT) / 2;
+      priorRows = sorted.filter(r => new Date(r[primaryDateCol]).getTime() < midT);
+      currentRows = sorted.filter(r => new Date(r[primaryDateCol]).getTime() >= midT);
+    } else {
+      const half = Math.floor(sorted.length / 2);
+      priorRows = sorted.slice(0, half);
+      currentRows = sorted.slice(half);
+    }
   } else {
     const half = Math.floor(rows.length / 2);
     priorRows = rows.slice(0, half);
@@ -118,9 +141,13 @@ export function computeAnalytics(
   // 1. Enterprise KPI Calculation with rigorous definitions & formulas
   const kpis: KPI[] = [];
 
-  // Helper to compute metric totals and variance
+  // Fix A3: Nulls and empty values are skipped and NOT converted to 0 in averages
   const getMetricStats = (colName: string, isRate: boolean = false) => {
-    const valid = rows.map(r => Number(r[colName])).filter(v => !isNaN(v));
+    const valid = rows
+      .filter(r => r[colName] !== null && r[colName] !== undefined && r[colName] !== '')
+      .map(r => Number(r[colName]))
+      .filter(v => !isNaN(v));
+
     if (valid.length === 0) return null;
     const total = valid.reduce((a, b) => a + b, 0);
     const avg = total / valid.length;
@@ -130,8 +157,16 @@ export function computeAnalytics(
     let changePct: number | undefined;
 
     if (currentRows.length > 0 && priorRows.length > 0) {
-      const curV = currentRows.map(r => Number(r[colName])).filter(v => !isNaN(v));
-      const priV = priorRows.map(r => Number(r[colName])).filter(v => !isNaN(v));
+      const curV = currentRows
+        .filter(r => r[colName] !== null && r[colName] !== undefined && r[colName] !== '')
+        .map(r => Number(r[colName]))
+        .filter(v => !isNaN(v));
+
+      const priV = priorRows
+        .filter(r => r[colName] !== null && r[colName] !== undefined && r[colName] !== '')
+        .map(r => Number(r[colName]))
+        .filter(v => !isNaN(v));
+
       if (curV.length > 0 && priV.length > 0) {
         const curC = isRate ? (curV.reduce((a, b) => a + b, 0) / curV.length) : curV.reduce((a, b) => a + b, 0);
         const priC = isRate ? (priV.reduce((a, b) => a + b, 0) / priV.length) : priV.reduce((a, b) => a + b, 0);
@@ -139,7 +174,7 @@ export function computeAnalytics(
         if (priC !== 0) changePct = ((curC - priC) / Math.abs(priC)) * 100;
       }
     }
-    return { mainVal, prevVal, changePct };
+    return { mainVal, prevVal, changePct, validCount: valid.length };
   };
 
   // Primary Business KPI 1: Net Revenue
@@ -162,78 +197,119 @@ export function computeAnalytics(
         aggregation: 'sum',
         calculation: `SUM('${tableName}'[${revCol}])`,
         traceableSource: `${tableName}.${revCol}`,
-        definition: 'Total realized commercial billing after deducting trade discounts from gross contract price.',
-        formulaExpression: `SUM(${tableName}[${revCol}]) = GrossRevenue - DiscountAmount`,
-        businessImpact: 'Top-line sales performance indicator driving enterprise enterprise valuation and quota pacing.',
+        definition: `Total aggregate transaction volume for column ${revCol}.`,
+        formulaExpression: `SUM(${tableName}[${revCol}])`,
+        businessImpact: 'Top-line sales performance indicator driving enterprise valuation and quota pacing.',
         unit: 'USD ($)'
       });
     }
   }
 
-  // Primary Business KPI 2: Gross Operating Profit
+  // Primary Business KPI 2: Gross Operating Profit (Fix A11: Compute true profit variance, not revenue variance)
   if (profitCol || (revCol && costCol)) {
-    const pCol = profitCol || revCol;
-    const st = getMetricStats(pCol, false);
-    if (st) {
-      let profitVal = st.mainVal;
-      if (!profitCol && revCol && costCol) {
-        const revTotal = rows.reduce((acc, r) => acc + (Number(r[revCol]) || 0), 0);
-        const costTotal = rows.reduce((acc, r) => acc + (Number(r[costCol]) || 0), 0);
-        profitVal = revTotal - costTotal;
+    let profitVal = 0;
+    let prevProfitVal: number | undefined;
+    let profitChangePct: number | undefined;
+
+    if (profitCol) {
+      const st = getMetricStats(profitCol, false);
+      if (st) {
+        profitVal = st.mainVal;
+        prevProfitVal = st.prevVal;
+        profitChangePct = st.changePct;
       }
-      const status: KPI['status'] = (st.changePct || 0) >= 5 ? 'Above Target' : (st.changePct || 0) < -5 ? 'At Risk' : 'On Track';
-      kpis.push({
-        id: 'kpi-gross-profit',
-        name: 'Gross Operating Profit',
-        value: Math.round(profitVal * 100) / 100,
-        formattedValue: formatMetricValue(profitVal, 'profit', false),
-        previousValue: st.prevVal !== undefined ? Math.round(st.prevVal * 100) / 100 : undefined,
-        formattedPreviousValue: st.prevVal !== undefined ? formatMetricValue(st.prevVal, 'profit', false) : undefined,
-        changePercent: st.changePct !== undefined ? Math.round(st.changePct * 10) / 10 : undefined,
-        status,
-        period: primaryDateCol ? 'Current Trailing Window vs Prior' : 'Audited Dataset Total',
-        sourceColumn: profitCol || `${revCol} - ${costCol}`,
-        aggregation: 'sum',
-        calculation: `SUM('${tableName}'[NetRevenue]) - SUM('${tableName}'[COGS])`,
-        traceableSource: `${tableName}.${profitCol || 'GrossProfit'}`,
-        definition: 'Operational financial surplus remaining after deducting direct Cost of Goods Sold (COGS).',
-        formulaExpression: `Net Revenue - Cost of Goods Sold (COGS)`,
-        businessImpact: 'Measures bottom-line operational contribution before fixed overhead and tax allocations.',
-        unit: 'USD ($)'
-      });
+    } else if (revCol && costCol) {
+      const calcProfit = (subset: Record<string, any>[]) => {
+        return subset.reduce((acc, r) => {
+          const rv = Number(r[revCol]);
+          const cv = Number(r[costCol]);
+          const validR = !isNaN(rv) && r[revCol] != null ? rv : 0;
+          const validC = !isNaN(cv) && r[costCol] != null ? cv : 0;
+          return acc + (validR - validC);
+        }, 0);
+      };
+
+      profitVal = calcProfit(rows);
+      if (currentRows.length > 0 && priorRows.length > 0) {
+        const curP = calcProfit(currentRows);
+        const priP = calcProfit(priorRows);
+        prevProfitVal = priP;
+        if (priP !== 0) {
+          profitChangePct = ((curP - priP) / Math.abs(priP)) * 100;
+        }
+      }
     }
+
+    const status: KPI['status'] = (profitChangePct || 0) >= 5 ? 'Above Target' : (profitChangePct || 0) < -5 ? 'At Risk' : 'On Track';
+    kpis.push({
+      id: 'kpi-gross-profit',
+      name: 'Gross Operating Profit',
+      value: Math.round(profitVal * 100) / 100,
+      formattedValue: formatMetricValue(profitVal, 'profit', false),
+      previousValue: prevProfitVal !== undefined ? Math.round(prevProfitVal * 100) / 100 : undefined,
+      formattedPreviousValue: prevProfitVal !== undefined ? formatMetricValue(prevProfitVal, 'profit', false) : undefined,
+      changePercent: profitChangePct !== undefined ? Math.round(profitChangePct * 10) / 10 : undefined,
+      status,
+      period: primaryDateCol ? 'Current Trailing Window vs Prior' : 'Audited Dataset Total',
+      sourceColumn: profitCol || `${revCol} - ${costCol}`,
+      aggregation: 'sum',
+      calculation: profitCol ? `SUM('${tableName}'[${profitCol}])` : `SUM('${tableName}'[${revCol}]) - SUM('${tableName}'[${costCol}])`,
+      traceableSource: `${tableName}.${profitCol || 'GrossProfit'}`,
+      definition: 'Operational financial surplus remaining after deducting direct Cost of Goods Sold (COGS).',
+      formulaExpression: profitCol ? `SUM(${profitCol})` : `Net Revenue - Cost of Goods Sold (COGS)`,
+      businessImpact: 'Measures bottom-line operational contribution before fixed overhead and tax allocations.',
+      unit: 'USD ($)'
+    });
   }
 
-  // Primary Business KPI 3: Gross Margin %
-  {
-    let marginVal = 44.2;
+  // Primary Business KPI 3: Gross Margin % (Fix A1 & A13: NO hardcoded 44.2 default! Only show if data contains margin/profit/cost)
+  if (marginPctCol || (revCol && (profitCol || costCol))) {
+    let marginVal: number | undefined;
+    let marginFormula = '';
+    let marginSource = '';
+
     if (marginPctCol) {
       const st = getMetricStats(marginPctCol, true);
-      if (st) marginVal = st.mainVal;
+      if (st) {
+        // Fix A13: Only multiply by 100 if the raw data values are strictly between 0 and 1 decimal ratios
+        const rawVals = rows.filter(r => r[marginPctCol] != null).map(r => Number(r[marginPctCol])).filter(v => !isNaN(v));
+        const maxVal = Math.max(...rawVals);
+        marginVal = maxVal <= 1.0 ? st.mainVal * 100 : st.mainVal;
+        marginFormula = `AVERAGE('${tableName}'[${marginPctCol}])`;
+        marginSource = `${tableName}.${marginPctCol}`;
+      }
     } else if (revCol && (profitCol || costCol)) {
-      const totRev = rows.reduce((a, r) => a + (Number(r[revCol]) || 0), 0);
-      const totProf = profitCol 
-        ? rows.reduce((a, r) => a + (Number(r[profitCol]) || 0), 0)
-        : totRev - rows.reduce((a, r) => a + (Number(r[costCol!]) || 0), 0);
-      marginVal = totRev > 0 ? (totProf / totRev) * 100 : 0;
+      const validRevRows = rows.filter(r => r[revCol] != null && !isNaN(Number(r[revCol])));
+      const totRev = validRevRows.reduce((a, r) => a + Number(r[revCol]), 0);
+      if (totRev > 0) {
+        const totProf = profitCol 
+          ? validRevRows.reduce((a, r) => a + (Number(r[profitCol]) || 0), 0)
+          : totRev - validRevRows.reduce((a, r) => a + (Number(r[costCol!]) || 0), 0);
+        marginVal = (totProf / totRev) * 100;
+        marginFormula = `DIVIDE(SUM('${tableName}'[GrossProfit]), SUM('${tableName}'[${revCol}]), 0) * 100`;
+        marginSource = `${tableName}.CalculatedGrossMargin`;
+      }
     }
-    const status: KPI['status'] = marginVal >= 40 ? 'Above Target' : marginVal >= 30 ? 'On Track' : 'Below Target';
-    kpis.push({
-      id: 'kpi-gross-margin-pct',
-      name: 'Gross Margin %',
-      value: Math.round(marginVal * 10) / 10,
-      formattedValue: `${(marginVal > 1 ? marginVal : marginVal * 100).toFixed(1)}%`,
-      status,
-      period: 'Weighted Average',
-      sourceColumn: marginPctCol || 'GrossProfit / NetRevenue',
-      aggregation: 'avg',
-      calculation: `DIVIDE(SUM('${tableName}'[GrossProfit]), SUM('${tableName}'[NetRevenue]), 0) * 100`,
-      traceableSource: `${tableName}.GrossMarginPct`,
-      definition: 'Ratio of gross operating profit to net revenue, expressing pricing strength and unit profitability.',
-      formulaExpression: `(Gross Profit / Net Revenue) * 100`,
-      businessImpact: 'Core health metric; contractions signal cost inflation, aggressive discounting, or unfavorable mix shift.',
-      unit: '%'
-    });
+
+    if (marginVal !== undefined) {
+      const status: KPI['status'] = marginVal >= 40 ? 'Above Target' : marginVal >= 25 ? 'On Track' : 'Below Target';
+      kpis.push({
+        id: 'kpi-gross-margin-pct',
+        name: 'Gross Margin %',
+        value: Math.round(marginVal * 10) / 10,
+        formattedValue: `${marginVal.toFixed(1)}%`,
+        status,
+        period: 'Weighted Average',
+        sourceColumn: marginSource,
+        aggregation: 'avg',
+        calculation: marginFormula,
+        traceableSource: marginSource,
+        definition: 'Ratio of gross operating profit to net revenue, expressing pricing strength and unit profitability.',
+        formulaExpression: `(Gross Profit / Net Revenue) * 100`,
+        businessImpact: 'Core health metric; contractions signal cost inflation, aggressive discounting, or unfavorable mix shift.',
+        unit: '%'
+      });
+    }
   }
 
   // Primary Business KPI 4: Units Sold / Order Transactions (Replaced generic "Total Volume")
@@ -473,35 +549,59 @@ export function computeAnalytics(
           unavailabilityReason: `Forecast unavailable because the dataset does not contain sufficient historical data (${sortedPoints.length} time points found; minimum 6 required for statistical reliability).`
         };
       } else {
-        // Run Single Exponential Smoothing with Holt trend
+        // Run Single Exponential Smoothing with Holt linear trend (Fix A4 & A5)
         const alpha = 0.35;
         const beta = 0.15;
         let level = sortedPoints[0][1];
-        let trendVal = sortedPoints[1][1] - sortedPoints[0][1];
+        let trendVal = sortedPoints.length > 1 ? sortedPoints[1][1] - sortedPoints[0][1] : 0;
 
         const historyPoints: ForecastResult['data'] = [];
+        const residuals: number[] = [];
+
         for (let i = 0; i < sortedPoints.length; i++) {
           const val = sortedPoints[i][1];
+          // One-step-ahead fitted value from previous step
+          const oneStepAhead = level + trendVal;
+          if (i > 0) {
+            residuals.push(val - oneStepAhead);
+          }
           const prevLevel = level;
           level = alpha * val + (1 - alpha) * (level + trendVal);
           trendVal = beta * (level - prevLevel) + (1 - beta) * trendVal;
+
           historyPoints.push({
             period: sortedPoints[i][0],
             actual: Math.round(val * 100) / 100
           });
         }
 
-        // Standard error estimation
-        const residuals = sortedPoints.map((p, i) => Math.abs(p[1] - (historyPoints[i].actual || 0)));
-        const stdError = residuals.reduce((a, b) => a + b, 0) / (residuals.length || 1);
+        // Standard error from one-step-ahead prediction residuals
+        const variance = residuals.length > 0 
+          ? residuals.reduce((a, b) => a + b * b, 0) / residuals.length 
+          : Math.pow(Math.abs(sortedPoints[0][1] * 0.08), 2);
+        const stdError = Math.sqrt(variance);
 
-        // Project 3 future points
+        // Project 3 future points with dynamic date or sequence progression
+        const lastPeriodStr = sortedPoints[sortedPoints.length - 1][0];
+        const lastDate = new Date(lastPeriodStr);
+        const hasValidDate = !isNaN(lastDate.getTime());
+
         const horizon = 3;
         for (let h = 1; h <= horizon; h++) {
           const projected = Math.max(0, level + h * trendVal);
-          const margin = 1.96 * stdError * Math.sqrt(h);
+          // Proper confidence interval expansion: 1.96 * se * sqrt(1 + (h-1)*alpha^2)
+          const expansionFactor = Math.sqrt(1 + (h - 1) * alpha * alpha);
+          const margin = Math.max(projected * 0.04, 1.96 * stdError * expansionFactor);
+
+          let futurePeriodLabel = `Projection +${h}`;
+          if (hasValidDate) {
+            const nextD = new Date(lastDate);
+            nextD.setMonth(nextD.getMonth() + h);
+            futurePeriodLabel = `${nextD.getFullYear()}-${String(nextD.getMonth() + 1).padStart(2, '0')}`;
+          }
+
           historyPoints.push({
-            period: `Projection +${h}`,
+            period: futurePeriodLabel,
             forecast: Math.round(projected * 100) / 100,
             confidenceLower: Math.max(0, Math.round((projected - margin) * 100) / 100),
             confidenceUpper: Math.round((projected + margin) * 100) / 100
@@ -511,7 +611,7 @@ export function computeAnalytics(
         forecasts[primaryMetric] = {
           isAvailable: true,
           metric: primaryMetric,
-          method: 'Holt-Winters Exponential Smoothing',
+          method: 'Holt Linear Trend Exponential Smoothing',
           horizon: 3,
           data: historyPoints
         };
@@ -731,9 +831,19 @@ export function computeAnalytics(
     const mean = vals.reduce((a, b) => a + b, 0) / n;
     const variance = vals.reduce((acc, v) => acc + Math.pow(v - mean, 2), 0) / (n > 1 ? n - 1 : 1);
     const stdDev = Math.sqrt(variance);
-    const median = n % 2 === 0 ? (vals[n / 2 - 1] + vals[n / 2]) / 2 : vals[Math.floor(n / 2)];
-    const q1 = vals[Math.floor(n * 0.25)] ?? vals[0];
-    const q3 = vals[Math.floor(n * 0.75)] ?? vals[n - 1];
+    // Linear interpolation for percentiles (matches Excel PERCENTILE.INC and pandas)
+    const getPercentile = (arr: number[], p: number) => {
+      if (arr.length === 0) return 0;
+      if (arr.length === 1) return arr[0];
+      const idx = (arr.length - 1) * p;
+      const lower = Math.floor(idx);
+      const upper = Math.ceil(idx);
+      const weight = idx - lower;
+      return arr[lower] * (1 - weight) + arr[upper] * weight;
+    };
+    const median = getPercentile(vals, 0.5);
+    const q1 = getPercentile(vals, 0.25);
+    const q3 = getPercentile(vals, 0.75);
     const iqr = q3 - q1;
     const min = vals[0];
     const max = vals[n - 1];

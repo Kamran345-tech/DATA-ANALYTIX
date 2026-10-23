@@ -10,12 +10,73 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// In-memory sliding window rate limiter for public AI endpoints
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+function checkRateLimit(ip: string, limit: number = 30, windowMs: number = 60000): boolean {
+  const now = Date.now();
+  const record = rateLimitMap.get(ip);
+  if (!record || now > record.resetTime) {
+    rateLimitMap.set(ip, { count: 1, resetTime: now + windowMs });
+    return true;
+  }
+  if (record.count >= limit) {
+    return false;
+  }
+  record.count++;
+  return true;
+}
+
+// SSRF Protection: Blocks private RFC 1918, loopback, link-local and cloud metadata addresses
+function validateExternalUrl(rawUrl: string): { valid: boolean; error?: string } {
+  try {
+    const parsed = new URL(rawUrl);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      return { valid: false, error: 'Only HTTP and HTTPS protocols are permitted.' };
+    }
+
+    const hostname = parsed.hostname.toLowerCase();
+
+    // Block loopback and local domain names
+    if (
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname === '0.0.0.0' ||
+      hostname === '::1' ||
+      hostname.endsWith('.local') ||
+      hostname.endsWith('.internal') ||
+      hostname === 'metadata.google.internal' ||
+      hostname === '169.254.169.254'
+    ) {
+      return { valid: false, error: 'Access to loopback, internal hosts, and cloud metadata is prohibited.' };
+    }
+
+    // Block private IPv4 ranges (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 127.0.0.0/8, 169.254.0.0/16)
+    const ipv4Regex = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
+    const ipMatch = hostname.match(ipv4Regex);
+    if (ipMatch) {
+      const p1 = parseInt(ipMatch[1], 10);
+      const p2 = parseInt(ipMatch[2], 10);
+
+      if (p1 === 10) return { valid: false, error: 'Access to private 10.x.x.x addresses is prohibited.' };
+      if (p1 === 127) return { valid: false, error: 'Access to loopback 127.x.x.x addresses is prohibited.' };
+      if (p1 === 169 && p2 === 254) return { valid: false, error: 'Access to link-local 169.254.x.x addresses is prohibited.' };
+      if (p1 === 192 && p2 === 168) return { valid: false, error: 'Access to private 192.168.x.x addresses is prohibited.' };
+      if (p1 === 172 && p2 >= 16 && p2 <= 31) return { valid: false, error: 'Access to private 172.16-31.x.x addresses is prohibited.' };
+    }
+
+    return { valid: true };
+  } catch (err: any) {
+    return { valid: false, error: `Invalid URL format: ${err?.message || 'Malformed URL'}` };
+  }
+}
+
 async function startServer() {
   const app = express();
   const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
-  app.use(express.json({ limit: '50mb' }));
-  app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+  // Enforce reasonable JSON body limit (10MB) to prevent memory exhaustion
+  app.use(express.json({ limit: '10mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
   // Initialize Gemini if API key is provided
   const geminiApiKey = process.env.GEMINI_API_KEY || process.env.API_KEY || '';
@@ -48,11 +109,16 @@ async function startServer() {
       const { serverType, host, port, database, username, connectionString, restEndpoint } = req.body;
       const startTime = Date.now();
 
-      // If REST API endpoint is specified, test HTTP connectivity
+      // If REST API endpoint is specified, test HTTP connectivity with SSRF guard
       if (serverType === 'rest_api' || restEndpoint) {
         const targetUrl = restEndpoint || host;
         if (!targetUrl) {
           return res.status(400).json({ success: false, error: 'REST endpoint URL is required.' });
+        }
+
+        const ssrfCheck = validateExternalUrl(targetUrl);
+        if (!ssrfCheck.valid) {
+          return res.status(400).json({ success: false, error: ssrfCheck.error });
         }
 
         try {
@@ -68,12 +134,13 @@ async function startServer() {
             status: fetchRes.status,
             statusText: fetchRes.statusText,
             latencyMs,
+            isSimulation: false,
             message: fetchRes.ok 
               ? `Connected to REST API (${fetchRes.status} ${fetchRes.statusText}) in ${latencyMs}ms` 
               : `HTTP ${fetchRes.status}: ${fetchRes.statusText}`
           });
         } catch (fetchErr: any) {
-          return res.json({
+          return res.status(502).json({
             success: false,
             latencyMs: Date.now() - startTime,
             error: `Failed to reach endpoint: ${fetchErr?.message || 'Connection timed out'}`
@@ -81,18 +148,19 @@ async function startServer() {
         }
       }
 
-      // Database connection test verification
-      const latencyMs = Math.floor(Math.random() * 45) + 35; // 35ms - 80ms realistic latency
+      // Honest labeling for browser sandbox direct database simulation
+      const latencyMs = Math.floor(Math.random() * 30) + 25;
       const detectedTables = getSuggestedTablesForDb(serverType, database);
 
       return res.json({
         success: true,
+        isSimulation: true,
         latencyMs,
         serverType: serverType || 'postgres',
-        host: host || 'localhost',
+        host: host || 'demo-warehouse.sandbox',
         database: database || 'production_db',
         ssl: req.body.ssl !== false,
-        message: `Successfully authenticated with ${serverType?.toUpperCase() || 'DATABASE'} at ${host || 'remote host'}:${port || 'default'} (Database: "${database || 'main'}")`,
+        message: `Verified demo sandbox profile for ${serverType?.toUpperCase() || 'DATABASE'} (Database: "${database || 'main'}"). Native TCP wire protocols run in demo mode; connect via REST API for live production endpoints.`,
         availableTables: detectedTables
       });
     } catch (err: any) {
@@ -114,8 +182,13 @@ async function startServer() {
         limit = 100 
       } = req.body;
 
-      // Real REST API Fetch
+      // Real REST API Fetch with SSRF validation
       if (serverType === 'rest_api' && restEndpoint) {
+        const ssrfCheck = validateExternalUrl(restEndpoint);
+        if (!ssrfCheck.valid) {
+          return res.status(400).json({ success: false, error: ssrfCheck.error });
+        }
+
         try {
           const fetchRes = await fetch(restEndpoint, {
             headers: req.body.headers || { 'Accept': 'application/json' },
@@ -123,7 +196,10 @@ async function startServer() {
           });
 
           if (!fetchRes.ok) {
-            throw new Error(`HTTP Error ${fetchRes.status}: ${fetchRes.statusText}`);
+            return res.status(fetchRes.status).json({
+              success: false,
+              error: `REST API responded with HTTP ${fetchRes.status}: ${fetchRes.statusText}`
+            });
           }
 
           const json = await fetchRes.json();
@@ -131,7 +207,6 @@ async function startServer() {
           if (Array.isArray(json)) {
             rows = json;
           } else if (json && typeof json === 'object') {
-            // Find first array property (e.g., data, results, items, records)
             const arrayProp = Object.values(json).find(v => Array.isArray(v)) as any[] | undefined;
             if (arrayProp) {
               rows = arrayProp;
@@ -140,8 +215,7 @@ async function startServer() {
             }
           }
 
-          // Flatten nested single-level objects if needed
-          const flattened = rows.slice(0, Number(limit) || 200).map((r, i) => {
+          const flattened = rows.slice(0, Number(limit) || 200).map((r) => {
             const flatRow: Record<string, any> = {};
             for (const [k, v] of Object.entries(r)) {
               if (v !== null && typeof v === 'object' && !Array.isArray(v)) {
@@ -157,6 +231,7 @@ async function startServer() {
 
           return res.json({
             success: true,
+            isSimulation: false,
             source: 'rest_api',
             tableName: 'Live_REST_Data',
             rowCount: flattened.length,
@@ -164,23 +239,29 @@ async function startServer() {
             timestamp: new Date().toISOString()
           });
         } catch (apiErr: any) {
-          console.warn('REST fetch fallback to synthetic live stream:', apiErr?.message);
+          // Never silently fall back to random data on REST fetch failure!
+          return res.status(502).json({
+            success: false,
+            error: `Failed to fetch from REST endpoint: ${apiErr?.message || 'Network error'}`
+          });
         }
       }
 
-      // Generate dynamic live database transactional rows based on DB parameters and query
+      // Honest labeling for simulated database demo stream
       const liveData = generateLiveDatabaseStream(serverType, tableName, query, Number(limit) || 120);
 
       return res.json({
         success: true,
-        source: serverType,
-        host: host || 'live-db-primary.cloud.net',
+        isSimulation: true,
+        source: `${serverType} (Simulated Demo Stream)`,
+        host: host || 'demo-warehouse.sandbox',
         database: database || 'production_warehouse',
         tableName: tableName || 'Fact_LiveStream',
         rowCount: liveData.length,
         rows: liveData,
         timestamp: new Date().toISOString(),
-        queryExecuted: query || `SELECT * FROM ${tableName} ORDER BY timestamp DESC LIMIT ${limit};`
+        queryExecuted: query || `SELECT * FROM ${tableName} ORDER BY timestamp DESC LIMIT ${limit};`,
+        disclaimer: 'Browser sandbox demo data: native TCP database protocols utilize simulated transactional records.'
       });
     } catch (err: any) {
       console.error('Live fetch error:', err);
@@ -191,9 +272,19 @@ async function startServer() {
   // AI Interpretation API grounded in calculated data
   app.post('/api/ai/interpret', async (req, res) => {
     try {
+      const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
+      if (!checkRateLimit(clientIp, 30, 60000)) {
+        return res.status(429).json({ error: 'Rate limit exceeded. Maximum 30 requests per minute.' });
+      }
+
       const { prompt, analyticalContext, mode } = req.body;
       if (!prompt || !analyticalContext) {
         return res.status(400).json({ error: 'Missing prompt or analytical context.' });
+      }
+
+      // Check request size
+      if (JSON.stringify(analyticalContext).length > 2 * 1024 * 1024) {
+        return res.status(413).json({ error: 'Analytical context payload exceeds 2MB limit.' });
       }
 
       if (ai) {
@@ -232,11 +323,12 @@ ${prompt}`;
         }
       }
 
-      // High-precision local rule-based analytical engine response
+      // Rule-based deterministic fallback when AI is unavailable
       return res.json({
         text: generateLocalAnalysis(prompt, analyticalContext, mode),
         model: 'nexusbi-local-deterministic-engine',
-        grounded: true,
+        grounded: false, // Honestly distinguish rule-based template from AI model
+        isRuleBased: true,
         sourceMetrics: Object.keys(analyticalContext.kpis || {})
       });
     } catch (error: any) {
@@ -269,30 +361,30 @@ function generateLocalAnalysis(query: string, context: any, mode?: string): stri
   const kpis = context.kpis || [];
   const topCategories = context.topCategories || [];
   const anomalies = context.anomalies || [];
-  const trends = context.trends || [];
-  const recommendations = context.recommendations || [];
+  const recSummary = (context.recommendations || []).slice(0, 3).map((r: any) => `• **${r.title}** (Priority: ${r.priority}): ${r.action}`).join('\n');
 
   let kpiSummary = kpis.map((k: any) => `• **${k.name}**: ${k.formattedValue || k.value} (${k.change >= 0 ? '+' : ''}${k.changePercent ? k.changePercent.toFixed(1) + '%' : 'N/A'} vs prior period - ${k.status})`).join('\n');
   let topSummary = topCategories.slice(0, 3).map((c: any) => `• **${c.name}**: ${c.formattedValue || c.value} (${c.percentage ? c.percentage.toFixed(1) + '%' : ''} share)`).join('\n');
   let anomalySummary = anomalies.slice(0, 3).map((a: any) => `• [${a.severity.toUpperCase()}] **${a.title}**: ${a.description}`).join('\n');
-  let recSummary = recommendations.slice(0, 3).map((r: any) => `• **${r.title}** (Priority: ${r.priority}): ${r.action}`).join('\n');
 
-  return `### Verified Analytical Synthesis
+  return `### Deterministic Dataset Analysis (Offline Rule-Based Summary)
 
-#### 1. What is Happening?
-Based on the exact ingested dataset (${context.rowCount || 0} rows, ${context.columnCount || 0} columns):
-${kpiSummary || '• Key metrics computed across valid numeric observations.'}
+*Query Analyzed*: "${query}"
 
-#### 2. Segment Performance & Drivers
+#### 1. Dataset Overview & Metric Baselines
+Based on ${context.rowCount || 0} audited records across ${context.columnCount || 0} columns:
+${kpiSummary || '• Primary metrics computed across verified numeric fields.'}
+
+#### 2. Segment Performance & Distribution
 ${topSummary || '• Distributed across observed categorical dimensions.'}
 
 #### 3. Detected Risks & Anomalies
 ${anomalySummary || '• No critical statistical outliers or threshold breaches detected in current filter scope.'}
 
 #### 4. Actionable Management Directives
-${recSummary || '• Maintain ongoing cadence and monitor primary conversion and volume variance.'}
+${recSummary || '• Sustain current operational pacing and monitor variance thresholds.'}
 
-*Source of Truth: Analytical metrics computed directly from uploaded dataset without extrapolation.*`;
+*Note: Generated via NexusBI deterministic rule engine based strictly on computed metrics.*`;
 }
 
 function getSuggestedTablesForDb(serverType: string = 'postgres', database: string = ''): string[] {
@@ -329,7 +421,6 @@ function generateLiveDatabaseStream(serverType: string, tableName: string, query
   const paymentMethods = ['Corporate Wire', 'ACH Direct', 'Credit Card', 'Purchase Order 30-Net'];
 
   for (let i = 1; i <= count; i++) {
-    // Generate timestamps distributed over recent hours/days leading up to right now
     const ageSeconds = (count - i) * (Math.floor(Math.random() * 45) + 15);
     const eventTime = new Date(now - ageSeconds * 1000).toISOString();
     const dateFormatted = eventTime.split('T')[0];
@@ -353,7 +444,7 @@ function generateLiveDatabaseStream(serverType: string, tableName: string, query
       transaction_id: `TXN-${100000 + i}`,
       timestamp: eventTime,
       date: dateFormatted,
-      server_node: `${serverType}-primary-0${(i % 3) + 1}`,
+      server_node: `${serverType}-demo-0${(i % 3) + 1}`,
       region,
       category,
       sales_channel: channel,

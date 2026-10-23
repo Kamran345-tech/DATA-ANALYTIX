@@ -92,10 +92,19 @@ export function profileDataset(columns: string[], rows: Record<string, any>[], d
       max = dateStrings[dateStrings.length - 1];
     }
 
-    // Key Candidate Detection
-    const isPrimaryKeyCandidate = nullCount === 0 && distinctCount === totalCount && totalCount > 0;
+    // Key Candidate Detection (Fix A2: do NOT flag decimal or continuous metrics as PK candidates purely on 100% uniqueness)
+    const looksLikeKeyName = /(^|[_\s-])(id|key|code|uuid|guid|pk|identifier|record_id|order_id|txn_id)([_\s-]|$)/i.test(col);
+    const hasDecimals = dataType === 'number' && nonNullValues.some(v => typeof v === 'number' && !Number.isInteger(v));
+    const isMeasureName = /(^|[_\s-])(revenue|sales|profit|margin|cost|price|amount|rate|score|balance|total|qty|quantity|units)([_\s-]|$)/i.test(col);
+    const isPrimaryKeyCandidate = nullCount === 0 && 
+      distinctCount === totalCount && 
+      totalCount > 0 && 
+      !hasDecimals && 
+      !isMeasureName && 
+      (looksLikeKeyName || (dataType === 'string' && distinctCount > 1));
+
     const lowerCol = col.toLowerCase();
-    const isForeignKeyCandidate = (lowerCol.endsWith('id') || lowerCol.endsWith('_id') || lowerCol.endsWith('key') || lowerCol.endsWith('code')) && !isPrimaryKeyCandidate;
+    const isForeignKeyCandidate = (/(^|[_\s-])(id|key|code|fk)([_\s-]|$)/i.test(lowerCol) || lowerCol.endsWith('_id')) && !isPrimaryKeyCandidate;
 
     return {
       name: col,
