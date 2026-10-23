@@ -15,6 +15,7 @@ import {
 import { usePlatform } from '../../store/usePlatformStore';
 import { EditableDashboardTitle } from '../common/EditableDashboardTitle';
 import { Tooltip } from '../common/Tooltip';
+import { BrandLogo } from '../common/BrandLogo';
 
 export const Navbar: React.FC = () => {
   const { 
@@ -35,10 +36,10 @@ export const Navbar: React.FC = () => {
   const isLight = themeMode === 'light';
 
   return (
-    <header className={`sticky top-0 z-40 px-3 sm:px-4 py-2 sm:py-2.5 flex items-center justify-between transition-colors duration-200 ${
+    <header className={`sticky top-0 z-40 shrink-0 px-3 sm:px-4 py-2 sm:py-2.5 flex items-center justify-between transition-colors duration-200 ${
       isLight 
         ? 'bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-xs' 
-        : 'bg-[#171717]/95 backdrop-blur-md border-b border-[#2d2d2d]'
+        : 'bg-surface-card/95 backdrop-blur-md border-b border-border-subtle'
     }`}>
       {/* Left branding & drawer trigger */}
       <div className="flex items-center gap-2 sm:gap-3">
@@ -47,7 +48,7 @@ export const Navbar: React.FC = () => {
           className={`p-1.5 rounded-lg transition-colors ${
             isLight 
               ? 'text-slate-600 hover:text-emerald-700 hover:bg-slate-100' 
-              : 'text-gray-400 hover:text-[#21F1A8] hover:bg-[#222]'
+              : 'text-gray-400 hover:text-emerald-400 hover:bg-surface-panel'
           }`}
           title="Toggle Navigation Menu"
           aria-label="Toggle Navigation"
@@ -56,23 +57,11 @@ export const Navbar: React.FC = () => {
         </button>
 
         <div 
-          onClick={() => setCurrentTab('executive_dashboard')}
-          className="flex items-center gap-2 cursor-pointer group select-none"
+          onClick={() => setCurrentTab('landing')}
+          className="cursor-pointer group select-none flex items-center"
+          title="Return to Home Overview"
         >
-          <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all shrink-0 ${
-            isLight
-              ? 'bg-emerald-50 border border-emerald-300 text-emerald-700 group-hover:bg-emerald-100 shadow-xs'
-              : 'bg-[#21F1A8]/10 border border-[#21F1A8]/40 text-[#21F1A8] group-hover:glow-neon'
-          }`}>
-            <BarChart3 className="w-5 h-5" />
-          </div>
-          <div>
-            <span className={`font-heading text-lg font-bold tracking-wider flex items-center gap-1 ${
-              isLight ? 'text-slate-900' : 'text-white'
-            }`}>
-              NEXUS<span className={isLight ? 'text-emerald-700' : 'text-[#21F1A8]'}>BI</span>
-            </span>
-          </div>
+          <BrandLogo size="sm" showSubtitle={false} />
         </div>
 
         {/* Project Title & Active Badge */}

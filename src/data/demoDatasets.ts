@@ -30,7 +30,7 @@ export const DEMO_DATASETS: DemoDatasetInfo[] = [
       const productCatalog = [
         { cat: 'Cloud Infrastructure', sub: 'Compute Clusters', name: 'Nexus Cloud Dedicated Cluster', basePrice: 4200, costRate: 0.52 },
         { cat: 'Cloud Infrastructure', sub: 'Storage Fabric', name: 'Aurora High-Throughput NVMe', basePrice: 1850, costRate: 0.48 },
-        { cat: 'AI Copilot & Models', sub: 'Autonomous Agents', name: 'NexusBI Cognitive Agent Suite', basePrice: 3600, costRate: 0.35 },
+        { cat: 'AI Copilot & Models', sub: 'Autonomous Agents', name: 'AcuityBI Cognitive Agent Suite', basePrice: 3600, costRate: 0.35 },
         { cat: 'AI Copilot & Models', sub: 'Inference Gateway', name: 'Apex Multi-Model Routing Gateway', basePrice: 2400, costRate: 0.40 },
         { cat: 'Cybersecurity Suite', sub: 'Zero-Trust Network', name: 'ShieldGuard Zero-Trust Mesh', basePrice: 2900, costRate: 0.38 },
         { cat: 'Cybersecurity Suite', sub: 'Threat Intelligence', name: 'Sentinel Threat Radar Pro', basePrice: 1500, costRate: 0.42 },

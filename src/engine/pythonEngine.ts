@@ -22,7 +22,7 @@ export function generatePythonScript(
   const catA = categorical[0]?.name || 'Category';
 
   return `"""
-NexusBI Autonomous Data Analysis Pipeline
+AcuityBI Autonomous Data Analysis Pipeline
 Dataset: ${fileName} (${tableName})
 Generated on: ${new Date().toISOString()}
 """
@@ -96,7 +96,7 @@ export function runSandboxedPythonAnalysis(
   let workingRows = rows.map(r => ({ ...r }));
   const codeLower = code.toLowerCase();
 
-  stdout += `Python 3.11.8 (tags/v3.11.8:db85d51, NexusBI Sandboxed Engine)\n`;
+  stdout += `Python 3.11.8 (tags/v3.11.8:db85d51, AcuityBI Sandboxed Engine)\n`;
   stdout += `[Pandas 2.2.1 initialized. Ingested active dataframe with ${rows.length} rows, ${columns.length} columns]\n\n`;
 
   // 1. Process dropna

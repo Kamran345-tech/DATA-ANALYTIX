@@ -27,7 +27,7 @@ export const AskDataAIView: React.FC = () => {
     {
       id: 'welcome',
       sender: 'assistant',
-      text: `Hello! I am your NexusBI Principal Data Intelligence Assistant. I am strictly grounded in the verified metrics calculated from your **${project.name}** dataset (${cleanRows.length} rows).\n\nYou can ask about revenue drivers, trends, statistical anomalies, or management action items.`,
+      text: `Hello! I am your AcuityBI Principal Data Intelligence Assistant. I am strictly grounded in the verified metrics calculated from your **${project.name}** dataset (${cleanRows.length} rows).\n\nYou can ask about revenue drivers, trends, statistical anomalies, or management action items.`,
       timestamp: new Date().toLocaleTimeString(),
       grounded: true,
       sourceMetrics: ['Total Volume', 'Quality Score']

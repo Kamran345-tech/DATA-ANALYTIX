@@ -67,7 +67,7 @@ Revenue YoY % = VAR Cur = [Total Revenue] VAR Prior = [Total Revenue PY] RETURN 
     excerpt: 'Never feed unvetted numbers to language models. The 4-pillar data quality score: Completeness, Uniqueness, Validity, and Consistency.',
     content: `Artificial intelligence can summarize trends, but it must never be the primary calculation engine. If an underlying column suffers from missing values, mixed units, or duplicate rows, generating metrics through prompt engineering produces fatal hallucinations.
 
-NexusBI enforces a four-pillar data quality audit prior to report compilation:
+AcuityBI enforces a four-pillar data quality audit prior to report compilation:
 1. Completeness: Percentage of non-null cells across dimensions.
 2. Uniqueness: Detection of duplicate rows and primary key uniqueness.
 3. Validity: Type casting compliance and IQR outlier identification.

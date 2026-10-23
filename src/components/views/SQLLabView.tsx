@@ -437,7 +437,7 @@ export const SQLLabView: React.FC = () => {
 
               {/* Certification Footer */}
               <div className="pt-4 border-t border-[#2d2d2d] flex items-center justify-between text-xs text-gray-500 font-mono">
-                <span>Audited via NexusBI SQL Engine</span>
+                <span>Audited via AcuityBI SQL Engine</span>
                 <span className="text-[#21F1A8] font-bold">STATUS: BOARDROOM READY</span>
               </div>
             </div>

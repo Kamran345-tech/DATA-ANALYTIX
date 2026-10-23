@@ -149,11 +149,19 @@ export interface PlatformContextType {
   applyDrillThroughFilter: () => void;
 }
 
+const getInitialAuthor = (): string => {
+  if (typeof window !== 'undefined') {
+    const saved = localStorage.getItem('acuitybi_analyst_name');
+    if (saved && saved.trim()) return saved.trim();
+  }
+  return 'Lead BI Analyst';
+};
+
 const defaultBrand: BrandConfig = {
-  companyName: 'Acme Enterprise Holdings',
+  companyName: 'Badar Analytics Technologies',
   tagline: 'Autonomous AI Data Intelligence & Performance Center',
   department: 'Strategic Analytics & BI',
-  author: 'Lead Data Analyst',
+  author: getInitialAuthor(),
   themeColor: '#21F1A8',
   backgroundColor: '#171717',
   accentColor: '#00D8F6'
@@ -161,10 +169,10 @@ const defaultBrand: BrandConfig = {
 
 const defaultProject: ProjectMetadata = {
   id: 'proj-001',
-  name: 'Global Enterprise Omnichannel Sales',
-  companyName: 'Acme Enterprise Holdings',
+  name: 'Global Enterprise Technology Sales & Margin Telemetry',
+  companyName: 'Badar Analytics Technologies',
   department: 'Strategic Analytics & BI',
-  author: 'Lead Data Analyst',
+  author: getInitialAuthor(),
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
   isDemo: false,
@@ -172,7 +180,7 @@ const defaultProject: ProjectMetadata = {
   dataQualityScore: 96,
   rowCount: 120,
   columnCount: 12,
-  sourceFileName: 'global_retail_sales_dataset.csv'
+  sourceFileName: 'enterprise_sales_margin_telemetry.csv'
 };
 
 const PlatformContext = createContext<PlatformContextType | null>(null);
@@ -187,7 +195,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Theme mode: 'dark' or 'light'
   const [themeMode, setThemeModeState] = useState<'dark' | 'light'>(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('nexusbi_theme');
+      const saved = localStorage.getItem('acuitybi_theme') || localStorage.getItem('nexusbi_theme');
       if (saved === 'light' || saved === 'dark') return saved;
     }
     return 'dark';
@@ -196,7 +204,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const setThemeMode = (mode: 'dark' | 'light') => {
     setThemeModeState(mode);
     if (typeof window !== 'undefined') {
-      localStorage.setItem('nexusbi_theme', mode);
+      localStorage.setItem('acuitybi_theme', mode);
       if (mode === 'light') {
         document.documentElement.classList.add('theme-light');
         document.documentElement.classList.remove('theme-dark');
@@ -341,9 +349,9 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setProject({
       id: `demo-${demo.id}`,
       name: demo.name,
-      companyName: 'Acme Enterprise Global',
-      department: 'Retail Performance',
-      author: 'AI BI Specialist',
+      companyName: 'Badar Analytics Technologies',
+      department: 'Enterprise Intelligence',
+      author: brand.author || 'Lead BI Analyst',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       isDemo: false,

@@ -34,6 +34,7 @@ import {
 import { usePlatform } from '../../store/usePlatformStore';
 import { GlobalFilterBar } from '../common/GlobalFilterBar';
 import { EditableDashboardTitle } from '../common/EditableDashboardTitle';
+import { EditableAnalystName } from '../common/EditableAnalystName';
 import { Tooltip } from '../common/Tooltip';
 import { generateEnterpriseReportPDF, downloadDashboardAndReportBundle } from '../../engine/exportEngine';
 import { 
@@ -339,7 +340,7 @@ export const ExecutiveDashboard: React.FC = () => {
               <p className="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-2 flex-wrap">
                 <span>Scope: <strong className="text-on-surface font-semibold">{project.name}</strong></span>
                 <span className="w-1 h-1 rounded-full bg-border-prominent" />
-                <span>Prepared by: <strong className="text-on-surface font-semibold">{brand.author}</strong></span>
+                <span className="flex items-center gap-1">Prepared by: <EditableAnalystName /></span>
                 <span className="w-1 h-1 rounded-full bg-border-prominent" />
                 <span>Audited: <strong className="text-metric-cyan font-semibold">{filteredRows.length.toLocaleString()} rows</strong></span>
               </p>
@@ -1068,15 +1069,33 @@ export const ExecutiveDashboard: React.FC = () => {
                 </div>
 
                 {/* Legend and Indicators */}
-                <div className="flex items-center gap-4 my-3">
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-3 h-1 bg-metric-cyan rounded-full" />
-                    <span className="font-label-sm text-label-sm text-on-surface-variant">Actual ({selectedTrendMetric || 'Series'})</span>
+                <div className="flex flex-wrap items-center justify-between gap-3 my-3">
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-3 h-1 bg-metric-cyan rounded-full" />
+                      <span className="font-label-sm text-label-sm text-on-surface-variant">Actual ({selectedTrendMetric || 'Series'})</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-3 h-1 bg-metric-emerald rounded-full" />
+                      <span className="font-label-sm text-label-sm text-metric-emerald font-semibold">3-Period SMA</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-3 h-1 bg-metric-emerald rounded-full" />
-                    <span className="font-label-sm text-label-sm text-metric-emerald font-semibold">3-Period SMA</span>
-                  </div>
+
+                  {/* Clean Non-overlapping Baseline Mean Pill */}
+                  {(() => {
+                    const dataPoints = currentTrend?.dataPoints || [];
+                    if (dataPoints.length === 0) return null;
+                    const meanVal = dataPoints.reduce((a, b) => a + b.value, 0) / dataPoints.length;
+                    return (
+                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-panel border border-border-subtle text-xs font-mono">
+                        <span className="w-3 h-0.5 border-t border-dashed border-slate-400 dark:border-slate-500" />
+                        <span className="text-on-surface-variant text-[11px]">Baseline Mean:</span>
+                        <span className="font-bold text-on-surface text-[11px]">
+                          {meanVal >= 1000 ? `${(meanVal / 1000).toFixed(1)}k` : meanVal.toFixed(1)}
+                        </span>
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 {/* Telemetry SVG Chart - Strictly Bounded & Clamped (No Overflow) */}
@@ -1149,11 +1168,8 @@ export const ExecutiveDashboard: React.FC = () => {
                             {/* Shaded Area for SMA */}
                             <path d={dArea} fill="url(#smaFillGrad)" />
 
-                            {/* Baseline Mean Grid Value */}
-                            <line x1={xMin - 5} y1={yMean} x2={xMax + 5} y2={yMean} stroke="#64748b" strokeWidth="1" strokeDasharray="3 3" opacity="0.5" />
-                            <text x={xMin} y={Math.max(14, yMean - 5)} fill="#94a3b8" fontSize="10" fontFamily="Inter" fontWeight="600">
-                              Mean: {meanVal >= 1000 ? `${(meanVal / 1000).toFixed(1)}k` : meanVal.toFixed(1)}
-                            </text>
+                            {/* Baseline Mean Grid Reference Line (Clean without overlapping text collision) */}
+                            <line x1={xMin - 5} y1={yMean} x2={xMax + 5} y2={yMean} stroke="#64748b" strokeWidth="1" strokeDasharray="3 3" opacity="0.4" />
 
                             {/* Line: Actual telemetry */}
                             <path

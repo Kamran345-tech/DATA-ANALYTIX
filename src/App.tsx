@@ -80,12 +80,12 @@ const MainContent: React.FC = () => {
   };
 
   return (
-    <div className={`min-h-screen ${themeMode === 'light' ? 'bg-[#f8fafc] text-slate-900 theme-light' : 'bg-surface-base text-on-surface theme-dark'} flex flex-col font-sans transition-colors duration-200`}>
+    <div className={`h-screen max-h-screen overflow-hidden ${themeMode === 'light' ? 'bg-[#f8fafc] text-slate-900 theme-light' : 'bg-surface-base text-on-surface theme-dark'} flex flex-col font-sans transition-colors duration-200`}>
       {!isPresentationMode && <Navbar />}
 
-      <div className="flex flex-1 overflow-hidden relative">
+      <div className="flex flex-1 overflow-hidden min-h-0 relative">
         <Sidebar />
-        <main className={`flex-1 overflow-y-auto w-full min-w-0 ${isPresentationMode ? 'p-3 sm:p-6' : 'p-3 sm:p-5 lg:p-7'}`}>
+        <main className={`flex-1 overflow-y-auto min-h-0 w-full min-w-0 ${isPresentationMode ? 'p-3 sm:p-6' : 'p-3 sm:p-5 lg:p-7'}`}>
           <ErrorBoundary>
             {renderActiveView()}
           </ErrorBoundary>

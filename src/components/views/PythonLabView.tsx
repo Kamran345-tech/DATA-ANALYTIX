@@ -797,7 +797,7 @@ export const PythonLabView: React.FC = () => {
 
               {/* Certification Footer */}
               <div className="pt-4 border-t border-[#2d2d2d] flex items-center justify-between text-xs text-gray-500 font-mono">
-                <span>Audited via NexusBI Python Sandboxed Kernel</span>
+                <span>Audited via AcuityBI Python Sandboxed Kernel</span>
                 <span className="text-[#21F1A8] font-bold">STATUS: CERTIFIED AUDIT READY</span>
               </div>
             </div>

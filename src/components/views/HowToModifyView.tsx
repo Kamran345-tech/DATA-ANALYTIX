@@ -20,13 +20,13 @@ export const HowToModifyView: React.FC = () => {
     {
       step: '01',
       title: 'Update or Replace Source Data',
-      desc: 'When next month or week arrives, open the exported Excel workbook in 03_Excel_Source/ or upload the new file into NexusBI. Paste new transaction rows directly into the "02_Clean_Data" sheet.',
+      desc: 'When next month or week arrives, open the exported Excel workbook in 03_Excel_Source/ or upload the new file into AcuityBI. Paste new transaction rows directly into the "02_Clean_Data" sheet.',
       tip: 'Keep column header names in Row 1 identical to avoid breaking measure dependencies.'
     },
     {
       step: '02',
       title: 'Handling Newly Added Columns',
-      desc: 'If new business dimensions are added (e.g. SalesChannel, DiscountCode), NexusBI automatically detects them, profiles their cardinality and type, and prompts whether to map them as a dimension or measure.',
+      desc: 'If new business dimensions are added (e.g. SalesChannel, DiscountCode), AcuityBI automatically detects them, profiles their cardinality and type, and prompts whether to map them as a dimension or measure.',
       tip: 'In Power BI, open Advanced Editor and add the column type to PowerQuery_Transformations.m.'
     },
     {
@@ -38,7 +38,7 @@ export const HowToModifyView: React.FC = () => {
     {
       step: '04',
       title: 'Updating DAX Measures & KPIs',
-      desc: 'Use the DAX Lab in NexusBI or edit the .dax files in 05_DAX/. Because all measures use explicit syntax (e.g. Total Revenue = SUM(\'FactTable\'[Revenue])), they seamlessly reflect newly ingested periods.',
+      desc: 'Use the DAX Lab in AcuityBI or edit the .dax files in 05_DAX/. Because all measures use explicit syntax (e.g. Total Revenue = SUM(\'FactTable\'[Revenue])), they seamlessly reflect newly ingested periods.',
       tip: 'Time Intelligence formulas like TOTALYTD and SAMEPERIODLASTYEAR recalculate on the updated date dimension.'
     },
     {

@@ -61,8 +61,8 @@ const navSections: { title: string; items: NavItem[] }[] = [
         label: 'How to Use Platform', 
         icon: HelpCircle, 
         badge: 'Guide',
-        description: 'Comprehensive step-by-step guides with Urdu and English explanations for every platform module.',
-        proTip: 'Read the Urdu summaries for fast team onboarding.',
+        description: 'Comprehensive step-by-step interactive documentation and operational workflows for every module.',
+        proTip: 'Follow the enterprise guides for rapid analyst onboarding.',
         categoryTag: 'Docs'
       },
       { 
@@ -262,7 +262,7 @@ export const Sidebar: React.FC = () => {
         aria-hidden="true"
       />
 
-      <aside className={`fixed lg:sticky top-0 lg:top-[53px] left-0 z-50 lg:z-30 w-72 lg:w-64 flex flex-col h-full lg:h-[calc(100vh-53px)] overflow-y-auto select-none shrink-0 shadow-2xl lg:shadow-none transition-all ${
+      <aside className={`fixed inset-y-0 lg:static top-0 lg:top-auto left-0 z-50 lg:z-30 w-72 lg:w-64 flex flex-col h-full max-h-full overflow-y-auto select-none shrink-0 shadow-2xl lg:shadow-none transition-all ${
         isLight
           ? 'bg-white border-r border-slate-200'
           : 'bg-[#141414] border-r border-[#262626]'
@@ -274,7 +274,7 @@ export const Sidebar: React.FC = () => {
           <span className={`font-heading text-lg font-bold tracking-wider ${
             isLight ? 'text-slate-900' : 'text-white'
           }`}>
-            NEXUS<span className={isLight ? 'text-emerald-700' : 'text-[#21F1A8]'}>BI</span> MENU
+            ACUITY<span className={isLight ? 'text-emerald-700' : 'text-emerald-400'}>BI</span> NAVIGATION
           </span>
           <button 
             onClick={() => setIsSidebarOpen(false)}
@@ -381,6 +381,21 @@ export const Sidebar: React.FC = () => {
               }`}></span>
               Deterministic Online
             </span>
+          </div>
+
+          {/* Subtle Developer & Company Signature */}
+          <div className={`mt-2.5 pt-2 border-t flex flex-col gap-0.5 text-[10px] ${
+            isLight ? 'border-slate-200/80' : 'border-[#262626]'
+          }`}>
+            <div className="flex items-center justify-between">
+              <span className={`font-mono ${isLight ? 'text-slate-400' : 'text-gray-500'}`}>Developed by:</span>
+              <span className={`font-semibold ${isLight ? 'text-slate-800' : 'text-gray-200'}`}>Kamran Badar</span>
+            </div>
+            <div className={`text-[9px] text-right truncate font-mono ${
+              isLight ? 'text-slate-400' : 'text-gray-500'
+            }`}>
+              Badar Analytics Technologies
+            </div>
           </div>
         </div>
       </aside>

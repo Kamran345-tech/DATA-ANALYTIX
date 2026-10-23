@@ -472,7 +472,7 @@ export const ReportsView: React.FC = () => {
         <section className="border-t border-[#333] print:border-gray-300 pt-6 text-[11px] text-gray-500 print:text-gray-600 space-y-1">
           <div className="font-bold text-gray-400 print:text-gray-800 uppercase font-mono">Governed Methodology:</div>
           <p>
-            All metrics calculated via NexusBI in-memory deterministic engine. No generative AI hallucination of numbers. Power BI semantic model compatible.
+            All metrics calculated via AcuityBI in-memory deterministic engine. No generative AI hallucination of numbers. Power BI semantic model compatible.
           </p>
         </section>
       </div>
