@@ -174,8 +174,8 @@ html.theme-light body,
   color: #0f172a !important;
 }
 
-/* Header, Navbar, Aside, Sidebar */
-.theme-light header,
+/* Header, Navbar, Aside, Sidebar (Excluding login-header) */
+.theme-light header:not(.login-header),
 .theme-light nav,
 .theme-light aside {
   background-color: #ffffff !important;
@@ -496,16 +496,16 @@ html.theme-light body,
 /* ========================================================================== */
 /* 8. FORM INPUTS, TEXTAREAS, SELECTS & SEARCH                                */
 /* ========================================================================== */
-.theme-light input:not([type="checkbox"]):not([type="radio"]),
-.theme-light textarea,
-.theme-light select {
+.theme-light input:not([type="checkbox"]):not([type="radio"]):not(.login-input),
+.theme-light textarea:not(.login-input),
+.theme-light select:not(.login-input) {
   background-color: #ffffff !important;
   border-color: #cbd5e1 !important;
   color: #0f172a !important;
 }
 
-.theme-light input::placeholder,
-.theme-light textarea::placeholder {
+.theme-light input:not(.login-input)::placeholder,
+.theme-light textarea:not(.login-input)::placeholder {
   color: #94a3b8 !important;
 }
 
@@ -576,3 +576,96 @@ html.theme-light body,
 .theme-light ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8 !important;
 }
+
+/* ========================================================================== */
+/* 11. LOGIN PAGE ROOT ISOLATION & DATA ANIMATIONS                           */
+/* ========================================================================== */
+.login-page-root,
+.theme-light .login-page-root,
+.theme-dark .login-page-root {
+  background-color: #080f1a !important;
+  color: #f1f5f9 !important;
+}
+
+.login-header,
+.theme-light .login-header {
+  background-color: rgba(14, 23, 38, 0.95) !important;
+  backdrop-filter: blur(16px) !important;
+  border-bottom: 1px solid rgba(33, 241, 168, 0.3) !important;
+}
+
+.login-page-root .text-white,
+.theme-light .login-page-root .text-white {
+  color: #ffffff !important;
+}
+
+.login-page-root h1,
+.theme-light .login-page-root h1,
+.login-page-root h2,
+.theme-light .login-page-root h2,
+.login-page-root h3,
+.theme-light .login-page-root h3,
+.login-page-root h4,
+.theme-light .login-page-root h4 {
+  color: #ffffff !important;
+}
+
+.login-page-root p,
+.theme-light .login-page-root p {
+  color: #e2e8f0 !important;
+}
+
+.login-page-root .text-gray-300,
+.theme-light .login-page-root .text-gray-300,
+.login-page-root .text-slate-300,
+.theme-light .login-page-root .text-slate-300 {
+  color: #cbd5e1 !important;
+}
+
+.login-page-root .text-gray-400,
+.theme-light .login-page-root .text-gray-400,
+.login-page-root .text-slate-400,
+.theme-light .login-page-root .text-slate-400 {
+  color: #94a3b8 !important;
+}
+
+.login-page-root label,
+.theme-light .login-page-root label {
+  color: #cbd5e1 !important;
+}
+
+.login-page-root input,
+.login-page-root .login-input,
+.theme-light .login-page-root input,
+.theme-light .login-page-root .login-input {
+  background-color: #0a1120 !important;
+  border: 1px solid #1e3050 !important;
+  color: #ffffff !important;
+}
+
+.login-page-root input::placeholder,
+.login-page-root .login-input::placeholder,
+.theme-light .login-page-root input::placeholder,
+.theme-light .login-page-root .login-input::placeholder {
+  color: #64748b !important;
+}
+
+.login-page-root input:focus,
+.login-page-root .login-input:focus,
+.theme-light .login-page-root input:focus,
+.theme-light .login-page-root .login-input:focus {
+  border-color: #21F1A8 !important;
+  box-shadow: 0 0 15px rgba(33, 241, 168, 0.3) !important;
+  outline: none !important;
+}
+
+/* Telemetry equalizer bar bounce animation */
+@keyframes dataPulseBar {
+  0%, 100% { height: 15%; opacity: 0.4; }
+  50% { height: 95%; opacity: 1; }
+}
+
+.animate-data-bar {
+  animation: dataPulseBar 1.4s ease-in-out infinite alternate;
+}
+

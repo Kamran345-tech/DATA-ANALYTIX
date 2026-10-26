@@ -1,5 +1,5 @@
 {
-  "name": "NexusBI - Autonomous AI Data Analyst & BI Engineering Platform",
+  "name": "AcuityBI - Autonomous AI Data Analyst & BI Engineering Platform",
   "description": "Enterprise-grade AI Data Analyst platform that ingests raw business data, automatically performs profiling, quality auditing, cleaning, star/snowflake modeling, statistical KPI calculation, interactive dashboards, DAX/SQL/Python generation, Power BI PBIP exports, and grounded AI decision support.",
   "requestFramePermissions": [],
   "majorCapabilities": [

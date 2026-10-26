@@ -20,10 +20,13 @@ import {
   Settings, 
   Newspaper,
   ChevronRight,
-  HelpCircle
+  HelpCircle,
+  Cloud,
+  Database as DbIcon
 } from 'lucide-react';
 import { usePlatform, NavigationTab } from '../../store/usePlatformStore';
 import { Tooltip } from '../common/Tooltip';
+import { useFirebaseAuth } from '../../store/useFirebaseAuth';
 
 interface NavItem {
   id: NavigationTab;
@@ -240,6 +243,7 @@ const navSections: { title: string; items: NavItem[] }[] = [
 
 export const Sidebar: React.FC = () => {
   const { currentTab, setCurrentTab, isSidebarOpen, setIsSidebarOpen, isPresentationMode, themeMode } = usePlatform();
+  const { currentUser, isGuestMode, setIsAuthModalOpen } = useFirebaseAuth();
   const isLight = themeMode === 'light';
 
   if (isPresentationMode || !isSidebarOpen) {
@@ -366,11 +370,49 @@ export const Sidebar: React.FC = () => {
           ))}
         </div>
 
-        <div className={`mt-auto p-3 border-t ${
+        <div className={`mt-auto p-3 border-t space-y-2.5 ${
           isLight
             ? 'border-slate-200 bg-slate-50/80 text-slate-600'
             : 'border-[#262626] bg-[#121212]/80 text-gray-400'
         }`}>
+          {/* Firebase Cloud Sync Status Card */}
+          <button
+            onClick={() => setIsAuthModalOpen(true)}
+            className={`w-full text-left p-2.5 rounded-xl border transition-all cursor-pointer group ${
+              currentUser
+                ? isLight
+                  ? 'bg-emerald-50/90 border-emerald-300 hover:bg-emerald-100'
+                  : 'bg-[#13281e]/80 border-[#21F1A8]/30 hover:border-[#21F1A8]/60 hover:bg-[#183327]'
+                : isLight
+                  ? 'bg-white border-slate-200 hover:border-emerald-500 shadow-2xs'
+                  : 'bg-[#181818] border-[#2d2d2d] hover:border-[#21F1A8]/40 hover:bg-[#1e1e1e]'
+            }`}
+          >
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center gap-1.5">
+                <Cloud className={`w-3.5 h-3.5 ${isLight ? 'text-emerald-700' : 'text-[#21F1A8]'}`} />
+                <span className={`text-[10px] font-bold tracking-wider uppercase font-mono ${
+                  isLight ? 'text-slate-800' : 'text-gray-200'
+                }`}>
+                  Firebase Cloud
+                </span>
+              </div>
+              <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-mono font-semibold ${
+                currentUser
+                  ? isLight ? 'bg-emerald-100 text-emerald-800' : 'bg-[#21F1A8]/20 text-[#21F1A8]'
+                  : isLight ? 'bg-slate-100 text-slate-600' : 'bg-[#262626] text-gray-400'
+              }`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${currentUser ? 'bg-[#21F1A8] animate-pulse' : 'bg-emerald-500'}`} />
+                {currentUser ? 'Active' : 'Connected'}
+              </span>
+            </div>
+            <p className={`text-[10px] leading-tight truncate ${
+              isLight ? 'text-slate-500' : 'text-gray-400'
+            }`}>
+              {currentUser ? `User: ${currentUser.displayName || currentUser.email}` : isGuestMode ? 'Guest Demo Session. Click to Sign In' : 'Firestore & Auth live. Click to Sign In'}
+            </p>
+          </button>
+
           <div className="flex items-center justify-between text-[11px]">
             <span>Engine Status</span>
             <span className={`flex items-center gap-1 font-mono font-medium ${
@@ -384,7 +426,7 @@ export const Sidebar: React.FC = () => {
           </div>
 
           {/* Subtle Developer & Company Signature */}
-          <div className={`mt-2.5 pt-2 border-t flex flex-col gap-0.5 text-[10px] ${
+          <div className={`pt-2 border-t flex flex-col gap-0.5 text-[10px] ${
             isLight ? 'border-slate-200/80' : 'border-[#262626]'
           }`}>
             <div className="flex items-center justify-between">
@@ -394,7 +436,7 @@ export const Sidebar: React.FC = () => {
             <div className={`text-[9px] text-right truncate font-mono ${
               isLight ? 'text-slate-400' : 'text-gray-500'
             }`}>
-              Badar Analytics Technologies
+              Analytics Technologies
             </div>
           </div>
         </div>

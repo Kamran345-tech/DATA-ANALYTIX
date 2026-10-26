@@ -1,0 +1,75 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net: Default-deny all unmapped operations
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Hardened Primitives
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null && request.auth.uid != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Validation helper for UserProfile
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['uid', 'email']) &&
+             data.keys().hasOnly(['uid', 'displayName', 'email', 'photoURL', 'createdAt']) &&
+             data.uid is string && data.uid.size() <= 128 && data.uid == request.auth.uid &&
+             data.email is string && data.email.size() <= 150 &&
+             (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 100)) &&
+             (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 500)) &&
+             (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 50));
+    }
+
+    // Validation helper for SavedDashboard
+    function isValidDashboard(data) {
+      return data.keys().hasAll(['id', 'ownerId', 'projectName']) &&
+             data.keys().hasOnly(['id', 'ownerId', 'projectName', 'authorName', 'datasetName', 'rowCount', 'visualCount', 'createdAt', 'updatedAt']) &&
+             data.id is string && isValidId(data.id) &&
+             data.ownerId is string && data.ownerId == request.auth.uid &&
+             data.projectName is string && data.projectName.size() > 0 && data.projectName.size() <= 150 &&
+             (!('authorName' in data) || (data.authorName is string && data.authorName.size() <= 100)) &&
+             (!('datasetName' in data) || (data.datasetName is string && data.datasetName.size() <= 200)) &&
+             (!('rowCount' in data) || data.rowCount is number) &&
+             (!('visualCount' in data) || data.visualCount is number) &&
+             (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 50)) &&
+             (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 50));
+    }
+
+    // User Profile Document
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow list: if false; // Deny scanning entire user directory
+      allow create: if isOwner(userId) && isValidId(userId) && isValidUserProfile(incoming());
+      allow update: if isOwner(userId) && isValidId(userId) && isValidUserProfile(incoming()) && incoming().uid == existing().uid;
+      allow delete: if false;
+
+      // User Saved Dashboards Subcollection
+      match /dashboards/{dashboardId} {
+        allow get: if isOwner(userId) && isValidId(userId) && isValidId(dashboardId);
+        allow list: if isOwner(userId) && isValidId(userId);
+        allow create: if isOwner(userId) && isValidId(userId) && isValidId(dashboardId) && isValidDashboard(incoming());
+        allow update: if isOwner(userId) && isValidId(userId) && isValidId(dashboardId) && isValidDashboard(incoming()) && incoming().ownerId == existing().ownerId;
+        allow delete: if isOwner(userId) && isValidId(userId) && isValidId(dashboardId);
+      }
+    }
+  }
+}

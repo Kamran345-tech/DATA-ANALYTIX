@@ -1,0 +1,44 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User account profile and authentication details",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "displayName": { "type": "string", "maxLength": 100 },
+        "email": { "type": "string", "maxLength": 150 },
+        "photoURL": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["uid", "email"]
+    },
+    "SavedDashboard": {
+      "title": "SavedDashboard",
+      "description": "User saved analytics dashboards, reports, and configurations",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "ownerId": { "type": "string", "maxLength": 128 },
+        "projectName": { "type": "string", "maxLength": 150 },
+        "authorName": { "type": "string", "maxLength": 100 },
+        "datasetName": { "type": "string", "maxLength": 200 },
+        "rowCount": { "type": "number" },
+        "visualCount": { "type": "number" },
+        "createdAt": { "type": "string", "maxLength": 50 },
+        "updatedAt": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["id", "ownerId", "projectName"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Collection of user account profiles"
+    },
+    "/users/{userId}/dashboards/{dashboardId}": {
+      "schema": "SavedDashboard",
+      "description": "Subcollection of dashboards created and owned by the specific user"
+    }
+  }
+}

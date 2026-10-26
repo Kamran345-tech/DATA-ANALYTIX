@@ -34,6 +34,7 @@ import {
   TreemapChart 
 } from '../charts/InteractiveCharts';
 import * as XLSX from 'xlsx';
+import { ColabNotebookModal } from '../common/ColabNotebookModal';
 
 export const PythonLabView: React.FC = () => {
   const { cleanRows, columns, project, dataModel, applyCleanedRows, setCurrentTab, brand } = usePlatform();
@@ -44,6 +45,7 @@ export const PythonLabView: React.FC = () => {
   const [copied, setCopied] = useState(false);
   const [appliedNotice, setAppliedNotice] = useState<string | null>(null);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [showColabModal, setShowColabModal] = useState(false);
 
   // In-Place Dashboard chart configuration
   const [selectedChartType, setSelectedChartType] = useState<'bar' | 'line' | 'scatter' | 'heatmap' | 'donut' | 'treemap'>('bar');
@@ -250,6 +252,13 @@ export const PythonLabView: React.FC = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => setShowColabModal(true)}
+            className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 text-xs border border-amber-500/40 transition-colors font-semibold shadow-xs"
+            title="Open or export interactive notebook for Google Colab"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Google Colab (.ipynb)
+          </button>
           <button
             onClick={downloadScript}
             className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-[#242424] hover:bg-[#303030] text-gray-300 text-xs border border-[#383838] transition-colors"
@@ -822,6 +831,15 @@ export const PythonLabView: React.FC = () => {
         </div>
       )}
 
+      {/* Google Colab Modal */}
+      <ColabNotebookModal
+        isOpen={showColabModal}
+        onClose={() => setShowColabModal(false)}
+        project={project}
+        columns={columns}
+        cleanRows={cleanRows}
+        tableName={tableName}
+      />
     </div>
   );
 };

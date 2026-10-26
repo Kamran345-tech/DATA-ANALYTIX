@@ -28,6 +28,7 @@ import {
   ExportDataPayload
 } from '../../engine/exportEngine';
 import { EditableDashboardTitle } from '../common/EditableDashboardTitle';
+import { ColabNotebookModal } from '../common/ColabNotebookModal';
 
 export const ExportCenterView: React.FC = () => {
   const { 
@@ -48,6 +49,7 @@ export const ExportCenterView: React.FC = () => {
   const [isZipping, setIsZipping] = useState(false);
   const [isPdfGenerating, setIsPdfGenerating] = useState(false);
   const [isBundleGenerating, setIsBundleGenerating] = useState(false);
+  const [isColabModalOpen, setIsColabModalOpen] = useState(false);
   const [downloadSuccess, setDownloadSuccess] = useState<string | null>(null);
 
   const payload: ExportDataPayload = {
@@ -307,7 +309,7 @@ export const ExportCenterView: React.FC = () => {
           SPECIALIZED STAKEHOLDER PACKAGES
         </h3>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5">
           {/* Executive PDF Report Package */}
           <div className="p-6 rounded-2xl bg-[#1c1c1c] border border-[#21F1A8]/30 space-y-4 flex flex-col justify-between hover:border-[#21F1A8] transition-colors relative overflow-hidden">
             <div className="space-y-2">
@@ -427,8 +429,40 @@ export const ExportCenterView: React.FC = () => {
               </button>
             </div>
           </div>
+
+          {/* Google Colab Cloud Notebook */}
+          <div className="p-6 rounded-2xl bg-[#1c1c1c] border border-amber-500/30 space-y-4 flex flex-col justify-between hover:border-amber-400 transition-colors">
+            <div className="space-y-2">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center font-bold">
+                ipynb
+              </div>
+              <h4 className="font-heading text-lg font-bold text-white">GOOGLE COLAB</h4>
+              <p className="text-xs text-gray-400 leading-relaxed">
+                Run live Pandas & Seaborn analysis in Google Cloud Colab. Includes pre-loaded data & quick setup guide.
+              </p>
+            </div>
+
+            <div className="space-y-2 pt-2 border-t border-[#262626]">
+              <button
+                onClick={() => setIsColabModalOpen(true)}
+                className="w-full py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-black text-xs font-bold transition-colors flex items-center justify-center gap-1.5 shadow-md shadow-amber-500/10"
+              >
+                <Sparkles className="w-4 h-4" /> Open in Google Colab
+              </button>
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* Google Colab Notebook Modal */}
+      <ColabNotebookModal
+        isOpen={isColabModalOpen}
+        onClose={() => setIsColabModalOpen(false)}
+        project={project}
+        columns={columns}
+        cleanRows={cleanRows}
+        tableName={dataModel.tables[0]?.name || 'FactTable'}
+      />
     </div>
   );
 };

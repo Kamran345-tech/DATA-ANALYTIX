@@ -6,6 +6,7 @@ import { ColumnProfile, DataModel, DAXMeasure, KPI, AIInsight, TransformationSte
 import { generateDAXMeasures } from './daxEngine';
 import { generateStarterSQLQueries } from './sqlEngine';
 import { generatePythonScript } from './pythonEngine';
+import { parseRobustNumber } from './dataParser';
 
 export interface ExportDataPayload {
   project: ProjectMetadata;
@@ -19,6 +20,15 @@ export interface ExportDataPayload {
   insights: AIInsight[];
   transformations: TransformationStep[];
   qualityReport: DataQualityReport;
+  reportHeadings?: {
+    mainTitle?: string;
+    subtitle?: string;
+    section1?: string;
+    section2?: string;
+    section3?: string;
+    section4?: string;
+    section5?: string;
+  };
 }
 
 export function buildExcelWorkbook(payload: ExportDataPayload): Uint8Array {
@@ -786,7 +796,7 @@ export function generateEnterpriseReportPDF(
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(18);
-  doc.text('EXECUTIVE DATA INTELLIGENCE REPORT', margin, 21);
+  doc.text(payload.reportHeadings?.mainTitle || 'EXECUTIVE DATA INTELLIGENCE REPORT', margin, 21);
 
   // Subtitle / Project
   doc.setTextColor(180, 180, 180);
@@ -814,7 +824,7 @@ export function generateEnterpriseReportPDF(
   doc.setTextColor(23, 23, 23);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(12);
-  doc.text('1. EXECUTIVE SUMMARY & BUSINESS HEALTH', margin, cursorY);
+  doc.text(payload.reportHeadings?.section1 || '1. EXECUTIVE SUMMARY & BUSINESS HEALTH', margin, cursorY);
   cursorY += 4;
 
   // Box for summary
@@ -835,7 +845,7 @@ export function generateEnterpriseReportPDF(
   doc.setTextColor(23, 23, 23);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(12);
-  doc.text('2. KEY PERFORMANCE INDICATORS', margin, cursorY);
+  doc.text(payload.reportHeadings?.section2 || '2. KEY PERFORMANCE INDICATORS', margin, cursorY);
   cursorY += 4;
 
   const kpiTableHeaders = [['Metric Name', 'Current Value', 'Prior Period', 'Variance %', 'Status', 'Traceable Source']];
@@ -896,7 +906,7 @@ export function generateEnterpriseReportPDF(
   doc.setTextColor(23, 23, 23);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(12);
-  doc.text('3. AI INSIGHTS & STRATEGIC MANAGEMENT DIRECTIVES', margin, cursorY);
+  doc.text(payload.reportHeadings?.section3 || '3. AI INSIGHTS & STRATEGIC MANAGEMENT DIRECTIVES', margin, cursorY);
   cursorY += 6;
 
   payload.insights.forEach((insight, idx) => {
@@ -975,7 +985,7 @@ export function generateEnterpriseReportPDF(
     doc.setTextColor(23, 23, 23);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(12);
-    doc.text('4. ATTACHED DASHBOARDS & DETAILED SEGMENT BREAKDOWNS', margin, cursorY);
+    doc.text(payload.reportHeadings?.section4 || '4. ATTACHED DASHBOARDS & DETAILED SEGMENT BREAKDOWNS', margin, cursorY);
     cursorY += 5;
 
     attachedVisuals.forEach((vis, vIdx) => {
@@ -989,8 +999,8 @@ export function generateEnterpriseReportPDF(
 
       payload.cleanRows.forEach(r => {
         const k = String(r[cat] !== undefined && r[cat] !== null ? r[cat] : 'Unknown');
-        const num = Number(r[val]);
-        if (!isNaN(num)) {
+        const num = parseRobustNumber(r[val]).value;
+        if (num !== null && !isNaN(num)) {
           if (!groupMap[k]) groupMap[k] = { sum: 0, count: 0, min: num, max: num };
           groupMap[k].sum += num;
           groupMap[k].count += 1;
@@ -1031,7 +1041,13 @@ export function generateEnterpriseReportPDF(
       doc.text(`Widget 4.${vIdx + 1}: ${vis.title.toUpperCase()} [${visType}]`, margin + 3.5, cursorY + 5.5);
 
       const isCur = /revenue|sales|profit|margin|cost|amount|price/i.test(val);
-      const formattedTotal = isCur ? `$${Math.round(totalVal).toLocaleString()}` : Math.round(totalVal).toLocaleString();
+      const grandTotalVal = agg === 'avg'
+        ? (payload.cleanRows.length > 0 ? totalVal / payload.cleanRows.length : 0)
+        : (agg === 'count' ? payload.cleanRows.length : totalVal);
+      const formattedTotal = isCur 
+        ? `$${grandTotalVal.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}` 
+        : grandTotalVal.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(7.5);
       doc.setTextColor(100, 116, 139);
@@ -1105,7 +1121,8 @@ export function generateEnterpriseReportPDF(
   doc.setTextColor(23, 23, 23);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(12);
-  doc.text('5. DATA QUALITY AUDIT & GOVERNANCE', margin, cursorY);
+  doc.text(payload.reportHeadings?.section5 || '5. DATA QUALITY AUDIT & GOVERNANCE', margin, cursorY);
+  cursorY += 4;
   cursorY += 4;
 
   const qualityHeaders = [['Audit Dimension', 'Score / Status', 'Detected Anomalies', 'Recommendation']];

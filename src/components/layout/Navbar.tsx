@@ -16,6 +16,7 @@ import { usePlatform } from '../../store/usePlatformStore';
 import { EditableDashboardTitle } from '../common/EditableDashboardTitle';
 import { Tooltip } from '../common/Tooltip';
 import { BrandLogo } from '../common/BrandLogo';
+import { useFirebaseAuth } from '../../store/useFirebaseAuth';
 
 export const Navbar: React.FC = () => {
   const { 
@@ -32,6 +33,8 @@ export const Navbar: React.FC = () => {
     filters,
     setFilters
   } = usePlatform();
+
+  const { currentUser, isGuestMode, setIsAuthModalOpen } = useFirebaseAuth();
 
   const isLight = themeMode === 'light';
 
@@ -269,6 +272,45 @@ export const Navbar: React.FC = () => {
             </button>
           </Tooltip>
         </div>
+
+        {/* Firebase Cloud Sync & Auth Button */}
+        <Tooltip
+          side="bottom"
+          title={currentUser ? (currentUser.displayName || currentUser.email || 'Cloud Account') : isGuestMode ? 'Guest Demo Session' : 'Firebase Cloud Account'}
+          tag={currentUser ? 'Connected' : isGuestMode ? 'Demo Mode' : 'Sign In'}
+          className="w-auto"
+          content={currentUser ? 'Manage cloud profile, view Firestore sync status, or sign out.' : isGuestMode ? 'You are currently in Guest Demo mode. Click to sign in or create an account to persist dashboards.' : 'Sign in with Google or Email to sync and persist your dashboards to Firebase Firestore.'}
+        >
+          <button
+            onClick={() => setIsAuthModalOpen(true)}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-semibold transition-all cursor-pointer ${
+              currentUser
+                ? isLight
+                  ? 'bg-emerald-50 border-emerald-300 text-emerald-800 hover:bg-emerald-100'
+                  : 'bg-[#13281e] border-[#21F1A8]/40 text-[#21F1A8] hover:bg-[#1a382a]'
+                : isGuestMode
+                  ? isLight
+                    ? 'bg-amber-50 border-amber-300 text-amber-800 hover:bg-amber-100'
+                    : 'bg-amber-500/10 border-amber-500/30 text-amber-300 hover:bg-amber-500/20'
+                  : isLight
+                    ? 'bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200'
+                    : 'bg-[#222] border-[#383838] text-gray-300 hover:text-white hover:border-[#21F1A8]/40'
+            }`}
+          >
+            {currentUser?.photoURL ? (
+              <img 
+                src={currentUser.photoURL} 
+                alt="Profile" 
+                className="w-4 h-4 rounded-full border border-[#21F1A8]"
+              />
+            ) : (
+              <span className={`w-2 h-2 rounded-full ${currentUser ? 'bg-[#21F1A8]' : isGuestMode ? 'bg-amber-400' : 'bg-[#21F1A8]'} shrink-0`} />
+            )}
+            <span className="max-w-[110px] truncate">
+              {currentUser ? (currentUser.displayName?.split(' ')[0] || 'My Account') : isGuestMode ? 'Guest Demo' : 'Sign In'}
+            </span>
+          </button>
+        </Tooltip>
       </div>
     </header>
   );

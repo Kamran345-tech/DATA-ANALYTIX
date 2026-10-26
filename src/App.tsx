@@ -1,7 +1,9 @@
 import React from 'react';
 import { PlatformProvider, usePlatform } from './store/usePlatformStore';
+import { AuthProvider, useFirebaseAuth } from './store/useFirebaseAuth';
 import { Navbar } from './components/layout/Navbar';
 import { Sidebar } from './components/layout/Sidebar';
+import { LoginPage } from './components/views/LoginPage';
 import { LandingPage } from './components/views/LandingPage';
 import { ExecutiveDashboard } from './components/views/ExecutiveDashboard';
 import { UploadIngestionView } from './components/views/UploadIngestionView';
@@ -24,11 +26,36 @@ import { HowToUseView } from './components/views/HowToUseView';
 import { SettingsView } from './components/views/SettingsView';
 import { BlogView } from './components/views/BlogView';
 import { DrillThroughModal } from './components/common/DrillThroughModal';
+import { AuthModal } from './components/common/AuthModal';
+import { ToastContainer } from './components/common/ToastContainer';
+import { ToastProvider } from './store/useToast';
 
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 const MainContent: React.FC = () => {
   const { currentTab, setCurrentTab, isPresentationMode, themeMode } = usePlatform();
+  const { currentUser, isGuestMode, loading, isAuthModalOpen, setIsAuthModalOpen } = useFirebaseAuth();
+
+  if (loading) {
+    return (
+      <div className="h-screen w-full bg-[#0B0F17] flex flex-col items-center justify-center gap-4 text-white font-sans">
+        <div className="w-12 h-12 rounded-2xl bg-[#21F1A8]/10 border border-[#21F1A8]/30 flex items-center justify-center text-[#21F1A8]">
+          <span className="w-6 h-6 border-2 border-[#21F1A8] border-t-transparent rounded-full animate-spin" />
+        </div>
+        <div className="text-center space-y-1">
+          <div className="font-heading font-bold text-base tracking-wider uppercase text-white">
+            ACUITY<span className="text-[#21F1A8]">BI</span> ENTERPRISE
+          </div>
+          <p className="text-xs text-gray-400 font-mono">Initializing Governed Workspace & Security Engine...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Auth Gate: Require login or guest demo mode
+  if (!currentUser && !isGuestMode) {
+    return <LoginPage />;
+  }
 
   const renderActiveView = () => {
     switch (currentTab) {
@@ -94,6 +121,15 @@ const MainContent: React.FC = () => {
 
       {/* Global Drill-Through Modal with Breadcrumb Depth Tracking */}
       <DrillThroughModal />
+
+      {/* Global Cloud Authentication & Account Modal (Single Authoritative Instance) */}
+      <AuthModal 
+        isOpen={isAuthModalOpen} 
+        onClose={() => setIsAuthModalOpen(false)} 
+      />
+
+      {/* Global Toast Notification System */}
+      <ToastContainer />
     </div>
   );
 };
@@ -101,9 +137,13 @@ const MainContent: React.FC = () => {
 export function App() {
   return (
     <ErrorBoundary>
-      <PlatformProvider>
-        <MainContent />
-      </PlatformProvider>
+      <ToastProvider>
+        <AuthProvider>
+          <PlatformProvider>
+            <MainContent />
+          </PlatformProvider>
+        </AuthProvider>
+      </ToastProvider>
     </ErrorBoundary>
   );
 }

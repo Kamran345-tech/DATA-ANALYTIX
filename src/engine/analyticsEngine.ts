@@ -9,8 +9,10 @@ import {
   VisualConfig,
   PriceVolumeMixAnalysis,
   CohortMatrixRow,
-  PerformerItem
+  PerformerItem,
+  KPIStatus
 } from '../types';
+import { parseRobustNumber } from './dataParser';
 
 export interface DetailedStat {
   column: string;
@@ -95,12 +97,15 @@ export function computeAnalytics(
     }
   }
 
-  // Fix A10: Prioritized revenue detection (net_revenue > revenue > sales > turnover > amount > first numeric)
+  // Determine if dataset has real financial/sales semantics
+  const hasExplicitSalesOrRevenue = numericCols.some(c => /(^|[_\s-])(net[_\s-]?revenue|revenue|net[_\s-]?sales|sales|gross[_\s-]?sales|turnover)([_\s-]|$)/i.test(c.name));
+  const hasExplicitProfitOrCost = numericCols.some(c => /(^|[_\s-])(gross[_\s-]?profit|profit|net[_\s-]?profit|margin|cogs|cost|expense)([_\s-]|$)/i.test(c.name));
+  const isFinancialSalesDomain = hasExplicitSalesOrRevenue && (hasExplicitProfitOrCost || numericCols.some(c => /(price|discount|invoiced)/i.test(c.name)));
+
   const revCol = 
     numericCols.find(c => /(^|[_\s-])(net[_\s-]?revenue|revenue|net[_\s-]?sales|turnover)([_\s-]|$)/i.test(c.name))?.name ||
     numericCols.find(c => /(^|[_\s-])(sales|income|gross[_\s-]?sales)([_\s-]|$)/i.test(c.name))?.name ||
-    numericCols.find(c => /(^|[_\s-])amount([_\s-]|$)/i.test(c.name))?.name ||
-    numericCols[0]?.name;
+    numericCols.find(c => /(^|[_\s-])amount([_\s-]|$)/i.test(c.name))?.name;
 
   const profitCol = numericCols.find(c => /(^|[_\s-])(gross[_\s-]?profit|profit|net[_\s-]?profit|margin_amt|net_income)([_\s-]|$)/i.test(c.name))?.name;
   const costCol = numericCols.find(c => /(^|[_\s-])(cogs|cost|expense|total_cost)([_\s-]|$)/i.test(c.name))?.name;
@@ -138,15 +143,12 @@ export function computeAnalytics(
     currentRows = rows.slice(half);
   }
 
-  // 1. Enterprise KPI Calculation with rigorous definitions & formulas
-  const kpis: KPI[] = [];
-
-  // Fix A3: Nulls and empty values are skipped and NOT converted to 0 in averages
+  // Helper to compute aggregate stats for any column using parseRobustNumber
   const getMetricStats = (colName: string, isRate: boolean = false) => {
     const valid = rows
       .filter(r => r[colName] !== null && r[colName] !== undefined && r[colName] !== '')
-      .map(r => Number(r[colName]))
-      .filter(v => !isNaN(v));
+      .map(r => parseRobustNumber(r[colName]).value)
+      .filter((v): v is number => v !== null && !isNaN(v));
 
     if (valid.length === 0) return null;
     const total = valid.reduce((a, b) => a + b, 0);
@@ -159,13 +161,13 @@ export function computeAnalytics(
     if (currentRows.length > 0 && priorRows.length > 0) {
       const curV = currentRows
         .filter(r => r[colName] !== null && r[colName] !== undefined && r[colName] !== '')
-        .map(r => Number(r[colName]))
-        .filter(v => !isNaN(v));
+        .map(r => parseRobustNumber(r[colName]).value)
+        .filter((v): v is number => v !== null && !isNaN(v));
 
       const priV = priorRows
         .filter(r => r[colName] !== null && r[colName] !== undefined && r[colName] !== '')
-        .map(r => Number(r[colName]))
-        .filter(v => !isNaN(v));
+        .map(r => parseRobustNumber(r[colName]).value)
+        .filter((v): v is number => v !== null && !isNaN(v));
 
       if (curV.length > 0 && priV.length > 0) {
         const curC = isRate ? (curV.reduce((a, b) => a + b, 0) / curV.length) : curV.reduce((a, b) => a + b, 0);
@@ -177,70 +179,76 @@ export function computeAnalytics(
     return { mainVal, prevVal, changePct, validCount: valid.length };
   };
 
-  // Primary Business KPI 1: Net Revenue
+  // 1. Enterprise Dynamic KPI Calculation - Purely Dataset Driven (Never forcing Sales/Profit if absent)
+  const kpis: KPI[] = [];
+  const usedColNames = new Set<string>();
+
+  // Helper to push a formatted KPI
+  const pushKpiForCol = (colName: string, customTitle?: string, forceRate?: boolean) => {
+    if (usedColNames.has(colName)) return;
+    const profile = detectMetricProfile(colName, rows);
+    const isRateOrAvg = forceRate !== undefined ? forceRate : profile.aggregation === 'avg';
+    const st = getMetricStats(colName, isRateOrAvg);
+    if (!st) return;
+
+    const change = st.changePct !== undefined ? Math.round(st.changePct * 10) / 10 : undefined;
+    const status: KPI['status'] = (change ?? 0) >= 5 ? 'Above Target' : (change ?? 0) < -5 ? 'At Risk' : 'On Track';
+    const finalTitle = customTitle || profile.title;
+    const formattedVal = profile.format(st.mainVal);
+    const formattedPrev = st.prevVal !== undefined ? profile.format(st.prevVal) : undefined;
+
+    kpis.push({
+      id: `kpi-col-${colName.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
+      name: finalTitle,
+      value: Math.round(st.mainVal * 100) / 100,
+      formattedValue: formattedVal,
+      previousValue: st.prevVal !== undefined ? Math.round(st.prevVal * 100) / 100 : undefined,
+      formattedPreviousValue: formattedPrev,
+      change: st.prevVal !== undefined ? Math.round((st.mainVal - st.prevVal) * 100) / 100 : undefined,
+      changePercent: change,
+      status,
+      period: primaryDateCol ? 'Current Trailing Window vs Prior' : 'Audited Dataset Total',
+      sourceColumn: colName,
+      aggregation: isRateOrAvg ? 'avg' : 'sum',
+      calculation: `${(isRateOrAvg ? 'avg' : 'sum').toUpperCase()}('${tableName}'[${colName}])`,
+      traceableSource: `${tableName}.${colName}`,
+      definition: profile.definition || `Calculated aggregate for column ${colName}.`,
+      formulaExpression: `${(isRateOrAvg ? 'avg' : 'sum').toUpperCase()}(${tableName}[${colName}])`,
+      businessImpact: profile.businessImpact || `Key performance indicator derived from ${finalTitle}.`,
+      unit: profile.unit
+    });
+    usedColNames.add(colName);
+  };
+
+  // If genuine sales/revenue column exists
   if (revCol) {
-    const st = getMetricStats(revCol, false);
-    if (st) {
-      const status: KPI['status'] = (st.changePct || 0) >= 5 ? 'Above Target' : (st.changePct || 0) < -5 ? 'At Risk' : 'On Track';
-      kpis.push({
-        id: 'kpi-net-revenue',
-        name: 'Net Sales Revenue',
-        value: Math.round(st.mainVal * 100) / 100,
-        formattedValue: formatMetricValue(st.mainVal, revCol, false),
-        previousValue: st.prevVal !== undefined ? Math.round(st.prevVal * 100) / 100 : undefined,
-        formattedPreviousValue: st.prevVal !== undefined ? formatMetricValue(st.prevVal, revCol, false) : undefined,
-        change: st.prevVal !== undefined ? Math.round((st.mainVal - st.prevVal) * 100) / 100 : undefined,
-        changePercent: st.changePct !== undefined ? Math.round(st.changePct * 10) / 10 : undefined,
-        status,
-        period: primaryDateCol ? 'Current Trailing Window vs Prior' : 'Audited Dataset Total',
-        sourceColumn: revCol,
-        aggregation: 'sum',
-        calculation: `SUM('${tableName}'[${revCol}])`,
-        traceableSource: `${tableName}.${revCol}`,
-        definition: `Total aggregate transaction volume for column ${revCol}.`,
-        formulaExpression: `SUM(${tableName}[${revCol}])`,
-        businessImpact: 'Top-line sales performance indicator driving enterprise valuation and quota pacing.',
-        unit: 'USD ($)'
-      });
-    }
+    const revTitle = formatColumnTitle(revCol);
+    const isExplicitSales = revTitle.toLowerCase().includes('revenue') || revTitle.toLowerCase().includes('sales') || revTitle.toLowerCase().includes('turnover');
+    pushKpiForCol(revCol, isExplicitSales ? revTitle : (revTitle.toLowerCase().startsWith('total') ? revTitle : `Total ${revTitle}`));
   }
 
-  // Primary Business KPI 2: Gross Operating Profit (Fix A11: Compute true profit variance, not revenue variance)
-  if (profitCol || (revCol && costCol)) {
-    let profitVal = 0;
+  // If genuine profit column exists
+  if (profitCol) {
+    pushKpiForCol(profitCol, formatColumnTitle(profitCol));
+  } else if (revCol && costCol && isFinancialSalesDomain) {
+    // Only synthesize operating profit if explicitly in a financial sales dataset with both revenue and cost
+    const calcProfit = (subset: Record<string, any>[]) => {
+      return subset.reduce((acc, r) => {
+        const rv = parseRobustNumber(r[revCol]).value || 0;
+        const cv = parseRobustNumber(r[costCol]).value || 0;
+        return acc + (rv - cv);
+      }, 0);
+    };
+    const profitVal = calcProfit(rows);
     let prevProfitVal: number | undefined;
     let profitChangePct: number | undefined;
-
-    if (profitCol) {
-      const st = getMetricStats(profitCol, false);
-      if (st) {
-        profitVal = st.mainVal;
-        prevProfitVal = st.prevVal;
-        profitChangePct = st.changePct;
-      }
-    } else if (revCol && costCol) {
-      const calcProfit = (subset: Record<string, any>[]) => {
-        return subset.reduce((acc, r) => {
-          const rv = Number(r[revCol]);
-          const cv = Number(r[costCol]);
-          const validR = !isNaN(rv) && r[revCol] != null ? rv : 0;
-          const validC = !isNaN(cv) && r[costCol] != null ? cv : 0;
-          return acc + (validR - validC);
-        }, 0);
-      };
-
-      profitVal = calcProfit(rows);
-      if (currentRows.length > 0 && priorRows.length > 0) {
-        const curP = calcProfit(currentRows);
-        const priP = calcProfit(priorRows);
-        prevProfitVal = priP;
-        if (priP !== 0) {
-          profitChangePct = ((curP - priP) / Math.abs(priP)) * 100;
-        }
-      }
+    if (currentRows.length > 0 && priorRows.length > 0) {
+      const curP = calcProfit(currentRows);
+      const priP = calcProfit(priorRows);
+      prevProfitVal = priP;
+      if (priP !== 0) profitChangePct = Math.round(((curP - priP) / Math.abs(priP)) * 1000) / 10;
     }
-
-    const status: KPI['status'] = (profitChangePct || 0) >= 5 ? 'Above Target' : (profitChangePct || 0) < -5 ? 'At Risk' : 'On Track';
+    const status: KPI['status'] = (profitChangePct ?? 0) >= 5 ? 'Above Target' : (profitChangePct ?? 0) < -5 ? 'At Risk' : 'On Track';
     kpis.push({
       id: 'kpi-gross-profit',
       name: 'Gross Operating Profit',
@@ -248,111 +256,78 @@ export function computeAnalytics(
       formattedValue: formatMetricValue(profitVal, 'profit', false),
       previousValue: prevProfitVal !== undefined ? Math.round(prevProfitVal * 100) / 100 : undefined,
       formattedPreviousValue: prevProfitVal !== undefined ? formatMetricValue(prevProfitVal, 'profit', false) : undefined,
-      changePercent: profitChangePct !== undefined ? Math.round(profitChangePct * 10) / 10 : undefined,
+      changePercent: profitChangePct,
       status,
       period: primaryDateCol ? 'Current Trailing Window vs Prior' : 'Audited Dataset Total',
-      sourceColumn: profitCol || `${revCol} - ${costCol}`,
+      sourceColumn: `${revCol} - ${costCol}`,
       aggregation: 'sum',
-      calculation: profitCol ? `SUM('${tableName}'[${profitCol}])` : `SUM('${tableName}'[${revCol}]) - SUM('${tableName}'[${costCol}])`,
-      traceableSource: `${tableName}.${profitCol || 'GrossProfit'}`,
-      definition: 'Operational financial surplus remaining after deducting direct Cost of Goods Sold (COGS).',
-      formulaExpression: profitCol ? `SUM(${profitCol})` : `Net Revenue - Cost of Goods Sold (COGS)`,
-      businessImpact: 'Measures bottom-line operational contribution before fixed overhead and tax allocations.',
+      calculation: `SUM('${tableName}'[${revCol}]) - SUM('${tableName}'[${costCol}])`,
+      traceableSource: `${tableName}.${revCol} - ${tableName}.${costCol}`,
+      definition: 'Operational financial surplus remaining after deducting direct costs.',
+      formulaExpression: `Net Revenue - Cost of Goods Sold`,
+      businessImpact: 'Measures bottom-line operational contribution before fixed overhead allocations.',
       unit: 'USD ($)'
     });
+    usedColNames.add('GrossProfit');
   }
 
-  // Primary Business KPI 3: Gross Margin % (Fix A1 & A13: NO hardcoded 44.2 default! Only show if data contains margin/profit/cost)
-  if (marginPctCol || (revCol && (profitCol || costCol))) {
-    let marginVal: number | undefined;
-    let marginFormula = '';
-    let marginSource = '';
-
-    if (marginPctCol) {
-      const st = getMetricStats(marginPctCol, true);
-      if (st) {
-        // Fix A13: Only multiply by 100 if the raw data values are strictly between 0 and 1 decimal ratios
-        const rawVals = rows.filter(r => r[marginPctCol] != null).map(r => Number(r[marginPctCol])).filter(v => !isNaN(v));
-        const maxVal = Math.max(...rawVals);
-        marginVal = maxVal <= 1.0 ? st.mainVal * 100 : st.mainVal;
-        marginFormula = `AVERAGE('${tableName}'[${marginPctCol}])`;
-        marginSource = `${tableName}.${marginPctCol}`;
-      }
-    } else if (revCol && (profitCol || costCol)) {
-      const validRevRows = rows.filter(r => r[revCol] != null && !isNaN(Number(r[revCol])));
-      const totRev = validRevRows.reduce((a, r) => a + Number(r[revCol]), 0);
-      if (totRev > 0) {
-        const totProf = profitCol 
-          ? validRevRows.reduce((a, r) => a + (Number(r[profitCol]) || 0), 0)
-          : totRev - validRevRows.reduce((a, r) => a + (Number(r[costCol!]) || 0), 0);
-        marginVal = (totProf / totRev) * 100;
-        marginFormula = `DIVIDE(SUM('${tableName}'[GrossProfit]), SUM('${tableName}'[${revCol}]), 0) * 100`;
-        marginSource = `${tableName}.CalculatedGrossMargin`;
-      }
-    }
-
-    if (marginVal !== undefined) {
-      const status: KPI['status'] = marginVal >= 40 ? 'Above Target' : marginVal >= 25 ? 'On Track' : 'Below Target';
-      kpis.push({
-        id: 'kpi-gross-margin-pct',
-        name: 'Gross Margin %',
-        value: Math.round(marginVal * 10) / 10,
-        formattedValue: `${marginVal.toFixed(1)}%`,
-        status,
-        period: 'Weighted Average',
-        sourceColumn: marginSource,
-        aggregation: 'avg',
-        calculation: marginFormula,
-        traceableSource: marginSource,
-        definition: 'Ratio of gross operating profit to net revenue, expressing pricing strength and unit profitability.',
-        formulaExpression: `(Gross Profit / Net Revenue) * 100`,
-        businessImpact: 'Core health metric; contractions signal cost inflation, aggressive discounting, or unfavorable mix shift.',
-        unit: '%'
-      });
-    }
+  // If margin % column exists
+  if (marginPctCol) {
+    pushKpiForCol(marginPctCol, formatColumnTitle(marginPctCol), true);
   }
 
-  // Primary Business KPI 4: Units Sold / Order Transactions (Replaced generic "Total Volume")
+  // If units/volume column exists
   if (unitsCol) {
-    const st = getMetricStats(unitsCol, false);
-    if (st) {
-      kpis.push({
-        id: 'kpi-units-sold',
-        name: 'Total Units Dispatched',
-        value: Math.round(st.mainVal),
-        formattedValue: `${Math.round(st.mainVal).toLocaleString()} units`,
-        previousValue: st.prevVal !== undefined ? Math.round(st.prevVal) : undefined,
-        formattedPreviousValue: st.prevVal !== undefined ? `${Math.round(st.prevVal).toLocaleString()} units` : undefined,
-        changePercent: st.changePct !== undefined ? Math.round(st.changePct * 10) / 10 : undefined,
-        status: (st.changePct || 0) >= 0 ? 'On Track' : 'Below Target',
-        period: primaryDateCol ? 'Latest vs Prior' : 'Dataset Total',
-        sourceColumn: unitsCol,
-        aggregation: 'sum',
-        calculation: `SUM('${tableName}'[${unitsCol}])`,
-        traceableSource: `${tableName}.${unitsCol}`,
-        definition: 'Aggregate commercial units, product licenses, and service seats fulfilled across all approved orders.',
-        formulaExpression: `SUM(${tableName}[${unitsCol}])`,
-        businessImpact: 'Tracks physical throughput and customer adoption independent of pricing swings.',
-        unit: 'Units'
-      });
+    pushKpiForCol(unitsCol, formatColumnTitle(unitsCol));
+  }
+
+  // Fill up remaining slots (up to 4 KPIs) from all available numeric columns
+  for (const nc of numericCols) {
+    if (kpis.length >= 4) break;
+    if (!usedColNames.has(nc.name)) {
+      pushKpiForCol(nc.name);
     }
-  } else {
-    // If no units column, provide clean audited transaction count
+  }
+
+  // If still fewer than 4 KPIs, backfill with Audited Records and Category Count
+  if (kpis.length < 4) {
+    const entityName = rows.length > 0 && stringCols[0] ? `${formatColumnTitle(stringCols[0].name)} Records` : 'Audited Records';
     kpis.push({
-      id: 'kpi-total-transactions',
-      name: 'Audited Orders / Transactions',
+      id: 'kpi-sample-records',
+      name: `Audited ${entityName}`,
       value: rows.length,
-      formattedValue: `${rows.length.toLocaleString()} orders`,
+      formattedValue: `${rows.length.toLocaleString()} records`,
       status: 'On Track',
       period: 'All Records',
       sourceColumn: '*',
       aggregation: 'count',
       calculation: `COUNTROWS('${tableName}')`,
       traceableSource: `${tableName}.*`,
-      definition: 'Total validated transaction orders and invoicing events recorded in the operational data warehouse.',
+      definition: `Total validated record rows ingested and verified from ${tableName}.`,
       formulaExpression: `COUNTROWS(${tableName})`,
-      businessImpact: 'Underlying transaction sample volume audited for statistical validity and regulatory compliance.',
-      unit: 'Orders'
+      businessImpact: 'Sample population size verified for analytical reliability.',
+      unit: 'Records'
+    });
+  }
+
+  if (kpis.length < 4 && stringCols.length > 0) {
+    const primaryCat = stringCols[0].name;
+    const uniqueCats = new Set(rows.map(r => String(r[primaryCat]))).size;
+    kpis.push({
+      id: `kpi-distinct-${primaryCat}`,
+      name: `Active ${formatColumnTitle(primaryCat)} Count`,
+      value: uniqueCats,
+      formattedValue: `${uniqueCats} segments`,
+      status: 'On Track',
+      period: 'Full Scope',
+      sourceColumn: primaryCat,
+      aggregation: 'count',
+      calculation: `DISTINCTCOUNT('${tableName}'[${primaryCat}])`,
+      traceableSource: `${tableName}.${primaryCat}`,
+      definition: `Total unique segments recorded in dimension ${primaryCat}.`,
+      formulaExpression: `DISTINCTCOUNT(${primaryCat})`,
+      businessImpact: 'Indicates breadth of operational classification and segment coverage.',
+      unit: 'Segments'
     });
   }
 
@@ -747,40 +722,41 @@ export function computeAnalytics(
 
   // 10. Specific Evidence-Based AI Directives
   const insights: AIInsight[] = [];
-  const primaryKpi = kpis.find(k => k.id === 'kpi-net-revenue') || kpis[0];
-  const marginKpi = kpis.find(k => k.id === 'kpi-gross-margin-pct');
+  const primaryKpi = kpis[0];
+  const secondaryKpi = kpis[1];
   const topProduct = topPerformers[0];
 
   if (primaryKpi) {
+    const isSales = isFinancialSalesDomain;
     insights.push({
-      id: 'ins-rev-driver',
+      id: 'ins-primary-driver',
       category: 'Driver',
-      title: `${primaryKpi.name} Revenue Trajectory`,
+      title: isSales ? `${primaryKpi.name} Performance Trajectory` : `${primaryKpi.name} Baseline & Pacing`,
       what: `${primaryKpi.name} reached ${primaryKpi.formattedValue}${primaryKpi.changePercent !== undefined ? ` (${primaryKpi.changePercent >= 0 ? '+' : ''}${primaryKpi.changePercent}% pacing vs prior period)` : ''}.`,
-      why: `Driven by aggregate transaction volume across ${rows.length.toLocaleString()} audited orders in ${tableName}. ${topProduct ? `Top flagship line "${topProduct.name}" contributed ${topProduct.formattedValue} (${topProduct.sharePct}% of total turnover).` : ''}`,
+      why: `Evaluated across ${rows.length.toLocaleString()} audited records in ${tableName}.${topProduct ? ` Top category/item "${topProduct.name}" contributed ${topProduct.formattedValue} (${topProduct.sharePct}% of total scope).` : ''}`,
       whoOrWhat: `Audited column: ${primaryKpi.traceableSource}`,
-      significance: `Evaluated as "${primaryKpi.status}". High commercial momentum across key accounts.`,
+      significance: `Evaluated as "${primaryKpi.status}". Stable measurement distribution across observed periods.`,
       action: primaryKpi.status === 'At Risk' 
-        ? 'Conduct immediate pipeline scrub and review pricing discounts.' 
-        : 'Sustain marketing velocity in high-yielding enterprise tiers.',
+        ? `Conduct root-cause audit on ${primaryKpi.name} distribution and check lower-bound threshold anomalies.` 
+        : `Maintain operational governance and sustain positive momentum in ${primaryKpi.name}.`,
       relatedMetric: primaryKpi.name,
-      supportingData: `Sample: ${rows.length} rows, Prior Period: ${primaryKpi.formattedPreviousValue || 'N/A'}, Net Variance: ${primaryKpi.change !== undefined ? '$' + primaryKpi.change.toLocaleString() : 'N/A'}`,
+      supportingData: `Sample: ${rows.length} rows, Prior Period: ${primaryKpi.formattedPreviousValue || 'N/A'}, Variance: ${primaryKpi.changePercent !== undefined ? primaryKpi.changePercent + '%' : 'N/A'}`,
       confidence: 0.98
     });
   }
 
-  if (marginKpi) {
+  if (secondaryKpi) {
     insights.push({
-      id: 'ins-margin-discipline',
-      category: 'Driver',
-      title: 'Gross Margin & Profitability Health',
-      what: `Gross Margin is maintained at ${marginKpi.formattedValue}.`,
-      why: `Direct Cost of Goods Sold (COGS) absorption is holding within standard parameters across product sub-categories.`,
-      whoOrWhat: `Formula: ${marginKpi.formulaExpression}`,
-      significance: marginKpi.value >= 40 ? 'Robust operational leverage with healthy cash-flow buffer.' : 'Margin compression observed; requires discount containment.',
-      action: 'Enforce approval thresholds on custom discounting exceeding 10% on direct enterprise contracts.',
-      relatedMetric: 'Gross Margin %',
-      supportingData: `Target Threshold: 40.0%, Realized: ${marginKpi.formattedValue}, Margin Status: ${marginKpi.status}`,
+      id: 'ins-secondary-driver',
+      category: 'Operational',
+      title: `${secondaryKpi.name} Distribution Health`,
+      what: `${secondaryKpi.name} stands at ${secondaryKpi.formattedValue}${secondaryKpi.changePercent !== undefined ? ` (${secondaryKpi.changePercent >= 0 ? '+' : ''}${secondaryKpi.changePercent}% variance)` : ''}.`,
+      why: `Calculated from verified column profile (${secondaryKpi.traceableSource}).`,
+      whoOrWhat: `Formula: ${secondaryKpi.formulaExpression}`,
+      significance: `Metric status rated "${secondaryKpi.status}" based on historical baseline comparisons.`,
+      action: `Review outlier dispersion and align segment targets with ${secondaryKpi.name} baseline.`,
+      relatedMetric: secondaryKpi.name,
+      supportingData: `Audited Metric: ${secondaryKpi.name}, Realized: ${secondaryKpi.formattedValue}, Status: ${secondaryKpi.status}`,
       confidence: 0.96
     });
   }
@@ -931,8 +907,8 @@ export function computeAnalytics(
       sortBy: 'value_desc'
     });
   }
-  if (stringCols.length > 0 && (profitCol || (numericCols.length > 1 ? numericCols[1].name : revCol))) {
-    const secondVal = profitCol || (numericCols.length > 1 ? numericCols[1].name : revCol);
+  if (stringCols.length > 0 && (profitCol || (numericCols.length > 1 ? numericCols[1].name : revCol) || numericCols[0]?.name)) {
+    const secondVal = profitCol || (numericCols.length > 1 ? numericCols[1].name : revCol) || (numericCols[0]?.name ?? 'Value');
     visuals.push({
       id: 'vis-table-summary',
       title: `Aggregated Performance Table (${formatColumnTitle(stringCols[0].name)})`,
@@ -1065,4 +1041,397 @@ function formatMetricValue(val: number, name: string, isRate: boolean): string {
     return `${(val / 1_000).toFixed(1)}K`;
   }
   return val.toLocaleString(undefined, { maximumFractionDigits: 2 });
+}
+
+export interface MetricProfile {
+  title: string;
+  aggregation: 'sum' | 'avg' | 'count';
+  unit: string;
+  format: (val: number) => string;
+  isRateOrRatio: boolean;
+  definition: string;
+  businessImpact: string;
+}
+
+export function detectMetricProfile(colName: string, rows: Record<string, any>[]): MetricProfile {
+  const lower = colName.toLowerCase().trim();
+  const title = formatColumnTitle(colName);
+  
+  // Percentage / Rate / Ratio / Probability
+  if (/(^|[_\s-])(rate|pct|percent|percentage|ratio|share|yield|margin|accuracy|retention|conversion|growth|fraction|churn|attrition|probability)([_\s-]|$)/i.test(lower)) {
+    return {
+      title,
+      aggregation: 'avg',
+      unit: '%',
+      format: (v: number) => {
+        const adjusted = (v >= 0 && v <= 1.0) ? v * 100 : v;
+        return `${adjusted.toFixed(1)}%`;
+      },
+      isRateOrRatio: true,
+      definition: `Mean weighted ratio and percentage calculated for ${title}.`,
+      businessImpact: 'Tracks rate efficiency and proportionate quality indicators.'
+    };
+  }
+
+  // Financial / Currency / Monetary amounts
+  if (/(^|[_\s-])(revenue|sales|profit|cost|expense|price|amount|salary|spend|fee|charge|budget|turnover|cogs|mrr|arr|income|allowance|billing|pay)([_\s-]|$)/i.test(lower)) {
+    const isPriceOrRate = /(price|fee_per|cost_per|salary)/i.test(lower);
+    return {
+      title: isPriceOrRate ? `Average ${title}` : `Total ${title}`,
+      aggregation: isPriceOrRate ? 'avg' : 'sum',
+      unit: 'USD ($)',
+      format: (v: number) => formatMetricValue(v, 'amount', false),
+      isRateOrRatio: false,
+      definition: `Aggregate monetary value recorded under ${title}.`,
+      businessImpact: 'Financial top-line / cost impact driving financial health.'
+    };
+  }
+
+  // Medical / Healthcare Vitals
+  if (/heart[_\s-]?rate|pulse|bpm/i.test(lower)) {
+    return {
+      title: 'Average Heart Rate',
+      aggregation: 'avg',
+      unit: 'bpm',
+      format: (v: number) => `${Math.round(v)} bpm`,
+      isRateOrRatio: true,
+      definition: 'Mean resting or measured cardiac pulse frequency.',
+      businessImpact: 'Key clinical telemetry indicator for cardiovascular stability.'
+    };
+  }
+  if (/blood[_\s-]?pressure|systolic|diastolic|bp/i.test(lower)) {
+    return {
+      title: `Average ${title}`,
+      aggregation: 'avg',
+      unit: 'mmHg',
+      format: (v: number) => `${Math.round(v)} mmHg`,
+      isRateOrRatio: true,
+      definition: 'Average vascular pressure reading across active patient records.',
+      businessImpact: 'Vital baseline metric for clinical evaluation.'
+    };
+  }
+  if (/glucose|blood[_\s-]?sugar/i.test(lower)) {
+    return {
+      title: 'Mean Blood Glucose',
+      aggregation: 'avg',
+      unit: 'mg/dL',
+      format: (v: number) => `${v.toFixed(1)} mg/dL`,
+      isRateOrRatio: true,
+      definition: 'Average circulating blood glucose concentration.',
+      businessImpact: 'Metabolic glycemic index evaluation.'
+    };
+  }
+  if (/cholesterol/i.test(lower)) {
+    return {
+      title: 'Average Cholesterol',
+      aggregation: 'avg',
+      unit: 'mg/dL',
+      format: (v: number) => `${Math.round(v)} mg/dL`,
+      isRateOrRatio: true,
+      definition: 'Mean total serum cholesterol level.',
+      businessImpact: 'Lipid profile biomarker for patient risk stratification.'
+    };
+  }
+  if (/(^|[_\s-])bmi([_\s-]|$)|body[_\s-]?mass/i.test(lower)) {
+    return {
+      title: 'Average BMI',
+      aggregation: 'avg',
+      unit: 'kg/m²',
+      format: (v: number) => `${v.toFixed(1)} kg/m²`,
+      isRateOrRatio: true,
+      definition: 'Body Mass Index computed across subject cohort.',
+      businessImpact: 'Nutritional and physiological health assessment baseline.'
+    };
+  }
+  if (/(^|[_\s-])age([_\s-]|$)/i.test(lower)) {
+    return {
+      title: 'Average Age',
+      aggregation: 'avg',
+      unit: 'years',
+      format: (v: number) => `${v.toFixed(1)} yrs`,
+      isRateOrRatio: true,
+      definition: 'Mean demographic age across audited individuals.',
+      businessImpact: 'Demographic population profile and cohort age weighting.'
+    };
+  }
+
+  // Physical, Engineering, Sensor, Weather
+  if (/temp|temperature/i.test(lower)) {
+    return {
+      title: `Mean ${title}`,
+      aggregation: 'avg',
+      unit: '°C',
+      format: (v: number) => `${v.toFixed(1)}°C`,
+      isRateOrRatio: true,
+      definition: 'Mean thermal sensor recording across monitoring intervals.',
+      businessImpact: 'Thermal stability and environmental boundary tracking.'
+    };
+  }
+  if (/humidity/i.test(lower)) {
+    return {
+      title: 'Relative Humidity',
+      aggregation: 'avg',
+      unit: '%',
+      format: (v: number) => `${v.toFixed(1)}%`,
+      isRateOrRatio: true,
+      definition: 'Atmospheric moisture percentage across sensors.',
+      businessImpact: 'Climate control and environmental moisture monitoring.'
+    };
+  }
+  if (/speed|velocity|wind/i.test(lower)) {
+    return {
+      title: `Average ${title}`,
+      aggregation: 'avg',
+      unit: 'km/h',
+      format: (v: number) => `${v.toFixed(1)} km/h`,
+      isRateOrRatio: true,
+      definition: 'Mean recorded kinetic transit velocity.',
+      businessImpact: 'Kinematic throughput and velocity compliance.'
+    };
+  }
+  if (/distance|mileage/i.test(lower)) {
+    return {
+      title: `Total ${title}`,
+      aggregation: 'sum',
+      unit: 'km',
+      format: (v: number) => `${Math.round(v).toLocaleString()} km`,
+      isRateOrRatio: false,
+      definition: 'Cumulative distance traversed across route fleet.',
+      businessImpact: 'Logistics mileage and transit network reach.'
+    };
+  }
+  if (/duration|latency|time_spent|runtime|elapsed|delay/i.test(lower)) {
+    return {
+      title: `Average ${title}`,
+      aggregation: 'avg',
+      unit: 'ms/s',
+      format: (v: number) => v >= 1000 ? `${(v / 1000).toFixed(1)}s` : `${Math.round(v)}ms`,
+      isRateOrRatio: true,
+      definition: 'Average execution duration or communication latency.',
+      businessImpact: 'Response responsiveness and operational SLA compliance.'
+    };
+  }
+
+  // Score / Rating / Academic / Evaluation
+  if (/rating|stars/i.test(lower)) {
+    return {
+      title: `Average ${title}`,
+      aggregation: 'avg',
+      unit: 'stars',
+      format: (v: number) => `${v.toFixed(1)} / 5.0`,
+      isRateOrRatio: true,
+      definition: 'Mean satisfaction rating score from user evaluations.',
+      businessImpact: 'Customer sentiment and satisfaction benchmark.'
+    };
+  }
+  if (/score|grade|points|gpa|exam|marks/i.test(lower)) {
+    return {
+      title: `Average ${title}`,
+      aggregation: 'avg',
+      unit: 'pts',
+      format: (v: number) => `${v.toFixed(1)} pts`,
+      isRateOrRatio: true,
+      definition: `Average performance score observed in ${title}.`,
+      businessImpact: 'Core competency and outcome achievement metric.'
+    };
+  }
+
+  // Quantities, Counts, Volumes, Visits, Headcount
+  if (/qty|quantity|units|count|volume|orders|items|visits|impressions|clicks|headcount|cases|admissions|tickets|subscribers/i.test(lower)) {
+    return {
+      title: `Total ${title}`,
+      aggregation: 'sum',
+      unit: 'Units',
+      format: (v: number) => Math.round(v).toLocaleString(),
+      isRateOrRatio: false,
+      definition: `Cumulative counted volume across recorded rows for ${title}.`,
+      businessImpact: 'Operational scale and volumetric throughput.'
+    };
+  }
+
+  // Fallback heuristic based on column name & values
+  const hasAvgKeywords = /(avg|mean|ratio|index|factor|level|depth|height|weight)/i.test(lower);
+  if (hasAvgKeywords) {
+    return {
+      title: `Average ${title}`,
+      aggregation: 'avg',
+      unit: '',
+      format: (v: number) => v.toLocaleString(undefined, { maximumFractionDigits: 2 }),
+      isRateOrRatio: true,
+      definition: `Mean statistical value computed for ${title}.`,
+      businessImpact: 'Central tendency indicator across audited records.'
+    };
+  }
+
+  return {
+    title: `Aggregate ${title}`,
+    aggregation: 'sum',
+    unit: '',
+    format: (v: number) => Math.abs(v) >= 1000 ? formatMetricValue(v, 'generic', false) : v.toLocaleString(undefined, { maximumFractionDigits: 1 }),
+    isRateOrRatio: false,
+    definition: `Total aggregate sum of ${title} across active records.`,
+    businessImpact: 'Primary volumetric magnitude indicator for this dataset.'
+  };
+}
+
+export interface CustomKpiParams {
+  id?: string;
+  name: string;
+  sourceColumn: string;
+  aggregation: 'sum' | 'avg' | 'count' | 'distinct_count' | 'min' | 'max';
+  formatType?: 'currency' | 'percent' | 'integer' | 'decimal' | 'custom';
+  customUnit?: string;
+  status?: KPIStatus | 'auto';
+  period?: string;
+}
+
+export function calculateKpiFromParameters(
+  params: CustomKpiParams,
+  rows: Record<string, any>[],
+  dateColName?: string,
+  tableName: string = 'FactTable'
+): KPI {
+  const colName = params.sourceColumn;
+  const agg = params.aggregation;
+  const isCountAll = colName === '*' || colName === '';
+
+  // Extract valid numbers using parseRobustNumber
+  const extractNumbers = (subset: Record<string, any>[]): number[] => {
+    if (isCountAll) return subset.map(() => 1);
+    return subset
+      .map(r => parseRobustNumber(r[colName]).value)
+      .filter((v): v is number => v !== null && !isNaN(v));
+  };
+
+  const allNumbers = extractNumbers(rows);
+
+  // Compute main value
+  let mainVal = 0;
+  if (isCountAll || agg === 'count') {
+    mainVal = isCountAll ? rows.length : allNumbers.length;
+  } else if (agg === 'distinct_count') {
+    const distinctSet = new Set(rows.map(r => String(r[colName] ?? '')));
+    distinctSet.delete('');
+    mainVal = distinctSet.size;
+  } else if (allNumbers.length === 0) {
+    mainVal = 0;
+  } else if (agg === 'sum') {
+    mainVal = allNumbers.reduce((a, b) => a + b, 0);
+  } else if (agg === 'avg') {
+    mainVal = allNumbers.reduce((a, b) => a + b, 0) / allNumbers.length;
+  } else if (agg === 'min') {
+    mainVal = Math.min(...allNumbers);
+  } else if (agg === 'max') {
+    mainVal = Math.max(...allNumbers);
+  }
+
+  // Split into prior vs current rows for trend/variance
+  let priorRows: Record<string, any>[] = [];
+  let currentRows: Record<string, any>[] = [];
+  if (dateColName && rows.length >= 4) {
+    const rowsWithDates = rows.filter(r => r[dateColName] != null && String(r[dateColName]).trim() !== '');
+    const sorted = [...rowsWithDates].sort((a, b) => {
+      const ta = new Date(a[dateColName]).getTime();
+      const tb = new Date(b[dateColName]).getTime();
+      if (!isNaN(ta) && !isNaN(tb)) return ta - tb;
+      return String(a[dateColName]).localeCompare(String(b[dateColName]));
+    });
+    const half = Math.floor(sorted.length / 2);
+    priorRows = sorted.slice(0, half);
+    currentRows = sorted.slice(half);
+  } else {
+    const half = Math.floor(rows.length / 2);
+    priorRows = rows.slice(0, half);
+    currentRows = rows.slice(half);
+  }
+
+  const computeForSubset = (subset: Record<string, any>[]): number => {
+    if (subset.length === 0) return 0;
+    if (isCountAll || agg === 'count') return isCountAll ? subset.length : extractNumbers(subset).length;
+    if (agg === 'distinct_count') {
+      const s = new Set(subset.map(r => String(r[colName] ?? '')));
+      s.delete('');
+      return s.size;
+    }
+    const nums = extractNumbers(subset);
+    if (nums.length === 0) return 0;
+    if (agg === 'sum') return nums.reduce((a, b) => a + b, 0);
+    if (agg === 'avg') return nums.reduce((a, b) => a + b, 0) / nums.length;
+    if (agg === 'min') return Math.min(...nums);
+    if (agg === 'max') return Math.max(...nums);
+    return 0;
+  };
+
+  let prevVal: number | undefined;
+  let changePct: number | undefined;
+  if (priorRows.length > 0 && currentRows.length > 0) {
+    const priV = computeForSubset(priorRows);
+    const curV = computeForSubset(currentRows);
+    prevVal = priV;
+    if (priV !== 0) {
+      changePct = Math.round(((curV - priV) / Math.abs(priV)) * 1000) / 10;
+    }
+  }
+
+  // Format value
+  const formatType = params.formatType || (
+    /revenue|sales|profit|cost|expense|price|amount|salary|spend|fee|budget/i.test(colName) ? 'currency' :
+    /pct|percent|rate|ratio|margin/i.test(colName) ? 'percent' :
+    agg === 'count' || agg === 'distinct_count' ? 'integer' :
+    agg === 'avg' ? 'decimal' : 'custom'
+  );
+
+  const applyFormat = (v: number) => {
+    if (formatType === 'currency') {
+      return `$${v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+    }
+    if (formatType === 'percent') {
+      const adjusted = (v >= 0 && v <= 1.0) ? v * 100 : v;
+      return `${adjusted.toFixed(1)}%`;
+    }
+    if (formatType === 'integer') {
+      return `${Math.round(v).toLocaleString()}${params.customUnit ? ` ${params.customUnit}` : ''}`;
+    }
+    if (formatType === 'decimal') {
+      return `${v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${params.customUnit ? ` ${params.customUnit}` : ''}`;
+    }
+    const unitStr = params.customUnit ? ` ${params.customUnit}` : '';
+    return `${v.toLocaleString(undefined, { maximumFractionDigits: 2 })}${unitStr}`;
+  };
+
+  const formattedVal = applyFormat(mainVal);
+  const formattedPrev = prevVal !== undefined ? applyFormat(prevVal) : undefined;
+
+  let status: KPIStatus = 'On Track';
+  if (params.status && params.status !== 'auto') {
+    status = params.status;
+  } else if (changePct !== undefined) {
+    status = changePct >= 5 ? 'Above Target' : changePct < -5 ? 'At Risk' : 'On Track';
+  }
+
+  const daxAgg = agg === 'distinct_count' ? 'DISTINCTCOUNT' : agg.toUpperCase();
+  const daxFormula = isCountAll 
+    ? `COUNTROWS('${tableName}')` 
+    : `${daxAgg}('${tableName}'[${colName}])`;
+
+  return {
+    id: params.id || `kpi-${colName.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${agg}`,
+    name: params.name,
+    value: Math.round(mainVal * 100) / 100,
+    formattedValue: formattedVal,
+    previousValue: prevVal !== undefined ? Math.round(prevVal * 100) / 100 : undefined,
+    formattedPreviousValue: formattedPrev,
+    change: prevVal !== undefined ? Math.round((mainVal - prevVal) * 100) / 100 : undefined,
+    changePercent: changePct,
+    status,
+    period: params.period || (dateColName ? 'Latest Trailing Window vs Prior' : 'Audited Scope Total'),
+    sourceColumn: colName,
+    aggregation: agg,
+    calculation: daxFormula,
+    traceableSource: isCountAll ? `${tableName}.*` : `${tableName}.${colName}`,
+    definition: `Calculated ${agg.toUpperCase()} computed on ${isCountAll ? 'all rows' : colName}.`,
+    formulaExpression: daxFormula,
+    businessImpact: `Tracks ${params.name} across audited records.`,
+    unit: params.customUnit || (formatType === 'currency' ? 'USD ($)' : formatType === 'percent' ? '%' : undefined)
+  };
 }

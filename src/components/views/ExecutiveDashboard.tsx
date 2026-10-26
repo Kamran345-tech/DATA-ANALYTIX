@@ -29,12 +29,16 @@ import {
   Gauge,
   Activity,
   HelpCircle,
-  RefreshCw
+  RefreshCw,
+  Pencil,
+  RotateCcw
 } from 'lucide-react';
+import { KPI } from '../../types';
 import { usePlatform } from '../../store/usePlatformStore';
 import { GlobalFilterBar } from '../common/GlobalFilterBar';
 import { EditableDashboardTitle } from '../common/EditableDashboardTitle';
 import { EditableAnalystName } from '../common/EditableAnalystName';
+import { KpiCardEditorModal } from '../common/KpiCardEditorModal';
 import { Tooltip } from '../common/Tooltip';
 import { generateEnterpriseReportPDF, downloadDashboardAndReportBundle } from '../../engine/exportEngine';
 import { 
@@ -80,10 +84,12 @@ export const ExecutiveDashboard: React.FC = () => {
     setCurrentTab,
     filters,
     setFilters,
-    openDrillThrough
+    openDrillThrough,
+    resetKpisToDefault
   } = usePlatform();
 
   const [activeTab, setActiveTab] = useState<DashboardTab>('overview');
+  const [editingKpi, setEditingKpi] = useState<KPI | null>(null);
   const [isPdfGenerating, setIsPdfGenerating] = useState(false);
   const [isBundleGenerating, setIsBundleGenerating] = useState(false);
   const [downloadSuccess, setDownloadSuccess] = useState<string | null>(null);
@@ -666,217 +672,133 @@ export const ExecutiveDashboard: React.FC = () => {
         </div>
       </section>
 
-      {/* 2. 4 EXECUTIVE KPI CARDS */}
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-        {/* KPI 1: Net Sales Revenue */}
-        <Tooltip
-          side="bottom"
-          title="Net Sales Revenue"
-          tag="Top-Line Invoiced"
-          content="Total invoiced business sales revenue deducting discounts and rebates across the active date and segment scope. Click anywhere on this card to drill down into raw transactions."
-        >
-          <div 
-            onClick={() => {
-              const kpi = analytics.kpis[0];
-              if (kpi) openDrillThrough({ title: kpi.name, subtitle: kpi.definition, kpi, sourceContext: 'kpi_card' });
-            }}
-            className="bg-surface-card rounded-xl p-4 sm:p-5 shadow-lg border border-border-subtle flex flex-col justify-between relative group hover:bg-surface-panel/90 transition-all duration-300 cursor-pointer select-none h-full"
-          >
-            <div className="flex items-center justify-between gap-2">
-              <span className="font-label-caps text-label-caps uppercase text-on-surface-variant tracking-wider font-bold">Net Sales Revenue</span>
-              <span className="px-2 py-0.5 rounded-full bg-cyan-500/15 text-metric-cyan text-label-caps font-label-caps uppercase font-bold tracking-wide flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-metric-cyan" /> On Track
-              </span>
-            </div>
-
-            <div className="my-3 flex items-end justify-between">
-              <div className="flex flex-col">
-                <span className="font-metric-display text-metric-display text-on-surface font-extrabold tracking-tight leading-none">
-                  {analytics.kpis[0]?.formattedValue || '$181.2K'}
-                </span>
-                <div className="flex items-center gap-1 mt-1.5 font-label-sm text-label-sm text-metric-coral">
-                  <ArrowDownRight className="w-3.5 h-3.5" />
-                  <span className="font-bold">-0.8%</span>
-                  <span className="text-on-surface-variant font-normal">vs prior period</span>
-                </div>
-              </div>
-
-              {/* Micro inline Sparkline SVG */}
-              <div className="w-24 h-10">
-                <svg className="w-full h-full stroke-metric-emerald fill-none stroke-2" viewBox="0 0 100 40">
-                  <path d="M 0 30 Q 15 10 30 24 T 60 14 T 85 28 T 100 12" />
-                  <path className="fill-metric-emerald/10 stroke-none" d="M 0 30 Q 15 10 30 24 T 60 14 T 85 28 T 100 12 L 100 40 L 0 40 Z" />
-                </svg>
-              </div>
-            </div>
-
-            <div className="pt-2 border-t border-border-subtle flex items-center justify-between text-on-surface-variant font-label-sm text-label-sm">
-              <span className="truncate max-w-[160px]">Src: {analytics.kpis[0]?.traceableSource || 'FactSales.Discount'}</span>
-              <span className="text-metric-emerald hover:underline flex items-center gap-0.5 font-medium">
-                <span>Current Trailing Window</span>
-                <ExternalLink className="w-3 h-3" />
-              </span>
-            </div>
+      {/* 2. 4 EXECUTIVE KPI CARDS - FULLY DYNAMIC & DATASET-DRIVEN */}
+      <section className="space-y-2.5">
+        <div className="flex items-center justify-between px-1">
+          <div className="flex items-center gap-2">
+            <span className="font-label-caps text-label-caps uppercase tracking-wider text-on-surface-variant font-bold text-[11px]">
+              Executive Performance Telemetry
+            </span>
+            <span className="text-[10px] text-metric-emerald hidden sm:inline font-mono">
+              (Click pencil on any card to change heading & calculation)
+            </span>
           </div>
-        </Tooltip>
-
-        {/* KPI 2: Gross Operating Profit */}
-        <Tooltip
-          side="bottom"
-          title="Gross Operating Profit"
-          tag="Bottom-Line Margins"
-          content="Total financial surplus remaining after deducting Cost of Goods Sold (COGS) from net sales revenue. Click to inspect transaction-level gross margin lines."
-        >
-          <div 
-            onClick={() => {
-              const kpi = analytics.kpis[1];
-              if (kpi) openDrillThrough({ title: kpi.name, subtitle: kpi.definition, kpi, sourceContext: 'kpi_card' });
-            }}
-            className="bg-surface-card rounded-xl p-4 sm:p-5 shadow-lg border border-border-subtle flex flex-col justify-between relative group hover:bg-surface-panel/90 transition-all duration-300 cursor-pointer select-none h-full"
+          <button
+            type="button"
+            onClick={resetKpisToDefault}
+            className="text-[11px] text-on-surface-variant hover:text-metric-emerald flex items-center gap-1 font-mono transition-colors px-2 py-1 rounded hover:bg-surface-elevated"
+            title="Reset all cards to automatic engine calculations"
           >
-            <div className="flex items-center justify-between gap-2">
-              <span className="font-label-caps text-label-caps uppercase text-on-surface-variant tracking-wider font-bold">Gross Operating Profit</span>
-              <span className="px-2 py-0.5 rounded-full bg-cyan-500/15 text-metric-cyan text-label-caps font-label-caps uppercase font-bold tracking-wide flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-metric-cyan" /> On Track
-              </span>
-            </div>
+            <RotateCcw className="w-3 h-3 text-metric-emerald" />
+            <span>Reset Auto Metrics</span>
+          </button>
+        </div>
 
-            <div className="my-3 flex items-end justify-between">
-              <div className="flex flex-col">
-                <span className="font-metric-display text-metric-display text-on-surface font-extrabold tracking-tight leading-none">
-                  {analytics.kpis[1]?.formattedValue || '$-2.04M'}
-                </span>
-                <div className="flex items-center gap-1 mt-1.5 font-label-sm text-label-sm text-metric-coral">
-                  <ArrowDownRight className="w-3.5 h-3.5" />
-                  <span className="font-bold">-0.8%</span>
-                  <span className="text-on-surface-variant font-normal">vs prior period</span>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+          {analytics.kpis.slice(0, 4).map((kpi, kIdx) => {
+            const isPositive = (kpi.changePercent ?? 0) >= 0;
+            const statusTheme = kpi.status === 'Above Target'
+              ? { text: 'text-metric-emerald', bg: 'bg-emerald-500/20', dot: 'bg-metric-emerald', border: 'border-emerald-500/30', stroke: '#00F5A0' }
+              : kpi.status === 'At Risk'
+              ? { text: 'text-metric-coral', bg: 'bg-red-500/20', dot: 'bg-metric-coral', border: 'border-red-500/30', stroke: '#EF4444' }
+              : kpi.status === 'Below Target'
+              ? { text: 'text-metric-amber', bg: 'bg-amber-500/20', dot: 'bg-metric-amber', border: 'border-amber-500/30', stroke: '#F59E0B' }
+              : { text: 'text-metric-cyan', bg: 'bg-cyan-500/15', dot: 'bg-metric-cyan', border: 'border-cyan-500/30', stroke: '#00D2FF' };
+
+            // Micro sparkline path generator
+            const sparklinePaths = [
+              "M 0 28 Q 20 8 38 22 T 68 12 T 85 24 T 100 10",
+              "M 0 14 Q 25 30 45 16 T 75 28 T 100 18",
+              "M 0 32 Q 22 18 42 12 T 72 26 T 100 8",
+              "M 0 20 Q 20 32 50 14 T 80 20 T 100 12"
+            ];
+            const sparkPath = sparklinePaths[kIdx % sparklinePaths.length];
+
+            return (
+              <Tooltip
+                key={kpi.id || kIdx}
+                side="bottom"
+                title={kpi.name}
+                tag={kpi.unit || 'Metric'}
+                content={`${kpi.definition} Click anywhere to drill down into records. Click pencil icon to customize heading & calculation.`}
+              >
+                <div 
+                  onClick={() => {
+                    openDrillThrough({ title: kpi.name, subtitle: kpi.definition, kpi, sourceContext: 'kpi_card' });
+                  }}
+                  className="bg-surface-card rounded-xl p-4 sm:p-5 shadow-lg border border-border-subtle flex flex-col justify-between relative group hover:bg-surface-panel/90 transition-all duration-300 cursor-pointer select-none h-full"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="font-label-caps text-label-caps uppercase text-on-surface-variant tracking-wider font-bold truncate max-w-[130px] sm:max-w-[155px]" title={kpi.name}>
+                        {kpi.name}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingKpi(kpi);
+                        }}
+                        className="p-1 rounded hover:bg-surface-elevated text-on-surface-variant hover:text-[#21F1A8] transition-colors shrink-0 group-hover:opacity-100 opacity-60"
+                        title="Customize heading, column & calculation formula"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    <span className={`px-2 py-0.5 rounded-full ${statusTheme.bg} ${statusTheme.text} text-label-caps font-label-caps uppercase font-bold tracking-wide flex items-center gap-1 shrink-0`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${statusTheme.dot}`} /> {kpi.status}
+                    </span>
+                  </div>
+
+                  <div className="my-3 flex items-end justify-between gap-2">
+                    <div className="flex flex-col min-w-0">
+                      <span className="font-metric-display text-metric-display text-on-surface font-extrabold tracking-tight leading-none truncate" title={kpi.formattedValue}>
+                        {kpi.formattedValue}
+                      </span>
+                      <div className="flex items-center gap-1 mt-1.5 font-label-sm text-label-sm">
+                        {kpi.changePercent !== undefined ? (
+                          <>
+                            {isPositive ? (
+                              <ArrowUpRight className="w-3.5 h-3.5 text-metric-emerald" />
+                            ) : (
+                              <ArrowDownRight className="w-3.5 h-3.5 text-metric-coral" />
+                            )}
+                            <span className={`font-bold ${isPositive ? 'text-metric-emerald' : 'text-metric-coral'}`}>
+                              {isPositive ? '+' : ''}{kpi.changePercent}%
+                            </span>
+                            <span className="text-on-surface-variant font-normal">vs prior window</span>
+                          </>
+                        ) : (
+                          <span className="text-on-surface-variant font-normal text-[11px] font-mono">
+                            Formula: {kpi.aggregation.toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Micro inline Sparkline SVG */}
+                    <div className="w-20 sm:w-24 h-10 shrink-0">
+                      <svg className="w-full h-full fill-none stroke-2" viewBox="0 0 100 40">
+                        <path d={sparkPath} stroke={statusTheme.stroke} />
+                        <path className="fill-current stroke-none opacity-10" d={`${sparkPath} L 100 40 L 0 40 Z`} style={{ color: statusTheme.stroke }} />
+                      </svg>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-border-subtle flex items-center justify-between text-on-surface-variant font-label-sm text-label-sm">
+                    <span className="truncate max-w-[150px]" title={kpi.traceableSource}>
+                      Src: {kpi.traceableSource}
+                    </span>
+                    <span className={`${statusTheme.text} hover:underline flex items-center gap-0.5 font-medium shrink-0`}>
+                      <span>{kpi.period || 'Audited Scope'}</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </span>
+                  </div>
                 </div>
-              </div>
-
-              <div className="w-24 h-10">
-                <svg className="w-full h-full stroke-metric-cyan fill-none stroke-2" viewBox="0 0 100 40">
-                  <path d="M 0 15 Q 20 28 40 18 T 70 32 T 100 20" />
-                  <path className="fill-metric-cyan/10 stroke-none" d="M 0 15 Q 20 28 40 18 T 70 32 T 100 20 L 100 40 L 0 40 Z" />
-                </svg>
-              </div>
-            </div>
-
-            <div className="pt-2 border-t border-border-subtle flex items-center justify-between text-on-surface-variant font-label-sm text-label-sm">
-              <span className="truncate max-w-[160px]">Src: {analytics.kpis[1]?.traceableSource || 'FactSales.GrossProfit'}</span>
-              <span className="text-metric-cyan hover:underline flex items-center gap-0.5 font-medium">
-                <span>Current Trailing Window</span>
-                <ExternalLink className="w-3 h-3" />
-              </span>
-            </div>
-          </div>
-        </Tooltip>
-
-        {/* KPI 3: Gross Margin % */}
-        <Tooltip
-          side="bottom"
-          title="Gross Margin Ratio"
-          tag="Cost Efficiency"
-          content="Percentage of every revenue dollar retained after direct product costs (COGS = 46.7%, Retained Margin = 53.3%). Click for drill-through rows."
-        >
-          <div 
-            onClick={() => {
-              const kpi = analytics.kpis[2];
-              if (kpi) openDrillThrough({ title: kpi.name, subtitle: kpi.definition, kpi, sourceContext: 'kpi_card' });
-            }}
-            className="bg-surface-card rounded-xl p-4 sm:p-5 shadow-lg border border-border-subtle flex flex-col justify-between relative group hover:bg-surface-panel/90 transition-all duration-300 cursor-pointer select-none h-full"
-          >
-            <div className="flex items-center justify-between gap-2">
-              <span className="font-label-caps text-label-caps uppercase text-on-surface-variant tracking-wider font-bold">Gross Margin %</span>
-              <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-metric-emerald text-label-caps font-label-caps uppercase font-bold tracking-wide flex items-center gap-1 shadow-[0_0_12px_rgba(0,245,160,0.2)]">
-                <span className="w-1.5 h-1.5 rounded-full bg-metric-emerald" /> Above Target
-              </span>
-            </div>
-
-            <div className="my-3 flex items-end justify-between">
-              <div className="flex flex-col">
-                <span className="font-metric-display text-metric-display text-metric-emerald font-extrabold tracking-tight leading-none">
-                  {analytics.kpis[2]?.formattedValue || '53.3%'}
-                </span>
-                <div className="flex items-center gap-1 mt-1.5 font-label-sm text-label-sm text-metric-emerald">
-                  <TrendingUp className="w-3.5 h-3.5" />
-                  <span className="font-bold">+2.4 pts</span>
-                  <span className="text-on-surface-variant font-normal">pacing index</span>
-                </div>
-              </div>
-
-              <div className="w-24 flex flex-col gap-1.5">
-                <div className="flex justify-between font-label-caps text-label-caps text-on-surface-variant">
-                  <span>COGS</span>
-                  <span>46.7%</span>
-                </div>
-                <div className="w-full h-2 rounded-full bg-surface-elevated overflow-hidden flex border border-border-subtle">
-                  <div className="h-full bg-metric-emerald" style={{ width: '53.3%' }} />
-                  <div className="h-full bg-surface-panel" style={{ width: '46.7%' }} />
-                </div>
-              </div>
-            </div>
-
-            <div className="pt-2 border-t border-border-subtle flex items-center justify-between text-on-surface-variant font-label-sm text-label-sm">
-              <span className="truncate max-w-[160px]">Src: {analytics.kpis[2]?.traceableSource || 'FactSales.GrossMargin'}</span>
-              <span className="text-metric-emerald hover:underline flex items-center gap-0.5 font-medium">
-                <span>Weighted Average</span>
-                <ExternalLink className="w-3 h-3" />
-              </span>
-            </div>
-          </div>
-        </Tooltip>
-
-        {/* KPI 4: Total Units Dispatched */}
-        <Tooltip
-          side="bottom"
-          title="Total Units Dispatched"
-          tag="Volume Throughput"
-          content="Total physical or licensed units fulfilled across all product lines. Helps track supply chain velocity and order batch sizes. Click to inspect drill-through."
-        >
-          <div 
-            onClick={() => {
-              const kpi = analytics.kpis[3];
-              if (kpi) openDrillThrough({ title: kpi.name, subtitle: kpi.definition, kpi, sourceContext: 'kpi_card' });
-            }}
-            className="bg-surface-card rounded-xl p-4 sm:p-5 shadow-lg border border-border-subtle flex flex-col justify-between relative group hover:bg-surface-panel/90 transition-all duration-300 cursor-pointer select-none h-full"
-          >
-            <div className="flex items-center justify-between gap-2">
-              <span className="font-label-caps text-label-caps uppercase text-on-surface-variant tracking-wider font-bold">Total Units Dispatched</span>
-              <span className="px-2 py-0.5 rounded-full bg-amber-500/15 text-metric-amber text-label-caps font-label-caps uppercase font-bold tracking-wide flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-metric-amber" /> Below Target
-              </span>
-            </div>
-
-            <div className="my-3 flex items-end justify-between">
-              <div className="flex flex-col">
-                <span className="font-metric-display text-metric-display text-on-surface font-extrabold tracking-tight leading-none">
-                  {analytics.kpis[3]?.formattedValue || '1,480'} <span className="font-body-md text-body-md text-on-surface-variant font-normal">units</span>
-                </span>
-                <div className="flex items-center gap-1 mt-1.5 font-label-sm text-label-sm text-metric-coral">
-                  <ArrowDownRight className="w-3.5 h-3.5" />
-                  <span className="font-bold">-1.3%</span>
-                  <span className="text-on-surface-variant font-normal">vs prior period</span>
-                </div>
-              </div>
-
-              <div className="w-24 h-10 flex items-end gap-1 px-1">
-                <div className="flex-1 bg-surface-elevated rounded-t h-[60%]" />
-                <div className="flex-1 bg-surface-elevated rounded-t h-[80%]" />
-                <div className="flex-1 bg-surface-elevated rounded-t h-[75%]" />
-                <div className="flex-1 bg-metric-amber/70 rounded-t h-[95%]" />
-                <div className="flex-1 bg-metric-amber rounded-t h-[65%]" />
-              </div>
-            </div>
-
-            <div className="pt-2 border-t border-border-subtle flex items-center justify-between text-on-surface-variant font-label-sm text-label-sm">
-              <span className="truncate max-w-[160px]">Src: {analytics.kpis[3]?.traceableSource || 'FactSales.Units'}</span>
-              <span className="text-metric-amber hover:underline flex items-center gap-0.5 font-medium">
-                <span>Latest vs Prior</span>
-                <ExternalLink className="w-3 h-3" />
-              </span>
-            </div>
-          </div>
-        </Tooltip>
+              </Tooltip>
+            );
+          })}
+        </div>
       </section>
 
       {/* 3. TAB CONTENT RENDERING */}
@@ -1366,16 +1288,18 @@ export const ExecutiveDashboard: React.FC = () => {
               </div>
               <div className="flex-1 flex flex-col gap-0.5">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-headline-sm text-headline-sm text-on-surface font-bold">Outlier Magnitude in Discount Amount</span>
+                  <span className="font-headline-sm text-headline-sm text-on-surface font-bold">
+                    {primaryAnomaly ? primaryAnomaly.title : 'Statistical Dispersion Audit'}
+                  </span>
                   <span className="px-1.5 py-0.5 rounded bg-red-500/20 text-metric-coral font-label-caps text-label-caps uppercase font-bold tracking-wider">
-                    CRITICAL
+                    {primaryAnomaly?.severity ? primaryAnomaly.severity.toUpperCase() : 'AUDITED'}
                   </span>
                 </div>
                 <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
-                  Detected 10 statistical outliers exceeding 1.5x Interquartile Range (IQR).
+                  {primaryAnomaly ? primaryAnomaly.reason : 'All numerical distributions conform to standard statistical limits.'}
                 </p>
                 <p className="font-body-sm text-body-sm text-metric-coral font-medium mt-1">
-                  Action: Inspect individual transaction records or apply Winsorization/clipping at upper percentile.
+                  Action: {primaryAnomaly ? primaryAnomaly.recommendedAction : 'Continue periodic data hygiene and schema validation checks.'}
                 </p>
               </div>
             </div>
@@ -1387,16 +1311,18 @@ export const ExecutiveDashboard: React.FC = () => {
               </div>
               <div className="flex-1 flex flex-col gap-0.5">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-headline-sm text-headline-sm text-on-surface font-bold">Scale High-Yield Segment: Starlight Telecom</span>
+                  <span className="font-headline-sm text-headline-sm text-on-surface font-bold">
+                    {primaryOpportunity ? primaryOpportunity.title : 'Segment Optimization Directive'}
+                  </span>
                   <span className="px-1.5 py-0.5 rounded bg-[#00F5A0]/20 text-metric-emerald font-label-caps text-label-caps uppercase font-bold tracking-wider">
-                    PRIORITY: HIGH
+                    {primaryOpportunity?.priority ? `PRIORITY: ${primaryOpportunity.priority.toUpperCase()}` : 'OPTIMAL'}
                   </span>
                 </div>
                 <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
-                  Captures 10.5% of total volume; 10% expansion yields +16 incremental output.
+                  {primaryOpportunity ? primaryOpportunity.potentialImpact : 'Active data segments demonstrate balanced proportional distribution.'}
                 </p>
                 <p className="font-body-sm text-body-sm text-metric-emerald font-medium mt-1">
-                  Next Step: Double down on operational and marketing investment for Starlight Telecom.
+                  Next Step: {primaryOpportunity ? primaryOpportunity.action : 'Inspect categorical distributions in Pareto analysis.'}
                 </p>
               </div>
             </div>
@@ -1785,6 +1711,15 @@ export const ExecutiveDashboard: React.FC = () => {
         <StatisticalBoxplotInspector
           rows={filteredRows}
           columns={columns}
+        />
+      )}
+
+      {/* KPI Card Customizer & Heading Editor Modal */}
+      {editingKpi && (
+        <KpiCardEditorModal
+          isOpen={true}
+          kpi={editingKpi}
+          onClose={() => setEditingKpi(null)}
         />
       )}
     </div>

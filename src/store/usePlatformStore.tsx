@@ -19,10 +19,11 @@ import { profileDataset } from '../engine/dataProfiler';
 import { evaluateDataQuality } from '../engine/dataQuality';
 import { applyTransformation, replayTransformations } from '../engine/transformationEngine';
 import { buildDataModel } from '../engine/dataModeler';
-import { computeAnalytics, AnalyticsSummary } from '../engine/analyticsEngine';
+import { computeAnalytics, AnalyticsSummary, calculateKpiFromParameters, CustomKpiParams } from '../engine/analyticsEngine';
 import { generateDAXMeasures } from '../engine/daxEngine';
 import { registerTablesInSQL } from '../engine/sqlEngine';
 import { DEMO_DATASETS, DemoDatasetInfo } from '../data/demoDatasets';
+import { toast } from './useToast';
 
 export type NavigationTab = 
   | 'landing'
@@ -68,6 +69,16 @@ export interface GlobalFilterState {
   searchQuery: string;
 }
 
+export interface ReportHeadings {
+  mainTitle: string;
+  subtitle?: string;
+  section1: string;
+  section2: string;
+  section3: string;
+  section4: string;
+  section5: string;
+}
+
 export interface PlatformContextType {
   currentTab: NavigationTab;
   setCurrentTab: (tab: NavigationTab) => void;
@@ -86,6 +97,15 @@ export interface PlatformContextType {
   brand: BrandConfig;
   setBrand: (b: BrandConfig) => void;
   updateProjectMetadata: (updates: Partial<ProjectMetadata>) => void;
+
+  // Editable Report Headings
+  reportHeadings: ReportHeadings;
+  updateReportHeading: (section: keyof ReportHeadings, newTitle: string) => void;
+
+  // KPI Customization & Heading Management
+  updateKpi: (kpiId: string, updates: Partial<KPI>) => void;
+  recalculateKpiCard: (kpiId: string, params: CustomKpiParams) => void;
+  resetKpisToDefault: () => void;
 
   // Data state
   rawRows: Record<string, any>[];
@@ -158,7 +178,7 @@ const getInitialAuthor = (): string => {
 };
 
 const defaultBrand: BrandConfig = {
-  companyName: 'Badar Analytics Technologies',
+  companyName: 'Analytics Technologies',
   tagline: 'Autonomous AI Data Intelligence & Performance Center',
   department: 'Strategic Analytics & BI',
   author: getInitialAuthor(),
@@ -170,7 +190,7 @@ const defaultBrand: BrandConfig = {
 const defaultProject: ProjectMetadata = {
   id: 'proj-001',
   name: 'Global Enterprise Technology Sales & Margin Telemetry',
-  companyName: 'Badar Analytics Technologies',
+  companyName: 'Analytics Technologies',
   department: 'Strategic Analytics & BI',
   author: getInitialAuthor(),
   createdAt: new Date().toISOString(),
@@ -233,6 +253,72 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const [project, setProject] = useState<ProjectMetadata>(defaultProject);
   const [brand, setBrand] = useState<BrandConfig>(defaultBrand);
+
+  const defaultReportHeadings: ReportHeadings = {
+    mainTitle: 'EXECUTIVE INTELLIGENCE BRIEF',
+    section1: '1. EXECUTIVE SUMMARY & BUSINESS HEALTH',
+    section2: '2. KEY PERFORMANCE INDICATORS',
+    section3: '3. AI INSIGHTS & MANAGEMENT DIRECTIVES',
+    section4: '4. ATTACHED DASHBOARDS & SEGMENT BREAKDOWNS',
+    section5: '5. DATA QUALITY AUDIT & GOVERNANCE'
+  };
+
+  const [reportHeadings, setReportHeadings] = useState<ReportHeadings>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('acuitybi_report_headings');
+      if (saved) {
+        try {
+          return { ...defaultReportHeadings, ...JSON.parse(saved) };
+        } catch {}
+      }
+    }
+    return defaultReportHeadings;
+  });
+
+  const updateReportHeading = (section: keyof ReportHeadings, newTitle: string) => {
+    setReportHeadings(prev => {
+      const updated = { ...prev, [section]: newTitle };
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('acuitybi_report_headings', JSON.stringify(updated));
+      }
+      return updated;
+    });
+    logAction('HEADING_UPDATED', `Updated report heading [${section}] to "${newTitle}".`);
+  };
+
+  const updateKpi = (kpiId: string, updates: Partial<KPI>) => {
+    setAnalytics(prev => ({
+      ...prev,
+      kpis: prev.kpis.map(k => k.id === kpiId ? { ...k, ...updates } : k)
+    }));
+    logAction('KPI_UPDATED', `Updated KPI card "${updates.name || kpiId}".`);
+  };
+
+  const recalculateKpiCard = (kpiId: string, params: CustomKpiParams) => {
+    const tableName = dataModel.tables[0]?.name || 'FactTable';
+    const dateCol = columns.find(c => c.dataType === 'date')?.name;
+    const newKpi = calculateKpiFromParameters(
+      { ...params, id: kpiId },
+      cleanRows,
+      dateCol,
+      tableName
+    );
+    setAnalytics(prev => ({
+      ...prev,
+      kpis: prev.kpis.map(k => k.id === kpiId ? newKpi : k)
+    }));
+    logAction('KPI_RECALCULATED', `Recalculated KPI "${params.name}" (${params.aggregation.toUpperCase()} on ${params.sourceColumn}).`);
+  };
+
+  const resetKpisToDefault = () => {
+    const tableName = dataModel.tables[0]?.name || 'FactTable';
+    const anal = computeAnalytics(columns, cleanRows, tableName);
+    setAnalytics(prev => ({
+      ...prev,
+      kpis: anal.kpis
+    }));
+    logAction('KPI_RESET', 'Reset KPI cards to automated engine defaults.');
+  };
 
   const [rawRows, setRawRows] = useState<Record<string, any>[]>([]);
   const [cleanRows, setCleanRows] = useState<Record<string, any>[]>([]);
@@ -363,28 +449,43 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     });
 
     logAction('DEMO_LOADED', `Loaded demo dataset "${demo.name}" with ${typed.length} rows.`);
+    toast.success(
+      `Dataset Loaded: ${demo.name}`,
+      `Successfully loaded ${typed.length.toLocaleString()} rows with verified Star Schema & DAX measures.`,
+      {
+        stage: 'Live Telemetry Active',
+        action: {
+          label: 'View Dashboard',
+          onClick: () => setCurrentTab('executive_dashboard')
+        }
+      }
+    );
   }
 
   async function ingestFile(file: File) {
     setIsProcessing(true);
     setError(null);
     setPipelineStep('Ingesting & parsing raw bytes...');
+    const toastId = 'ingestion_' + Date.now();
+    toast.progress(toastId, 15, 'Stage 1/5: Ingesting', `Parsing raw bytes for "${file.name}"...`);
 
     try {
       const parsed = await parseFile(file);
       setPipelineStep('Profiling column data types & distribution...');
+      toast.progress(toastId, 35, 'Stage 2/5: Profiling', `Evaluating distributions across ${parsed.columns.length} columns...`);
       const prof = profileDataset(parsed.columns, parsed.rows, parsed.detectedTypes);
 
       setPipelineStep('Auditing data quality & completeness...');
+      toast.progress(toastId, 55, 'Stage 3/5: Quality Audit', `Auditing anomalies across ${parsed.rows.length.toLocaleString()} rows...`);
       const qual = evaluateDataQuality(prof, parsed.rows);
 
       setPipelineStep('Constructing relational Star Schema data model...');
+      toast.progress(toastId, 75, 'Stage 4/5: Star Schema Modeling', 'Partitioning facts and dimensions with primary-foreign relationships...');
       const model = buildDataModel(parsed.tableName, prof, parsed.rows);
 
       setPipelineStep('Computing statistical KPIs, trends & anomaly vectors...');
+      toast.progress(toastId, 90, 'Stage 5/5: Telemetry Synthesis', 'Synthesizing time intelligence DAX formulas and SQL bindings...');
       const anal = computeAnalytics(prof, parsed.rows, parsed.tableName);
-
-      setPipelineStep('Synthesizing enterprise DAX & SQL schema bindings...');
       const dax = generateDAXMeasures(parsed.tableName, prof, model.tables);
 
       registerTablesInSQL([
@@ -422,10 +523,21 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       logAction('FILE_UPLOADED', `Uploaded user dataset: ${parsed.fileName} (${parsed.rows.length} rows, ${parsed.columns.length} columns).`);
 
       setPipelineStep('Analysis pipeline ready!');
+      toast.complete(
+        toastId, 
+        'Data Ingestion Complete', 
+        `Successfully ingested "${parsed.fileName}" (${parsed.rows.length.toLocaleString()} rows, ${parsed.columns.length} columns) with Star Schema & DAX generated.`,
+        {
+          label: 'Open Dashboard',
+          onClick: () => setCurrentTab('executive_dashboard')
+        }
+      );
       setCurrentTab('executive_dashboard');
     } catch (err: any) {
       console.error('Ingestion error:', err);
-      setError(err?.message || 'Failed to ingest and analyze file.');
+      const errMsg = err?.message || 'Failed to ingest and analyze file.';
+      setError(errMsg);
+      toast.error('Data Ingestion Failed', errMsg, { id: toastId });
     } finally {
       setIsProcessing(false);
     }
@@ -916,6 +1028,11 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         brand,
         setBrand,
         updateProjectMetadata,
+        reportHeadings,
+        updateReportHeading,
+        updateKpi,
+        recalculateKpiCard,
+        resetKpisToDefault,
         rawRows,
         cleanRows,
         columns,

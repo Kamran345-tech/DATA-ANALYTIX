@@ -3,12 +3,75 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      (function() {
+        // Intercept and cleanly handle harmless Vite HMR WebSocket reconnection logs in containerized sandbox
+        window.addEventListener('unhandledrejection', function(event) {
+          var msg = (event && event.reason && (event.reason.message || event.reason.stack || String(event.reason))) || '';
+          if (msg.indexOf('WebSocket') !== -1 || msg.indexOf('websocket') !== -1) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+          }
+        }, true);
+        window.addEventListener('error', function(event) {
+          var msg = (event && (event.message || String(event))) || '';
+          if (msg.indexOf('WebSocket') !== -1 || msg.indexOf('websocket') !== -1) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+          }
+        }, true);
+      })();
+    </script>
     <title>AcuityBI - Autonomous AI Data Analyst & BI Engineering Platform</title>
     <meta name="description" content="AcuityBI is an enterprise-grade AI Data Analyst platform that ingests raw business data, automatically performs profiling, quality auditing, cleaning, star/snowflake modeling, statistical KPI calculation, interactive dashboards, DAX/SQL/Python generation, Power BI PBIP exports, and grounded AI decision support." />
-    <meta property="og:title" content="AcuityBI - Autonomous AI Data Analyst & BI Engineering Platform" />
-    <meta property="og:description" content="AcuityBI is an enterprise-grade AI Data Analyst platform that ingests raw business data, automatically performs profiling, quality auditing, cleaning, star/snowflake modeling, statistical KPI calculation, interactive dashboards, DAX/SQL/Python generation, Power BI PBIP exports, and grounded AI decision support." />
+    <meta name="keywords" content="AcuityBI, AI Data Analyst, Business Intelligence, Star Schema, DAX Generator, Power BI PBIP, SQL Workbench, Data Profiling, Telemetry, Kamran Badar, Analytics Technologies" />
+    <meta name="author" content="Kamran Badar | Analytics Technologies" />
+    <meta name="robots" content="index, follow" />
+    <meta name="theme-color" content="#0e1828" />
+    
+    <!-- OpenGraph Social Cards -->
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="AcuityBI" />
+    <meta property="og:title" content="AcuityBI - Autonomous AI Data Analyst & BI Engineering Platform" />
+    <meta property="og:description" content="Enterprise-grade AI Data Analyst platform that ingests raw business data, performs profiling, auto-models star schemas, generates verified DAX/SQL, and exports Power BI PBIP packages." />
+    
+    <!-- Twitter Social Cards -->
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="AcuityBI - Autonomous AI Data Analyst & BI Engineering Platform" />
+    <meta name="twitter:description" content="Autonomous AI Data Analyst platform developed by Kamran Badar (Analytics Technologies) for star schemas, DAX/SQL generation, and Power BI PBIP." />
+    
+    <!-- Schema.org Structured Data (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "AcuityBI",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "All",
+      "description": "Autonomous AI Data Analyst and Business Intelligence engineering platform that automates profiling, Star Schema dimensional modeling, DAX/SQL code generation, and Power BI PBIP exports.",
+      "author": {
+        "@type": "Person",
+        "name": "Kamran Badar",
+        "worksFor": {
+          "@type": "Organization",
+          "name": "Analytics Technologies"
+        }
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "featureList": [
+        "Automated Data Profiling and Hygiene Auditing",
+        "Star Schema and Snowflake Dimensional Modeling",
+        "Verified DAX Measure Generation with Time Intelligence",
+        "In-Browser SQL & Python Sandbox Execution",
+        "Export to Microsoft Power BI PBIP format",
+        "Executive PDF Briefings and C-Suite Presentations"
+      ]
+    }
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
