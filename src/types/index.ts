@@ -99,6 +99,8 @@ export interface Relationship {
   crossFilterDirection: 'single' | 'both';
   isValid: boolean;
   warning?: string;
+  isActive?: boolean;
+  integrityScore?: number;
 }
 
 export interface DataModel {

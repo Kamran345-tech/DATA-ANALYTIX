@@ -124,7 +124,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return res.user;
     } catch (err: any) {
       console.error('Google Sign-In Error:', err);
-      setAuthError(err?.message || 'Google sign-in failed');
+      if (err?.code === 'auth/unauthorized-domain' || err?.message?.includes('unauthorized-domain')) {
+        const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
+        setAuthError(
+          `Domain "${hostname}" is not authorized in Firebase Console yet. Please add "${hostname}" in Firebase Console > Authentication > Settings > Authorized Domains, or continue with Email/Password or Guest mode.`
+        );
+      } else {
+        setAuthError(err?.message || 'Google sign-in failed');
+      }
       throw err;
     }
   };

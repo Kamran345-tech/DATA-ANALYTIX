@@ -535,12 +535,99 @@ html.theme-light body,
 /* 10. INTERACTIVE SVG CHARTS & DIAGRAMS                                      */
 /* ========================================================================== */
 .theme-light svg text {
-  fill: #334155 !important;
-  font-weight: 500;
+  fill: #1e293b !important;
+  font-weight: 600 !important;
 }
 
 .theme-light svg line {
-  stroke: #e2e8f0 !important;
+  stroke: #cbd5e1 !important;
+}
+
+/* Dots, points, and node circles */
+.theme-light svg circle[fill="#141414"],
+.theme-light svg circle[fill="#1c1c1c"],
+.theme-light svg circle[fill="#0f172a"],
+.theme-light svg circle[fill="#0B0F17"],
+.theme-light svg circle[fill="#111827"] {
+  fill: #ffffff !important;
+  stroke: #059669 !important;
+  stroke-width: 2.5px !important;
+}
+
+.theme-light svg circle[fill="#21F1A8"],
+.theme-light svg circle[fill="#00F5A0"],
+.theme-light svg circle[fill="#10B981"] {
+  fill: #059669 !important;
+}
+
+.theme-light svg circle[fill="#00D2FF"],
+.theme-light svg circle[fill="#00d8f6"],
+.theme-light svg circle[fill="#38BDF8"] {
+  fill: #0284c7 !important;
+}
+
+.theme-light svg circle[stroke="#21F1A8"],
+.theme-light svg circle[stroke="#00F5A0"] {
+  stroke: #059669 !important;
+}
+
+.theme-light svg circle[stroke="#00D2FF"],
+.theme-light svg circle[stroke="#00d8f6"] {
+  stroke: #0284c7 !important;
+}
+
+.theme-light svg circle[stroke="#fbbf24"],
+.theme-light svg circle[stroke="#F59E0B"] {
+  stroke: #b45309 !important;
+}
+
+/* Lines & Paths */
+.theme-light svg path[stroke="#00F5A0"],
+.theme-light svg path[stroke="#21F1A8"],
+.theme-light svg path[stroke="#10B981"] {
+  stroke: #059669 !important;
+}
+
+.theme-light svg path[stroke="#00D2FF"],
+.theme-light svg path[stroke="#00d8f6"],
+.theme-light svg path[stroke="#38BDF8"] {
+  stroke: #0284c7 !important;
+}
+
+.theme-light svg path[stroke="#F59E0B"],
+.theme-light svg path[stroke="#f59e0b"],
+.theme-light svg path[stroke="#fbbf24"] {
+  stroke: #b45309 !important;
+}
+
+.theme-light svg path[stroke="#EF4444"],
+.theme-light svg path[stroke="#ef4444"],
+.theme-light svg path[stroke="#F43F5E"] {
+  stroke: #dc2626 !important;
+}
+
+/* Rectangles & Bars */
+.theme-light svg rect[fill="#21F1A8"],
+.theme-light svg rect[fill="#00F5A0"],
+.theme-light svg rect[fill="#10B981"] {
+  fill: #059669 !important;
+}
+
+.theme-light svg rect[fill="#00D2FF"],
+.theme-light svg rect[fill="#00d8f6"],
+.theme-light svg rect[fill="#38BDF8"] {
+  fill: #0284c7 !important;
+}
+
+/* Gradients */
+.theme-light stop[stop-color="#21F1A8"],
+.theme-light stop[stop-color="#00F5A0"] {
+  stop-color: #059669 !important;
+}
+
+.theme-light stop[stop-color="#00D2FF"],
+.theme-light stop[stop-color="#00d8f6"] {
+  stop-color: #0284c7 !important;
 }
 
 .theme-light .recharts-cartesian-grid line {
@@ -552,7 +639,7 @@ html.theme-light body,
   background-color: #ffffff !important;
   color: #0f172a !important;
   border: 1px solid #cbd5e1 !important;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1) !important;
 }
 
 /* Glow effects in light mode */

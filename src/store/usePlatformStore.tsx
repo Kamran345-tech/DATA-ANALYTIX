@@ -12,7 +12,8 @@ import {
   AIInsight,
   DataType,
   DrillThroughBreadcrumb,
-  DrillThroughState
+  DrillThroughState,
+  Relationship
 } from '../types';
 import { inferTypes, castRows, parseFile } from '../engine/dataParser';
 import { profileDataset } from '../engine/dataProfiler';
@@ -115,6 +116,11 @@ export interface PlatformContextType {
   qualityReport: DataQualityReport;
   transformations: TransformationStep[];
   dataModel: DataModel;
+  setDataModel: React.Dispatch<React.SetStateAction<DataModel>>;
+  addRelationship: (rel: Omit<Relationship, 'id'>) => void;
+  deleteRelationship: (id: string) => void;
+  updateRelationship: (id: string, updates: Partial<Relationship>) => void;
+  resetRelationshipsToDefault: () => void;
   analytics: AnalyticsSummary;
   daxMeasures: DAXMeasure[];
 
@@ -984,6 +990,51 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     logAction('DRILL_THROUGH_APPLY_FILTER', `Applied drill-through slice as global dashboard filter`);
   }
 
+  // --- Data Model & Relationship Actions ---
+  const addRelationship = (newRel: Omit<Relationship, 'id'>) => {
+    const id = `rel-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    const relationship: Relationship = {
+      ...newRel,
+      id,
+      isActive: newRel.isActive ?? true
+    };
+    setDataModel(prev => ({
+      ...prev,
+      relationships: [...prev.relationships, relationship]
+    }));
+    logAction('ADD_RELATIONSHIP', `Linked ${relationship.sourceTable}[${relationship.sourceColumn}] to ${relationship.targetTable}[${relationship.targetColumn}]`);
+    toast.success('Relationship Connected', `Created ${relationship.cardinality} link between ${relationship.sourceTable} and ${relationship.targetTable}.`);
+  };
+
+  const deleteRelationship = (id: string) => {
+    const target = dataModel.relationships.find(r => r.id === id);
+    setDataModel(prev => ({
+      ...prev,
+      relationships: prev.relationships.filter(r => r.id !== id)
+    }));
+    if (target) {
+      logAction('DELETE_RELATIONSHIP', `Removed link between ${target.sourceTable} and ${target.targetTable}`);
+    }
+    toast.info('Relationship Removed', 'The foreign key constraint has been unlinked.');
+  };
+
+  const updateRelationship = (id: string, updates: Partial<Relationship>) => {
+    setDataModel(prev => ({
+      ...prev,
+      relationships: prev.relationships.map(r => r.id === id ? { ...r, ...updates } : r)
+    }));
+    logAction('UPDATE_RELATIONSHIP', `Updated relationship ${id} attributes`);
+    toast.success('Relationship Updated', 'Cardinality and cross-filtering rules have been updated.');
+  };
+
+  const resetRelationshipsToDefault = () => {
+    const mainName = dataModel.tables[0]?.name || 'FactTable';
+    const fresh = buildDataModel(mainName, columns, cleanRows);
+    setDataModel(fresh);
+    logAction('RESET_RELATIONSHIPS', 'Reset Star Schema relationships to auto-detected structure');
+    toast.info('Model Restored', 'Auto-detected star schema entities and foreign key mappings restored.');
+  };
+
   // Filtered rows for global cross filtering (RULE 43, 44)
   const filteredRows = React.useMemo(() => {
     let result = cleanRows;
@@ -1040,6 +1091,11 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         qualityReport,
         transformations,
         dataModel,
+        setDataModel,
+        addRelationship,
+        deleteRelationship,
+        updateRelationship,
+        resetRelationshipsToDefault,
         analytics,
         daxMeasures,
         filters,
