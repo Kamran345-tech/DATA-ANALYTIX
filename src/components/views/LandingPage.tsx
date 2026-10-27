@@ -88,7 +88,11 @@ export const LandingPage: React.FC = () => {
               }`}
             >
               <span>EXPLORE LIVE DASHBOARD</span>
-              <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-mono font-semibold border border-emerald-500/30">
+              <span className={`text-[11px] px-2.5 py-0.5 rounded-full font-mono font-extrabold tracking-wider border shadow-xs ${
+                isLight
+                  ? 'bg-emerald-400 text-slate-950 border-emerald-300'
+                  : 'bg-emerald-400 text-slate-950 border-emerald-300'
+              }`}>
                 ACTIVE MODEL
               </span>
             </button>

@@ -337,42 +337,54 @@ html.theme-light body,
   color: #0f172a;
 }
 
-/* Ensure buttons and badges with dark/colored backgrounds keep pure white text */
+/* Ensure buttons with dark/colored backgrounds have pure white text */
 .theme-light button.bg-emerald-600,
-.theme-light button.bg-emerald-600 *,
 .theme-light button.bg-emerald-700,
-.theme-light button.bg-emerald-700 *,
 .theme-light button.bg-emerald-800,
-.theme-light button.bg-emerald-800 *,
 .theme-light button.bg-blue-600,
-.theme-light button.bg-blue-600 *,
 .theme-light button.bg-red-600,
-.theme-light button.bg-red-600 *,
 .theme-light button.bg-purple-600,
-.theme-light button.bg-purple-600 *,
 .theme-light button.bg-slate-900,
-.theme-light button.bg-slate-900 *,
 .theme-light button.bg-slate-800,
-.theme-light button.bg-slate-800 *,
 .theme-light button.bg-black,
-.theme-light button.bg-black *,
 .theme-light .bg-emerald-600,
-.theme-light .bg-emerald-600 *,
 .theme-light .bg-emerald-700,
-.theme-light .bg-emerald-700 *,
 .theme-light .bg-emerald-800,
-.theme-light .bg-emerald-800 *,
 .theme-light .bg-slate-900,
-.theme-light .bg-slate-900 *,
 .theme-light .bg-slate-800,
-.theme-light .bg-slate-800 *,
 .theme-light .bg-black,
-.theme-light .bg-black *,
 .theme-light .bg-primary-container,
-.theme-light .bg-primary-container *,
-.theme-light .keep-white,
-.theme-light .keep-white * {
+.theme-light .keep-white {
   color: #ffffff !important;
+}
+
+/* Light Theme: convert hardcoded dark gradients to clean, high-contrast light surfaces */
+.theme-light [class*="from-[#1c1c1c]"],
+.theme-light [class*="from-[#111827]"],
+.theme-light [class*="from-[#141414]"],
+.theme-light .from-\[\#1c1c1c\],
+.theme-light .from-\[\#111827\] {
+  background-image: none !important;
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05) !important;
+}
+
+.theme-light [class*="from-[#1c1c1c]"] h1,
+.theme-light [class*="from-[#1c1c1c]"] h2,
+.theme-light [class*="from-[#1c1c1c]"] h3,
+.theme-light [class*="from-[#1c1c1c]"] .font-heading,
+.theme-light [class*="from-[#111827]"] h1,
+.theme-light [class*="from-[#111827]"] h2,
+.theme-light [class*="from-[#111827]"] h3,
+.theme-light [class*="from-[#111827]"] .font-heading {
+  color: #0f172a !important;
+}
+
+.theme-light [class*="from-[#1c1c1c]"] p,
+.theme-light [class*="from-[#111827]"] p {
+  color: #475569 !important;
 }
 
 /* Main body text & values */

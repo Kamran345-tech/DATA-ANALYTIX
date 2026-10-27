@@ -42,8 +42,11 @@ export const DataCleaningLabView: React.FC = () => {
     undoTransformation, 
     resetToRaw,
     qualityReport,
-    loadDemoDataset
+    loadDemoDataset,
+    themeMode
   } = usePlatform();
+
+  const isLight = themeMode === 'light';
 
   // Active view tab: 'doctor' (Messy Data Doctor) | 'checklist' (Analyst Best Practices) | 'diff' (Before/After) | 'manual' (Custom Form)
   const [activeTab, setActiveTab] = useState<'doctor' | 'checklist' | 'diff' | 'manual'>('doctor');
@@ -284,20 +287,30 @@ export const DataCleaningLabView: React.FC = () => {
       </div>
 
       {/* 2. Live Health & 1-Click Master Auto-Clean Hero */}
-      <div className="bg-gradient-to-r from-[#1c1c1c] via-[#1a241f] to-[#1c1c1c] border border-[#21F1A8]/40 rounded-2xl p-5 sm:p-6 flex flex-col md:flex-row items-center justify-between gap-5 shadow-xl shadow-black/40">
+      <div className={`border rounded-2xl p-5 sm:p-6 flex flex-col md:flex-row items-center justify-between gap-5 transition-all ${
+        isLight 
+          ? 'bg-gradient-to-r from-emerald-50/70 via-white to-teal-50/70 border-emerald-300 shadow-sm text-slate-900' 
+          : 'bg-gradient-to-r from-[#1c1c1c] via-[#1a241f] to-[#1c1c1c] border-[#21F1A8]/40 shadow-xl shadow-black/40 text-white'
+      }`}>
         <div className="space-y-2 text-center md:text-left">
           <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
-            <span className="px-2.5 py-0.5 rounded-full bg-[#21F1A8]/20 text-[#21F1A8] text-xs font-bold font-mono flex items-center gap-1.5">
+            <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold font-mono flex items-center gap-1.5 border ${
+              isLight 
+                ? 'bg-emerald-100 text-emerald-900 border-emerald-300' 
+                : 'bg-[#21F1A8]/20 text-[#21F1A8] border-[#21F1A8]/30'
+            }`}>
               <Sparkles className="w-3.5 h-3.5" /> AI Data Cleaner
             </span>
-            <span className="text-xs text-gray-400 font-mono">
+            <span className={`text-xs font-mono ${isLight ? 'text-slate-600 font-medium' : 'text-gray-400'}`}>
               Audited {cleanRows.length} rows • {transformations.length} cleaning steps applied
             </span>
           </div>
 
-          <h2 className="font-heading text-xl sm:text-2xl font-bold text-white uppercase">
+          <h2 className={`font-heading text-xl sm:text-2xl font-bold uppercase ${
+            isLight ? 'text-slate-900' : 'text-white'
+          }`}>
             {messyIssues.length === 0 ? (
-              <span className="text-[#21F1A8] flex items-center gap-2">
+              <span className="text-emerald-600 dark:text-[#21F1A8] flex items-center gap-2">
                 <CheckCircle2 className="w-6 h-6" /> DATASET IS CLEAN & PRODUCTION READY
               </span>
             ) : (
@@ -305,7 +318,9 @@ export const DataCleaningLabView: React.FC = () => {
             )}
           </h2>
 
-          <p className="text-xs text-gray-300 max-w-2xl leading-relaxed">
+          <p className={`text-xs max-w-2xl leading-relaxed ${
+            isLight ? 'text-slate-600 font-medium' : 'text-gray-300'
+          }`}>
             {messyIssues.length === 0 
               ? 'All whitespace trimmed, duplicates removed, text casing standardized, and missing values resolved. Your dataset is clean for Star Schema modeling and Power BI.'
               : 'Our scanner discovered dirty entries that distort KPIs, break SQL joins, or split categories in Power BI. Review individual issues below or resolve them in 1 click.'}
@@ -313,9 +328,11 @@ export const DataCleaningLabView: React.FC = () => {
         </div>
 
         <div className="flex flex-col sm:flex-row items-center gap-3 shrink-0">
-          <div className="bg-[#141414] border border-[#333] px-4 py-2.5 rounded-xl text-center">
-            <span className="text-[10px] text-gray-400 uppercase font-mono block">Data Quality</span>
-            <span className="text-2xl font-heading font-extrabold text-[#21F1A8]">
+          <div className={`px-4 py-2.5 rounded-xl text-center border ${
+            isLight ? 'bg-white border-slate-200 shadow-2xs' : 'bg-[#141414] border-[#333]'
+          }`}>
+            <span className={`text-[10px] uppercase font-mono block ${isLight ? 'text-slate-500 font-semibold' : 'text-gray-400'}`}>Data Quality</span>
+            <span className="text-2xl font-heading font-extrabold text-emerald-600 dark:text-[#21F1A8]">
               {qualityReport.overallScore}%
             </span>
           </div>
@@ -323,9 +340,9 @@ export const DataCleaningLabView: React.FC = () => {
           {messyIssues.length > 0 && (
             <button
               onClick={handleAutoCleanAll}
-              className="flex items-center gap-2 px-5 py-3 rounded-xl bg-[#21F1A8] text-black font-heading font-bold text-sm uppercase hover:bg-[#1cdb97] hover:glow-neon transition-all transform hover:-translate-y-0.5 shadow-lg shadow-[#21F1A8]/20"
+              className="flex items-center gap-2 px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 dark:bg-[#21F1A8] dark:hover:bg-[#1cdb97] text-white dark:text-black font-heading font-bold text-sm uppercase transition-all transform hover:-translate-y-0.5 shadow-lg shadow-emerald-600/20 cursor-pointer"
             >
-              <Zap className="w-4 h-4 fill-black" />
+              <Zap className="w-4 h-4 fill-current" />
               <span>1-Click Auto-Clean All Issues</span>
             </button>
           )}

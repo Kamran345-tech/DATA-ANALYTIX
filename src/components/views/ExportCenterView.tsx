@@ -43,8 +43,11 @@ export const ExportCenterView: React.FC = () => {
     transformations, 
     qualityReport,
     customVisuals,
-    setCurrentTab
+    setCurrentTab,
+    themeMode
   } = usePlatform();
+
+  const isLight = themeMode === 'light';
 
   const [isZipping, setIsZipping] = useState(false);
   const [isPdfGenerating, setIsPdfGenerating] = useState(false);
@@ -251,16 +254,26 @@ export const ExportCenterView: React.FC = () => {
       )}
 
       {/* 1-Click Primary Complete Project ZIP (RULE 83) */}
-      <div className="bg-gradient-to-r from-[#1c1c1c] via-[#222] to-[#1c1c1c] border-2 border-[#21F1A8]/50 rounded-3xl p-8 space-y-6 glow-neon relative overflow-hidden">
+      <div className={`border-2 rounded-3xl p-6 sm:p-8 space-y-6 relative overflow-hidden transition-all ${
+        isLight 
+          ? 'bg-gradient-to-r from-emerald-50/70 via-white to-teal-50/70 border-emerald-500 shadow-md text-slate-900' 
+          : 'bg-gradient-to-r from-[#1c1c1c] via-[#222] to-[#1c1c1c] border-[#21F1A8]/50 shadow-xl glow-neon text-white'
+      }`}>
         <div className="flex flex-wrap items-center justify-between gap-4 relative z-10">
           <div className="space-y-2 max-w-xl">
-            <span className="px-2.5 py-0.5 rounded bg-[#21F1A8] text-black font-bold text-[10px] uppercase font-mono">
+            <span className={`px-2.5 py-0.5 rounded font-bold text-[10px] uppercase font-mono ${
+              isLight 
+                ? 'bg-emerald-600 text-white shadow-2xs' 
+                : 'bg-[#21F1A8] text-black'
+            }`}>
               FLAGSHIP BUNDLE
             </span>
-            <h2 className="font-heading text-3xl sm:text-4xl font-extrabold text-white tracking-wide uppercase">
+            <h2 className={`font-heading text-2xl sm:text-4xl font-extrabold tracking-wide uppercase ${
+              isLight ? 'text-slate-900' : 'text-white'
+            }`}>
               DOWNLOAD COMPLETE PROJECT (14 FOLDERS)
             </h2>
-            <p className="text-xs text-gray-300 leading-relaxed">
+            <p className={`text-xs leading-relaxed ${isLight ? 'text-slate-600 font-medium' : 'text-gray-300'}`}>
               Contains all raw data, cleaned tables, multi-tab Excel source with tbl* definitions, compiled PDF Executive Report, Power BI PBIP tabular model, DAX library, SQL queries, Python scripts, and documentation.
             </p>
           </div>
@@ -268,7 +281,11 @@ export const ExportCenterView: React.FC = () => {
           <button
             onClick={handleDownloadZip}
             disabled={isZipping}
-            className="px-8 py-4 rounded-2xl bg-[#21F1A8] text-black font-heading text-xl font-bold tracking-wider uppercase hover:bg-[#1cdb97] hover:glow-neon-strong transition-all flex items-center gap-3 shrink-0 disabled:opacity-50"
+            className={`px-8 py-4 rounded-2xl font-heading text-lg sm:text-xl font-bold tracking-wider uppercase transition-all flex items-center gap-3 shrink-0 disabled:opacity-50 cursor-pointer shadow-lg ${
+              isLight 
+                ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30 hover:-translate-y-0.5' 
+                : 'bg-[#21F1A8] text-black hover:bg-[#1cdb97] hover:glow-neon-strong'
+            }`}
           >
             {isZipping ? (
               <>
@@ -285,21 +302,40 @@ export const ExportCenterView: React.FC = () => {
         </div>
 
         {/* 14 Folders Manifest Preview */}
-        <div className="pt-4 border-t border-[#333] grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2 text-[10px] font-mono text-gray-400">
-          <div className="p-1.5 rounded bg-[#141414] border border-[#2a2a2a] truncate">01_Original_Data</div>
-          <div className="p-1.5 rounded bg-[#141414] border border-[#2a2a2a] truncate">02_Cleaned_Data</div>
-          <div className="p-1.5 rounded bg-[#141414] border border-[#2a2a2a] truncate">03_Excel_Source</div>
-          <div className="p-1.5 rounded bg-[#141414] border border-[#2a2a2a] truncate">04_Data_Model</div>
-          <div className="p-1.5 rounded bg-[#141414] border border-[#2a2a2a] truncate">05_DAX</div>
-          <div className="p-1.5 rounded bg-[#141414] border border-[#2a2a2a] truncate">06_SQL</div>
-          <div className="p-1.5 rounded bg-[#141414] border border-[#2a2a2a] truncate">07_Python</div>
-          <div className="p-1.5 rounded bg-[#141414] border border-[#2a2a2a] truncate">08_PowerBI</div>
-          <div className="p-1.5 rounded bg-[#141414] border border-[#2a2a2a] truncate">09_Dashboard</div>
-          <div className="p-1.5 rounded bg-[#141414] border border-[#2a2a2a] truncate text-[#21F1A8]">10_Reports (PDF)</div>
-          <div className="p-1.5 rounded bg-[#141414] border border-[#2a2a2a] truncate">11_Data_Dict</div>
-          <div className="p-1.5 rounded bg-[#141414] border border-[#2a2a2a] truncate">12_Insights</div>
-          <div className="p-1.5 rounded bg-[#141414] border border-[#2a2a2a] truncate">13_Documentation</div>
-          <div className="p-1.5 rounded bg-[#141414] border border-[#2a2a2a] truncate">14_Metadata</div>
+        <div className={`pt-4 border-t grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2 text-[10px] font-mono ${
+          isLight ? 'border-slate-200 text-slate-700' : 'border-[#333] text-gray-400'
+        }`}>
+          {[
+            '01_Original_Data',
+            '02_Cleaned_Data',
+            '03_Excel_Source',
+            '04_Data_Model',
+            '05_DAX',
+            '06_SQL',
+            '07_Python',
+            '08_PowerBI',
+            '09_Dashboard',
+            '10_Reports (PDF)',
+            '11_Data_Dict',
+            '12_Insights',
+            '13_Documentation',
+            '14_Metadata'
+          ].map(f => (
+            <div 
+              key={f} 
+              className={`p-1.5 rounded truncate border font-medium ${
+                isLight 
+                  ? f === '10_Reports (PDF)' 
+                    ? 'bg-emerald-50 border-emerald-300 text-emerald-800 font-bold' 
+                    : 'bg-white border-slate-200 text-slate-700 shadow-2xs' 
+                  : f === '10_Reports (PDF)' 
+                    ? 'bg-[#141414] border-emerald-500/50 text-[#21F1A8] font-bold' 
+                    : 'bg-[#141414] border-[#2a2a2a] text-gray-300'
+              }`}
+            >
+              {f}
+            </div>
+          ))}
         </div>
       </div>
 
