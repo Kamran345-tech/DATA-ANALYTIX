@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { usePlatform } from '../../store/usePlatformStore';
 import { ColumnProfile } from '../../types';
+import { safeMin, safeMax } from '../../utils/mathUtils';
 
 export const DrillThroughModal: React.FC = () => {
   const { 
@@ -128,8 +129,8 @@ export const DrillThroughModal: React.FC = () => {
       count: sliceRows.length,
       sum: Math.round(sum * 100) / 100,
       avg: Math.round((sum / vals.length) * 100) / 100,
-      min: Math.min(...vals),
-      max: Math.max(...vals)
+      min: safeMin(vals, 0),
+      max: safeMax(vals, 0)
     };
   }, [sliceRows, primaryMetricCol]);
 

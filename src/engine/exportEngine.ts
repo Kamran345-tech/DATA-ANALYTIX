@@ -7,6 +7,7 @@ import { generateDAXMeasures } from './daxEngine';
 import { generateStarterSQLQueries } from './sqlEngine';
 import { generatePythonScript } from './pythonEngine';
 import { parseRobustNumber } from './dataParser';
+import { safeMax } from '../utils/mathUtils';
 
 export interface ExportDataPayload {
   project: ProjectMetadata;
@@ -378,7 +379,7 @@ export function generateStandaloneDashboardHTML(
       return { category, value: Math.round(value * 100) / 100 };
     }).sort((a, b) => b.value - a.value).slice(0, 10);
 
-    const maxVal = Math.max(...items.map(i => i.value), 1);
+    const maxVal = Math.max(safeMax(items.map(i => i.value), 1), 1);
     const grandTotal = items.reduce((acc, curr) => acc + curr.value, 0);
     const visType = (vis.type || 'bar').toLowerCase();
     const isCur = /revenue|sales|profit|margin|cost|amount|price/i.test(val);

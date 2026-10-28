@@ -13,6 +13,7 @@ import {
   KPIStatus
 } from '../types';
 import { parseRobustNumber } from './dataParser';
+import { safeMin, safeMax } from '../utils/mathUtils';
 
 export interface DetailedStat {
   column: string;
@@ -1320,9 +1321,9 @@ export function calculateKpiFromParameters(
   } else if (agg === 'avg') {
     mainVal = allNumbers.reduce((a, b) => a + b, 0) / allNumbers.length;
   } else if (agg === 'min') {
-    mainVal = Math.min(...allNumbers);
+    mainVal = safeMin(allNumbers, 0);
   } else if (agg === 'max') {
-    mainVal = Math.max(...allNumbers);
+    mainVal = safeMax(allNumbers, 0);
   }
 
   // Split into prior vs current rows for trend/variance
@@ -1357,8 +1358,8 @@ export function calculateKpiFromParameters(
     if (nums.length === 0) return 0;
     if (agg === 'sum') return nums.reduce((a, b) => a + b, 0);
     if (agg === 'avg') return nums.reduce((a, b) => a + b, 0) / nums.length;
-    if (agg === 'min') return Math.min(...nums);
-    if (agg === 'max') return Math.max(...nums);
+    if (agg === 'min') return safeMin(nums, 0);
+    if (agg === 'max') return safeMax(nums, 0);
     return 0;
   };
 

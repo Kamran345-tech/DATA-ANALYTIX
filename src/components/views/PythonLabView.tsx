@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { usePlatform } from '../../store/usePlatformStore';
 import { generatePythonScript, runSandboxedPythonAnalysis, PythonExecutionResult } from '../../engine/pythonEngine';
+import { safeMax } from '../../utils/mathUtils';
 import { 
   Pareto8020Chart, 
   TimeSeriesAreaChart, 
@@ -223,7 +224,7 @@ export const PythonLabView: React.FC = () => {
     const vals = dashboardRows.map(r => Number(r[selectedMeasure])).filter(v => !isNaN(v));
     const sum = vals.reduce((a, b) => a + b, 0);
     const avg = vals.length > 0 ? sum / vals.length : 0;
-    const max = vals.length > 0 ? Math.max(...vals) : 0;
+    const max = vals.length > 0 ? safeMax(vals, 0) : 0;
     const segments = new Set(dashboardRows.map(r => String(r[selectedDimension] || ''))).size;
 
     return {

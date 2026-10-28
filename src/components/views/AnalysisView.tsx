@@ -17,6 +17,7 @@ import {
   Sigma
 } from 'lucide-react';
 import { usePlatform } from '../../store/usePlatformStore';
+import { safeMin, safeMax, safeExtremes, safeDownsample } from '../../utils/mathUtils';
 
 type AnalysisTab = 'eda' | 'correlation' | 'distribution' | 'outliers' | 'forecast';
 
@@ -53,8 +54,8 @@ export const AnalysisView: React.FC = () => {
 
     if (values.length === 0) return { bins: [], min: 0, max: 0, mean: 0, median: 0 };
 
-    const min = Math.min(...values);
-    const max = Math.max(...values);
+    const min = safeMin(values, 0);
+    const max = safeMax(values, 0);
     const range = max - min || 1;
     const binSize = range / numBins;
 
@@ -375,13 +376,16 @@ export const AnalysisView: React.FC = () => {
               {/* Scatter Canvas */}
               <div className="p-4 bg-[#141414] rounded-xl border border-[#282828] relative">
                 {(() => {
-                  const minX = Math.min(...scatterPoints.map(p => p.x));
-                  const maxX = Math.max(...scatterPoints.map(p => p.x)) || 1;
-                  const minY = Math.min(...scatterPoints.map(p => p.y));
-                  const maxY = Math.max(...scatterPoints.map(p => p.y)) || 1;
+                  const xVals = scatterPoints.map(p => p.x);
+                  const yVals = scatterPoints.map(p => p.y);
+                  const minX = safeMin(xVals, 0);
+                  const maxX = safeMax(xVals, 1) || 1;
+                  const minY = safeMin(yVals, 0);
+                  const maxY = safeMax(yVals, 1) || 1;
 
                   const getX = (v: number) => 50 + ((v - minX) / (maxX - minX || 1)) * 420;
                   const getY = (v: number) => 20 + 160 - ((v - minY) / (maxY - minY || 1)) * 160;
+                  const displayPoints = safeDownsample(scatterPoints, 400);
 
                   return (
                     <svg viewBox="0 0 500 220" className="w-full h-52 overflow-visible">
@@ -390,7 +394,7 @@ export const AnalysisView: React.FC = () => {
                       <line x1="50" y1="20" x2="50" y2="180" stroke="#333" strokeWidth="1" />
                       
                       {/* Points */}
-                      {scatterPoints.map((pt, i) => (
+                      {displayPoints.map((pt, i) => (
                         <circle
                           key={i}
                           cx={getX(pt.x)}
@@ -486,7 +490,7 @@ export const AnalysisView: React.FC = () => {
           {/* SVG Histogram Rendering */}
           <div className="p-4 bg-[#141414] rounded-2xl border border-[#282828]">
             {(() => {
-              const maxCount = Math.max(...histData.bins.map(b => b.count), 1);
+              const maxCount = Math.max(safeMax(histData.bins.map(b => b.count), 1), 1);
               const barWidth = 440 / (histData.bins.length || 1);
 
               return (

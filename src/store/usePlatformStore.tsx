@@ -25,6 +25,7 @@ import { generateDAXMeasures } from '../engine/daxEngine';
 import { registerTablesInSQL } from '../engine/sqlEngine';
 import { DEMO_DATASETS, DemoDatasetInfo } from '../data/demoDatasets';
 import { toast } from './useToast';
+import { safeMin, safeMax } from '../utils/mathUtils';
 
 export type NavigationTab = 
   | 'landing'
@@ -853,8 +854,8 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
     const sum = vals.reduce((a, b) => a + b, 0);
     const avg = sum / vals.length;
-    const min = Math.min(...vals);
-    const max = Math.max(...vals);
+    const min = safeMin(vals, 0);
+    const max = safeMax(vals, 0);
     return {
       name: metricCol,
       sum: Math.round(sum * 100) / 100,

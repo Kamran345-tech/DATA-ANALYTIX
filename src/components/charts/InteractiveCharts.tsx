@@ -22,6 +22,7 @@ import {
   Filter
 } from 'lucide-react';
 import { ColumnProfile, ForecastPoint } from '../../types';
+import { safeMin, safeMax, safeExtremes, safeDownsample } from '../../utils/mathUtils';
 
 // ============================================================================
 // 1. CHRONOLOGICAL TIME SERIES LINE & AREA CHART
@@ -77,8 +78,8 @@ export const TimeSeriesAreaChart: React.FC<TimeSeriesProps> = ({
       if (p.upper !== undefined) allVals.push(p.upper);
     });
 
-    const min = Math.min(...allVals);
-    const max = Math.max(...allVals);
+    const min = safeMin(allVals, 0);
+    const max = safeMax(allVals, 1);
     const padding = (max - min) * 0.1 || (max * 0.1) || 1;
 
     // Calculate 3-period Simple Moving Average (SMA)
@@ -412,7 +413,7 @@ export const Pareto8020Chart: React.FC<ParetoProps> = ({
   const innerWidth = width - paddingLeft - paddingRight;
   const innerHeight = height - paddingTop - paddingBottom;
 
-  const maxVal = Math.max(...sortedData.map(d => d.value), 1);
+  const maxVal = Math.max(safeMax(sortedData.map(d => d.value), 1), 1);
   const barWidth = Math.min(50, (innerWidth / sortedData.length) * 0.65);
 
   const getBarX = (idx: number) => paddingLeft + (idx + 0.5) * (innerWidth / sortedData.length) - barWidth / 2;
@@ -1368,10 +1369,10 @@ export const ScatterPlotChart: React.FC<ScatterPlotProps> = ({
     const xVals = validPoints.map(p => p.xVal);
     const yVals = validPoints.map(p => p.yVal);
 
-    const xMinRaw = Math.min(...xVals);
-    const xMaxRaw = Math.max(...xVals);
-    const yMinRaw = Math.min(...yVals);
-    const yMaxRaw = Math.max(...yVals);
+    const xMinRaw = safeMin(xVals, 0);
+    const xMaxRaw = safeMax(xVals, 1);
+    const yMinRaw = safeMin(yVals, 0);
+    const yMaxRaw = safeMax(yVals, 1);
 
     const xPad = (xMaxRaw - xMinRaw) * 0.08 || 1;
     const yPad = (yMaxRaw - yMinRaw) * 0.08 || 1;
@@ -1404,8 +1405,11 @@ export const ScatterPlotChart: React.FC<ScatterPlotProps> = ({
     const m = denomX > 0 ? numerator / denomX : 0;
     const b = meanY - m * meanX;
 
+    // Downsample visual SVG points to max 600 points for smooth interactivity
+    const displayPoints = safeDownsample(validPoints, 600);
+
     return {
-      points: validPoints,
+      points: displayPoints,
       xMin: xMinVal,
       xMax: xMaxVal,
       yMin: yMinVal,
@@ -1420,13 +1424,13 @@ export const ScatterPlotChart: React.FC<ScatterPlotProps> = ({
   const sizeMin = useMemo(() => {
     if (!sizeField) return 1;
     const vals = points.map(p => p.sizeVal || 0);
-    return Math.min(...vals, 1);
+    return Math.min(safeMin(vals, 1), 1);
   }, [points, sizeField]);
 
   const sizeMax = useMemo(() => {
     if (!sizeField) return 1;
     const vals = points.map(p => p.sizeVal || 0);
-    return Math.max(...vals, 1);
+    return Math.max(safeMax(vals, 1), 1);
   }, [points, sizeField]);
 
   if (numericCols.length < 2) {
@@ -2153,7 +2157,7 @@ export const RadarSpiderChart: React.FC<RadarProps> = ({
   }, [data]);
 
   const maxVal = useMemo(() => {
-    return Math.max(...cleanData.map(d => d.max || d.value), 1);
+    return Math.max(safeMax(cleanData.map(d => d.max || d.value), 1), 1);
   }, [cleanData]);
 
   if (cleanData.length < 3) {

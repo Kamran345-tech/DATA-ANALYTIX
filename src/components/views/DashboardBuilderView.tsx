@@ -29,6 +29,7 @@ import { usePlatform } from '../../store/usePlatformStore';
 import { VisualConfig } from '../../types';
 import { EditableDashboardTitle } from '../common/EditableDashboardTitle';
 import { generateEnterpriseReportPDF, downloadDashboardAndReportBundle } from '../../engine/exportEngine';
+import { safeMax } from '../../utils/mathUtils';
 
 export const DashboardBuilderView: React.FC = () => {
   const { 
@@ -840,7 +841,7 @@ export const DashboardBuilderView: React.FC = () => {
             const activeCat = override.categoryField || vis.categoryField;
 
             const { items, grandTotal } = computeGroupedData(activeCat, activeVal, vis.aggregation);
-            const maxVal = Math.max(...items.map(i => i.value), 1);
+            const maxVal = Math.max(safeMax(items.map(i => i.value), 1), 1);
             const primaryColor = vis.color || '#21F1A8';
 
             return (

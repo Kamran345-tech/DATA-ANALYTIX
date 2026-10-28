@@ -56,6 +56,7 @@ import {
   TreemapChart,
   GaugeSpeedometerChart
 } from '../charts/InteractiveCharts';
+import { safeMin, safeMax, safeDownsample } from '../../utils/mathUtils';
 
 type DashboardTab = 
   | 'overview' 
@@ -1024,8 +1025,8 @@ export const ExecutiveDashboard: React.FC = () => {
                 <div className="w-full h-72 relative mt-2 bg-surface-panel/30 rounded-lg p-3 flex flex-col justify-between border border-border-subtle overflow-hidden">
                   {/* Dynamic SVG with safe viewBox bounds */}
                   {(() => {
-                    const dataPoints = currentTrend?.dataPoints || [];
-                    if (dataPoints.length < 2) {
+                    const rawPoints = currentTrend?.dataPoints || [];
+                    if (rawPoints.length < 2) {
                       return (
                         <div className="h-48 flex items-center justify-center text-on-surface-variant font-label-sm text-label-sm">
                           Insufficient data points to render time series trend.
@@ -1033,9 +1034,11 @@ export const ExecutiveDashboard: React.FC = () => {
                       );
                     }
 
+                    // Downsample to max 300 points for smooth 60fps rendering without stack/memory strain
+                    const dataPoints = safeDownsample(rawPoints, 300);
                     const rawVals = dataPoints.map(p => p.value);
-                    const minVal = Math.min(...rawVals);
-                    const maxVal = Math.max(...rawVals);
+                    const minVal = safeMin(rawVals, 0);
+                    const maxVal = safeMax(rawVals, 0);
                     const range = maxVal === minVal ? (maxVal === 0 ? 1 : Math.abs(maxVal) * 0.2) : maxVal - minVal;
                     const meanVal = rawVals.reduce((a, b) => a + b, 0) / rawVals.length;
 
@@ -1382,7 +1385,7 @@ export const ExecutiveDashboard: React.FC = () => {
                     share: total > 0 ? Math.round((s.sum / total) * 1000) / 10 : 0
                   })).sort((a, b) => b.value - a.value).slice(0, 8);
 
-                  const maxVal = Math.max(...items.map(i => i.value), 1);
+                  const maxVal = Math.max(safeMax(items.map(i => i.value), 1), 1);
                   const isCur = /revenue|sales|profit|margin|cost|amount|price/i.test(val);
                   const formatVal = (n: number) => isCur ? `$${Math.round(n).toLocaleString()}` : Math.round(n).toLocaleString();
 
@@ -1599,7 +1602,7 @@ export const ExecutiveDashboard: React.FC = () => {
               data={currentCategoryData.slice(0, 6).map(c => ({
                 label: c.category,
                 value: c.value,
-                max: Math.max(...currentCategoryData.map(x => x.value), 1)
+                max: Math.max(safeMax(currentCategoryData.map(x => x.value), 1), 1)
               }))}
               metricName={selectedTrendMetric}
               onAxisClick={handleDrilldown}
