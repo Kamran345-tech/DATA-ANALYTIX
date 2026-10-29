@@ -12,7 +12,7 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
   showSubtitle = true,
   className = '' 
 }) => {
-  const { themeMode } = usePlatform();
+  const { themeMode, brand } = usePlatform();
   const isLight = themeMode === 'light';
 
   // Dimension scaling
@@ -22,6 +22,33 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
     lg: { icon: 44, text: 'text-2xl', sub: 'text-xs' },
     xl: { icon: 56, text: 'text-4xl', sub: 'text-sm' }
   }[size];
+
+  if (brand?.logoUrl) {
+    return (
+      <div className={`flex items-center gap-2.5 select-none ${className}`}>
+        <img 
+          src={brand.logoUrl} 
+          alt={brand.companyName || 'Company Logo'} 
+          className="rounded-lg object-contain border border-border-subtle bg-white/5 p-0.5 shadow-xs shrink-0"
+          style={{ width: dimensions.icon, height: dimensions.icon }}
+        />
+        <div className="flex flex-col leading-none">
+          <div className={`font-heading font-black tracking-tight ${dimensions.text} flex items-center truncate max-w-[180px]`}>
+            <span className={isLight ? 'text-slate-900' : 'text-white'}>
+              {brand.companyName || 'ENTERPRISE'}
+            </span>
+          </div>
+          {showSubtitle && (
+            <span className={`font-mono uppercase tracking-widest font-semibold ${dimensions.sub} mt-1 truncate max-w-[180px] ${
+              isLight ? 'text-slate-500' : 'text-slate-400'
+            }`}>
+              {brand.department || 'BI Platform'}
+            </span>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`flex items-center gap-2.5 select-none ${className}`}>

@@ -639,10 +639,13 @@ export function generateStandaloneDashboardHTML(
 <body>
   <div class="container">
     <div class="header">
-      <div class="header-info">
-        <div class="brand-tag">${payload.brand.companyName} • ${payload.brand.department}</div>
-        <h1>${safeTitle}</h1>
-        <div class="meta-text">Prepared by ${payload.brand.author} | Generated: ${new Date().toLocaleDateString()} | Audited Rows: ${payload.cleanRows.length.toLocaleString()}</div>
+      <div class="header-info" style="display:flex; align-items:center; gap:16px;">
+        ${payload.brand.logoUrl ? `<img src="${payload.brand.logoUrl}" alt="${payload.brand.companyName}" style="height:48px; max-width:140px; object-fit:contain; border-radius:8px; background:rgba(255,255,255,0.08); padding:4px; border:1px solid rgba(255,255,255,0.15);" />` : ''}
+        <div>
+          <div class="brand-tag">${payload.brand.companyName} • ${payload.brand.department}</div>
+          <h1>${safeTitle}</h1>
+          <div class="meta-text">Prepared by ${payload.brand.author} | Generated: ${new Date().toLocaleDateString()} | Audited Rows: ${payload.cleanRows.length.toLocaleString()}</div>
+        </div>
       </div>
       <div>
         <span class="badge">QUALITY SCORE: ${payload.qualityReport.overallScore}%</span>
@@ -787,23 +790,35 @@ export function generateEnterpriseReportPDF(
   doc.setFillColor(33, 241, 168);
   doc.rect(0, 36, pageWidth, 2.5, 'F');
 
+  // Embed Company Logo if available
+  let textStartX = margin;
+  if (payload.brand.logoUrl && payload.brand.logoUrl.startsWith('data:image')) {
+    try {
+      const isJpeg = payload.brand.logoUrl.includes('jpeg') || payload.brand.logoUrl.includes('jpg');
+      doc.addImage(payload.brand.logoUrl, isJpeg ? 'JPEG' : 'PNG', margin, 6, 24, 24);
+      textStartX = margin + 27;
+    } catch (e) {
+      console.warn('Could not render logo in PDF:', e);
+    }
+  }
+
   // Company and Department
   doc.setTextColor(33, 241, 168);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(10);
-  doc.text(`${payload.brand.companyName.toUpperCase()} • ${payload.brand.department.toUpperCase()}`, margin, 12);
+  doc.text(`${payload.brand.companyName.toUpperCase()} • ${payload.brand.department.toUpperCase()}`, textStartX, 12);
 
   // Report Title
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(18);
-  doc.text(payload.reportHeadings?.mainTitle || 'EXECUTIVE DATA INTELLIGENCE REPORT', margin, 21);
+  doc.text(payload.reportHeadings?.mainTitle || 'EXECUTIVE DATA INTELLIGENCE REPORT', textStartX, 21);
 
   // Subtitle / Project
   doc.setTextColor(180, 180, 180);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
-  doc.text(`Project: ${payload.project.name}   |   Dataset: ${payload.project.sourceFileName}   |   Ver: ${payload.project.version}`, margin, 29);
+  doc.text(`Project: ${payload.project.name}   |   Dataset: ${payload.project.sourceFileName}   |   Ver: ${payload.project.version}`, textStartX, 29);
 
   // Right-aligned Metadata
   doc.setFontSize(8.5);

@@ -94,10 +94,12 @@ export interface PlatformContextType {
   setThemeMode: (mode: 'dark' | 'light') => void;
   toggleThemeMode: () => void;
 
-  // Project state
+  // Project & Brand state
   project: ProjectMetadata;
   brand: BrandConfig;
   setBrand: (b: BrandConfig) => void;
+  uploadCompanyLogo: (logoDataUrl: string) => void;
+  removeCompanyLogo: () => void;
   updateProjectMetadata: (updates: Partial<ProjectMetadata>) => void;
 
   // Editable Report Headings
@@ -184,8 +186,17 @@ const getInitialAuthor = (): string => {
   return 'Lead BI Analyst';
 };
 
+const getInitialLogo = (): string | undefined => {
+  if (typeof window !== 'undefined') {
+    const saved = localStorage.getItem('acuitybi_company_logo');
+    if (saved && saved.trim()) return saved.trim();
+  }
+  return undefined;
+};
+
 const defaultBrand: BrandConfig = {
   companyName: 'Analytics Technologies',
+  logoUrl: getInitialLogo(),
   tagline: 'Autonomous AI Data Intelligence & Performance Center',
   department: 'Strategic Analytics & BI',
   author: getInitialAuthor(),
@@ -469,39 +480,77 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     );
   }
 
+  function uploadCompanyLogo(logoDataUrl: string) {
+    setBrand(prev => ({ ...prev, logoUrl: logoDataUrl }));
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('acuitybi_company_logo', logoDataUrl);
+      } catch (e) {
+        console.warn('Could not persist logo to localStorage:', e);
+      }
+    }
+    toast.success('Company Logo Uploaded', 'Your organization branding is now active across the Executive Dashboard, Navigation Bar, and Export Reports.');
+  }
+
+  function removeCompanyLogo() {
+    setBrand(prev => {
+      const copy = { ...prev };
+      delete copy.logoUrl;
+      return copy;
+    });
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('acuitybi_company_logo');
+    }
+    toast.info('Logo Removed', 'Reverted to default brand typography.');
+  }
+
   async function ingestFile(file: File) {
     setIsProcessing(true);
     setError(null);
     setPipelineStep('Ingesting & parsing raw bytes...');
     const toastId = 'ingestion_' + Date.now();
-    toast.progress(toastId, 15, 'Stage 1/5: Ingesting', `Parsing raw bytes for "${file.name}"...`);
+    toast.progress(toastId, 15, 'Stage 1/6: Ingesting', `Parsing raw bytes for "${file.name}"...`);
 
     try {
       const parsed = await parseFile(file);
+
+      // 1. Autonomous Auto-Cleaning Pipeline on Ingest (Trims whitespace, cleans currency/dirty numbers, removes duplicates)
+      setPipelineStep('Auto-cleaning & normalizing ingested data...');
+      toast.progress(toastId, 30, 'Stage 2/6: Auto-Cleaning', `Sanitizing records, normalizing currencies/formats, and trimming whitespace...`);
+      
+      const autoCleanStep: TransformationStep = {
+        id: `auto-clean-${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        action: 'auto_clean_all',
+        parameters: {},
+        description: 'Autonomous Ingestion Clean: Deduplicated records, trimmed whitespace, and normalized dirty numbers/currencies.'
+      };
+      const cleanedRows = applyTransformation(parsed.rows, autoCleanStep);
+
       setPipelineStep('Profiling column data types & distribution...');
-      toast.progress(toastId, 35, 'Stage 2/5: Profiling', `Evaluating distributions across ${parsed.columns.length} columns...`);
-      const prof = profileDataset(parsed.columns, parsed.rows, parsed.detectedTypes);
+      toast.progress(toastId, 45, 'Stage 3/6: Profiling', `Evaluating distributions across ${parsed.columns.length} columns...`);
+      const prof = profileDataset(parsed.columns, cleanedRows, parsed.detectedTypes);
 
       setPipelineStep('Auditing data quality & completeness...');
-      toast.progress(toastId, 55, 'Stage 3/5: Quality Audit', `Auditing anomalies across ${parsed.rows.length.toLocaleString()} rows...`);
-      const qual = evaluateDataQuality(prof, parsed.rows);
+      toast.progress(toastId, 60, 'Stage 4/6: Quality Audit', `Auditing anomalies across ${cleanedRows.length.toLocaleString()} clean rows...`);
+      const qual = evaluateDataQuality(prof, cleanedRows);
 
       setPipelineStep('Constructing relational Star Schema data model...');
-      toast.progress(toastId, 75, 'Stage 4/5: Star Schema Modeling', 'Partitioning facts and dimensions with primary-foreign relationships...');
-      const model = buildDataModel(parsed.tableName, prof, parsed.rows);
+      toast.progress(toastId, 75, 'Stage 5/6: Star Schema Modeling', 'Partitioning facts and dimensions with connected 1:N relationships...');
+      const model = buildDataModel(parsed.tableName, prof, cleanedRows);
 
       setPipelineStep('Computing statistical KPIs, trends & anomaly vectors...');
-      toast.progress(toastId, 90, 'Stage 5/5: Telemetry Synthesis', 'Synthesizing time intelligence DAX formulas and SQL bindings...');
-      const anal = computeAnalytics(prof, parsed.rows, parsed.tableName);
+      toast.progress(toastId, 90, 'Stage 6/6: Telemetry Synthesis', 'Synthesizing data-aware KPIs, top performers, and DAX measures...');
+      const anal = computeAnalytics(prof, cleanedRows, parsed.tableName);
       const dax = generateDAXMeasures(parsed.tableName, prof, model.tables);
 
       registerTablesInSQL([
-        { name: parsed.tableName, rows: parsed.rows },
+        { name: parsed.tableName, rows: cleanedRows },
         ...model.tables.filter(t => t.name !== parsed.tableName).map(t => ({ name: t.name, rows: t.data }))
       ]);
 
       setRawRows(parsed.rows);
-      setCleanRows(parsed.rows);
+      setCleanRows(cleanedRows);
       setColumns(prof);
       setDetectedTypes(parsed.detectedTypes);
       setQualityReport(qual);
@@ -509,7 +558,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setAnalytics(anal);
       setCustomVisuals(anal.visuals);
       setDaxMeasures(dax);
-      setTransformations([]);
+      setTransformations([autoCleanStep]);
 
       setProject({
         id: `proj-${Date.now()}`,
@@ -519,21 +568,21 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         author: brand.author,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        isDemo: false, // REAL USER DATA (RULE 1, 9, 10)
+        isDemo: false, // REAL USER DATA
         version: 'v1.0.0',
         dataQualityScore: qual.overallScore,
-        rowCount: parsed.rows.length,
+        rowCount: cleanedRows.length,
         columnCount: parsed.columns.length,
         sourceFileName: parsed.fileName
       });
 
-      logAction('FILE_UPLOADED', `Uploaded user dataset: ${parsed.fileName} (${parsed.rows.length} rows, ${parsed.columns.length} columns).`);
+      logAction('FILE_UPLOADED', `Uploaded & auto-cleaned dataset: ${parsed.fileName} (${cleanedRows.length} rows, ${parsed.columns.length} columns, ${model.relationships.length} active relationships).`);
 
       setPipelineStep('Analysis pipeline ready!');
       toast.complete(
         toastId, 
         'Data Ingestion Complete', 
-        `Successfully ingested "${parsed.fileName}" (${parsed.rows.length.toLocaleString()} rows, ${parsed.columns.length} columns) with Star Schema & DAX generated.`,
+        `Successfully ingested and auto-cleaned "${parsed.fileName}" (${cleanedRows.length.toLocaleString()} rows, ${parsed.columns.length} columns) with ${model.relationships.length} Star Schema relationships connected.`,
         {
           label: 'Open Dashboard',
           onClick: () => setCurrentTab('executive_dashboard')
@@ -1079,6 +1128,8 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         project,
         brand,
         setBrand,
+        uploadCompanyLogo,
+        removeCompanyLogo,
         updateProjectMetadata,
         reportHeadings,
         updateReportHeading,

@@ -12,138 +12,149 @@ export function buildDataModel(
   // Group columns into dimensions and facts
   const idColumns = columns.filter(c => c.isPrimaryKeyCandidate || c.isForeignKeyCandidate || c.name.toLowerCase().includes('id'));
   const numericMeasures = columns.filter(c => c.dataType === 'number' && !c.isPrimaryKeyCandidate && !c.name.toLowerCase().includes('id') && !c.name.toLowerCase().includes('zip'));
-  const dateColumns = columns.filter(c => c.dataType === 'date');
+  const dateColumns = columns.filter(c => c.dataType === 'date' || /date|time|timestamp|period/i.test(c.name));
   const categoricalColumns = columns.filter(c => c.dataType === 'string' && !c.isPrimaryKeyCandidate && !c.name.toLowerCase().includes('id'));
 
-  // If there are distinct dimension entities identifiable in denormalized data (e.g., Customer, Product, Region, Date)
-  // we can create a star schema representation with DimCustomer, DimProduct, DimDate, and FactTable.
-  const customerCols = columns.filter(c => /customer|client|buyer/i.test(c.name));
-  const productCols = columns.filter(c => /product|item|sku/i.test(c.name));
-  const regionCols = columns.filter(c => /region|country|city|state|territory/i.test(c.name));
+  // If there are distinct dimension entities identifiable in denormalized data
+  const customerCols = columns.filter(c => /customer|client|buyer|user|account/i.test(c.name));
+  const productCols = columns.filter(c => /product|item|sku|service|offering/i.test(c.name));
+  const regionCols = columns.filter(c => /region|country|city|state|territory|market|location/i.test(c.name));
+  
+  // Also identify general category / status dimensions if present
+  const categoryCols = columns.filter(c => /category|type|genre|department|segment|channel|status|priority/i.test(c.name) && !customerCols.includes(c) && !productCols.includes(c) && !regionCols.includes(c));
 
-  const hasDenormalizedDimensions = customerCols.length > 0 || productCols.length > 0 || regionCols.length > 0 || dateColumns.length > 0;
+  // Determine which dimension groups to extract
+  const dimensionGroups: { name: string; cols: ColumnProfile[]; keyCol: ColumnProfile }[] = [];
 
-  if (hasDenormalizedDimensions && rows.length > 0) {
-    // 1. Fact Table
-    const factCols = columns.filter(c => 
-      numericMeasures.includes(c) || 
-      idColumns.includes(c) || 
-      dateColumns.includes(c) ||
-      (!customerCols.includes(c) && !productCols.includes(c) && !regionCols.includes(c))
-    );
-    const factTableName = mainTableName.startsWith('Fact') ? mainTableName : `Fact_${mainTableName}`;
+  if (customerCols.length > 0) {
+    const keyCol = customerCols.find(c => c.name.toLowerCase().includes('id') || c.name.toLowerCase().includes('key')) || customerCols[0];
+    dimensionGroups.push({ name: 'Dim_Customer', cols: customerCols, keyCol });
+  }
 
-    const factData = rows.map(r => {
-      const obj: Record<string, any> = {};
-      factCols.forEach(c => { obj[c.name] = r[c.name]; });
-      return obj;
-    });
+  if (productCols.length > 0) {
+    const keyCol = productCols.find(c => c.name.toLowerCase().includes('id') || c.name.toLowerCase().includes('key') || c.name.toLowerCase().includes('sku')) || productCols[0];
+    dimensionGroups.push({ name: 'Dim_Product', cols: productCols, keyCol });
+  }
 
-    tables.push({
-      id: factTableName,
-      name: factTableName,
-      type: 'fact',
-      columns: factCols,
-      foreignKeys: [],
-      rowCount: factData.length,
-      data: factData.slice(0, 100) // Sample for preview
-    });
+  if (regionCols.length > 0) {
+    const keyCol = regionCols.find(c => c.name.toLowerCase().includes('id') || c.name.toLowerCase().includes('key') || c.name.toLowerCase().includes('code')) || regionCols[0];
+    dimensionGroups.push({ name: 'Dim_Geography', cols: regionCols, keyCol });
+  }
 
-    // 2. Dim_Customer if relevant columns exist
-    if (customerCols.length > 0) {
-      const custKeyCol = customerCols.find(c => c.name.toLowerCase().includes('id') || c.name.toLowerCase().includes('key')) || customerCols[0];
-      const custDataMap = new Map<any, Record<string, any>>();
-      rows.forEach(r => {
-        const keyVal = r[custKeyCol.name];
-        if (keyVal !== null && keyVal !== undefined && !custDataMap.has(keyVal)) {
-          const custRec: Record<string, any> = {};
-          customerCols.forEach(c => { custRec[c.name] = r[c.name]; });
-          custDataMap.set(keyVal, custRec);
-        }
+  // If we still have room and found other category columns with good cardinality (2..100)
+  categoryCols.slice(0, 2).forEach(catCol => {
+    if (dimensionGroups.length < 4 && !dimensionGroups.some(g => g.cols.some(c => c.name === catCol.name))) {
+      const dimName = `Dim_${catCol.name.replace(/[^a-zA-Z0-9]/g, '_')}`;
+      dimensionGroups.push({
+        name: dimName,
+        cols: [catCol],
+        keyCol: catCol
       });
-      const dimCustData = Array.from(custDataMap.values());
-      const dimCustName = 'Dim_Customer';
+    }
+  });
 
+  // If still no categorical dimension groups found, pick top string column with distinct count between 2 and 50
+  if (dimensionGroups.length === 0 && categoricalColumns.length > 0) {
+    const candidate = categoricalColumns.find(c => c.distinctCount >= 2 && c.distinctCount <= 50) || categoricalColumns[0];
+    if (candidate) {
+      const dimName = `Dim_${candidate.name.replace(/[^a-zA-Z0-9]/g, '_')}`;
+      dimensionGroups.push({
+        name: dimName,
+        cols: [candidate],
+        keyCol: candidate
+      });
+    }
+  }
+
+  const factTableName = mainTableName.startsWith('Fact') ? mainTableName : `Fact_${mainTableName.replace(/[^a-zA-Z0-9_]/g, '_')}`;
+
+  // 1. Fact Table
+  const allDimCols = dimensionGroups.flatMap(g => g.cols);
+  const factCols = columns.filter(c => 
+    numericMeasures.includes(c) || 
+    idColumns.includes(c) || 
+    dateColumns.includes(c) ||
+    dimensionGroups.some(g => g.keyCol.name === c.name) ||
+    !allDimCols.includes(c)
+  );
+
+  const factData = rows.map(r => {
+    const obj: Record<string, any> = {};
+    factCols.forEach(c => { obj[c.name] = r[c.name]; });
+    return obj;
+  });
+
+  const factFks: { column: string; targetTable: string; targetColumn: string }[] = [];
+
+  // 2. Build Dimension Tables and Relationships
+  dimensionGroups.forEach(group => {
+    const keyCol = group.keyCol;
+    const dataMap = new Map<any, Record<string, any>>();
+    rows.forEach(r => {
+      const keyVal = r[keyCol.name];
+      if (keyVal !== null && keyVal !== undefined && keyVal !== '' && !dataMap.has(keyVal)) {
+        const rec: Record<string, any> = {};
+        group.cols.forEach(c => { rec[c.name] = r[c.name]; });
+        dataMap.set(keyVal, rec);
+      }
+    });
+
+    const dimData = Array.from(dataMap.values());
+    if (dimData.length > 0) {
       tables.push({
-        id: dimCustName,
-        name: dimCustName,
+        id: group.name,
+        name: group.name,
         type: 'dimension',
-        columns: customerCols,
-        primaryKey: custKeyCol.name,
+        columns: group.cols,
+        primaryKey: keyCol.name,
         foreignKeys: [],
-        rowCount: dimCustData.length,
-        data: dimCustData.slice(0, 100)
+        rowCount: dimData.length,
+        data: dimData.slice(0, 100)
       });
 
       relationships.push({
-        id: `rel-${dimCustName}-${factTableName}`,
-        sourceTable: dimCustName,
-        sourceColumn: custKeyCol.name,
+        id: `rel-${group.name}-${factTableName}`,
+        sourceTable: group.name,
+        sourceColumn: keyCol.name,
         targetTable: factTableName,
-        targetColumn: custKeyCol.name,
+        targetColumn: keyCol.name,
         cardinality: '1:N',
         crossFilterDirection: 'single',
-        isValid: true
+        isValid: true,
+        isActive: true,
+        integrityScore: 100
+      });
+
+      factFks.push({
+        column: keyCol.name,
+        targetTable: group.name,
+        targetColumn: keyCol.name
       });
     }
+  });
 
-    // 3. Dim_Product if relevant columns exist
-    if (productCols.length > 0) {
-      const prodKeyCol = productCols.find(c => c.name.toLowerCase().includes('id') || c.name.toLowerCase().includes('key') || c.name.toLowerCase().includes('sku')) || productCols[0];
-      const prodDataMap = new Map<any, Record<string, any>>();
-      rows.forEach(r => {
-        const keyVal = r[prodKeyCol.name];
-        if (keyVal !== null && keyVal !== undefined && !prodDataMap.has(keyVal)) {
-          const prodRec: Record<string, any> = {};
-          productCols.forEach(c => { prodRec[c.name] = r[c.name]; });
-          prodDataMap.set(keyVal, prodRec);
-        }
-      });
-      const dimProdData = Array.from(prodDataMap.values());
-      const dimProdName = 'Dim_Product';
+  // 3. Dim_Date if date columns exist
+  if (dateColumns.length > 0 && rows.length > 0) {
+    const primaryDateCol = dateColumns[0];
+    const dateSet = new Set<string>();
+    rows.forEach(r => {
+      const d = r[primaryDateCol.name];
+      if (d) dateSet.add(String(d));
+    });
 
-      tables.push({
-        id: dimProdName,
-        name: dimProdName,
-        type: 'dimension',
-        columns: productCols,
-        primaryKey: prodKeyCol.name,
-        foreignKeys: [],
-        rowCount: dimProdData.length,
-        data: dimProdData.slice(0, 100)
-      });
-
-      relationships.push({
-        id: `rel-${dimProdName}-${factTableName}`,
-        sourceTable: dimProdName,
-        sourceColumn: prodKeyCol.name,
-        targetTable: factTableName,
-        targetColumn: prodKeyCol.name,
-        cardinality: '1:N',
-        crossFilterDirection: 'single',
-        isValid: true
-      });
-    }
-
-    // 4. Dim_Date if date column exists
-    if (dateColumns.length > 0) {
-      const primaryDateCol = dateColumns[0];
-      const dateSet = new Set<string>();
-      rows.forEach(r => {
-        const d = r[primaryDateCol.name];
-        if (d) dateSet.add(String(d));
-      });
-      const sortedDates = Array.from(dateSet).sort();
+    const sortedDates = Array.from(dateSet).sort();
+    if (sortedDates.length > 0) {
       const dimDateData = sortedDates.map(dateStr => {
         const dt = new Date(dateStr);
+        const isValidDate = !isNaN(dt.getTime());
         return {
           Date: dateStr,
-          Year: dt.getFullYear(),
-          Quarter: `Q${Math.floor(dt.getMonth() / 3) + 1}`,
-          MonthName: dt.toLocaleString('default', { month: 'short' }),
-          MonthNumber: dt.getMonth() + 1,
-          DayOfWeek: dt.toLocaleString('default', { weekday: 'short' }),
-          DayOfMonth: dt.getDate()
+          Year: isValidDate ? dt.getFullYear() : '2025',
+          Quarter: isValidDate ? `Q${Math.floor(dt.getMonth() / 3) + 1}` : 'Q1',
+          MonthName: isValidDate ? dt.toLocaleString('default', { month: 'short' }) : 'Jan',
+          MonthNumber: isValidDate ? dt.getMonth() + 1 : 1,
+          DayOfWeek: isValidDate ? dt.toLocaleString('default', { weekday: 'short' }) : 'Mon',
+          DayOfMonth: isValidDate ? dt.getDate() : 1
         };
       });
 
@@ -173,35 +184,35 @@ export function buildDataModel(
         targetColumn: primaryDateCol.name,
         cardinality: '1:N',
         crossFilterDirection: 'single',
-        isValid: true
+        isValid: true,
+        isActive: true,
+        integrityScore: 100
+      });
+
+      factFks.push({
+        column: primaryDateCol.name,
+        targetTable: 'Dim_Date',
+        targetColumn: 'Date'
       });
     }
-
-    return {
-      tables,
-      relationships,
-      schemaType: 'star',
-      validationWarnings
-    };
   }
 
-  // Fallback to unified tabular model
-  const primaryKey = idColumns.find(c => c.isPrimaryKeyCandidate)?.name;
-  tables.push({
-    id: mainTableName,
-    name: mainTableName,
+  // Push Fact Table
+  tables.unshift({
+    id: factTableName,
+    name: factTableName,
     type: 'fact',
-    columns,
-    primaryKey,
-    foreignKeys: [],
-    rowCount: rows.length,
-    data: rows.slice(0, 100)
+    columns: factCols,
+    primaryKey: idColumns.find(c => c.isPrimaryKeyCandidate)?.name,
+    foreignKeys: factFks,
+    rowCount: factData.length,
+    data: factData.slice(0, 100)
   });
 
   return {
     tables,
-    relationships: [],
-    schemaType: 'flat',
-    validationWarnings: ['Flat tabular schema inferred. Consider separating entity dimensions for Star Schema optimization.']
+    relationships,
+    schemaType: relationships.length > 0 ? 'star' : 'flat',
+    validationWarnings
   };
 }

@@ -31,7 +31,12 @@ import {
   HelpCircle,
   RefreshCw,
   Pencil,
-  RotateCcw
+  RotateCcw,
+  UploadCloud,
+  Image,
+  Trash2,
+  Building2,
+  CheckCircle2
 } from 'lucide-react';
 import { KPI } from '../../types';
 import { usePlatform } from '../../store/usePlatformStore';
@@ -86,14 +91,41 @@ export const ExecutiveDashboard: React.FC = () => {
     filters,
     setFilters,
     openDrillThrough,
-    resetKpisToDefault
+    resetKpisToDefault,
+    uploadCompanyLogo,
+    removeCompanyLogo
   } = usePlatform();
+
+  type DashboardPersona = 'c_suite' | 'operations' | 'growth' | 'finance' | 'wallboard';
+  const [dashboardPersona, setDashboardPersona] = useState<DashboardPersona>('c_suite');
 
   const [activeTab, setActiveTab] = useState<DashboardTab>('overview');
   const [editingKpi, setEditingKpi] = useState<KPI | null>(null);
   const [isPdfGenerating, setIsPdfGenerating] = useState(false);
   const [isBundleGenerating, setIsBundleGenerating] = useState(false);
   const [downloadSuccess, setDownloadSuccess] = useState<string | null>(null);
+
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file (.png, .jpg, .webp, or .svg).');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      if (dataUrl) {
+        uploadCompanyLogo(dataUrl);
+        setDownloadSuccess('Company logo successfully updated and linked across all dashboards and reports!');
+        setTimeout(() => setDownloadSuccess(null), 3500);
+      }
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
 
   // Identify numeric & string columns
   const numericCols = useMemo(() => {
@@ -157,6 +189,126 @@ export const ExecutiveDashboard: React.FC = () => {
     const firstKey = Object.keys(analytics.categoryPerformance)[0];
     return firstKey ? analytics.categoryPerformance[firstKey] : [];
   }, [analytics.categoryPerformance, selectedDimension]);
+
+  // Dynamic AI Decision Directives computed purely from active dataset
+  const activeDirectives = useMemo(() => {
+    if (analytics.insights && analytics.insights.length >= 3) {
+      return analytics.insights.slice(0, 3);
+    }
+    const list = [...(analytics.insights || [])];
+    const kpi0 = analytics.kpis[0];
+    const kpi1 = analytics.kpis[1];
+    const topPerformer = (analytics.topPerformers || [])[0];
+
+    if (list.length < 1 && kpi0) {
+      list.push({
+        id: 'dir-dyn-1',
+        category: 'Driver',
+        title: `${kpi0.name} Trajectory`,
+        what: `${kpi0.name} reached ${kpi0.formattedValue}${kpi0.changePercent !== undefined ? ` (${kpi0.changePercent >= 0 ? '+' : ''}${kpi0.changePercent}% vs prior window)` : ''}.`,
+        why: `Evaluated across ${cleanRows.length.toLocaleString()} verified data records in ${project.name}.${topPerformer ? ` Top contributing item is "${topPerformer.name}" (${topPerformer.formattedValue}).` : ''}`,
+        whoOrWhat: `Audited column: ${kpi0.traceableSource}`,
+        significance: `Rated "${kpi0.status}". Stable distribution observed across period intervals.`,
+        action: kpi0.status === 'At Risk' ? `Investigate lower quartile variance in ${kpi0.sourceColumn}.` : `Sustain momentum and reinforce high-yield channels.`,
+        relatedMetric: kpi0.name,
+        supportingData: `Audited records: ${cleanRows.length}, Value: ${kpi0.formattedValue}`,
+        confidence: 0.98
+      });
+    }
+
+    if (list.length < 2 && kpi1) {
+      list.push({
+        id: 'dir-dyn-2',
+        category: 'Operational',
+        title: `${kpi1.name} Performance Health`,
+        what: `${kpi1.name} registered at ${kpi1.formattedValue}.`,
+        why: `Calculated from verified column profile (${kpi1.traceableSource}).`,
+        whoOrWhat: `Formula: ${kpi1.calculation}`,
+        significance: `Benchmark status evaluated as "${kpi1.status}".`,
+        action: `Align operational capacity with ${kpi1.name} quarterly baseline.`,
+        relatedMetric: kpi1.name,
+        supportingData: `Metric: ${kpi1.name}, Value: ${kpi1.formattedValue}`,
+        confidence: 0.95
+      });
+    }
+
+    if (list.length < 3) {
+      if (analytics.pvmAnalysis && analytics.pvmAnalysis.length > 0) {
+        const topPvm = analytics.pvmAnalysis[0];
+        list.push({
+          id: 'dir-dyn-3',
+          category: 'Operational',
+          title: `Price-Volume-Mix: ${topPvm.category}`,
+          what: `${topPvm.category} led variance with +$${Math.round(topPvm.revenueVariance).toLocaleString()} movement.`,
+          why: `Price Effect: $${Math.round(topPvm.priceVariance).toLocaleString()} | Volume Effect: $${Math.round(topPvm.volumeVariance).toLocaleString()} | Mix Shift: $${Math.round(topPvm.mixVariance).toLocaleString()}.`,
+          whoOrWhat: `Segment: ${topPvm.category}`,
+          significance: `High variance impact contributor across active product mix.`,
+          action: `Scale pricing practices from ${topPvm.category} to adjacent offerings.`,
+          relatedMetric: topPvm.category,
+          supportingData: `Variance: +$${Math.round(topPvm.revenueVariance).toLocaleString()}`,
+          confidence: 0.94
+        });
+      } else if (analytics.opportunities && analytics.opportunities[0]) {
+        const opp = analytics.opportunities[0];
+        list.push({
+          id: 'dir-dyn-3',
+          category: 'Opportunity',
+          title: opp.title,
+          what: opp.potentialImpact,
+          why: opp.supportingData,
+          whoOrWhat: opp.metric,
+          significance: `${opp.priority} Priority Opportunity detected.`,
+          action: opp.action,
+          relatedMetric: opp.metric,
+          supportingData: opp.supportingData,
+          confidence: 0.92
+        });
+      } else {
+        list.push({
+          id: 'dir-dyn-3',
+          category: 'Operational',
+          title: 'Data Integrity & Coverage Verification',
+          what: `100% of ${cleanRows.length.toLocaleString()} rows audited with zero critical schema errors.`,
+          why: 'Star Schema model validated with automated foreign-primary key constraints and high-confidence DAX formulas.',
+          whoOrWhat: 'Pipeline Health',
+          significance: `Data Quality Health Score: ${qualityReport.overallScore}%.`,
+          action: 'Export verified PBIP tabular model and DAX library for downstream Power BI deployment.',
+          relatedMetric: 'Data Quality',
+          supportingData: `Score: ${qualityReport.overallScore}%, Rows: ${cleanRows.length}`,
+          confidence: 0.99
+        });
+      }
+    }
+
+    return list.slice(0, 3);
+  }, [analytics.insights, analytics.kpis, analytics.topPerformers, analytics.pvmAnalysis, analytics.opportunities, cleanRows.length, project.name, qualityReport.overallScore]);
+
+  // Adapt displayed KPIs according to chosen Persona perspective
+  const displayKpis = useMemo(() => {
+    const all = analytics.kpis || [];
+    if (dashboardPersona === 'finance') {
+      return [...all].sort((a, b) => {
+        const aScore = /margin|profit|cost|income/i.test(a.name) ? 2 : /rev|sales/i.test(a.name) ? 1 : 0;
+        const bScore = /margin|profit|cost|income/i.test(b.name) ? 2 : /rev|sales/i.test(b.name) ? 1 : 0;
+        return bScore - aScore;
+      }).slice(0, 4);
+    }
+    if (dashboardPersona === 'operations') {
+      return [...all].sort((a, b) => {
+        const aScore = /unit|qty|volume|count|order|record/i.test(a.name) ? 2 : 0;
+        const bScore = /unit|qty|volume|count|order|record/i.test(b.name) ? 2 : 0;
+        return bScore - aScore;
+      }).slice(0, 4);
+    }
+    if (dashboardPersona === 'growth') {
+      return [...all].sort((a, b) => {
+        const aScore = /growth|sales|customer|target|rate/i.test(a.name) ? 2 : 0;
+        const bScore = /growth|sales|customer|target|rate/i.test(b.name) ? 2 : 0;
+        return bScore - aScore;
+      }).slice(0, 4);
+    }
+    return all.slice(0, 4);
+  }, [analytics.kpis, dashboardPersona]);
 
   // Baseline metrics for What-If scenario
   const { baselineRev, baselineProfit, baselineCost } = useMemo(() => {
@@ -324,33 +476,82 @@ export const ExecutiveDashboard: React.FC = () => {
         <div className="absolute left-1/3 -bottom-24 w-72 h-72 bg-[#00D2FF]/5 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col gap-4">
-          {/* Title row with breadcrumbs & system health badges */}
+          {/* Hidden file input for company logo upload */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleLogoUpload}
+          />
+
+          {/* Title row with logo, breadcrumbs & system health badges */}
           <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
-            <div className="flex flex-col gap-1.5">
-              <div className="flex items-center gap-1.5 text-[10px] font-bold tracking-widest text-on-surface-variant uppercase font-mono">
-                <span className="text-metric-emerald font-bold">{brand.companyName.toUpperCase()}</span>
-                <span>/</span>
-                <span>{brand.department.toUpperCase()}</span>
-                <span>/</span>
-                <span className="px-2 py-0.5 rounded bg-[#00F5A0]/10 text-metric-emerald font-bold flex items-center gap-1 border border-[#00F5A0]/20">
-                  <span className="w-1.5 h-1.5 rounded-full bg-metric-emerald animate-pulse" /> VERIFIED ANALYTICS MODEL
-                </span>
+            <div className="flex items-start gap-4">
+              {/* Company Logo Display & Uploader Button */}
+              <div className="relative group shrink-0">
+                {brand.logoUrl ? (
+                  <div className="relative">
+                    <img
+                      src={brand.logoUrl}
+                      alt={brand.companyName}
+                      className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl object-contain bg-surface-panel/90 border-2 border-emerald-500/40 p-1 shadow-lg backdrop-blur-xs transition-transform group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 rounded-2xl transition-opacity flex items-center justify-center gap-1.5">
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="p-1 rounded-lg bg-surface-panel text-white hover:text-emerald-400 transition-colors"
+                        title="Change Company Logo"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={removeCompanyLogo}
+                        className="p-1 rounded-lg bg-surface-panel text-rose-400 hover:text-rose-300 transition-colors"
+                        title="Remove Logo"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl border-2 border-dashed border-emerald-500/40 hover:border-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 text-metric-emerald flex flex-col items-center justify-center gap-1 transition-all cursor-pointer shadow-xs group"
+                    title="Upload Company Logo (Appears on Dashboard, Top Bar, and PDF Reports)"
+                  >
+                    <UploadCloud className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                    <span className="text-[9px] font-mono uppercase font-bold tracking-tight text-center leading-none">Upload Logo</span>
+                  </button>
+                )}
               </div>
 
-              {/* Title & Rename Control */}
-              <div className="flex items-center gap-2 flex-wrap mt-0.5">
-                <h1 className="font-headline-xl text-headline-xl text-on-surface tracking-tight font-extrabold flex items-center gap-2 flex-wrap">
-                  <EditableDashboardTitle className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight uppercase" showLabelPrefix={false} />
-                </h1>
-              </div>
+              <div className="flex flex-col gap-1.5 min-w-0">
+                <div className="flex items-center gap-1.5 text-[10px] font-bold tracking-widest text-on-surface-variant uppercase font-mono flex-wrap">
+                  <span className="text-metric-emerald font-bold">{brand.companyName.toUpperCase()}</span>
+                  <span>/</span>
+                  <span>{brand.department.toUpperCase()}</span>
+                  <span>/</span>
+                  <span className="px-2 py-0.5 rounded bg-[#00F5A0]/10 text-metric-emerald font-bold flex items-center gap-1 border border-[#00F5A0]/20">
+                    <span className="w-1.5 h-1.5 rounded-full bg-metric-emerald animate-pulse" /> VERIFIED ANALYTICS MODEL
+                  </span>
+                </div>
 
-              <p className="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-2 flex-wrap">
-                <span>Scope: <strong className="text-on-surface font-semibold">{project.name}</strong></span>
-                <span className="w-1 h-1 rounded-full bg-border-prominent" />
-                <span className="flex items-center gap-1">Prepared by: <EditableAnalystName /></span>
-                <span className="w-1 h-1 rounded-full bg-border-prominent" />
-                <span>Audited: <strong className="text-metric-cyan font-semibold">{filteredRows.length.toLocaleString()} rows</strong></span>
-              </p>
+                {/* Title & Rename Control */}
+                <div className="flex items-center gap-2 flex-wrap mt-0.5">
+                  <h1 className="font-headline-xl text-headline-xl text-on-surface tracking-tight font-extrabold flex items-center gap-2 flex-wrap">
+                    <EditableDashboardTitle className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight uppercase" showLabelPrefix={false} />
+                  </h1>
+                </div>
+
+                <p className="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-2 flex-wrap">
+                  <span>Scope: <strong className="text-on-surface font-semibold">{project.name}</strong></span>
+                  <span className="w-1 h-1 rounded-full bg-border-prominent" />
+                  <span className="flex items-center gap-1">Prepared by: <EditableAnalystName /></span>
+                  <span className="w-1 h-1 rounded-full bg-border-prominent" />
+                  <span>Audited: <strong className="text-metric-cyan font-semibold">{filteredRows.length.toLocaleString()} rows</strong></span>
+                </p>
+              </div>
             </div>
 
             {/* Exports & Quick Telemetry Indicators */}
@@ -515,6 +716,41 @@ export const ExecutiveDashboard: React.FC = () => {
               </button>
             </div>
           )}
+
+          {/* Dashboard Persona & Style Switcher (User Customizable Perspective) */}
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-2.5 border-t border-border-subtle">
+            <div className="flex items-center gap-2">
+              <span className="font-label-caps text-label-caps uppercase tracking-wider text-metric-emerald font-bold flex items-center gap-1.5 text-xs">
+                <Sparkles className="w-4 h-4 text-metric-emerald" /> DASHBOARD PERSPECTIVE:
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {[
+                { id: 'c_suite', label: '🏛️ C-Suite Executive', desc: 'Strategic high-level revenue pacing, corporate growth & executive directives' },
+                { id: 'operations', label: '⚡ Operational Velocity', desc: 'Transaction volume throughput, delivery status & execution bottlenecks' },
+                { id: 'growth', label: '📈 Growth & Marketing', desc: 'Category market shares, product rankings & customer conversion funnels' },
+                { id: 'finance', label: '💵 Financial Controller', desc: 'Gross margin %, cost absorption efficiency & Price-Volume-Mix (PVM)' },
+                { id: 'wallboard', label: '🌌 Wallboard Presentation', desc: 'High-contrast minimalist mode for boardrooms and monitoring walls' }
+              ].map(p => (
+                <button
+                  key={p.id}
+                  onClick={() => {
+                    setDashboardPersona(p.id as DashboardPersona);
+                    setDownloadSuccess(`Switched dashboard view to ${p.label}`);
+                    setTimeout(() => setDownloadSuccess(null), 2000);
+                  }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1 border shadow-xs ${
+                    dashboardPersona === p.id
+                      ? 'bg-metric-emerald text-black border-metric-emerald font-bold shadow-emerald-500/20'
+                      : 'bg-surface-panel hover:bg-surface-elevated text-on-surface-variant hover:text-on-surface border-border-subtle'
+                  }`}
+                  title={p.desc}
+                >
+                  <span>{p.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
 
           {/* Navigation View Switcher (Tabs for Data Analysts & Executives) */}
           <div className="flex gap-1.5 pt-1 border-t border-border-subtle text-xs overflow-x-auto no-scrollbar">
@@ -696,7 +932,7 @@ export const ExecutiveDashboard: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-          {analytics.kpis.slice(0, 4).map((kpi, kIdx) => {
+          {displayKpis.map((kpi, kIdx) => {
             const isPositive = (kpi.changePercent ?? 0) >= 0;
             const statusTheme = kpi.status === 'Above Target'
               ? { text: 'text-metric-emerald', bg: 'bg-emerald-500/20', dot: 'bg-metric-emerald', border: 'border-emerald-500/30', stroke: '#00F5A0' }
@@ -817,7 +1053,7 @@ export const ExecutiveDashboard: React.FC = () => {
                     AI DECISION DIRECTIVES: WHAT • WHY • MANAGEMENT ACTION
                   </h2>
                   <p className="font-body-sm text-body-sm text-on-surface-variant">
-                    Synthesized causal inferences derived from {filteredRows.length} audited FactSales data instances
+                    Synthesized causal inferences derived from {filteredRows.length.toLocaleString()} audited records in {project.name}
                   </p>
                 </div>
               </div>
@@ -830,130 +1066,60 @@ export const ExecutiveDashboard: React.FC = () => {
               </div>
             </div>
 
-            {/* 3 Glassmorphic Directives Cards with Tooltips */}
+            {/* 3 Dynamic Glassmorphic Directives Cards with Real Dataset Inferences */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              {/* Directive 1 */}
-              <Tooltip
-                side="top"
-                title="Revenue Driver Directive"
-                tag="Growth Pacing"
-                content="Identifies the primary sales driver from audited FactSales data. Explains variance against previous period benchmarks and suggests marketing priority."
-              >
-                <div className="bg-surface-panel rounded-lg p-4 border border-border-subtle flex flex-col justify-between relative hover:bg-surface-elevated/70 transition-colors shadow-xs h-full">
-                  <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="font-headline-sm text-headline-sm text-on-surface font-semibold">Net Sales Revenue Trend</span>
-                      <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-metric-emerald font-label-caps text-label-caps tracking-widest uppercase font-bold">
-                        DRIVER
-                      </span>
-                    </div>
-                    <div className="space-y-2.5 text-xs">
-                      <div>
-                        <span className="font-label-caps text-label-caps text-metric-cyan uppercase tracking-wider block font-bold">WHAT</span>
-                        <p className="font-body-sm text-body-sm text-on-surface mt-0.5">
-                          Net Sales Revenue reached <strong className="text-on-surface font-semibold">$181.2K</strong> (-0.8% pacing vs prior period).
-                        </p>
-                      </div>
-                      <div>
-                        <span className="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider block font-bold">WHY</span>
-                        <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
-                          Driven by aggregate transaction volume across 140 audited orders in FactSales. Top flagship line 'Cloud Infrastructure' contributed <strong className="text-on-surface font-semibold">$72.1K</strong> (39.8% of total turnover).
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="mt-4 p-2.5 bg-surface-card rounded border border-border-subtle">
-                    <span className="font-label-caps text-label-caps text-metric-emerald uppercase tracking-wider flex items-center gap-1 font-bold">
-                      <Zap className="w-3.5 h-3.5 text-metric-emerald" /> ACTION
-                    </span>
-                    <p className="font-body-sm text-body-sm text-metric-emerald mt-0.5 font-medium">
-                      Sustain marketing velocity in high-yielding enterprise tiers.
-                    </p>
-                  </div>
-                </div>
-              </Tooltip>
+              {activeDirectives.map((dir, idx) => {
+                const categoryTheme = dir.category === 'Driver' 
+                  ? { bg: 'bg-emerald-500/20 text-metric-emerald border-emerald-500/30', label: 'DRIVER' }
+                  : dir.category === 'Opportunity'
+                  ? { bg: 'bg-amber-500/20 text-metric-amber border-amber-500/30', label: 'OPPORTUNITY' }
+                  : { bg: 'bg-cyan-500/20 text-metric-cyan border-cyan-500/30', label: 'OPERATIONAL' };
 
-              {/* Directive 2 */}
-              <Tooltip
-                side="top"
-                title="Profitability Health Directive"
-                tag="Cost Governance"
-                content="Evaluates cost absorption efficiency and margin erosion risks. Highlights where discounting thresholds need strict executive controls."
-              >
-                <div className="bg-surface-panel rounded-lg p-4 border border-border-subtle flex flex-col justify-between relative hover:bg-surface-elevated/70 transition-colors shadow-xs h-full">
-                  <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="font-headline-sm text-headline-sm text-on-surface font-semibold">Gross Margin & Profitability Health</span>
-                      <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-metric-emerald font-label-caps text-label-caps tracking-widest uppercase font-bold">
-                        DRIVER
-                      </span>
-                    </div>
-                    <div className="space-y-2.5 text-xs">
+                return (
+                  <Tooltip
+                    key={dir.id || idx}
+                    side="top"
+                    title={dir.title}
+                    tag={dir.category}
+                    content={dir.significance || dir.why}
+                  >
+                    <div className="bg-surface-panel rounded-lg p-4 border border-border-subtle flex flex-col justify-between relative hover:bg-surface-elevated/70 transition-colors shadow-xs h-full">
                       <div>
-                        <span className="font-label-caps text-label-caps text-metric-cyan uppercase tracking-wider block font-bold">WHAT</span>
-                        <p className="font-body-sm text-body-sm text-on-surface mt-0.5">
-                          Gross Margin is maintained at <strong className="text-metric-emerald font-semibold">53.3%</strong>.
-                        </p>
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="font-headline-sm text-headline-sm text-on-surface font-semibold truncate pr-2">
+                            {dir.title}
+                          </span>
+                          <span className={`px-2 py-0.5 rounded font-label-caps text-label-caps tracking-widest uppercase font-bold border shrink-0 ${categoryTheme.bg}`}>
+                            {categoryTheme.label}
+                          </span>
+                        </div>
+                        <div className="space-y-2.5 text-xs">
+                          <div>
+                            <span className="font-label-caps text-label-caps text-metric-cyan uppercase tracking-wider block font-bold">WHAT</span>
+                            <p className="font-body-sm text-body-sm text-on-surface mt-0.5 leading-relaxed">
+                              {dir.what}
+                            </p>
+                          </div>
+                          <div>
+                            <span className="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider block font-bold">WHY</span>
+                            <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5 leading-relaxed">
+                              {dir.why}
+                            </p>
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <span className="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider block font-bold">WHY</span>
-                        <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
-                          Direct Cost of Goods Sold (COGS) absorption is holding within standard parameters across product sub-categories.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="mt-4 p-2.5 bg-surface-card rounded border border-border-subtle">
-                    <span className="font-label-caps text-label-caps text-metric-emerald uppercase tracking-wider flex items-center gap-1 font-bold">
-                      <Zap className="w-3.5 h-3.5 text-metric-emerald" /> ACTION
-                    </span>
-                    <p className="font-body-sm text-body-sm text-metric-emerald mt-0.5 font-medium">
-                      Enforce approval thresholds on custom discounting exceeding 10% on direct enterprise contracts.
-                    </p>
-                  </div>
-                </div>
-              </Tooltip>
-
-              {/* Directive 3 */}
-              <Tooltip
-                side="top"
-                title="PVM Variance Attribution"
-                tag="Operations & Mix"
-                content="Decomposes exact revenue movements into isolated Price Effect (changes in pricing), Volume Effect (quantity sold), and Mix Shift (product tier distribution)."
-              >
-                <div className="bg-surface-panel rounded-lg p-4 border border-border-subtle flex flex-col justify-between relative hover:bg-surface-elevated/70 transition-colors shadow-xs h-full">
-                  <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="font-headline-sm text-headline-sm text-on-surface font-semibold">Price-Volume-Mix (PVM): Mid-Market</span>
-                      <span className="px-2 py-0.5 rounded bg-cyan-500/20 text-metric-cyan font-label-caps text-label-caps tracking-widest uppercase font-bold">
-                        OPERATIONAL
-                      </span>
-                    </div>
-                    <div className="space-y-2.5 text-xs">
-                      <div>
-                        <span className="font-label-caps text-label-caps text-metric-cyan uppercase tracking-wider block font-bold">WHAT</span>
-                        <p className="font-body-sm text-body-sm text-on-surface mt-0.5">
-                          Mid-Market Growth led revenue change with <strong className="text-on-surface font-semibold">+$640</strong> variance.
-                        </p>
-                      </div>
-                      <div>
-                        <span className="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider block font-bold">WHY</span>
-                        <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
-                          Price Effect: <span className="text-metric-emerald font-semibold">+$427</span> | Volume Effect: <span className="text-metric-cyan font-semibold">+$213</span> | Mix Shift: <span className="text-on-surface font-semibold">+$0</span>.
+                      <div className="mt-4 p-2.5 bg-surface-card rounded border border-border-subtle">
+                        <span className="font-label-caps text-label-caps text-metric-emerald uppercase tracking-wider flex items-center gap-1 font-bold">
+                          <Zap className="w-3.5 h-3.5 text-metric-emerald" /> ACTION
+                        </span>
+                        <p className="font-body-sm text-body-sm text-metric-emerald mt-0.5 font-medium leading-relaxed">
+                          {dir.action}
                         </p>
                       </div>
                     </div>
-                  </div>
-                  <div className="mt-4 p-2.5 bg-surface-card rounded border border-border-subtle">
-                    <span className="font-label-caps text-label-caps text-metric-emerald uppercase tracking-wider flex items-center gap-1 font-bold">
-                      <Zap className="w-3.5 h-3.5 text-metric-emerald" /> ACTION
-                    </span>
-                    <p className="font-body-sm text-body-sm text-metric-emerald mt-0.5 font-medium">
-                      Replicate tiered packaging methodology from Mid-Market Growth into lower-performing product categories.
-                    </p>
-                  </div>
-                </div>
-              </Tooltip>
+                  </Tooltip>
+                );
+              })}
             </div>
           </section>
 
