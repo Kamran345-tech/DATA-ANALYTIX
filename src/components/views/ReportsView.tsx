@@ -16,7 +16,8 @@ import {
   Sliders,
   X,
   RotateCcw,
-  Sparkles
+  Sparkles,
+  Tv
 } from 'lucide-react';
 import { KPI } from '../../types';
 import { usePlatform, ReportHeadings } from '../../store/usePlatformStore';
@@ -31,15 +32,16 @@ export const ReportsView: React.FC = () => {
     brand, 
     analytics, 
     qualityReport, 
-    cleanRows,
-    rawRows,
-    columns,
-    dataModel,
-    daxMeasures,
-    transformations,
-    customVisuals,
-    reportHeadings,
-    updateReportHeading
+    cleanRows, 
+    rawRows, 
+    columns, 
+    dataModel, 
+    daxMeasures, 
+    transformations, 
+    customVisuals, 
+    reportHeadings, 
+    updateReportHeading,
+    setIsPresentationMode 
   } = usePlatform();
 
   const [isPdfGenerating, setIsPdfGenerating] = useState(false);
@@ -246,6 +248,15 @@ export const ReportsView: React.FC = () => {
               <Download className="w-4 h-4 text-cyan-400" />
             )}
             <span>Executive Report (PDF)</span>
+          </button>
+
+          <button
+            onClick={() => setIsPresentationMode(true)}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold text-xs shadow-sm transition-all cursor-pointer"
+            title="Open Fullscreen Boardroom Presentation Deck"
+          >
+            <Tv className="w-4 h-4" />
+            <span>Present Deck</span>
           </button>
 
           <button

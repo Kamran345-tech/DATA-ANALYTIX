@@ -12,6 +12,7 @@ import { DataPreviewView } from './components/views/DataPreviewView';
 import { DataQualityView } from './components/views/DataQualityView';
 import { DataCleaningLabView } from './components/views/DataCleaningLabView';
 import { DataModelingView } from './components/views/DataModelingView';
+import { DataEngineeringSuite } from './components/views/DataEngineeringSuite';
 import { AnalysisView } from './components/views/AnalysisView';
 import { DAXLabView } from './components/views/DAXLabView';
 import { SQLLabView } from './components/views/SQLLabView';
@@ -29,7 +30,7 @@ import { DrillThroughModal } from './components/common/DrillThroughModal';
 import { AuthModal } from './components/common/AuthModal';
 import { ToastContainer } from './components/common/ToastContainer';
 import { ToastProvider } from './store/useToast';
-
+import { ExecutivePresentationDeck } from './components/common/ExecutivePresentationDeck';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 const MainContent: React.FC = () => {
@@ -38,13 +39,13 @@ const MainContent: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="h-screen w-full bg-[#0B0F17] flex flex-col items-center justify-center gap-4 text-white font-sans">
-        <div className="w-12 h-12 rounded-2xl bg-[#21F1A8]/10 border border-[#21F1A8]/30 flex items-center justify-center text-[#21F1A8]">
-          <span className="w-6 h-6 border-2 border-[#21F1A8] border-t-transparent rounded-full animate-spin" />
+      <div className="h-screen w-full bg-[#0B1120] flex flex-col items-center justify-center gap-4 text-white font-sans">
+        <div className="w-12 h-12 rounded-2xl bg-[#22D3EE]/10 border border-[#22D3EE]/30 flex items-center justify-center text-[#22D3EE]">
+          <span className="w-6 h-6 border-2 border-[#22D3EE] border-t-transparent rounded-full animate-spin" />
         </div>
         <div className="text-center space-y-1">
           <div className="font-heading font-bold text-base tracking-wider uppercase text-white">
-            ACUITY<span className="text-[#21F1A8]">BI</span> ENTERPRISE
+            DATA<span className="text-[#22D3EE]"> ANALYTIX</span>
           </div>
           <p className="text-xs text-gray-400 font-mono">Initializing Governed Workspace & Security Engine...</p>
         </div>
@@ -77,6 +78,8 @@ const MainContent: React.FC = () => {
         return <DataCleaningLabView />;
       case 'modeling':
         return <DataModelingView />;
+      case 'data_engineering':
+        return <DataEngineeringSuite />;
       case 'analysis':
         return <AnalysisView />;
       case 'dax_lab':
@@ -130,6 +133,9 @@ const MainContent: React.FC = () => {
 
       {/* Global Toast Notification System */}
       <ToastContainer />
+
+      {/* Fullscreen Boardroom Presentation Deck */}
+      {isPresentationMode && <ExecutivePresentationDeck />}
     </div>
   );
 };

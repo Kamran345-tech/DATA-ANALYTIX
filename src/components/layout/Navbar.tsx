@@ -67,21 +67,20 @@ export const Navbar: React.FC = () => {
           <BrandLogo size="sm" showSubtitle={false} />
         </div>
 
-        {/* Project Title & Active Badge */}
+        {/* Project Title & Status Indicator */}
         <div className={`hidden md:flex items-center gap-2 pl-3 border-l ${
-          isLight ? 'border-slate-200' : 'border-[#2e2e2e]'
+          isLight ? 'border-slate-200' : 'border-border-subtle'
         }`}>
           <EditableDashboardTitle className="text-xs max-w-[170px] lg:max-w-xs" iconSize="sm" />
-          <span className={`px-2.5 py-0.5 text-[11px] font-semibold rounded-full flex items-center gap-1.5 shrink-0 ${
-            isLight 
-              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-2xs' 
-              : 'bg-[#21F1A8]/15 text-[#21F1A8] border border-[#21F1A8]/30'
+          <span className="text-slate-400 font-mono text-xs">/</span>
+          <span className={`text-xs font-medium flex items-center gap-1.5 shrink-0 ${
+            isLight ? 'text-cyan-800' : 'text-[#22D3EE]'
           }`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${isLight ? 'bg-emerald-600' : 'bg-[#21F1A8]'}`} />
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
             Enterprise Model
           </span>
-          <span className={`text-xs font-mono ${isLight ? 'text-slate-500' : 'text-gray-500'}`}>
-            {project.version}
+          <span className={`text-xs font-mono ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>
+            · {project.version}
           </span>
         </div>
       </div>

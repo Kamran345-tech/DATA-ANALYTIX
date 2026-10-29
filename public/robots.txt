@@ -1,0 +1,6 @@
+# User-agent directives for Data Analytix
+User-agent: *
+Allow: /
+
+# Canonical Sitemap
+Sitemap: https://data-analytix-flax.vercel.app/sitemap.xml

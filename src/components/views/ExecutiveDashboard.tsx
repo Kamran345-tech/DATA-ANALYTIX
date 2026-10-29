@@ -36,11 +36,15 @@ import {
   Image,
   Trash2,
   Building2,
-  CheckCircle2
+  CheckCircle2,
+  Tv,
+  Network
 } from 'lucide-react';
 import { KPI } from '../../types';
 import { usePlatform } from '../../store/usePlatformStore';
 import { GlobalFilterBar } from '../common/GlobalFilterBar';
+import { InteractiveSlicersBar } from '../common/InteractiveSlicersBar';
+import { DataEngineeringSuite } from './DataEngineeringSuite';
 import { EditableDashboardTitle } from '../common/EditableDashboardTitle';
 import { EditableAnalystName } from '../common/EditableAnalystName';
 import { KpiCardEditorModal } from '../common/KpiCardEditorModal';
@@ -71,7 +75,10 @@ type DashboardTab =
   | 'pareto' 
   | 'whatif' 
   | 'pivot' 
-  | 'distribution';
+  | 'distribution'
+  | 'data_engineering';
+
+export type DashboardVisualTheme = 'cyber_emerald' | 'wall_street' | 'power_bi' | 'sunset_royal' | 'nordic_light';
 
 export const ExecutiveDashboard: React.FC = () => {
   const { 
@@ -93,8 +100,29 @@ export const ExecutiveDashboard: React.FC = () => {
     openDrillThrough,
     resetKpisToDefault,
     uploadCompanyLogo,
-    removeCompanyLogo
+    removeCompanyLogo,
+    isPresentationMode,
+    setIsPresentationMode,
+    themeMode
   } = usePlatform();
+
+  const isLight = themeMode === 'light';
+
+  // Multiple visual styling themes
+  const [visualTheme, setVisualTheme] = useState<DashboardVisualTheme>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('acuitybi_dashboard_theme');
+      if (saved) return saved as DashboardVisualTheme;
+    }
+    return 'cyber_emerald';
+  });
+
+  const handleSetVisualTheme = (thm: DashboardVisualTheme) => {
+    setVisualTheme(thm);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('acuitybi_dashboard_theme', thm);
+    }
+  };
 
   type DashboardPersona = 'c_suite' | 'operations' | 'growth' | 'finance' | 'wallboard';
   const [dashboardPersona, setDashboardPersona] = useState<DashboardPersona>('c_suite');
@@ -104,6 +132,51 @@ export const ExecutiveDashboard: React.FC = () => {
   const [isPdfGenerating, setIsPdfGenerating] = useState(false);
   const [isBundleGenerating, setIsBundleGenerating] = useState(false);
   const [downloadSuccess, setDownloadSuccess] = useState<string | null>(null);
+
+  // Compute filtered value for a KPI based on active slicers/filters
+  const computeFilteredKpi = (kpi: KPI) => {
+    if (filteredRows.length === cleanRows.length) {
+      return { formatted: kpi.formattedValue, raw: kpi.value, isFiltered: false };
+    }
+    const vals = filteredRows
+      .map(r => Number(r[kpi.sourceColumn]))
+      .filter(v => typeof v === 'number' && !isNaN(v));
+
+    if (vals.length === 0) {
+      return { formatted: '0', raw: 0, isFiltered: true };
+    }
+
+    let computed = 0;
+    if (kpi.aggregation === 'avg') {
+      computed = vals.reduce((a, b) => a + b, 0) / vals.length;
+    } else if (kpi.aggregation === 'count') {
+      computed = filteredRows.length;
+    } else if (kpi.aggregation === 'distinct_count') {
+      computed = new Set(filteredRows.map(r => String(r[kpi.sourceColumn]))).size;
+    } else if (kpi.aggregation === 'min') {
+      computed = safeMin(vals);
+    } else if (kpi.aggregation === 'max') {
+      computed = safeMax(vals);
+    } else {
+      computed = vals.reduce((a, b) => a + b, 0);
+    }
+
+    const isCurrency = /revenue|sales|profit|margin|cost|price|income|amount/i.test(kpi.name) || kpi.formattedValue.startsWith('$');
+    const isPercent = /margin|rate|percent|share|yield/i.test(kpi.name) || kpi.formattedValue.endsWith('%');
+
+    let formatted = '';
+    if (isCurrency) {
+      if (Math.abs(computed) >= 1_000_000) formatted = `$${(computed / 1_000_000).toFixed(2)}M`;
+      else if (Math.abs(computed) >= 1_000) formatted = `$${(computed / 1_000).toFixed(1)}K`;
+      else formatted = `$${computed.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+    } else if (isPercent) {
+      formatted = `${computed.toFixed(1)}%`;
+    } else {
+      formatted = computed >= 1000 ? Math.round(computed).toLocaleString() : computed.toFixed(1);
+    }
+
+    return { formatted, raw: computed, isFiltered: true };
+  };
 
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
 
@@ -612,6 +685,16 @@ export const ExecutiveDashboard: React.FC = () => {
                   <span className="hidden md:inline">Executive Report (PDF)</span>
                 </button>
 
+                {/* Fullscreen Boardroom Presentation Deck Button */}
+                <button
+                  onClick={() => setIsPresentationMode(true)}
+                  className="h-8 px-3 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
+                  title="Open Fullscreen Boardroom Presentation Deck"
+                >
+                  <Tv className="w-3.5 h-3.5" />
+                  <span>Present Deck</span>
+                </button>
+
                 {/* Dashboard JSON */}
                 <button
                   onClick={handleDownloadDashboardJSON}
@@ -635,100 +718,20 @@ export const ExecutiveDashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* Global Context Filter Subheader Bar */}
-          <div className="w-full bg-surface-panel/90 backdrop-blur-md rounded-lg p-2.5 border border-border-subtle flex flex-col md:flex-row items-center justify-between gap-2.5">
-            <div className="flex items-center gap-3 w-full md:w-auto flex-wrap">
-              <div className="flex items-center gap-1.5 text-metric-emerald font-label-caps text-label-caps tracking-wider uppercase font-bold">
-                <Filter className="w-4 h-4 text-metric-emerald" />
-                <span>GLOBAL CONTEXT</span>
-              </div>
+          {/* Interactive Power BI Style Slicers Ribbon */}
+          <InteractiveSlicersBar className="w-full my-1.5" />
 
-              {/* Dimension Dropdown */}
-              <div className="relative">
-                <select 
-                  value={filters.selectedDimension || 'All Dimensions'}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (val === 'All Dimensions') {
-                      setFilters(prev => ({ ...prev, selectedDimension: null, selectedDimensionValue: null }));
-                    } else {
-                      const [dim, value] = val.split(': ');
-                      setFilters(prev => ({ ...prev, selectedDimension: dim, selectedDimensionValue: value || null }));
-                    }
-                  }}
-                  className="h-8 pl-3 pr-8 bg-surface-card hover:bg-surface-elevated text-on-surface text-xs rounded border border-border-subtle focus:outline-none cursor-pointer transition-colors shadow-xs appearance-none"
-                >
-                  <option value="All Dimensions">All Dimensions</option>
-                  <option value="CustomerSegment: Enterprise Strategic">Customer Segment: Enterprise Strategic</option>
-                  <option value="CustomerSegment: Commercial SMB">Customer Segment: Commercial SMB</option>
-                  <option value="CustomerSegment: Mid-Market Growth">Customer Segment: Mid-Market Growth</option>
-                  <option value="ProductFamily: Cloud Infrastructure">Product Family: Cloud Infrastructure</option>
-                  <option value="ProductFamily: AI Copilot & Models">Product Family: AI Copilot & Models</option>
-                </select>
-                <Compass className="pointer-events-none absolute right-2.5 top-2.5 w-3.5 h-3.5 text-on-surface-variant" />
-              </div>
-
-              {/* Date Range Selector */}
-              <div className="flex items-center gap-2 bg-surface-card px-2.5 h-8 rounded border border-border-subtle text-on-surface text-xs shadow-xs">
-                <Activity className="w-3.5 h-3.5 text-on-surface-variant" />
-                <span className="font-mono text-on-surface text-[11px]">07/01/2024</span>
-                <span className="text-on-surface-variant text-[11px]">to</span>
-                <span className="font-mono text-on-surface text-[11px]">07/28/2025</span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
-              <div className="flex items-center gap-2">
-                <span className="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider font-bold">Scope:</span>
-                <span className="px-2 py-0.5 bg-surface-elevated text-on-surface rounded text-xs font-mono font-bold tracking-tight border border-border-subtle">
-                  {filteredRows.length} / {cleanRows.length} rows
-                </span>
-              </div>
-
-              <button
-                onClick={() => {
-                  setFilters({ dateRange: {}, selectedDimension: null, selectedDimensionValue: null, searchQuery: '' });
-                  setDownloadSuccess('Live data query refreshed and synchronized!');
-                  setTimeout(() => setDownloadSuccess(null), 2500);
-                }}
-                className="h-7 px-2.5 rounded hover:bg-surface-elevated text-on-surface-variant hover:text-on-surface transition-colors flex items-center gap-1 text-xs border border-transparent hover:border-border-subtle"
-                title="Refresh Live Query & Reset Filters"
-                type="button"
-              >
-                <RefreshCw className="w-3.5 h-3.5 text-metric-emerald" />
-                <span>Sync</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Active Drilldown Indicator */}
-          {filters.selectedDimension && filters.selectedDimensionValue && (
-            <div className="flex items-center justify-between bg-surface-panel border border-[#00F5A0]/40 px-3.5 py-1.5 rounded-lg text-xs text-metric-emerald">
-              <div className="flex items-center gap-2">
-                <Filter className="w-3.5 h-3.5 text-metric-emerald" />
-                <span>Active Drilldown: <strong className="text-on-surface">{filters.selectedDimension} = &quot;{filters.selectedDimensionValue}&quot;</strong></span>
-              </div>
-              <button 
-                onClick={() => setFilters(prev => ({ ...prev, selectedDimensionValue: null }))}
-                className="text-xs text-on-surface-variant hover:text-on-surface flex items-center gap-1 font-mono"
-              >
-                Reset Drilldown <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          )}
-
-          {/* Dashboard Persona & Style Switcher (User Customizable Perspective) */}
+          {/* Dashboard Persona & Visual Themes Customizer Bar */}
           <div className="flex flex-wrap items-center justify-between gap-3 pt-2.5 border-t border-border-subtle">
-            <div className="flex items-center gap-2">
+            {/* Dashboard Perspectives */}
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="font-label-caps text-label-caps uppercase tracking-wider text-metric-emerald font-bold flex items-center gap-1.5 text-xs">
-                <Sparkles className="w-4 h-4 text-metric-emerald" /> DASHBOARD PERSPECTIVE:
+                <Sparkles className="w-4 h-4 text-metric-emerald" /> PERSPECTIVE:
               </span>
-            </div>
-            <div className="flex items-center gap-1.5 flex-wrap">
               {[
                 { id: 'c_suite', label: '🏛️ C-Suite Executive', desc: 'Strategic high-level revenue pacing, corporate growth & executive directives' },
                 { id: 'operations', label: '⚡ Operational Velocity', desc: 'Transaction volume throughput, delivery status & execution bottlenecks' },
-                { id: 'growth', label: '📈 Growth & Marketing', desc: 'Category market shares, product rankings & customer conversion funnels' },
+                { id: 'growth', label: '📈 Growth & Commercial', desc: 'Category market shares, product rankings & customer conversion funnels' },
                 { id: 'finance', label: '💵 Financial Controller', desc: 'Gross margin %, cost absorption efficiency & Price-Volume-Mix (PVM)' },
                 { id: 'wallboard', label: '🌌 Wallboard Presentation', desc: 'High-contrast minimalist mode for boardrooms and monitoring walls' }
               ].map(p => (
@@ -747,6 +750,37 @@ export const ExecutiveDashboard: React.FC = () => {
                   title={p.desc}
                 >
                   <span>{p.label}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Multiple Visual Theme Switcher */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant font-mono">
+                THEME:
+              </span>
+              {[
+                { id: 'cyber_emerald', label: '⚡ Emerald' },
+                { id: 'wall_street', label: '📈 Wall St' },
+                { id: 'power_bi', label: '📊 Power BI' },
+                { id: 'sunset_royal', label: '👑 Royal' },
+                { id: 'nordic_light', label: '❄️ Frost' }
+              ].map(thm => (
+                <button
+                  key={thm.id}
+                  onClick={() => {
+                    handleSetVisualTheme(thm.id as DashboardVisualTheme);
+                    setDownloadSuccess(`Applied visual theme: ${thm.label}`);
+                    setTimeout(() => setDownloadSuccess(null), 2000);
+                  }}
+                  className={`px-2 py-1 rounded-lg text-xs font-semibold transition-all border ${
+                    visualTheme === thm.id
+                      ? isLight ? 'bg-emerald-600 text-white font-bold border-emerald-700 shadow-xs' : 'bg-[#21F1A8] text-slate-950 font-bold border-[#21F1A8] shadow-xs'
+                      : isLight ? 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100' : 'bg-[#151921] text-gray-300 border-[#2D3748] hover:bg-[#1E2638]'
+                  }`}
+                  title={`Switch styling palette to ${thm.label}`}
+                >
+                  {thm.label}
                 </button>
               ))}
             </div>
@@ -905,6 +939,25 @@ export const ExecutiveDashboard: React.FC = () => {
                 <TrendingUp className="w-3.5 h-3.5" /> Statistical Dispersion
               </button>
             </Tooltip>
+
+            <Tooltip
+              side="bottom"
+              title="Data Engineering Suite"
+              tag="Lineage & Tests"
+              className="w-auto shrink-0"
+              content="Automated lineage DAG pipeline, dbt/Great Expectations assertions, in-browser SQL runner, and production pipeline exports."
+            >
+              <button
+                onClick={() => setActiveTab('data_engineering')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-all shrink-0 text-xs ${
+                  activeTab === 'data_engineering'
+                    ? 'bg-primary-container text-on-primary-container shadow-sm'
+                    : 'bg-surface-panel text-on-surface-variant hover:text-on-surface hover:bg-surface-elevated border border-border-subtle'
+                }`}
+              >
+                <Network className="w-3.5 h-3.5 text-metric-emerald" /> Data Engineering Suite
+              </button>
+            </Tooltip>
           </div>
         </div>
       </section>
@@ -941,6 +994,8 @@ export const ExecutiveDashboard: React.FC = () => {
               : kpi.status === 'Below Target'
               ? { text: 'text-metric-amber', bg: 'bg-amber-500/20', dot: 'bg-metric-amber', border: 'border-amber-500/30', stroke: '#F59E0B' }
               : { text: 'text-metric-cyan', bg: 'bg-cyan-500/15', dot: 'bg-metric-cyan', border: 'border-cyan-500/30', stroke: '#00D2FF' };
+
+            const filteredKpi = computeFilteredKpi(kpi);
 
             // Micro sparkline path generator
             const sparklinePaths = [
@@ -989,9 +1044,21 @@ export const ExecutiveDashboard: React.FC = () => {
 
                   <div className="my-3 flex items-end justify-between gap-2">
                     <div className="flex flex-col min-w-0">
-                      <span className="font-metric-display text-metric-display text-on-surface font-extrabold tracking-tight leading-none truncate" title={kpi.formattedValue}>
-                        {kpi.formattedValue}
-                      </span>
+                      <div className="flex items-baseline gap-2 flex-wrap">
+                        <span className="font-metric-display text-metric-display text-on-surface font-extrabold tracking-tight leading-none truncate" title={filteredKpi.formatted}>
+                          {filteredKpi.formatted}
+                        </span>
+                        {filteredKpi.isFiltered && (
+                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30">
+                            Filtered
+                          </span>
+                        )}
+                      </div>
+                      {filteredKpi.isFiltered && (
+                        <div className="text-[11px] font-mono text-on-surface-variant mt-0.5">
+                          of {kpi.formattedValue} total
+                        </div>
+                      )}
                       <div className="flex items-center gap-1 mt-1.5 font-label-sm text-label-sm">
                         {kpi.changePercent !== undefined ? (
                           <>
@@ -1881,6 +1948,11 @@ export const ExecutiveDashboard: React.FC = () => {
           rows={filteredRows}
           columns={columns}
         />
+      )}
+
+      {/* 8. DATA ENGINEERING & LINEAGE ARCHITECTURE TAB */}
+      {activeTab === 'data_engineering' && (
+        <DataEngineeringSuite />
       )}
 
       {/* KPI Card Customizer & Heading Editor Modal */}

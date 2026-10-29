@@ -37,6 +37,7 @@ export type NavigationTab =
   | 'quality'
   | 'cleaning'
   | 'modeling'
+  | 'data_engineering'
   | 'analysis'
   | 'dax_lab'
   | 'sql_lab'
@@ -69,6 +70,9 @@ export interface GlobalFilterState {
   selectedDimension: string | null;
   selectedDimensionValue: string | null;
   searchQuery: string;
+  slicers?: Record<string, string[]>;
+  metricRange?: { column: string; min: number; max: number };
+  datePreset?: 'all' | '30d' | '90d' | 'ytd' | 'custom';
 }
 
 export interface ReportHeadings {
@@ -110,6 +114,15 @@ export interface PlatformContextType {
   updateKpi: (kpiId: string, updates: Partial<KPI>) => void;
   recalculateKpiCard: (kpiId: string, params: CustomKpiParams) => void;
   resetKpisToDefault: () => void;
+
+  // Slicers and interactive filters
+  setSlicerValue: (column: string, values: string[]) => void;
+  toggleSlicerItem: (column: string, value: string) => void;
+  clearSlicer: (column: string) => void;
+  clearAllSlicers: () => void;
+  setMetricRangeFilter: (column: string, min: number, max: number) => void;
+  clearMetricRangeFilter: () => void;
+  setDatePresetFilter: (preset: 'all' | '30d' | '90d' | 'ytd' | 'custom') => void;
 
   // Data state
   rawRows: Record<string, any>[];
@@ -376,7 +389,9 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     dateRange: {},
     selectedDimension: null,
     selectedDimensionValue: null,
-    searchQuery: ''
+    searchQuery: '',
+    slicers: {},
+    datePreset: 'all'
   });
 
   // Live Data Connection State
@@ -1085,25 +1100,154 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     toast.info('Model Restored', 'Auto-detected star schema entities and foreign key mappings restored.');
   };
 
-  // Filtered rows for global cross filtering (RULE 43, 44)
+  const setSlicerValue = (column: string, values: string[]) => {
+    setFilters(prev => ({
+      ...prev,
+      slicers: {
+        ...(prev.slicers || {}),
+        [column]: values
+      }
+    }));
+  };
+
+  const toggleSlicerItem = (column: string, value: string) => {
+    setFilters(prev => {
+      const current = prev.slicers?.[column] || [];
+      const updated = current.includes(value)
+        ? current.filter(v => v !== value)
+        : [...current, value];
+      return {
+        ...prev,
+        slicers: {
+          ...(prev.slicers || {}),
+          [column]: updated
+        }
+      };
+    });
+  };
+
+  const clearSlicer = (column: string) => {
+    setFilters(prev => {
+      const nextSlicers = { ...(prev.slicers || {}) };
+      delete nextSlicers[column];
+      return {
+        ...prev,
+        slicers: nextSlicers
+      };
+    });
+  };
+
+  const clearAllSlicers = () => {
+    setFilters({
+      dateRange: {},
+      selectedDimension: null,
+      selectedDimensionValue: null,
+      searchQuery: '',
+      slicers: {},
+      metricRange: undefined,
+      datePreset: 'all'
+    });
+    toast.info('Slicers Reset', 'All dimension slicers and range filters have been reset.');
+  };
+
+  const setMetricRangeFilter = (column: string, min: number, max: number) => {
+    setFilters(prev => ({
+      ...prev,
+      metricRange: { column, min, max }
+    }));
+  };
+
+  const clearMetricRangeFilter = () => {
+    setFilters(prev => ({
+      ...prev,
+      metricRange: undefined
+    }));
+  };
+
+  const setDatePresetFilter = (preset: 'all' | '30d' | '90d' | 'ytd' | 'custom') => {
+    const dateCol = columns.find(c => c.dataType === 'date')?.name;
+    if (!dateCol || preset === 'all') {
+      setFilters(prev => ({
+        ...prev,
+        datePreset: preset,
+        dateRange: {}
+      }));
+      return;
+    }
+
+    const dates = cleanRows.map(r => String(r[dateCol] || '')).filter(Boolean).sort();
+    if (dates.length === 0) return;
+    const latestDate = new Date(dates[dates.length - 1]);
+    if (isNaN(latestDate.getTime())) return;
+
+    let startDate: Date;
+    if (preset === '30d') {
+      startDate = new Date(latestDate);
+      startDate.setDate(startDate.getDate() - 30);
+    } else if (preset === '90d') {
+      startDate = new Date(latestDate);
+      startDate.setDate(startDate.getDate() - 90);
+    } else if (preset === 'ytd') {
+      startDate = new Date(latestDate.getFullYear(), 0, 1);
+    } else {
+      return;
+    }
+
+    const fmt = (d: Date) => d.toISOString().split('T')[0];
+    setFilters(prev => ({
+      ...prev,
+      datePreset: preset,
+      dateRange: {
+        start: fmt(startDate),
+        end: fmt(latestDate)
+      }
+    }));
+  };
+
+  // Filtered rows for global cross filtering (RULE 43, 44) & Multi-Slicers
   const filteredRows = React.useMemo(() => {
     let result = cleanRows;
     const dateCol = columns.find(c => c.dataType === 'date')?.name;
 
-    if (dateCol && (filters.dateRange.start || filters.dateRange.end)) {
+    // 1. Date filter
+    if (dateCol && (filters.dateRange?.start || filters.dateRange?.end)) {
       result = result.filter(r => {
-        const d = String(r[dateCol]);
+        const d = String(r[dateCol] || '');
         if (filters.dateRange.start && d < filters.dateRange.start) return false;
         if (filters.dateRange.end && d > filters.dateRange.end) return false;
         return true;
       });
     }
 
+    // 2. Legacy selectedDimension & selectedDimensionValue
     if (filters.selectedDimension && filters.selectedDimensionValue) {
       result = result.filter(r => String(r[filters.selectedDimension!]) === String(filters.selectedDimensionValue));
     }
 
-    if (filters.searchQuery.trim()) {
+    // 3. Multi-attribute interactive Slicers
+    if (filters.slicers) {
+      for (const [col, selectedVals] of Object.entries(filters.slicers)) {
+        if (Array.isArray(selectedVals) && selectedVals.length > 0) {
+          result = result.filter(r => {
+            const val = String(r[col] ?? '');
+            return selectedVals.includes(val);
+          });
+        }
+      }
+    }
+
+    // 4. Metric Range
+    if (filters.metricRange && filters.metricRange.column) {
+      const { column, min, max } = filters.metricRange;
+      result = result.filter(r => {
+        const num = Number(r[column]);
+        if (isNaN(num)) return true;
+        return num >= min && num <= max;
+      });
+    }
+
+    // 5. Global Search Query
+    if (filters.searchQuery?.trim()) {
       const q = filters.searchQuery.toLowerCase();
       result = result.filter(r => 
         Object.values(r).some(v => String(v).toLowerCase().includes(q))
@@ -1136,6 +1280,13 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         updateKpi,
         recalculateKpiCard,
         resetKpisToDefault,
+        setSlicerValue,
+        toggleSlicerItem,
+        clearSlicer,
+        clearAllSlicers,
+        setMetricRangeFilter,
+        clearMetricRangeFilter,
+        setDatePresetFilter,
         rawRows,
         cleanRows,
         columns,

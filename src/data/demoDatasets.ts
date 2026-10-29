@@ -182,5 +182,53 @@ export const DEMO_DATASETS: DemoDatasetInfo[] = [
 
       return rows;
     }
+  },
+  {
+    id: 'logistics-supply-chain',
+    name: 'Global Supply Chain, Freight & Fleet Logistics Telemetry',
+    description: 'Audited multimodal freight logistics records with Origin, Destination, Carrier, ShippingMode, TransitDays, FreightCost, FuelSurcharge, DelayMinutes, and OnTimeStatus.',
+    category: 'Logistics & Operations',
+    rowsCount: 110,
+    fileName: 'global_supply_chain_logistics.csv',
+    generateData: () => {
+      const origins = ['Shanghai', 'Rotterdam', 'Singapore', 'Los Angeles', 'Hamburg', 'Dubai'];
+      const destinations = ['Chicago', 'Antwerp', 'Sydney', 'Tokyo', 'Frankfurt', 'São Paulo'];
+      const modes = ['Ocean Freight', 'Air Cargo', 'Intermodal Rail', 'Express Freight'];
+      const carriers = ['Maersk Line', 'MSC Mediterranean', 'FedEx Logistics', 'DHL Global Forwarding', 'Hapag-Lloyd'];
+      const rows: Record<string, any>[] = [];
+      const baseDate = new Date(2025, 0, 15);
+
+      for (let i = 1; i <= 110; i++) {
+        const shipDate = new Date(baseDate.getTime() + (i * 2.5 * 24 * 60 * 60 * 1000));
+        const origin = origins[i % origins.length];
+        const dest = destinations[(i * 2) % destinations.length];
+        const mode = modes[i % modes.length];
+        const carrier = carriers[i % carriers.length];
+
+        const baseTransit = mode === 'Air Cargo' ? 3 : mode === 'Express Freight' ? 5 : mode === 'Intermodal Rail' ? 12 : 28;
+        const delay = (i % 5 === 0) ? 240 + (i % 7) * 90 : (i % 7 === 0) ? 120 : 0;
+        const transitDays = baseTransit + Math.floor(delay / 1440);
+        const freightCost = mode === 'Air Cargo' ? 4800 + (i % 4) * 600 : mode === 'Ocean Freight' ? 2200 + (i % 6) * 350 : 1650 + (i % 5) * 200;
+        const fuelSurcharge = Math.round(freightCost * 0.14);
+        const totalShipmentCost = freightCost + fuelSurcharge;
+        const onTime = delay === 0 ? 'On-Time' : delay < 300 ? 'Minor Delay' : 'Late Arrival';
+
+        rows.push({
+          ShipmentId: `SHP-2025-${(80000 + i).toString()}`,
+          ShipmentDate: shipDate.toISOString().split('T')[0],
+          OriginHub: origin,
+          DestinationHub: dest,
+          TransportMode: mode,
+          CarrierPartner: carrier,
+          TransitDays: transitDays,
+          DelayMinutes: delay,
+          FreightBaseCost: freightCost,
+          FuelSurcharge: fuelSurcharge,
+          TotalLogisticsCost: totalShipmentCost,
+          DeliveryPerformance: onTime
+        });
+      }
+      return rows;
+    }
   }
 ];

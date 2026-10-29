@@ -130,6 +130,15 @@ const navSections: { title: string; items: NavItem[] }[] = [
         description: 'Visual Star and Snowflake schema designer with automatic fact/dimension inference and relationship mapping.',
         proTip: 'Establishes primary/foreign keys for DAX tabular navigation.',
         categoryTag: 'Schema'
+      },
+      { 
+        id: 'data_engineering', 
+        label: 'Data Engineering (DAG)', 
+        icon: DbIcon, 
+        badge: 'Eng',
+        description: 'Complete data engineering suite: interactive pipeline DAG lineage, dbt/Great Expectations assertions, code generators, and SQL sandbox.',
+        proTip: 'Audit orchestration dependencies and pipeline latency directly.',
+        categoryTag: 'Pipeline'
       }
     ]
   },

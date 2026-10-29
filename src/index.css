@@ -2,12 +2,15 @@
 
 @layer base {
   :root {
-    --color-bg-main: #0B0F17;
-    --color-bg-card: #111827;
-    --color-bg-hover: #172033;
-    --color-neon: #10B981;
-    --color-neon-dim: rgba(16, 185, 129, 0.12);
-    --color-neon-border: rgba(16, 185, 129, 0.3);
+    --color-bg-main: #0B1120;
+    --color-bg-card: #172338;
+    --color-bg-elevated: #121C2F;
+    --color-bg-hover: #1E2D4A;
+    --color-accent-cyan: #22D3EE;
+    --color-accent-indigo: #6366F1;
+    --color-neon: #34D399;
+    --color-neon-dim: rgba(34, 211, 238, 0.12);
+    --color-neon-border: rgba(34, 211, 238, 0.3);
   }
 
   html, body, #root {
@@ -17,8 +20,8 @@
   }
 
   body {
-    background-color: #0B0F17;
-    color: #dfe2ee;
+    background-color: #0B1120;
+    color: #F8FAFC;
     font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     overflow: hidden;
   }
@@ -31,8 +34,8 @@
   }
 
   h1, h2, h3, h4, h5, h6, .font-heading {
-    font-family: 'Inter', system-ui, sans-serif;
-    letter-spacing: -0.015em;
+    font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+    letter-spacing: -0.02em;
   }
 
   code, pre, .font-code {
@@ -45,34 +48,34 @@
     height: 6px;
   }
   ::-webkit-scrollbar-track {
-    background: #0B0F17;
+    background: #0B1120;
   }
   ::-webkit-scrollbar-thumb {
-    background: #1F2937;
+    background: #273449;
     border-radius: 3px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #10B981;
+    background: #22D3EE;
   }
 }
 
-/* 1. SURFACE & BACKGROUND UTILITY TOKENS */
-.bg-surface-base { background-color: #0B0F17; }
-.bg-surface-card { background-color: #111827; }
-.bg-surface-panel { background-color: #172033; }
-.bg-surface-elevated { background-color: #1E293B; }
-.border-border-subtle { border-color: #1F2937; }
-.border-border-prominent { border-color: #374151; }
+/* 1. SURFACE & BACKGROUND UTILITY TOKENS (DATA ANALYTIX PALETTE) */
+.bg-surface-base { background-color: #0B1120; }
+.bg-surface-card { background-color: #172338; }
+.bg-surface-panel { background-color: #121C2F; }
+.bg-surface-elevated { background-color: #1E2D4A; }
+.border-border-subtle { border-color: #273449; }
+.border-border-prominent { border-color: #3B4D6B; }
 
 /* 2. TEXT TOKENS */
-.text-on-surface { color: #dfe2ee; }
-.text-on-surface-variant { color: #94a3b8; }
+.text-on-surface { color: #F8FAFC; }
+.text-on-surface-variant { color: #A8B3C7; }
 
 /* 3. METRIC COLOR TOKENS */
-.text-metric-emerald { color: #10B981; }
-.bg-metric-emerald { background-color: #10B981; }
-.text-metric-cyan { color: #38BDF8; }
-.bg-metric-cyan { background-color: #38BDF8; }
+.text-metric-emerald { color: #34D399; }
+.bg-metric-emerald { background-color: #34D399; }
+.text-metric-cyan { color: #22D3EE; }
+.bg-metric-cyan { background-color: #22D3EE; }
 .text-metric-amber { color: #F59E0B; }
 .bg-metric-amber { background-color: #F59E0B; }
 .text-metric-coral { color: #F43F5E; }
@@ -81,27 +84,27 @@
 .bg-metric-indigo { background-color: #818CF8; }
 
 /* 4. PRIMARY ACCENTS & CONTAINERS */
-.bg-primary-container { background-color: #10B981; color: #064E3B; }
-.text-on-primary-container { color: #064E3B; }
-.text-neon { color: #10B981; }
-.bg-neon { background-color: #10B981; }
-.border-neon { border-color: #10B981; }
-.border-neon-subtle { border-color: rgba(16, 185, 129, 0.25); }
+.bg-primary-container { background-color: #0891B2; color: #FFFFFF; }
+.text-on-primary-container { color: #FFFFFF; }
+.text-neon { color: #22D3EE; }
+.bg-neon { background-color: #22D3EE; }
+.border-neon { border-color: #22D3EE; }
+.border-neon-subtle { border-color: rgba(34, 211, 238, 0.25); }
 
 .glow-neon {
-  box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
+  box-shadow: 0 0 15px rgba(34, 211, 238, 0.2);
 }
 .glow-neon-strong {
-  box-shadow: 0 0 25px rgba(16, 185, 129, 0.35);
+  box-shadow: 0 0 25px rgba(34, 211, 238, 0.35);
 }
 
 .bg-card-dark {
-  background-color: #111827;
-  border: 1px solid #1F2937;
+  background-color: #172338;
+  border: 1px solid #273449;
 }
 .bg-card-darker {
-  background-color: #0B0F17;
-  border: 1px solid #1F2937;
+  background-color: #0B1120;
+  border: 1px solid #273449;
 }
 
 /* 5. TYPOGRAPHIC SCALE */

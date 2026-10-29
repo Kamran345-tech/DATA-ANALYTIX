@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   ArrowRight, 
   CheckCircle2, 
@@ -14,63 +14,125 @@ import {
   Sparkles,
   FileCode,
   TrendingUp,
-  Cpu
+  Cpu,
+  GitBranch,
+  Filter,
+  SlidersHorizontal,
+  ChevronRight,
+  ExternalLink,
+  Table,
+  Check,
+  RefreshCw,
+  FolderDown,
+  MonitorPlay,
+  Share2
 } from 'lucide-react';
 import { usePlatform } from '../../store/usePlatformStore';
-import { Tooltip } from '../common/Tooltip';
 import { BrandLogo } from '../common/BrandLogo';
+import { DEMO_DATASETS } from '../../data/demoDatasets';
 
 export const LandingPage: React.FC = () => {
-  const { setCurrentTab, loadDemoDataset, themeMode } = usePlatform();
+  const { setCurrentTab, loadDemoDataset, themeMode, project } = usePlatform();
   const isLight = themeMode === 'light';
+  const [activePipelineStage, setActivePipelineStage] = useState<number>(0);
+
+  const pipelineStages = [
+    {
+      step: '01',
+      title: 'Raw Ingestion',
+      subtitle: 'Multi-Source Parsing',
+      tab: 'upload' as const,
+      desc: 'Auto-detects delimiters, ISO-8601 timestamps, currency symbols, and schema signatures across CSV, Excel, and JSON.',
+      metric: '0ms network hop',
+      color: 'from-cyan-500 to-blue-500'
+    },
+    {
+      step: '02',
+      title: 'Quality & Hygiene',
+      subtitle: 'Deterministic Auditing',
+      tab: 'quality' as const,
+      desc: 'Computes a 4D Data Quality Score, isolates nulls, flags statistical outliers via IQR, and deduplicates identical records.',
+      metric: '99.4% audit accuracy',
+      color: 'from-blue-500 to-indigo-500'
+    },
+    {
+      step: '03',
+      title: 'Star Schema Modeling',
+      subtitle: 'Automated Kimball ERD',
+      tab: 'modeling' as const,
+      desc: 'Separates numeric facts from dimensional entities, establishes 1:N cardinality, and generates Model.bim metadata.',
+      metric: 'Strict 1:N constraints',
+      color: 'from-indigo-500 to-purple-500'
+    },
+    {
+      step: '04',
+      title: 'DAX & Analytics',
+      subtitle: 'Financial & Time Intelligence',
+      tab: 'dax_lab' as const,
+      desc: 'Computes Net Revenue, Gross Margin %, PVM realizations, TOTALYTD, and SAMEPERIODLASTYEAR measures deterministically.',
+      metric: '100% verified math',
+      color: 'from-purple-500 to-emerald-500'
+    },
+    {
+      step: '05',
+      title: 'Boardroom & PBIP',
+      subtitle: 'Interactive Delivery',
+      tab: 'executive_dashboard' as const,
+      desc: 'Interactive dashboards with dynamic slicers, full-screen boardroom presentation mode, and 14-folder project zip exports.',
+      metric: 'Power BI native',
+      color: 'from-emerald-500 to-cyan-500'
+    }
+  ];
 
   return (
-    <div className="space-y-16 pb-20 animate-fadeIn max-w-7xl mx-auto">
-      {/* 1. Hero Section - Maximum Contrast & Visual Elegance */}
-      <section className={`relative overflow-hidden pt-12 pb-16 px-4 sm:px-8 rounded-3xl border transition-colors duration-200 ${
+    <div className="space-y-16 pb-20 animate-fadeIn max-w-7xl mx-auto font-sans">
+      {/* 1. Hero Section - Data Analytix Master Design */}
+      <section className={`relative overflow-hidden pt-12 pb-16 px-4 sm:px-10 rounded-3xl border transition-colors duration-200 ${
         isLight 
           ? 'bg-gradient-to-b from-slate-50 via-white to-slate-100/60 border-slate-200 shadow-sm' 
-          : 'bg-gradient-to-b from-[#111827] via-[#0B0F17] to-[#0B0F17] border-border-subtle shadow-2xl'
+          : 'bg-gradient-to-b from-[#121C2F] via-[#0B1120] to-[#0B1120] border-[#273449] shadow-2xl'
       }`}>
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-72 bg-emerald-500/10 blur-3xl rounded-full pointer-events-none" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-80 bg-cyan-500/10 blur-3xl rounded-full pointer-events-none" />
+        <div className="absolute top-1/4 right-10 w-96 h-96 bg-indigo-500/10 blur-3xl rounded-full pointer-events-none" />
 
         <div className="max-w-4xl mx-auto text-center space-y-6 relative z-10">
           {/* Logo & Category Kicker */}
           <div className="flex flex-col items-center gap-3">
             <BrandLogo size="lg" showSubtitle={false} className="justify-center" />
-            <div className={`inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-semibold tracking-wider font-mono border ${
-              isLight 
-                ? 'bg-emerald-50 text-emerald-800 border-emerald-200 shadow-2xs' 
-                : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-            }`}>
-              <Zap className="w-3.5 h-3.5 text-emerald-500" />
-              AUTONOMOUS BI & DATA ENGINEERING PLATFORM
+            
+            {/* Zero-Pill Typographic Kicker */}
+            <div className="flex items-center gap-2 text-xs font-semibold tracking-wider font-mono">
+              <span className={isLight ? 'text-cyan-700' : 'text-[#22D3EE]'}>DATA ANALYTICS</span>
+              <span className="text-slate-400">·</span>
+              <span className={isLight ? 'text-indigo-700' : 'text-[#818CF8]'}>DATA ENGINEERING</span>
+              <span className="text-slate-400">·</span>
+              <span className={isLight ? 'text-emerald-700' : 'text-[#34D399]'}>BUSINESS INTELLIGENCE</span>
             </div>
           </div>
 
-          {/* Main Hero Headline with 100% Guaranteed Contrast */}
+          {/* Main Hero Headline */}
           <h1 className="font-heading text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight uppercase leading-[1.08] select-none">
-            <span className={isLight ? 'text-slate-900' : 'text-white'}>
-              TURN YOUR DATA
+            <span className={isLight ? 'text-slate-900' : 'text-[#F8FAFC]'}>
+              ENGINEERING DATA.
             </span>
             <br className="hidden sm:inline" />
-            <span className="bg-gradient-to-r from-emerald-500 via-teal-400 to-sky-500 bg-clip-text text-transparent ml-2 sm:ml-0">
-              INTO INSIGHTS
+            <span className="bg-gradient-to-r from-cyan-400 via-indigo-400 to-emerald-400 bg-clip-text text-transparent ml-2 sm:ml-0">
+              UNLOCKING INSIGHTS.
             </span>
           </h1>
 
           {/* Subtitle with High Readability */}
           <p className={`text-base sm:text-lg max-w-2xl mx-auto font-sans leading-relaxed ${
-            isLight ? 'text-slate-600' : 'text-slate-300'
+            isLight ? 'text-slate-600' : 'text-[#A8B3C7]'
           }`}>
-            Upload raw business data and let our engine automatically clean, profile, construct star-schema models, calculate verified enterprise KPIs, and export complete Power BI PBIP & Excel source workbooks.
+            Transform raw data into reliable pipelines, interactive dashboards, and actionable business intelligence with practical data analytics and engineering solutions.
           </p>
 
           {/* Action Button Island */}
-          <div className="pt-4 flex flex-wrap items-center justify-center gap-4">
+          <div className="pt-4 flex flex-wrap items-center justify-center gap-3.5">
             <button
               onClick={() => setCurrentTab('upload')}
-              className="px-8 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-heading text-lg font-bold tracking-wider uppercase transition-all flex items-center gap-2.5 shadow-lg shadow-emerald-600/30 transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+              className="px-8 py-3.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-heading text-base font-bold tracking-wide uppercase transition-all flex items-center gap-2 shadow-lg shadow-cyan-600/30 transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
             >
               <span>ANALYZE MY DATA</span>
               <ArrowRight className="w-5 h-5" />
@@ -81,327 +143,539 @@ export const LandingPage: React.FC = () => {
                 loadDemoDataset('global-retail-sales');
                 setCurrentTab('executive_dashboard');
               }}
-              className={`px-7 py-3.5 rounded-xl font-heading text-lg font-bold tracking-wider uppercase transition-all flex items-center gap-2.5 border shadow-sm cursor-pointer ${
+              className={`px-7 py-3.5 rounded-xl font-heading text-base font-bold tracking-wide uppercase transition-all flex items-center gap-2.5 border shadow-sm cursor-pointer ${
                 isLight
                   ? 'bg-slate-900 hover:bg-slate-800 text-white border-slate-900'
-                  : 'bg-surface-elevated hover:bg-surface-panel text-white border-border-prominent'
+                  : 'bg-[#172338] hover:bg-[#1E2D4A] text-white border-[#273449]'
               }`}
             >
               <span>EXPLORE LIVE DASHBOARD</span>
-              <span className={`text-[11px] px-2.5 py-0.5 rounded-full font-mono tracking-wider border shadow-xs ${
-                isLight
-                  ? 'bg-emerald-600 text-white border-emerald-700 font-bold'
-                  : 'bg-[#21F1A8] text-black border-[#21F1A8] font-black'
+              <span className={`text-[11px] font-mono tracking-wider font-semibold ${
+                isLight ? 'text-cyan-300' : 'text-[#22D3EE]'
               }`}>
-                ACTIVE MODEL
+                · ACTIVE
               </span>
             </button>
 
             <button
-              onClick={() => setCurrentTab('how_to_use')}
-              className={`px-6 py-3.5 rounded-xl font-heading text-lg font-semibold tracking-wider uppercase transition-all flex items-center gap-2 border shadow-xs cursor-pointer ${
+              onClick={() => setCurrentTab('data_engineering')}
+              className={`px-6 py-3.5 rounded-xl font-heading text-base font-semibold tracking-wide uppercase transition-all flex items-center gap-2 border shadow-xs cursor-pointer ${
                 isLight
                   ? 'bg-white hover:bg-slate-50 text-slate-800 border-slate-300'
-                  : 'bg-surface-panel hover:bg-surface-elevated text-slate-200 border-border-subtle'
+                  : 'bg-[#121C2F] hover:bg-[#172338] text-slate-200 border-[#273449]'
               }`}
             >
-              <HelpCircle className="w-5 h-5 text-emerald-500" />
-              <span>HOW TO USE GUIDE</span>
+              <GitBranch className="w-4 h-4 text-indigo-400" />
+              <span>DATA ENGINEERING DAG</span>
+            </button>
+
+            <button
+              onClick={() => setCurrentTab('how_to_use')}
+              className={`px-5 py-3.5 rounded-xl font-heading text-base font-semibold tracking-wide uppercase transition-all flex items-center gap-2 border shadow-xs cursor-pointer ${
+                isLight
+                  ? 'bg-white hover:bg-slate-50 text-slate-800 border-slate-300'
+                  : 'bg-[#121C2F] hover:bg-[#172338] text-slate-200 border-[#273449]'
+              }`}
+            >
+              <HelpCircle className="w-4 h-4 text-cyan-400" />
+              <span>GUIDE</span>
             </button>
           </div>
 
-          {/* Clean Unboxed Value Proof Strip */}
-          <div className={`pt-8 flex flex-wrap items-center justify-center gap-6 text-xs sm:text-sm font-medium border-t ${
-            isLight ? 'border-slate-200 text-slate-600' : 'border-border-subtle text-slate-300'
+          {/* Clean Unboxed Value Proof Strip (Zero-Pill Discipline) */}
+          <div className={`pt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs sm:text-sm font-medium border-t ${
+            isLight ? 'border-slate-200 text-slate-600' : 'border-[#273449] text-[#A8B3C7]'
           }`}>
-            <span className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-              100% Real Deterministic Calculations
+            <span className="flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0" />
+              100% Deterministic Math
             </span>
-            <span className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+            <span className="text-slate-400">·</span>
+            <span className="flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-indigo-400 shrink-0" />
+              Star Schema Modeling
+            </span>
+            <span className="text-slate-400">·</span>
+            <span className="flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
               Power BI PBIP Native
             </span>
-            <span className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-              Multi-tab Tabular Architecture
+            <span className="text-slate-400">·</span>
+            <span className="flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0" />
+              In-Browser SQL & Python
             </span>
-            <span className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-              Zero Cloud Lock-in
+            <span className="text-slate-400">·</span>
+            <span className="flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              Zero Cloud Lock-In
             </span>
           </div>
         </div>
       </section>
 
-      {/* 2. Interactive Analytical Pipeline */}
-      <section className="px-2 sm:px-4">
-        <div className="text-center space-y-2 mb-10">
-          <h2 className={`font-heading text-3xl sm:text-4xl font-bold tracking-wide uppercase ${
-            isLight ? 'text-slate-900' : 'text-white'
-          }`}>
-            THE AUTONOMOUS END-TO-END PIPELINE
-          </h2>
-          <p className={`text-sm max-w-xl mx-auto ${
-            isLight ? 'text-slate-600' : 'text-slate-400'
-          }`}>
-            From raw, unstructured spreadsheets to audited data models, DAX measures, and boardroom-ready reporting.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {[
-            {
-              num: '01',
-              title: 'INGESTION & AUDIT',
-              desc: 'Auto-detects delimiters, formats dates locally, profiles nulls, and calculates a 4-dimensional Data Quality Score without artificial floors.'
-            },
-            {
-              num: '02',
-              title: 'STAR SCHEMA MODELING',
-              desc: 'Infers foreign keys and dimensions with strict 1:N cardinality, generating interactive entity-relationship diagrams and Model.bim schemas.'
-            },
-            {
-              num: '03',
-              title: 'DETERMINISTIC ANALYTICS',
-              desc: 'Computes Net Revenue, Gross Operating Profit, Margin %, PVM realizations, IQR anomalies, and Holt Linear trend projections.'
-            },
-            {
-              num: '04',
-              title: 'COMPLETE PROJECT ZIP',
-              desc: 'Instant export of 14 production folders: multi-tab Excel workbooks, Fabric PBIP projects, DAX measures, SQL queries, and Python notebooks.'
-            }
-          ].map((step, idx) => (
-            <div 
-              key={idx}
-              className={`p-6 rounded-2xl border transition-all duration-200 group hover:-translate-y-1 ${
-                isLight 
-                  ? 'bg-white border-slate-200 shadow-xs hover:border-emerald-500 hover:shadow-md' 
-                  : 'bg-surface-card border-border-subtle hover:border-emerald-500/50 hover:bg-surface-panel'
-              }`}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <span className="font-mono text-xs font-bold px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                  STEP {step.num}
-                </span>
-                <span className="w-2 h-2 rounded-full bg-emerald-500 opacity-60 group-hover:opacity-100" />
-              </div>
-              <h3 className={`font-heading text-lg font-bold tracking-wide mb-2 ${
-                isLight ? 'text-slate-900' : 'text-white'
-              }`}>
-                {step.title}
-              </h3>
-              <p className={`text-xs leading-relaxed ${
-                isLight ? 'text-slate-600' : 'text-slate-400'
-              }`}>
-                {step.desc}
-              </p>
+      {/* 2. Interactive Data Engineering Pipeline DAG Visualization */}
+      <section className="px-2 sm:px-4 space-y-6">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 text-xs font-mono font-semibold uppercase tracking-wider mb-1 text-cyan-400">
+              <GitBranch className="w-4 h-4 text-cyan-400" />
+              <span>ARCHITECTURE & DATA LINEAGE</span>
             </div>
-          ))}
-        </div>
-      </section>
-
-      {/* 3. Deep Features Grid */}
-      <section className="px-2 sm:px-4">
-        <div className="text-center space-y-2 mb-10">
-          <h2 className={`font-heading text-3xl sm:text-4xl font-bold tracking-wide uppercase ${
-            isLight ? 'text-slate-900' : 'text-white'
-          }`}>
-            PRODUCTION DATA LABS & WORKSPACES
-          </h2>
-          <p className={`text-sm max-w-xl mx-auto ${
-            isLight ? 'text-slate-600' : 'text-slate-400'
-          }`}>
-            Every developer and BI tool you need, fully mounted and responsive directly in your browser.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Card 1: SQL Lab */}
-          <div className={`p-6 rounded-2xl border flex flex-col justify-between transition-colors ${
-            isLight ? 'bg-white border-slate-200 shadow-xs hover:border-emerald-500' : 'bg-surface-card border-border-subtle hover:border-emerald-500/50'
-          }`}>
-            <div className="space-y-4">
-              <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
-                <Database className="w-6 h-6" />
-              </div>
-              <h3 className={`font-heading text-xl font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                LIVE SQL LAB IN-BROWSER
-              </h3>
-              <p className={`text-xs leading-relaxed ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
-                Execute ANSI SQL with SELECT, GROUP BY, subqueries, and window functions directly over your active dataset in milliseconds.
-              </p>
-            </div>
-            <button 
-              onClick={() => setCurrentTab('sql_lab')}
-              className="text-xs text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1.5 font-bold pt-4 cursor-pointer"
-            >
-              <span>Open SQL Lab</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
+            <h2 className={`font-heading text-2xl sm:text-3xl font-bold tracking-tight uppercase ${
+              isLight ? 'text-slate-900' : 'text-[#F8FAFC]'
+            }`}>
+              THE END-TO-END DATA ENGINE
+            </h2>
+            <p className={`text-xs sm:text-sm max-w-xl ${isLight ? 'text-slate-600' : 'text-[#A8B3C7]'}`}>
+              Click any stage in the pipeline DAG to inspect data transformations or jump directly to the live workspace.
+            </p>
           </div>
-
-          {/* Card 2: DAX Lab */}
-          <div className={`p-6 rounded-2xl border flex flex-col justify-between transition-colors ${
-            isLight ? 'bg-white border-slate-200 shadow-xs hover:border-emerald-500' : 'bg-surface-card border-border-subtle hover:border-emerald-500/50'
-          }`}>
-            <div className="space-y-4">
-              <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
-                <Code2 className="w-6 h-6" />
-              </div>
-              <h3 className={`font-heading text-xl font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                PRODUCTION DAX LAB
-              </h3>
-              <p className={`text-xs leading-relaxed ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
-                Automated generation of TOTALYTD, SAMEPERIODLASTYEAR, variance %, and financial margin measures mapped to your schema.
-              </p>
-            </div>
-            <button 
-              onClick={() => setCurrentTab('dax_lab')}
-              className="text-xs text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1.5 font-bold pt-4 cursor-pointer"
-            >
-              <span>Explore DAX Lab</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          {/* Card 3: Python Lab */}
-          <div className={`p-6 rounded-2xl border flex flex-col justify-between transition-colors ${
-            isLight ? 'bg-white border-slate-200 shadow-xs hover:border-emerald-500' : 'bg-surface-card border-border-subtle hover:border-emerald-500/50'
-          }`}>
-            <div className="space-y-4">
-              <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
-                <Terminal className="w-6 h-6" />
-              </div>
-              <h3 className={`font-heading text-xl font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                REPRODUCIBLE PYTHON
-              </h3>
-              <p className={`text-xs leading-relaxed ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
-                Generates executable pandas, numpy, and matplotlib scripts. Run sandboxed statistical descriptions directly in the workspace.
-              </p>
-            </div>
-            <button 
-              onClick={() => setCurrentTab('python_lab')}
-              className="text-xs text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1.5 font-bold pt-4 cursor-pointer"
-            >
-              <span>Open Python Lab</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          {/* Card 4: AI Analyst */}
-          <div className={`p-6 rounded-2xl border flex flex-col justify-between transition-colors ${
-            isLight ? 'bg-white border-slate-200 shadow-xs hover:border-emerald-500' : 'bg-surface-card border-border-subtle hover:border-emerald-500/50'
-          }`}>
-            <div className="space-y-4">
-              <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
-                <Sparkles className="w-6 h-6" />
-              </div>
-              <h3 className={`font-heading text-xl font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                GROUNDED AI ANALYST
-              </h3>
-              <p className={`text-xs leading-relaxed ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
-                Ask natural language business questions. Responses strictly cite verified metrics with deterministic fallbacks when offline.
-              </p>
-            </div>
-            <button 
-              onClick={() => setCurrentTab('ai_insights')}
-              className="text-xs text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1.5 font-bold pt-4 cursor-pointer"
-            >
-              <span>Ask Your Data</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          {/* Card 5: Power BI & Excel Export */}
-          <div className={`p-6 rounded-2xl border flex flex-col justify-between transition-colors ${
-            isLight ? 'bg-white border-slate-200 shadow-xs hover:border-emerald-500' : 'bg-surface-card border-border-subtle hover:border-emerald-500/50'
-          }`}>
-            <div className="space-y-4">
-              <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
-                <FileSpreadsheet className="w-6 h-6" />
-              </div>
-              <h3 className={`font-heading text-xl font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                POWER BI & EXCEL ARCHITECTURE
-              </h3>
-              <p className={`text-xs leading-relaxed ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
-                Generates authentic multi-tab Excel workbooks with structured tbl* tables and editable Power BI PBIP tabular projects.
-              </p>
-            </div>
-            <button 
-              onClick={() => setCurrentTab('export_center')}
-              className="text-xs text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1.5 font-bold pt-4 cursor-pointer"
-            >
-              <span>View Export Center</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          {/* Card 6: Cleaning Audit Log */}
-          <div className={`p-6 rounded-2xl border flex flex-col justify-between transition-colors ${
-            isLight ? 'bg-white border-slate-200 shadow-xs hover:border-emerald-500' : 'bg-surface-card border-border-subtle hover:border-emerald-500/50'
-          }`}>
-            <div className="space-y-4">
-              <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
-                <ShieldCheck className="w-6 h-6" />
-              </div>
-              <h3 className={`font-heading text-xl font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                CLEANING AUDIT LOG
-              </h3>
-              <p className={`text-xs leading-relaxed ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
-                Strict separation between raw ingested records and clean datasets with step-by-step audit lineage, undo, and replay.
-              </p>
-            </div>
-            <button 
-              onClick={() => setCurrentTab('cleaning')}
-              className="text-xs text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1.5 font-bold pt-4 cursor-pointer"
-            >
-              <span>Open Cleaning Lab</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* 4. Final High-Contrast CTA Banner */}
-      <section className={`p-8 sm:p-12 rounded-3xl border text-center space-y-6 transition-colors ${
-        isLight
-          ? 'bg-gradient-to-r from-emerald-50 via-slate-50 to-teal-50 border-emerald-200 shadow-sm'
-          : 'bg-gradient-to-r from-[#111827] via-surface-card to-[#111827] border-emerald-500/30 shadow-xl'
-      }`}>
-        <h2 className={`font-heading text-3xl sm:text-5xl font-extrabold tracking-tight uppercase ${
-          isLight ? 'text-slate-900' : 'text-white'
-        }`}>
-          READY TO AUDIT YOUR PROPRIETARY DATA?
-        </h2>
-        <p className={`text-sm sm:text-base max-w-xl mx-auto leading-relaxed ${
-          isLight ? 'text-slate-600' : 'text-slate-300'
-        }`}>
-          Upload your CSV, XLSX, or JSON file. Receive verified calculations, interactive dashboards, DAX measures, and downloadable packages in seconds.
-        </p>
-        <div className="pt-2">
           <button
-            onClick={() => setCurrentTab('upload')}
-            className="px-8 py-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-heading text-lg font-bold tracking-wider uppercase shadow-lg shadow-emerald-600/30 transition-all cursor-pointer transform hover:-translate-y-0.5"
+            onClick={() => setCurrentTab('data_engineering')}
+            className={`self-start md:self-auto px-4 py-2 rounded-xl text-xs font-mono font-semibold flex items-center gap-2 border transition-all cursor-pointer ${
+              isLight 
+                ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300' 
+                : 'bg-[#172338] hover:bg-[#1E2D4A] text-cyan-300 border-[#273449]'
+            }`}
           >
-            ANALYZE MY DATA NOW
+            <span>LAUNCH FULL DAG WORKBENCH</span>
+            <ExternalLink className="w-3.5 h-3.5" />
           </button>
         </div>
+
+        {/* DAG Stages Ribbon */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+          {pipelineStages.map((stage, idx) => {
+            const isSelected = activePipelineStage === idx;
+            return (
+              <div
+                key={idx}
+                onClick={() => {
+                  setActivePipelineStage(idx);
+                  setCurrentTab(stage.tab);
+                }}
+                className={`p-4 rounded-2xl border transition-all cursor-pointer text-left relative group ${
+                  isSelected 
+                    ? isLight 
+                      ? 'bg-white border-cyan-500 shadow-md ring-2 ring-cyan-500/20' 
+                      : 'bg-[#172338] border-cyan-400 shadow-lg shadow-cyan-500/10'
+                    : isLight 
+                      ? 'bg-white border-slate-200 hover:border-slate-300' 
+                      : 'bg-[#121C2F] border-[#273449] hover:border-slate-600'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-mono text-xs font-bold text-cyan-400">
+                    STAGE {stage.step}
+                  </span>
+                  <span className="text-[10px] font-mono text-slate-400">
+                    {stage.metric}
+                  </span>
+                </div>
+                <h3 className={`font-heading text-sm font-bold tracking-tight mb-1 ${
+                  isLight ? 'text-slate-900' : 'text-[#F8FAFC]'
+                }`}>
+                  {stage.title}
+                </h3>
+                <p className={`text-[11px] leading-relaxed line-clamp-3 mb-3 ${
+                  isLight ? 'text-slate-600' : 'text-[#A8B3C7]'
+                }`}>
+                  {stage.desc}
+                </p>
+                <div className="flex items-center gap-1 text-[11px] font-semibold text-cyan-500 group-hover:translate-x-0.5 transition-transform">
+                  <span>Open Stage</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </section>
 
-      {/* Subtle Platform Attribution Footer */}
-      <footer className={`pt-6 pb-2 text-center border-t flex flex-col sm:flex-row items-center justify-between gap-3 text-xs transition-colors ${
-        isLight ? 'border-slate-200 text-slate-500' : 'border-border-subtle text-gray-400'
-      }`}>
-        <div className="flex items-center gap-2">
-          <span className={`font-semibold ${isLight ? 'text-slate-800' : 'text-slate-200'}`}>AcuityBI</span>
-          <span>•</span>
-          <span>Autonomous AI Data Intelligence & Analytics Platform</span>
+      {/* 3. Core Disciplines: Data Analytics vs Data Engineering */}
+      <section className="px-2 sm:px-4 space-y-8">
+        <div className="text-center space-y-2 max-w-2xl mx-auto">
+          <h2 className={`font-heading text-3xl sm:text-4xl font-extrabold tracking-tight uppercase ${
+            isLight ? 'text-slate-900' : 'text-[#F8FAFC]'
+          }`}>
+            COMPLETE DATA ROLE COVERAGE
+          </h2>
+          <p className={`text-xs sm:text-sm ${isLight ? 'text-slate-600' : 'text-[#A8B3C7]'}`}>
+            Built to professional standards for Senior Data Analysts, Analytics Engineers, and C-Suite decision makers.
+          </p>
         </div>
-        <div className="flex items-center gap-2 text-[11px] font-mono">
-          <span>Developed by <strong className={`font-semibold ${isLight ? 'text-emerald-700' : 'text-[#21F1A8]'}`}>Kamran Badar</strong></span>
-          <span className={isLight ? 'text-slate-300' : 'text-gray-600'}>|</span>
-          <span className={isLight ? 'text-slate-600' : 'text-gray-300'}>Badar Analytics Technologies</span>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Pillar 1: Data Analytics & Business Intelligence */}
+          <div className={`p-6 sm:p-8 rounded-3xl border space-y-6 transition-all ${
+            isLight 
+              ? 'bg-white border-slate-200 shadow-sm' 
+              : 'bg-[#172338] border-[#273449]'
+          }`}>
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center shrink-0">
+                <BarChart3 className="w-6 h-6" />
+              </div>
+              <div>
+                <span className="text-[10px] font-mono font-bold tracking-wider text-cyan-400 uppercase">
+                  DISCIPLINE 01
+                </span>
+                <h3 className={`font-heading text-xl font-bold ${isLight ? 'text-slate-900' : 'text-[#F8FAFC]'}`}>
+                  Data Analytics & Business Intelligence
+                </h3>
+              </div>
+            </div>
+
+            <p className={`text-xs sm:text-sm leading-relaxed ${isLight ? 'text-slate-600' : 'text-[#A8B3C7]'}`}>
+              Deliver boardroom-ready clarity with automated KPI calculations, interactive slicers, statistical driver discovery, and certified Power BI templates.
+            </p>
+
+            <div className="space-y-3 pt-2">
+              {[
+                { title: 'Deterministic KPI Engine', desc: 'Net Revenue, Gross Margin %, PVM realizations, and Holt Linear trend forecasting without hallucinations.' },
+                { title: 'Interactive Multi-Select Slicers', desc: 'Power BI-style segment, region, category, and date range filters with synchronized cross-chart filtering.' },
+                { title: 'Boardroom Presentation Deck', desc: 'Fullscreen C-Suite slideshow mode with executive summaries, visual telemetry, and kiosk auto-play.' },
+                { title: 'Certified DAX Measure Studio', desc: 'Pre-calculated formulas for TOTALYTD, SAMEPERIODLASTYEAR, margin variance, and moving averages.' }
+              ].map((feat, idx) => (
+                <div key={idx} className="flex items-start gap-2.5">
+                  <Check className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
+                  <div>
+                    <div className={`text-xs font-bold ${isLight ? 'text-slate-900' : 'text-[#F8FAFC]'}`}>{feat.title}</div>
+                    <div className={`text-[11px] ${isLight ? 'text-slate-600' : 'text-[#A8B3C7]'}`}>{feat.desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="pt-2 flex flex-wrap gap-2">
+              <button
+                onClick={() => setCurrentTab('executive_dashboard')}
+                className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+              >
+                <span>Executive Dashboard</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => setCurrentTab('dax_lab')}
+                className={`px-4 py-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+                  isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300' : 'bg-[#121C2F] hover:bg-[#1E2D4A] text-slate-200 border-[#273449]'
+                }`}
+              >
+                <span>DAX Studio</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Pillar 2: Data Engineering & Pipeline Architecture */}
+          <div className={`p-6 sm:p-8 rounded-3xl border space-y-6 transition-all ${
+            isLight 
+              ? 'bg-white border-slate-200 shadow-sm' 
+              : 'bg-[#172338] border-[#273449]'
+          }`}>
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center shrink-0">
+                <Database className="w-6 h-6" />
+              </div>
+              <div>
+                <span className="text-[10px] font-mono font-bold tracking-wider text-indigo-400 uppercase">
+                  DISCIPLINE 02
+                </span>
+                <h3 className={`font-heading text-xl font-bold ${isLight ? 'text-slate-900' : 'text-[#F8FAFC]'}`}>
+                  Data Engineering & Architecture
+                </h3>
+              </div>
+            </div>
+
+            <p className={`text-xs sm:text-sm leading-relaxed ${isLight ? 'text-slate-600' : 'text-[#A8B3C7]'}`}>
+              Construct durable analytics foundations with automated dimensional modeling, strict 1:N cardinality, data quality assertions, and live SQL/Python sandboxes.
+            </p>
+
+            <div className="space-y-3 pt-2">
+              {[
+                { title: 'Automated Star & Snowflake Modeling', desc: 'Separates facts from dimensions, infers foreign keys, and builds verified entity relationships.' },
+                { title: 'Data Quality & Hygiene Auditor', desc: 'Profiles nulls, duplicate rows, data drift, and provides 1-click deterministic cleaning pipelines.' },
+                { title: 'In-Browser ANSI SQL Workbench', desc: 'Execute real SQL queries with GROUP BY, JOINs, subqueries, and window functions directly on in-memory tables.' },
+                { title: 'Reproducible Python & Pandas Sandbox', desc: 'Generates executable pandas, numpy, and matplotlib scripts with live in-browser execution.' }
+              ].map((feat, idx) => (
+                <div key={idx} className="flex items-start gap-2.5">
+                  <Check className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
+                  <div>
+                    <div className={`text-xs font-bold ${isLight ? 'text-slate-900' : 'text-[#F8FAFC]'}`}>{feat.title}</div>
+                    <div className={`text-[11px] ${isLight ? 'text-slate-600' : 'text-[#A8B3C7]'}`}>{feat.desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="pt-2 flex flex-wrap gap-2">
+              <button
+                onClick={() => setCurrentTab('data_engineering')}
+                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+              >
+                <span>Pipeline DAG & Tests</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => setCurrentTab('sql_lab')}
+                className={`px-4 py-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+                  isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300' : 'bg-[#121C2F] hover:bg-[#1E2D4A] text-slate-200 border-[#273449]'
+                }`}
+              >
+                <span>SQL Workbench</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 4. Real Enterprise Project Datasets Showcase */}
+      <section className="px-2 sm:px-4 space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 text-xs font-mono font-semibold uppercase tracking-wider mb-1 text-emerald-400">
+              <Table className="w-4 h-4 text-emerald-400" />
+              <span>TESTED ENTERPRISE SCHEMAS</span>
+            </div>
+            <h2 className={`font-heading text-2xl sm:text-3xl font-bold tracking-tight uppercase ${
+              isLight ? 'text-slate-900' : 'text-[#F8FAFC]'
+            }`}>
+              REAL-WORLD PROJECT BENCHMARKS
+            </h2>
+            <p className={`text-xs sm:text-sm max-w-xl ${isLight ? 'text-slate-600' : 'text-[#A8B3C7]'}`}>
+              Instantly load pre-built domain datasets to test data profiling, star schemas, DAX measures, and dashboards.
+            </p>
+          </div>
+          <button
+            onClick={() => setCurrentTab('upload')}
+            className={`self-start sm:self-auto px-4 py-2 rounded-xl text-xs font-mono font-semibold flex items-center gap-2 border transition-all cursor-pointer ${
+              isLight 
+                ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300' 
+                : 'bg-[#172338] hover:bg-[#1E2D4A] text-emerald-300 border-[#273449]'
+            }`}
+          >
+            <span>UPLOAD CUSTOM FILE</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {DEMO_DATASETS.map((ds) => {
+            const isActive = project.sourceFileName === ds.fileName;
+            return (
+              <div
+                key={ds.id}
+                className={`p-5 rounded-2xl border flex flex-col justify-between transition-all ${
+                  isActive
+                    ? isLight
+                      ? 'bg-cyan-50/50 border-cyan-500 shadow-sm ring-1 ring-cyan-500/30'
+                      : 'bg-[#172338] border-cyan-400 shadow-md shadow-cyan-500/10'
+                    : isLight
+                      ? 'bg-white border-slate-200 hover:border-slate-300 shadow-xs'
+                      : 'bg-[#121C2F] border-[#273449] hover:border-slate-600'
+                }`}
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-[11px] font-mono">
+                    <span className="text-cyan-400 font-bold">{ds.category}</span>
+                    <span className="text-slate-400">{ds.rowsCount} Rows</span>
+                  </div>
+                  <h3 className={`font-heading text-sm font-bold leading-snug ${isLight ? 'text-slate-900' : 'text-[#F8FAFC]'}`}>
+                    {ds.name}
+                  </h3>
+                  <p className={`text-[11px] leading-relaxed line-clamp-3 ${isLight ? 'text-slate-600' : 'text-[#A8B3C7]'}`}>
+                    {ds.description}
+                  </p>
+                </div>
+
+                <div className="pt-4 flex items-center justify-between border-t border-[#273449]/30 mt-4">
+                  <span className="text-[10px] font-mono text-slate-400 truncate max-w-[110px]">
+                    {ds.fileName}
+                  </span>
+                  <button
+                    onClick={() => {
+                      loadDemoDataset(ds.id);
+                      setCurrentTab('executive_dashboard');
+                    }}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                      isActive
+                        ? 'bg-emerald-600 text-white'
+                        : isLight
+                          ? 'bg-slate-900 hover:bg-slate-800 text-white'
+                          : 'bg-cyan-600 hover:bg-cyan-500 text-white'
+                    }`}
+                  >
+                    <span>{isActive ? 'Active' : 'Load Dataset'}</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* 5. Production Exports & Power BI Architecture */}
+      <section className={`p-8 sm:p-10 rounded-3xl border transition-colors ${
+        isLight 
+          ? 'bg-gradient-to-r from-cyan-50/50 via-white to-indigo-50/50 border-slate-200' 
+          : 'bg-gradient-to-r from-[#172338] via-[#121C2F] to-[#172338] border-[#273449]'
+      }`}>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center">
+          <div className="lg:col-span-2 space-y-4">
+            <div className="flex items-center gap-2 text-xs font-mono font-bold text-cyan-400 uppercase tracking-wider">
+              <FolderDown className="w-4 h-4 text-cyan-400" />
+              <span>ENTERPRISE DELIVERABLES</span>
+            </div>
+            <h2 className={`font-heading text-2xl sm:text-4xl font-extrabold uppercase tracking-tight ${
+              isLight ? 'text-slate-900' : 'text-[#F8FAFC]'
+            }`}>
+              COMPLETE PROJECT ZIP (14 FOLDERS)
+            </h2>
+            <p className={`text-xs sm:text-sm leading-relaxed max-w-2xl ${
+              isLight ? 'text-slate-600' : 'text-[#A8B3C7]'
+            }`}>
+              Generate ready-to-run enterprise deliverables: structured multi-tab Excel workbooks, Microsoft Fabric & Power BI PBIP tabular projects, validated DAX libraries, production SQL queries, and Python data science notebooks.
+            </p>
+
+            <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs font-mono text-slate-400 pt-2">
+              <span>· 01_Original_Data</span>
+              <span>· 02_Cleaned_Data</span>
+              <span>· 03_Excel_Source</span>
+              <span>· 04_Data_Model</span>
+              <span>· 05_DAX</span>
+              <span>· 06_SQL</span>
+              <span>· 07_Python</span>
+              <span>· 08_PowerBI_PBIP</span>
+              <span>· 09_Dashboard</span>
+              <span>· 10_Executive_Deck</span>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-3 justify-center">
+            <button
+              onClick={() => setCurrentTab('export_center')}
+              className="w-full py-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-heading font-bold text-base tracking-wider uppercase flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition-all cursor-pointer"
+            >
+              <FolderDown className="w-5 h-5" />
+              <span>DOWNLOAD PROJECT ZIP</span>
+            </button>
+            <button
+              onClick={() => setCurrentTab('reports')}
+              className={`w-full py-3 rounded-xl font-heading font-bold text-xs tracking-wider uppercase flex items-center justify-center gap-2 border transition-all cursor-pointer ${
+                isLight ? 'bg-white hover:bg-slate-50 text-slate-800 border-slate-300' : 'bg-[#0B1120] hover:bg-[#121C2F] text-slate-200 border-[#273449]'
+              }`}
+            >
+              <MonitorPlay className="w-4 h-4 text-cyan-400" />
+              <span>BOARDROOM PRESENTATION</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* 6. Technical Stack & Industry Standards */}
+      <section className="px-2 sm:px-4 text-center space-y-4">
+        <div className="text-xs font-mono uppercase tracking-widest text-slate-400">
+          POWERED BY INDUSTRY-STANDARD ANALYTICS TECHNOLOGIES
+        </div>
+        <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-10 text-xs sm:text-sm font-mono font-medium text-slate-400">
+          <span className="flex items-center gap-1.5 hover:text-cyan-400 transition-colors">
+            <Database className="w-4 h-4 text-cyan-400" />
+            ANSI SQL & PostgreSQL
+          </span>
+          <span className="text-slate-600">/</span>
+          <span className="flex items-center gap-1.5 hover:text-indigo-400 transition-colors">
+            <Terminal className="w-4 h-4 text-indigo-400" />
+            Python & Pandas
+          </span>
+          <span className="text-slate-600">/</span>
+          <span className="flex items-center gap-1.5 hover:text-emerald-400 transition-colors">
+            <BarChart3 className="w-4 h-4 text-emerald-400" />
+            Power BI PBIP & DAX
+          </span>
+          <span className="text-slate-600">/</span>
+          <span className="flex items-center gap-1.5 hover:text-purple-400 transition-colors">
+            <Layers className="w-4 h-4 text-purple-400" />
+            Kimball Star Schema
+          </span>
+          <span className="text-slate-600">/</span>
+          <span className="flex items-center gap-1.5 hover:text-cyan-400 transition-colors">
+            <FileSpreadsheet className="w-4 h-4 text-cyan-400" />
+            Excel tbl* Tables
+          </span>
+        </div>
+      </section>
+
+      {/* 7. Platform Attribution & SEO Footer */}
+      <footer className={`pt-10 pb-6 border-t space-y-8 transition-colors ${
+        isLight ? 'border-slate-200 text-slate-600' : 'border-[#273449] text-[#A8B3C7]'
+      }`}>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 text-xs">
+          <div>
+            <div className={`font-heading font-bold text-sm mb-3 ${isLight ? 'text-slate-900' : 'text-[#F8FAFC]'}`}>
+              Data Analytics
+            </div>
+            <ul className="space-y-2">
+              <li><button onClick={() => setCurrentTab('upload')} className="hover:text-cyan-400 transition-colors cursor-pointer">Data Upload</button></li>
+              <li><button onClick={() => setCurrentTab('preview')} className="hover:text-cyan-400 transition-colors cursor-pointer">Preview & Profile</button></li>
+              <li><button onClick={() => setCurrentTab('analysis')} className="hover:text-cyan-400 transition-colors cursor-pointer">Statistical Diagnostics</button></li>
+              <li><button onClick={() => setCurrentTab('executive_dashboard')} className="hover:text-cyan-400 transition-colors cursor-pointer">Executive Dashboard</button></li>
+            </ul>
+          </div>
+          <div>
+            <div className={`font-heading font-bold text-sm mb-3 ${isLight ? 'text-slate-900' : 'text-[#F8FAFC]'}`}>
+              Data Engineering
+            </div>
+            <ul className="space-y-2">
+              <li><button onClick={() => setCurrentTab('data_engineering')} className="hover:text-cyan-400 transition-colors cursor-pointer">Pipeline DAG Lineage</button></li>
+              <li><button onClick={() => setCurrentTab('cleaning')} className="hover:text-cyan-400 transition-colors cursor-pointer">ETL & Data Cleaning</button></li>
+              <li><button onClick={() => setCurrentTab('quality')} className="hover:text-cyan-400 transition-colors cursor-pointer">Quality Score Auditor</button></li>
+              <li><button onClick={() => setCurrentTab('modeling')} className="hover:text-cyan-400 transition-colors cursor-pointer">Star Schema Model (ERD)</button></li>
+            </ul>
+          </div>
+          <div>
+            <div className={`font-heading font-bold text-sm mb-3 ${isLight ? 'text-slate-900' : 'text-[#F8FAFC]'}`}>
+              Developer Labs
+            </div>
+            <ul className="space-y-2">
+              <li><button onClick={() => setCurrentTab('sql_lab')} className="hover:text-cyan-400 transition-colors cursor-pointer">In-Browser SQL Workbench</button></li>
+              <li><button onClick={() => setCurrentTab('python_lab')} className="hover:text-cyan-400 transition-colors cursor-pointer">Python Data Sandbox</button></li>
+              <li><button onClick={() => setCurrentTab('dax_lab')} className="hover:text-cyan-400 transition-colors cursor-pointer">Power BI DAX Studio</button></li>
+              <li><button onClick={() => setCurrentTab('export_center')} className="hover:text-cyan-400 transition-colors cursor-pointer">14-Folder ZIP Export</button></li>
+            </ul>
+          </div>
+          <div>
+            <div className={`font-heading font-bold text-sm mb-3 ${isLight ? 'text-slate-900' : 'text-[#F8FAFC]'}`}>
+              Platform & Governance
+            </div>
+            <ul className="space-y-2">
+              <li><button onClick={() => setCurrentTab('how_to_use')} className="hover:text-cyan-400 transition-colors cursor-pointer">How to Use Guide</button></li>
+              <li><button onClick={() => setCurrentTab('reports')} className="hover:text-cyan-400 transition-colors cursor-pointer">Boardroom Deck</button></li>
+              <li><button onClick={() => setCurrentTab('data_dictionary')} className="hover:text-cyan-400 transition-colors cursor-pointer">Data Dictionary & Lineage</button></li>
+              <li><button onClick={() => setCurrentTab('settings')} className="hover:text-cyan-400 transition-colors cursor-pointer">Workspace Settings</button></li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="pt-6 border-t border-[#273449]/40 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2">
+            <span className={`font-bold ${isLight ? 'text-slate-900' : 'text-[#F8FAFC]'}`}>Data Analytix</span>
+            <span>·</span>
+            <span>Enterprise Data Analytics & Data Engineering Platform</span>
+          </div>
+          <div className="flex items-center gap-2 text-[11px] font-mono">
+            <span>Engineering Architecture by <strong className="text-cyan-400 font-semibold">Kamran Badar</strong></span>
+            <span className="text-slate-500">|</span>
+            <a 
+              href="https://data-analytix-flax.vercel.app/" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="text-cyan-400 hover:underline flex items-center gap-1"
+            >
+              <span>data-analytix-flax.vercel.app</span>
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          </div>
         </div>
       </footer>
     </div>

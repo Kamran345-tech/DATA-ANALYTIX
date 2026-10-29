@@ -140,17 +140,17 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
       <div className="flex flex-col leading-none">
         <div className={`font-heading font-black tracking-tight ${dimensions.text} flex items-center`}>
           <span className={isLight ? 'text-slate-900' : 'text-white'}>
-            ACUITY
+            DATA
           </span>
-          <span className="text-emerald-500 ml-0.5">
-            BI
+          <span className={`ml-1.5 ${isLight ? 'text-cyan-700 font-extrabold' : 'text-[#22D3EE]'}`}>
+            ANALYTIX
           </span>
         </div>
         {showSubtitle && (
           <span className={`font-mono uppercase tracking-widest font-semibold ${dimensions.sub} mt-1 ${
             isLight ? 'text-slate-500' : 'text-slate-400'
           }`}>
-            Enterprise Intelligence
+            Data Analytics & Engineering
           </span>
         )}
       </div>
