@@ -94,7 +94,7 @@ const MODULES: ModuleGuide[] = [
       'Go to "Upload Data" from the top navigation or sidebar.',
       'Drop your file in the upload zone OR click one of the 4 demo cards below.',
       'Wait 1-2 seconds as the deterministic parser detects dates, numbers, text, and keys.',
-      'AcuityBI will automatically route you to Data Preview and refresh all analytics.'
+      'Data Analytix will automatically route you to Data Preview and refresh all analytics.'
     ],
     proTip: 'Ensure Row 1 contains clear column headers (e.g. OrderDate, CustomerID, Revenue) for best automated modeling.',
     outputArtifact: 'Archived Raw Source Files, Schema Profile Metadata, Ingestion Manifest'
@@ -195,7 +195,7 @@ const MODULES: ModuleGuide[] = [
       'Configure parameters (e.g., replacement text or numeric strategy) and click "Apply Transformation".',
       'Review the live Before/After preview table; use "Undo Step" if needed.'
     ],
-    proTip: 'AcuityBI records every transformation into PowerQuery_Transformations.m so Power BI Desktop replicates your exact cleaning steps.',
+    proTip: 'Data Analytix records every transformation into PowerQuery_Transformations.m so Power BI Desktop replicates your exact cleaning steps.',
     outputArtifact: 'Power Query M Script (PowerQuery_Transformations.m), Cleaned Datasets'
   },
   {
@@ -286,7 +286,7 @@ const MODULES: ModuleGuide[] = [
       'Execute standard SQL (`SELECT`, `WHERE`, `JOIN`, `GROUP BY`, `HAVING`, `ORDER BY`).',
       'Run pre-loaded analytical query templates: Pareto 80/20 Analysis, Monthly Cohort Retention, Top 10 Contributors, Moving Averages.',
       'Export query results directly to CSV or JSON with one click.',
-      '"Apply Result as Working Dataset" to push query output back into AcuityBI as the main active data.',
+      '"Apply Result as Working Dataset" to push query output back into Data Analytix as the main active data.',
       'Real-time execution latency benchmark in milliseconds.'
     ],
     stepsToUse: [
@@ -557,7 +557,7 @@ export const HowToUseView: React.FC = () => {
   const faqs = [
     {
       q: 'Can I upload custom enterprise Excel or CSV datasets?',
-      a: 'Yes, absolutely. Navigate to "Upload Data" and drag & drop any .csv, .xlsx, or .json file. AcuityBI automatically profiles all columns, checks data health, computes statistical distributions, and generates customized Star Schemas for your dataset.'
+      a: 'Yes, absolutely. Navigate to "Upload Data" and drag & drop any .csv, .xlsx, or .json file. Data Analytix automatically profiles all columns, checks data health, computes statistical distributions, and generates customized Star Schemas for your dataset.'
     },
     {
       q: 'How does the theme switcher operate across all modules?',
@@ -615,7 +615,7 @@ export const HowToUseView: React.FC = () => {
                 isLight ? 'text-slate-900' : 'text-white'
               }`}
             >
-              How to Use Acuity<span className={isLight ? 'text-emerald-700' : 'text-[#21F1A8]'}>BI</span>
+              How to Use Data Analytix
             </h1>
 
             <p className={`text-sm sm:text-base leading-relaxed ${isLight ? 'text-slate-700' : 'text-gray-300'}`}>

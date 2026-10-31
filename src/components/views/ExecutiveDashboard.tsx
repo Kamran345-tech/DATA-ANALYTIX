@@ -544,9 +544,9 @@ export const ExecutiveDashboard: React.FC = () => {
       )}
 
       {/* 1. TOP SUMMARY & ACTION CONTROLS PANEL */}
-      <section className="w-full bg-surface-card rounded-xl p-5 sm:p-6 shadow-xl border border-border-subtle relative overflow-hidden">
-        <div className="absolute -right-20 -top-20 w-80 h-80 bg-[#00F5A0]/5 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute left-1/3 -bottom-24 w-72 h-72 bg-[#00D2FF]/5 rounded-full blur-3xl pointer-events-none" />
+      <section className="w-full glass-panel-luminous rounded-2xl p-5 sm:p-6 shadow-2xl relative overflow-hidden">
+        <div className="absolute -right-20 -top-20 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute left-1/3 -bottom-24 w-72 h-72 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col gap-4">
           {/* Hidden file input for company logo upload */}
@@ -558,9 +558,9 @@ export const ExecutiveDashboard: React.FC = () => {
             onChange={handleLogoUpload}
           />
 
-          {/* Title row with logo, breadcrumbs & system health badges */}
-          <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
-            <div className="flex items-start gap-4">
+          {/* Title row: Logo & Titles on Left, Telemetry Health Badges on Right */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div className="flex items-start gap-4 min-w-0">
               {/* Company Logo Display & Uploader Button */}
               <div className="relative group shrink-0">
                 {brand.logoUrl ? (
@@ -568,12 +568,12 @@ export const ExecutiveDashboard: React.FC = () => {
                     <img
                       src={brand.logoUrl}
                       alt={brand.companyName}
-                      className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl object-contain bg-surface-panel/90 border-2 border-emerald-500/40 p-1 shadow-lg backdrop-blur-xs transition-transform group-hover:scale-105"
+                      className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl object-contain glass-card p-1 shadow-lg transition-transform group-hover:scale-105"
                     />
                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 rounded-2xl transition-opacity flex items-center justify-center gap-1.5">
                       <button
                         onClick={() => fileInputRef.current?.click()}
-                        className="p-1 rounded-lg bg-surface-panel text-white hover:text-emerald-400 transition-colors"
+                        className="p-1 rounded-lg bg-surface-panel text-white hover:text-cyan-400 transition-colors"
                         title="Change Company Logo"
                       >
                         <Pencil className="w-3.5 h-3.5" />
@@ -590,7 +590,7 @@ export const ExecutiveDashboard: React.FC = () => {
                 ) : (
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl border-2 border-dashed border-emerald-500/40 hover:border-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 text-metric-emerald flex flex-col items-center justify-center gap-1 transition-all cursor-pointer shadow-xs group"
+                    className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl border-2 border-dashed border-cyan-500/40 hover:border-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 flex flex-col items-center justify-center gap-1 transition-all cursor-pointer shadow-xs group"
                     title="Upload Company Logo (Appears on Dashboard, Top Bar, and PDF Reports)"
                   >
                     <UploadCloud className="w-5 h-5 group-hover:scale-110 transition-transform" />
@@ -601,12 +601,12 @@ export const ExecutiveDashboard: React.FC = () => {
 
               <div className="flex flex-col gap-1.5 min-w-0">
                 <div className="flex items-center gap-1.5 text-[10px] font-bold tracking-widest text-on-surface-variant uppercase font-mono flex-wrap">
-                  <span className="text-metric-emerald font-bold">{brand.companyName.toUpperCase()}</span>
+                  <span className="text-cyan-400 font-bold">{brand.companyName.toUpperCase()}</span>
                   <span>/</span>
                   <span>{brand.department.toUpperCase()}</span>
                   <span>/</span>
-                  <span className="px-2 py-0.5 rounded bg-[#00F5A0]/10 text-metric-emerald font-bold flex items-center gap-1 border border-[#00F5A0]/20">
-                    <span className="w-1.5 h-1.5 rounded-full bg-metric-emerald animate-pulse" /> VERIFIED ANALYTICS MODEL
+                  <span className="px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 font-bold flex items-center gap-1 border border-cyan-400/30 shadow-[0_0_8px_rgba(34,211,238,0.2)]">
+                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" /> VERIFIED ANALYTICS MODEL
                   </span>
                 </div>
 
@@ -622,99 +622,104 @@ export const ExecutiveDashboard: React.FC = () => {
                   <span className="w-1 h-1 rounded-full bg-border-prominent" />
                   <span className="flex items-center gap-1">Prepared by: <EditableAnalystName /></span>
                   <span className="w-1 h-1 rounded-full bg-border-prominent" />
-                  <span>Audited: <strong className="text-metric-cyan font-semibold">{filteredRows.length.toLocaleString()} rows</strong></span>
+                  <span>Audited: <strong className="text-cyan-400 font-semibold">{filteredRows.length.toLocaleString()} rows</strong></span>
                 </p>
               </div>
             </div>
 
-            {/* Exports & Quick Telemetry Indicators */}
-            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-              {/* Telemetry Health Badges */}
-              <div className="flex items-center gap-2 bg-surface-panel px-3 py-1.5 rounded-lg border border-border-subtle shadow-xs">
-                <div 
-                  onClick={() => setCurrentTab('quality')}
-                  className="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity"
-                  title="Click to view Data Quality Audit"
-                >
-                  <span className="font-label-caps text-label-caps text-on-surface-variant tracking-wider uppercase font-bold">DATA QUALITY</span>
-                  <div className="flex items-center gap-1 text-metric-emerald font-headline-sm text-headline-sm font-bold">
-                    <span className="w-2 h-2 rounded-full bg-metric-emerald shadow-[0_0_8px_#00F5A0]" />
-                    <span>{qualityReport.overallScore}%</span>
-                  </div>
-                </div>
-                <div className="w-px h-5 bg-border-prominent" />
-                <div className="flex items-center gap-1.5">
-                  <span className="font-label-caps text-label-caps text-on-surface-variant tracking-wider uppercase font-bold">BUSINESS HEALTH</span>
-                  <span className="text-metric-amber font-headline-sm text-headline-sm font-bold flex items-center gap-1">
-                    <Award className="w-3.5 h-3.5 text-metric-amber" />
-                    <span>{analytics.businessHealthScore ? `${analytics.businessHealthScore.score}/100` : '80/100'}</span>
-                  </span>
+            {/* Telemetry Health Badges */}
+            <div className="flex items-center gap-2.5 glass-card px-4 py-2 rounded-xl shadow-xs shrink-0 self-start lg:self-center">
+              <div 
+                onClick={() => setCurrentTab('quality')}
+                className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
+                title="Click to view Data Quality Audit"
+              >
+                <span className="font-label-caps text-label-caps text-on-surface-variant tracking-wider uppercase font-bold text-[11px]">DATA QUALITY</span>
+                <div className="flex items-center gap-1 text-cyan-400 font-headline-sm text-headline-sm font-bold">
+                  <span className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#22D3EE]" />
+                  <span>{qualityReport.overallScore}%</span>
                 </div>
               </div>
-
-              {/* Action Buttons Group */}
-              <div className="flex items-center gap-1.5 bg-surface-panel p-1 rounded-lg border border-border-subtle">
-                {/* Download Both */}
-                <button
-                  onClick={handleDownloadBundleZip}
-                  disabled={isBundleGenerating}
-                  className="h-8 px-3 rounded bg-primary-container text-on-primary-container hover:opacity-90 transition-all font-semibold text-xs flex items-center gap-1.5 shadow-xs disabled:opacity-50"
-                  title="Download both Dashboard and Executive Report in a combined ZIP bundle"
-                >
-                  {isBundleGenerating ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin text-[#003921]" />
-                  ) : (
-                    <Download className="w-3.5 h-3.5 stroke-[2.5]" />
-                  )}
-                  <span className="hidden sm:inline">Download Both (Dashboard + Report)</span>
-                  <span className="sm:hidden">Both</span>
-                </button>
-
-                {/* Executive Report PDF */}
-                <button
-                  onClick={handleDownloadExecutivePDF}
-                  disabled={isPdfGenerating}
-                  className="h-8 px-2.5 rounded hover:bg-surface-elevated text-on-surface-variant hover:text-on-surface transition-colors font-medium text-xs flex items-center gap-1 disabled:opacity-50"
-                  title="Download Executive PDF Report"
-                >
-                  {isPdfGenerating ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin text-metric-coral" />
-                  ) : (
-                    <FileText className="w-3.5 h-3.5 text-metric-coral" />
-                  )}
-                  <span className="hidden md:inline">Executive Report (PDF)</span>
-                </button>
-
-                {/* Fullscreen Boardroom Presentation Deck Button */}
-                <button
-                  onClick={() => setIsPresentationMode(true)}
-                  className="h-8 px-3 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
-                  title="Open Fullscreen Boardroom Presentation Deck"
-                >
-                  <Tv className="w-3.5 h-3.5" />
-                  <span>Present Deck</span>
-                </button>
-
-                {/* Dashboard JSON */}
-                <button
-                  onClick={handleDownloadDashboardJSON}
-                  className="h-8 px-2.5 rounded hover:bg-surface-elevated text-on-surface-variant hover:text-on-surface transition-colors font-medium text-xs flex items-center gap-1"
-                  title="Download Dashboard Specification as JSON"
-                >
-                  <Download className="w-3.5 h-3.5 text-metric-cyan" />
-                  <span className="hidden md:inline">Dashboard (JSON)</span>
-                </button>
-
-                {/* How to Use Shortcut */}
-                <button
-                  onClick={() => setCurrentTab('how_to_use')}
-                  className="h-8 px-2.5 rounded hover:bg-surface-elevated text-on-surface-variant hover:text-metric-emerald transition-colors font-semibold text-xs flex items-center gap-1"
-                  title="View Complete User Guide & Module Directory"
-                >
-                  <HelpCircle className="w-3.5 h-3.5 text-metric-emerald" />
-                  <span className="hidden lg:inline">How to Use</span>
-                </button>
+              <div className="w-px h-5 bg-white/10" />
+              <div className="flex items-center gap-2">
+                <span className="font-label-caps text-label-caps text-on-surface-variant tracking-wider uppercase font-bold text-[11px]">BUSINESS HEALTH</span>
+                <span className="text-amber-400 font-headline-sm text-headline-sm font-bold flex items-center gap-1">
+                  <Award className="w-3.5 h-3.5 text-amber-400" />
+                  <span>{analytics.businessHealthScore ? `${analytics.businessHealthScore.score}/100` : '80/100'}</span>
+                </span>
               </div>
+            </div>
+          </div>
+
+          {/* Action Toolbar Row: Responsive, Generous Breathing Room, Zero Vertical Text Clamping */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-3 border-t border-white/[0.08]">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+              {/* Download Bundle ZIP */}
+              <button
+                onClick={handleDownloadBundleZip}
+                disabled={isBundleGenerating}
+                className="glass-btn-primary min-h-[38px] px-3.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-2 shadow-sm transition-all cursor-pointer whitespace-nowrap shrink-0 disabled:opacity-50"
+                title="Download both Dashboard (JSON) and Executive PDF Report in a combined ZIP bundle"
+              >
+                {isBundleGenerating ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-white shrink-0" />
+                ) : (
+                  <Download className="w-3.5 h-3.5 stroke-[2.5] shrink-0" />
+                )}
+                <span className="whitespace-nowrap font-bold">Download Bundle (ZIP)</span>
+                <span className="hidden md:inline-block text-[10px] bg-cyan-900/40 text-cyan-200 px-1.5 py-0.5 rounded font-mono font-normal border border-cyan-400/20">Dashboard + PDF</span>
+              </button>
+
+              {/* Executive Report PDF */}
+              <button
+                onClick={handleDownloadExecutivePDF}
+                disabled={isPdfGenerating}
+                className="glass-btn-secondary min-h-[38px] px-3.5 py-1.5 rounded-xl font-semibold text-xs flex items-center gap-2 whitespace-nowrap shrink-0 disabled:opacity-50 cursor-pointer"
+                title="Download Executive PDF Report"
+              >
+                {isPdfGenerating ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-400 shrink-0" />
+                ) : (
+                  <FileText className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                )}
+                <span className="whitespace-nowrap">Executive Report (PDF)</span>
+              </button>
+
+              {/* Fullscreen Boardroom Presentation Deck Button */}
+              <button
+                onClick={() => setIsPresentationMode(true)}
+                className="glass-btn-primary min-h-[38px] px-3.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-2 shadow-sm transition-all cursor-pointer whitespace-nowrap shrink-0"
+                title="Open Fullscreen Boardroom Presentation Deck"
+              >
+                <Tv className="w-3.5 h-3.5 shrink-0" />
+                <span className="whitespace-nowrap">Present Deck</span>
+              </button>
+
+              {/* Dashboard JSON */}
+              <button
+                onClick={handleDownloadDashboardJSON}
+                className="glass-btn-secondary min-h-[38px] px-3.5 py-1.5 rounded-xl font-semibold text-xs flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer"
+                title="Download Dashboard Specification as JSON"
+              >
+                <Download className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                <span className="whitespace-nowrap">Dashboard (JSON)</span>
+              </button>
+
+              {/* How to Use Shortcut */}
+              <button
+                onClick={() => setCurrentTab('how_to_use')}
+                className="glass-btn-secondary min-h-[38px] px-3.5 py-1.5 rounded-xl font-semibold text-xs flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer"
+                title="View Complete User Guide & Module Directory"
+              >
+                <HelpCircle className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                <span className="whitespace-nowrap">How to Use</span>
+              </button>
+            </div>
+
+            {/* Live Indicator / Quick Telemetry Note */}
+            <div className="hidden xl:flex items-center gap-2 text-[11px] font-mono text-slate-400 shrink-0">
+              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shrink-0 shadow-[0_0_8px_#22D3EE]" />
+              <span className="whitespace-nowrap">Real-Time Engine Sync Active</span>
             </div>
           </div>
 
@@ -787,7 +792,7 @@ export const ExecutiveDashboard: React.FC = () => {
           </div>
 
           {/* Navigation View Switcher (Tabs for Data Analysts & Executives) */}
-          <div className="flex gap-1.5 pt-1 border-t border-border-subtle text-xs overflow-x-auto no-scrollbar">
+          <div className="flex gap-2 pt-1 border-t border-white/[0.08] text-xs overflow-x-auto no-scrollbar">
             <Tooltip
               side="bottom"
               title="Executive Overview"
@@ -797,10 +802,10 @@ export const ExecutiveDashboard: React.FC = () => {
             >
               <button
                 onClick={() => setActiveTab('overview')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-all shrink-0 text-xs ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-semibold transition-all shrink-0 text-xs cursor-pointer ${
                   activeTab === 'overview'
-                    ? 'bg-primary-container text-on-primary-container shadow-sm'
-                    : 'bg-surface-panel text-on-surface-variant hover:text-on-surface hover:bg-surface-elevated border border-border-subtle'
+                    ? 'glass-btn-primary font-bold shadow-xs'
+                    : 'glass-btn-secondary'
                 }`}
               >
                 <LayoutDashboard className="w-3.5 h-3.5" /> Executive Overview
@@ -816,10 +821,10 @@ export const ExecutiveDashboard: React.FC = () => {
             >
               <button
                 onClick={() => setActiveTab('scatter')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-all shrink-0 text-xs ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-semibold transition-all shrink-0 text-xs cursor-pointer ${
                   activeTab === 'scatter'
-                    ? 'bg-primary-container text-on-primary-container shadow-sm'
-                    : 'bg-surface-panel text-on-surface-variant hover:text-on-surface hover:bg-surface-elevated border border-border-subtle'
+                    ? 'glass-btn-primary font-bold shadow-xs'
+                    : 'glass-btn-secondary'
                 }`}
               >
                 <CircleDot className="w-3.5 h-3.5" /> Scatter & Regression
@@ -835,10 +840,10 @@ export const ExecutiveDashboard: React.FC = () => {
             >
               <button
                 onClick={() => setActiveTab('heatmap')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-all shrink-0 text-xs ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-semibold transition-all shrink-0 text-xs cursor-pointer ${
                   activeTab === 'heatmap'
-                    ? 'bg-primary-container text-on-primary-container shadow-sm'
-                    : 'bg-surface-panel text-on-surface-variant hover:text-on-surface hover:bg-surface-elevated border border-border-subtle'
+                    ? 'glass-btn-primary font-bold shadow-xs'
+                    : 'glass-btn-secondary'
                 }`}
               >
                 <Grid className="w-3.5 h-3.5" /> 2D Heat Map
@@ -854,10 +859,10 @@ export const ExecutiveDashboard: React.FC = () => {
             >
               <button
                 onClick={() => setActiveTab('multivariate')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-all shrink-0 text-xs ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-semibold transition-all shrink-0 text-xs cursor-pointer ${
                   activeTab === 'multivariate'
-                    ? 'bg-primary-container text-on-primary-container shadow-sm'
-                    : 'bg-surface-panel text-on-surface-variant hover:text-on-surface hover:bg-surface-elevated border border-border-subtle'
+                    ? 'glass-btn-primary font-bold shadow-xs'
+                    : 'glass-btn-secondary'
                 }`}
               >
                 <Layers className="w-3.5 h-3.5" /> Multi-Chart Suite
@@ -873,10 +878,10 @@ export const ExecutiveDashboard: React.FC = () => {
             >
               <button
                 onClick={() => setActiveTab('pareto')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-all shrink-0 text-xs ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-semibold transition-all shrink-0 text-xs cursor-pointer ${
                   activeTab === 'pareto'
-                    ? 'bg-primary-container text-on-primary-container shadow-sm'
-                    : 'bg-surface-panel text-on-surface-variant hover:text-on-surface hover:bg-surface-elevated border border-border-subtle'
+                    ? 'glass-btn-primary font-bold shadow-xs'
+                    : 'glass-btn-secondary'
                 }`}
               >
                 <BarChart3 className="w-3.5 h-3.5" /> Pareto 80/20
@@ -892,10 +897,10 @@ export const ExecutiveDashboard: React.FC = () => {
             >
               <button
                 onClick={() => setActiveTab('whatif')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-all shrink-0 text-xs ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-semibold transition-all shrink-0 text-xs cursor-pointer ${
                   activeTab === 'whatif'
-                    ? 'bg-primary-container text-on-primary-container shadow-sm'
-                    : 'bg-surface-panel text-on-surface-variant hover:text-on-surface hover:bg-surface-elevated border border-border-subtle'
+                    ? 'glass-btn-primary font-bold shadow-xs'
+                    : 'glass-btn-secondary'
                 }`}
               >
                 <Sliders className="w-3.5 h-3.5" /> What-If Analysis
@@ -911,10 +916,10 @@ export const ExecutiveDashboard: React.FC = () => {
             >
               <button
                 onClick={() => setActiveTab('pivot')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-all shrink-0 text-xs ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-semibold transition-all shrink-0 text-xs cursor-pointer ${
                   activeTab === 'pivot'
-                    ? 'bg-primary-container text-on-primary-container shadow-sm'
-                    : 'bg-surface-panel text-on-surface-variant hover:text-on-surface hover:bg-surface-elevated border border-border-subtle'
+                    ? 'glass-btn-primary font-bold shadow-xs'
+                    : 'glass-btn-secondary'
                 }`}
               >
                 <Table2 className="w-3.5 h-3.5" /> Pivot Matrix
@@ -930,10 +935,10 @@ export const ExecutiveDashboard: React.FC = () => {
             >
               <button
                 onClick={() => setActiveTab('distribution')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-all shrink-0 text-xs ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-semibold transition-all shrink-0 text-xs cursor-pointer ${
                   activeTab === 'distribution'
-                    ? 'bg-primary-container text-on-primary-container shadow-sm'
-                    : 'bg-surface-panel text-on-surface-variant hover:text-on-surface hover:bg-surface-elevated border border-border-subtle'
+                    ? 'glass-btn-primary font-bold shadow-xs'
+                    : 'glass-btn-secondary'
                 }`}
               >
                 <TrendingUp className="w-3.5 h-3.5" /> Statistical Dispersion
@@ -949,13 +954,13 @@ export const ExecutiveDashboard: React.FC = () => {
             >
               <button
                 onClick={() => setActiveTab('data_engineering')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-all shrink-0 text-xs ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-semibold transition-all shrink-0 text-xs cursor-pointer ${
                   activeTab === 'data_engineering'
-                    ? 'bg-primary-container text-on-primary-container shadow-sm'
-                    : 'bg-surface-panel text-on-surface-variant hover:text-on-surface hover:bg-surface-elevated border border-border-subtle'
+                    ? 'glass-btn-primary font-bold shadow-xs'
+                    : 'glass-btn-secondary'
                 }`}
               >
-                <Network className="w-3.5 h-3.5 text-metric-emerald" /> Data Engineering Suite
+                <Network className="w-3.5 h-3.5 text-cyan-400" /> Data Engineering Suite
               </button>
             </Tooltip>
           </div>
@@ -969,17 +974,17 @@ export const ExecutiveDashboard: React.FC = () => {
             <span className="font-label-caps text-label-caps uppercase tracking-wider text-on-surface-variant font-bold text-[11px]">
               Executive Performance Telemetry
             </span>
-            <span className="text-[10px] text-metric-emerald hidden sm:inline font-mono">
+            <span className="text-[10px] text-cyan-400 hidden sm:inline font-mono">
               (Click pencil on any card to change heading & calculation)
             </span>
           </div>
           <button
             type="button"
             onClick={resetKpisToDefault}
-            className="text-[11px] text-on-surface-variant hover:text-metric-emerald flex items-center gap-1 font-mono transition-colors px-2 py-1 rounded hover:bg-surface-elevated"
+            className="text-[11px] text-on-surface-variant hover:text-cyan-400 flex items-center gap-1 font-mono transition-colors px-2 py-1 rounded hover:bg-white/5 cursor-pointer"
             title="Reset all cards to automatic engine calculations"
           >
-            <RotateCcw className="w-3 h-3 text-metric-emerald" />
+            <RotateCcw className="w-3 h-3 text-cyan-400" />
             <span>Reset Auto Metrics</span>
           </button>
         </div>
@@ -988,12 +993,12 @@ export const ExecutiveDashboard: React.FC = () => {
           {displayKpis.map((kpi, kIdx) => {
             const isPositive = (kpi.changePercent ?? 0) >= 0;
             const statusTheme = kpi.status === 'Above Target'
-              ? { text: 'text-metric-emerald', bg: 'bg-emerald-500/20', dot: 'bg-metric-emerald', border: 'border-emerald-500/30', stroke: '#00F5A0' }
+              ? { text: 'text-emerald-400', bg: 'bg-emerald-500/20', dot: 'bg-emerald-400', border: 'border-emerald-500/30', stroke: '#34D399' }
               : kpi.status === 'At Risk'
-              ? { text: 'text-metric-coral', bg: 'bg-red-500/20', dot: 'bg-metric-coral', border: 'border-red-500/30', stroke: '#EF4444' }
+              ? { text: 'text-rose-400', bg: 'bg-rose-500/20', dot: 'bg-rose-400', border: 'border-rose-500/30', stroke: '#F43F5E' }
               : kpi.status === 'Below Target'
-              ? { text: 'text-metric-amber', bg: 'bg-amber-500/20', dot: 'bg-metric-amber', border: 'border-amber-500/30', stroke: '#F59E0B' }
-              : { text: 'text-metric-cyan', bg: 'bg-cyan-500/15', dot: 'bg-metric-cyan', border: 'border-cyan-500/30', stroke: '#00D2FF' };
+              ? { text: 'text-amber-400', bg: 'bg-amber-500/20', dot: 'bg-amber-400', border: 'border-amber-500/30', stroke: '#F59E0B' }
+              : { text: 'text-cyan-400', bg: 'bg-cyan-500/15', dot: 'bg-cyan-400', border: 'border-cyan-500/30', stroke: '#22D3EE' };
 
             const filteredKpi = computeFilteredKpi(kpi);
 
@@ -1018,7 +1023,7 @@ export const ExecutiveDashboard: React.FC = () => {
                   onClick={() => {
                     openDrillThrough({ title: kpi.name, subtitle: kpi.definition, kpi, sourceContext: 'kpi_card' });
                   }}
-                  className="bg-surface-card rounded-xl p-4 sm:p-5 shadow-lg border border-border-subtle flex flex-col justify-between relative group hover:bg-surface-panel/90 transition-all duration-300 cursor-pointer select-none h-full"
+                  className="glass-card rounded-2xl p-4 sm:p-5 flex flex-col justify-between relative group cursor-pointer select-none h-full"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5 min-w-0">

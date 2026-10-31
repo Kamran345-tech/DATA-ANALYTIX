@@ -7,6 +7,7 @@ import {
   signOut, 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
+  sendPasswordResetEmail,
   updateProfile,
   onAuthStateChanged, 
   User,
@@ -40,6 +41,7 @@ export interface AuthContextType {
   loginWithGoogle: () => Promise<User>;
   loginWithEmail: (email: string, pass: string) => Promise<User>;
   registerWithEmail: (email: string, pass: string, displayName: string) => Promise<User>;
+  resetPassword: (email: string) => Promise<void>;
   logout: () => Promise<void>;
   saveDashboardToCloud: (dashboardData: {
     projectName: string;
@@ -165,6 +167,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const resetPassword = async (emailToReset: string) => {
+    setAuthError(null);
+    try {
+      await sendPasswordResetEmail(auth, emailToReset);
+    } catch (err: any) {
+      console.error('Password reset error:', err);
+      setAuthError(err?.message || 'Failed to send password reset email');
+      throw err;
+    }
+  };
+
   const logout = async () => {
     try {
       await signOut(auth);
@@ -241,6 +254,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loginWithGoogle,
         loginWithEmail,
         registerWithEmail,
+        resetPassword,
         logout,
         saveDashboardToCloud,
         fetchUserDashboards

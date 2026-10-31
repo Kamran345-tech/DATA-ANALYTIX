@@ -728,19 +728,19 @@ export const DashboardBuilderView: React.FC = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            {/* Download Both (Dashboard + Executive Report Bundle ZIP) */}
+            {/* Download Bundle (Dashboard + Executive Report Bundle ZIP) */}
             <button
               onClick={handleDownloadBundleZip}
               disabled={isBundleGenerating}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#21F1A8] hover:bg-[#1cdb97] text-black text-xs font-semibold hover:glow-neon transition-all shadow-md shadow-[#21F1A8]/20 disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-all shadow-md shrink-0 whitespace-nowrap disabled:opacity-50 cursor-pointer"
               title="Download both the created dashboard and executive report in a single ZIP package"
             >
               {isBundleGenerating ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-black" />
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-white shrink-0" />
               ) : (
-                <Package className="w-3.5 h-3.5 stroke-[2.5]" />
+                <Package className="w-3.5 h-3.5 stroke-[2.5] shrink-0" />
               )}
-              <span>Download Both (Dashboard + Report)</span>
+              <span className="whitespace-nowrap font-bold">Download Bundle (ZIP)</span>
             </button>
 
             {/* Download Created Dashboard as JSON */}

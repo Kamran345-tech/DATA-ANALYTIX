@@ -650,7 +650,7 @@ export const ExecutivePresentationDeck: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3">
-            <span>Powered by AcuityBI Autonomous Engine</span>
+            <span>Powered by Data Analytix Autonomous Engine</span>
             <span>•</span>
             <span>Certified Governed Data Model</span>
           </div>

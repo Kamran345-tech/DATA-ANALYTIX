@@ -220,19 +220,19 @@ export const ReportsView: React.FC = () => {
             <span>Customize Headings</span>
           </button>
 
-          {/* Download Both (Dashboard + Executive Report Bundle ZIP) */}
+          {/* Download Bundle (Dashboard + Executive Report Bundle ZIP) */}
           <button
             onClick={handleDownloadBundleZip}
             disabled={isBundleGenerating}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#21F1A8] text-black font-semibold text-xs hover:bg-[#1cdb97] transition-all disabled:opacity-50 shadow-md shadow-[#21F1A8]/20"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition-all disabled:opacity-50 shadow-md shrink-0 whitespace-nowrap cursor-pointer"
             title="Download both the created dashboard and executive report in a single ZIP package"
           >
             {isBundleGenerating ? (
-              <Loader2 className="w-4 h-4 animate-spin text-black" />
+              <Loader2 className="w-4 h-4 animate-spin text-white shrink-0" />
             ) : (
-              <Package className="w-4 h-4 stroke-[2.5]" />
+              <Package className="w-4 h-4 stroke-[2.5] shrink-0" />
             )}
-            <span>Download Both (Dashboard + Report)</span>
+            <span className="whitespace-nowrap font-bold">Download Bundle (ZIP)</span>
           </button>
 
           {/* Download PDF Report */}
@@ -769,7 +769,7 @@ export const ReportsView: React.FC = () => {
         <section className="border-t border-[#333] print:border-gray-300 pt-6 text-[11px] text-gray-500 print:text-gray-600 space-y-1">
           <div className="font-bold text-gray-400 print:text-gray-800 uppercase font-mono">Governed Methodology:</div>
           <p>
-            All metrics calculated via AcuityBI in-memory deterministic engine. No generative AI hallucination of numbers. Power BI semantic model compatible.
+            All metrics calculated via Data Analytix in-memory deterministic engine. No generative AI hallucination of numbers. Power BI semantic model compatible.
           </p>
         </section>
       </div>

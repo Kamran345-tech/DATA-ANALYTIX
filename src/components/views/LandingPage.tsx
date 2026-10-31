@@ -87,13 +87,14 @@ export const LandingPage: React.FC = () => {
   return (
     <div className="space-y-16 pb-20 animate-fadeIn max-w-7xl mx-auto font-sans">
       {/* 1. Hero Section - Data Analytix Master Design */}
-      <section className={`relative overflow-hidden pt-12 pb-16 px-4 sm:px-10 rounded-3xl border transition-colors duration-200 ${
+      <section className={`relative overflow-hidden pt-12 pb-16 px-4 sm:px-10 rounded-3xl transition-colors duration-200 ${
         isLight 
-          ? 'bg-gradient-to-b from-slate-50 via-white to-slate-100/60 border-slate-200 shadow-sm' 
-          : 'bg-gradient-to-b from-[#121C2F] via-[#0B1120] to-[#0B1120] border-[#273449] shadow-2xl'
+          ? 'glass-panel shadow-lg' 
+          : 'glass-panel-luminous shadow-2xl'
       }`}>
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-80 bg-cyan-500/10 blur-3xl rounded-full pointer-events-none" />
-        <div className="absolute top-1/4 right-10 w-96 h-96 bg-indigo-500/10 blur-3xl rounded-full pointer-events-none" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-80 bg-cyan-500/15 blur-3xl rounded-full pointer-events-none" />
+        <div className="absolute top-1/4 right-10 w-96 h-96 bg-indigo-500/15 blur-3xl rounded-full pointer-events-none" />
+        <div className="absolute bottom-4 left-10 w-72 h-72 bg-violet-500/10 blur-3xl rounded-full pointer-events-none" />
 
         <div className="max-w-4xl mx-auto text-center space-y-6 relative z-10">
           {/* Logo & Category Kicker */}
@@ -102,11 +103,11 @@ export const LandingPage: React.FC = () => {
             
             {/* Zero-Pill Typographic Kicker */}
             <div className="flex items-center gap-2 text-xs font-semibold tracking-wider font-mono">
-              <span className={isLight ? 'text-cyan-700' : 'text-[#22D3EE]'}>DATA ANALYTICS</span>
+              <span className={isLight ? 'text-cyan-700 font-bold' : 'text-cyan-400 font-bold'}>DATA ANALYTICS</span>
               <span className="text-slate-400">·</span>
-              <span className={isLight ? 'text-indigo-700' : 'text-[#818CF8]'}>DATA ENGINEERING</span>
+              <span className={isLight ? 'text-indigo-700 font-bold' : 'text-indigo-400 font-bold'}>DATA ENGINEERING</span>
               <span className="text-slate-400">·</span>
-              <span className={isLight ? 'text-emerald-700' : 'text-[#34D399]'}>BUSINESS INTELLIGENCE</span>
+              <span className={isLight ? 'text-emerald-700 font-bold' : 'text-emerald-400 font-bold'}>BUSINESS INTELLIGENCE</span>
             </div>
           </div>
 
@@ -123,7 +124,7 @@ export const LandingPage: React.FC = () => {
 
           {/* Subtitle with High Readability */}
           <p className={`text-base sm:text-lg max-w-2xl mx-auto font-sans leading-relaxed ${
-            isLight ? 'text-slate-600' : 'text-[#A8B3C7]'
+            isLight ? 'text-slate-600' : 'text-slate-300'
           }`}>
             Transform raw data into reliable pipelines, interactive dashboards, and actionable business intelligence with practical data analytics and engineering solutions.
           </p>
@@ -132,7 +133,7 @@ export const LandingPage: React.FC = () => {
           <div className="pt-4 flex flex-wrap items-center justify-center gap-3.5">
             <button
               onClick={() => setCurrentTab('upload')}
-              className="px-8 py-3.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-heading text-base font-bold tracking-wide uppercase transition-all flex items-center gap-2 shadow-lg shadow-cyan-600/30 transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+              className="glass-btn-primary px-8 py-3.5 rounded-xl font-heading text-base font-bold tracking-wide uppercase flex items-center gap-2 cursor-pointer shadow-lg"
             >
               <span>ANALYZE MY DATA</span>
               <ArrowRight className="w-5 h-5" />
@@ -143,15 +144,11 @@ export const LandingPage: React.FC = () => {
                 loadDemoDataset('global-retail-sales');
                 setCurrentTab('executive_dashboard');
               }}
-              className={`px-7 py-3.5 rounded-xl font-heading text-base font-bold tracking-wide uppercase transition-all flex items-center gap-2.5 border shadow-sm cursor-pointer ${
-                isLight
-                  ? 'bg-slate-900 hover:bg-slate-800 text-white border-slate-900'
-                  : 'bg-[#172338] hover:bg-[#1E2D4A] text-white border-[#273449]'
-              }`}
+              className="glass-btn-secondary px-7 py-3.5 rounded-xl font-heading text-base font-bold tracking-wide uppercase flex items-center gap-2.5 cursor-pointer"
             >
               <span>EXPLORE LIVE DASHBOARD</span>
               <span className={`text-[11px] font-mono tracking-wider font-semibold ${
-                isLight ? 'text-cyan-300' : 'text-[#22D3EE]'
+                isLight ? 'text-cyan-700' : 'text-cyan-400'
               }`}>
                 · ACTIVE
               </span>
@@ -159,11 +156,7 @@ export const LandingPage: React.FC = () => {
 
             <button
               onClick={() => setCurrentTab('data_engineering')}
-              className={`px-6 py-3.5 rounded-xl font-heading text-base font-semibold tracking-wide uppercase transition-all flex items-center gap-2 border shadow-xs cursor-pointer ${
-                isLight
-                  ? 'bg-white hover:bg-slate-50 text-slate-800 border-slate-300'
-                  : 'bg-[#121C2F] hover:bg-[#172338] text-slate-200 border-[#273449]'
-              }`}
+              className="glass-btn-secondary px-6 py-3.5 rounded-xl font-heading text-base font-semibold tracking-wide uppercase flex items-center gap-2 cursor-pointer"
             >
               <GitBranch className="w-4 h-4 text-indigo-400" />
               <span>DATA ENGINEERING DAG</span>
@@ -171,11 +164,7 @@ export const LandingPage: React.FC = () => {
 
             <button
               onClick={() => setCurrentTab('how_to_use')}
-              className={`px-5 py-3.5 rounded-xl font-heading text-base font-semibold tracking-wide uppercase transition-all flex items-center gap-2 border shadow-xs cursor-pointer ${
-                isLight
-                  ? 'bg-white hover:bg-slate-50 text-slate-800 border-slate-300'
-                  : 'bg-[#121C2F] hover:bg-[#172338] text-slate-200 border-[#273449]'
-              }`}
+              className="glass-btn-secondary px-5 py-3.5 rounded-xl font-heading text-base font-semibold tracking-wide uppercase flex items-center gap-2 cursor-pointer"
             >
               <HelpCircle className="w-4 h-4 text-cyan-400" />
               <span>GUIDE</span>
