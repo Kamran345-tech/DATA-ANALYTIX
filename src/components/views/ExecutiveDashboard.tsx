@@ -537,8 +537,8 @@ export const ExecutiveDashboard: React.FC = () => {
     <div className="space-y-6 pb-12 animate-fadeIn w-full">
       {/* Download notification toast */}
       {downloadSuccess && (
-        <div className="fixed top-20 right-6 z-50 bg-[#162920] border border-[#21F1A8] text-[#21F1A8] px-4 py-2.5 rounded-xl text-xs font-semibold shadow-xl flex items-center gap-2 animate-bounce">
-          <ShieldCheck className="w-4 h-4" />
+        <div className="fixed top-20 right-6 z-50 bg-sky-50 dark:bg-cyan-950/90 border border-sky-300 dark:border-cyan-500/50 text-sky-800 dark:text-cyan-300 px-4 py-2.5 rounded-xl text-xs font-semibold shadow-xl flex items-center gap-2 animate-bounce">
+          <ShieldCheck className="w-4 h-4 text-sky-600 dark:text-cyan-400" />
           <span>{downloadSuccess}</span>
         </div>
       )}
@@ -730,8 +730,8 @@ export const ExecutiveDashboard: React.FC = () => {
           <div className="flex flex-wrap items-center justify-between gap-3 pt-2.5 border-t border-border-subtle">
             {/* Dashboard Perspectives */}
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-label-caps text-label-caps uppercase tracking-wider text-metric-emerald font-bold flex items-center gap-1.5 text-xs">
-                <Sparkles className="w-4 h-4 text-metric-emerald" /> PERSPECTIVE:
+              <span className="font-label-caps text-label-caps uppercase tracking-wider text-cyan-600 dark:text-cyan-400 font-bold flex items-center gap-1.5 text-xs">
+                <Sparkles className="w-4 h-4 text-cyan-500 dark:text-cyan-400" /> PERSPECTIVE:
               </span>
               {[
                 { id: 'c_suite', label: '🏛️ C-Suite Executive', desc: 'Strategic high-level revenue pacing, corporate growth & executive directives' },
@@ -749,8 +749,12 @@ export const ExecutiveDashboard: React.FC = () => {
                   }}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1 border shadow-xs ${
                     dashboardPersona === p.id
-                      ? 'bg-metric-emerald text-black border-metric-emerald font-bold shadow-emerald-500/20'
-                      : 'bg-surface-panel hover:bg-surface-elevated text-on-surface-variant hover:text-on-surface border-border-subtle'
+                      ? isLight 
+                        ? 'bg-sky-600 text-white font-bold border-sky-600 shadow-sm'
+                        : 'bg-cyan-500 dark:bg-cyan-400 text-slate-950 font-bold border-cyan-400 shadow-[0_0_12px_rgba(34,211,238,0.35)]'
+                      : isLight 
+                        ? 'bg-white hover:bg-slate-100 text-slate-700 hover:text-slate-900 border-slate-200'
+                        : 'bg-surface-panel hover:bg-surface-elevated text-on-surface-variant hover:text-on-surface border-border-subtle'
                   }`}
                   title={p.desc}
                 >
@@ -761,11 +765,11 @@ export const ExecutiveDashboard: React.FC = () => {
 
             {/* Multiple Visual Theme Switcher */}
             <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant font-mono">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-on-surface-variant font-mono">
                 THEME:
               </span>
               {[
-                { id: 'cyber_emerald', label: '⚡ Emerald' },
+                { id: 'cyber_emerald', label: '⚡ Azure Blue' },
                 { id: 'wall_street', label: '📈 Wall St' },
                 { id: 'power_bi', label: '📊 Power BI' },
                 { id: 'sunset_royal', label: '👑 Royal' },
@@ -780,8 +784,8 @@ export const ExecutiveDashboard: React.FC = () => {
                   }}
                   className={`px-2 py-1 rounded-lg text-xs font-semibold transition-all border ${
                     visualTheme === thm.id
-                      ? isLight ? 'bg-emerald-600 text-white font-bold border-emerald-700 shadow-xs' : 'bg-[#21F1A8] text-slate-950 font-bold border-[#21F1A8] shadow-xs'
-                      : isLight ? 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100' : 'bg-[#151921] text-gray-300 border-[#2D3748] hover:bg-[#1E2638]'
+                      ? isLight ? 'bg-sky-600 text-white font-bold border-sky-700 shadow-xs' : 'bg-cyan-400 text-slate-950 font-bold border-cyan-400 shadow-xs'
+                      : isLight ? 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100 hover:text-slate-900' : 'bg-[#151921] text-gray-300 border-[#2D3748] hover:bg-[#1E2638]'
                   }`}
                   title={`Switch styling palette to ${thm.label}`}
                 >
@@ -1036,7 +1040,7 @@ export const ExecutiveDashboard: React.FC = () => {
                           e.stopPropagation();
                           setEditingKpi(kpi);
                         }}
-                        className="p-1 rounded hover:bg-surface-elevated text-on-surface-variant hover:text-[#21F1A8] transition-colors shrink-0 group-hover:opacity-100 opacity-60"
+                        className="p-1 rounded hover:bg-slate-200 dark:hover:bg-surface-elevated text-slate-500 dark:text-on-surface-variant hover:text-cyan-500 dark:hover:text-cyan-400 transition-colors shrink-0 group-hover:opacity-100 opacity-60"
                         title="Customize heading, column & calculation formula"
                       >
                         <Pencil className="w-3.5 h-3.5" />
@@ -1114,25 +1118,25 @@ export const ExecutiveDashboard: React.FC = () => {
       {activeTab === 'overview' && (
         <div className="space-y-6">
           {/* AI DECISION DIRECTIVES SECTION */}
-          <section className="w-full bg-surface-card rounded-xl p-5 sm:p-6 shadow-xl border border-border-subtle relative overflow-hidden">
+          <section className="w-full glass-card rounded-2xl p-5 sm:p-6 shadow-xl border border-white/10 dark:border-white/10 relative overflow-hidden">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-4">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-[#00F5A0]/20 text-metric-emerald flex items-center justify-center shadow-[0_0_15px_rgba(0,245,160,0.25)]">
-                  <Sparkles className="w-4 h-4 text-metric-emerald" />
+                <div className="w-9 h-9 rounded-xl bg-cyan-500/15 text-cyan-500 dark:text-cyan-400 border border-cyan-400/30 flex items-center justify-center shadow-[0_0_18px_rgba(34,211,238,0.25)]">
+                  <Sparkles className="w-4 h-4 text-cyan-500 dark:text-cyan-400" />
                 </div>
                 <div>
-                  <h2 className="font-headline-sm text-headline-sm text-on-surface font-bold tracking-tight">
+                  <h2 className="font-headline-sm text-headline-sm text-slate-900 dark:text-slate-100 font-bold tracking-tight">
                     AI DECISION DIRECTIVES: WHAT • WHY • MANAGEMENT ACTION
                   </h2>
-                  <p className="font-body-sm text-body-sm text-on-surface-variant">
+                  <p className="font-body-sm text-body-sm text-slate-600 dark:text-slate-300">
                     Synthesized causal inferences derived from {filteredRows.length.toLocaleString()} audited records in {project.name}
                   </p>
                 </div>
               </div>
 
               <div className="flex items-center gap-2">
-                <span className="px-3 py-1 rounded bg-surface-panel text-metric-emerald font-label-caps text-label-caps tracking-wider uppercase font-semibold flex items-center gap-1.5 border border-border-subtle shadow-xs">
-                  <span className="w-2 h-2 rounded-full bg-metric-emerald animate-ping" />
+                <span className="px-3 py-1.5 rounded-lg bg-cyan-500/10 text-cyan-600 dark:text-cyan-300 font-label-caps text-label-caps tracking-wider uppercase font-bold flex items-center gap-2 border border-cyan-500/25 shadow-xs">
+                  <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_8px_#22D3EE]" />
                   Traceable to Verified Model
                 </span>
               </div>
@@ -1142,10 +1146,10 @@ export const ExecutiveDashboard: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               {activeDirectives.map((dir, idx) => {
                 const categoryTheme = dir.category === 'Driver' 
-                  ? { bg: 'bg-emerald-500/20 text-metric-emerald border-emerald-500/30', label: 'DRIVER' }
+                  ? { bg: 'bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border-cyan-500/30', label: 'DRIVER' }
                   : dir.category === 'Opportunity'
-                  ? { bg: 'bg-amber-500/20 text-metric-amber border-amber-500/30', label: 'OPPORTUNITY' }
-                  : { bg: 'bg-cyan-500/20 text-metric-cyan border-cyan-500/30', label: 'OPERATIONAL' };
+                  ? { bg: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30', label: 'OPPORTUNITY' }
+                  : { bg: 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border-indigo-500/30', label: 'OPERATIONAL' };
 
                 return (
                   <Tooltip
@@ -1155,36 +1159,40 @@ export const ExecutiveDashboard: React.FC = () => {
                     tag={dir.category}
                     content={dir.significance || dir.why}
                   >
-                    <div className="bg-surface-panel rounded-lg p-4 border border-border-subtle flex flex-col justify-between relative hover:bg-surface-elevated/70 transition-colors shadow-xs h-full">
+                    <div className="bg-white/95 dark:bg-surface-panel/80 rounded-xl p-4 sm:p-5 border border-slate-200/90 dark:border-white/10 flex flex-col justify-between relative hover:border-cyan-400/40 transition-all shadow-sm dark:shadow-md h-full">
                       <div>
-                        <div className="flex items-center justify-between mb-3">
-                          <span className="font-headline-sm text-headline-sm text-on-surface font-semibold truncate pr-2">
+                        <div className="flex items-center justify-between mb-3.5">
+                          <span className="font-headline-sm text-headline-sm text-slate-900 dark:text-slate-100 font-bold truncate pr-2">
                             {dir.title}
                           </span>
                           <span className={`px-2 py-0.5 rounded font-label-caps text-label-caps tracking-widest uppercase font-bold border shrink-0 ${categoryTheme.bg}`}>
                             {categoryTheme.label}
                           </span>
                         </div>
-                        <div className="space-y-2.5 text-xs">
+                        <div className="space-y-3 text-xs">
                           <div>
-                            <span className="font-label-caps text-label-caps text-metric-cyan uppercase tracking-wider block font-bold">WHAT</span>
-                            <p className="font-body-sm text-body-sm text-on-surface mt-0.5 leading-relaxed">
+                            <span className="font-label-caps text-label-caps text-cyan-600 dark:text-cyan-400 uppercase tracking-wider block font-bold text-[11px]">
+                              WHAT
+                            </span>
+                            <p className="font-body-sm text-body-sm text-slate-800 dark:text-slate-200 mt-1 leading-relaxed font-medium">
                               {dir.what}
                             </p>
                           </div>
                           <div>
-                            <span className="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider block font-bold">WHY</span>
-                            <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5 leading-relaxed">
+                            <span className="font-label-caps text-label-caps text-indigo-600 dark:text-indigo-400 uppercase tracking-wider block font-bold text-[11px]">
+                              WHY
+                            </span>
+                            <p className="font-body-sm text-body-sm text-slate-700 dark:text-slate-300 mt-1 leading-relaxed font-normal">
                               {dir.why}
                             </p>
                           </div>
                         </div>
                       </div>
-                      <div className="mt-4 p-2.5 bg-surface-card rounded border border-border-subtle">
-                        <span className="font-label-caps text-label-caps text-metric-emerald uppercase tracking-wider flex items-center gap-1 font-bold">
-                          <Zap className="w-3.5 h-3.5 text-metric-emerald" /> ACTION
+                      <div className="mt-4 p-3 bg-sky-50 dark:bg-cyan-950/40 rounded-lg border border-sky-200 dark:border-cyan-500/30">
+                        <span className="font-label-caps text-label-caps text-sky-700 dark:text-cyan-300 uppercase tracking-wider flex items-center gap-1.5 font-bold text-[11px]">
+                          <Zap className="w-3.5 h-3.5 text-sky-600 dark:text-cyan-400" /> MANAGEMENT ACTION
                         </span>
-                        <p className="font-body-sm text-body-sm text-metric-emerald mt-0.5 font-medium leading-relaxed">
+                        <p className="font-body-sm text-body-sm text-slate-800 dark:text-cyan-100 mt-1 font-medium leading-relaxed">
                           {dir.action}
                         </p>
                       </div>
@@ -1198,29 +1206,29 @@ export const ExecutiveDashboard: React.FC = () => {
           {/* DUAL TELEMETRY VISUALIZATIONS */}
           <section className="grid grid-cols-1 lg:grid-cols-12 gap-5">
             {/* LEFT: Chronological Trend Performance Chart (7 cols) */}
-            <div className="lg:col-span-7 bg-surface-card rounded-xl p-5 sm:p-6 shadow-xl border border-border-subtle flex flex-col justify-between">
+            <div className="lg:col-span-7 glass-card rounded-2xl p-5 sm:p-6 shadow-xl border border-white/10 dark:border-white/10 flex flex-col justify-between">
               <div>
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border-subtle">
                   <Tooltip
                     side="right"
                     title="Chronological Trend Telemetry"
                     tag="Time-Series Spline"
-                    content="Visualizes raw chronological observations in cyan coupled with a 3-period Simple Moving Average (SMA) in emerald to smooth cyclical noise and highlight momentum."
+                    content="Visualizes raw chronological observations in electric cyan coupled with a 3-period Simple Moving Average (SMA) in indigo to smooth cyclical noise and highlight momentum."
                   >
                     <div className="flex items-center gap-2 cursor-help">
-                      <Activity className="w-5 h-5 text-metric-cyan" />
-                      <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold uppercase tracking-wide">
+                      <Activity className="w-5 h-5 text-cyan-500 dark:text-cyan-400" />
+                      <h3 className="font-headline-sm text-headline-sm text-slate-900 dark:text-slate-100 font-bold uppercase tracking-wide">
                         CHRONOLOGICAL TREND PERFORMANCE
                       </h3>
                     </div>
                   </Tooltip>
 
                   <div className="flex items-center gap-2">
-                    <span className="font-label-sm text-label-sm text-on-surface-variant uppercase font-bold">METRIC:</span>
+                    <span className="font-label-sm text-label-sm text-slate-700 dark:text-slate-300 uppercase font-bold">METRIC:</span>
                     <select
                       value={selectedTrendMetric}
                       onChange={(e) => setSelectedTrendMetric(e.target.value)}
-                      className="h-7 px-2 bg-surface-panel text-on-surface font-label-sm text-label-sm rounded border border-border-subtle focus:outline-none cursor-pointer"
+                      className="glass-input h-8 px-2.5 bg-surface-panel text-slate-900 dark:text-slate-100 font-label-sm text-label-sm rounded-lg border border-border-subtle focus:outline-none cursor-pointer"
                     >
                       {numericCols.map(c => (
                         <option key={c.name} value={c.name}>{c.name}</option>
@@ -1233,12 +1241,12 @@ export const ExecutiveDashboard: React.FC = () => {
                 <div className="flex flex-wrap items-center justify-between gap-3 my-3">
                   <div className="flex items-center gap-4">
                     <div className="flex items-center gap-1.5">
-                      <span className="w-3 h-1 bg-metric-cyan rounded-full" />
-                      <span className="font-label-sm text-label-sm text-on-surface-variant">Actual ({selectedTrendMetric || 'Series'})</span>
+                      <span className="w-3 h-1 bg-cyan-400 rounded-full shadow-[0_0_6px_rgba(34,211,238,0.5)]" />
+                      <span className="font-label-sm text-label-sm text-slate-700 dark:text-slate-300 font-medium">Actual ({selectedTrendMetric || 'Series'})</span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <span className="w-3 h-1 bg-metric-emerald rounded-full" />
-                      <span className="font-label-sm text-label-sm text-metric-emerald font-semibold">3-Period SMA</span>
+                      <span className="w-3 h-1 bg-indigo-400 rounded-full shadow-[0_0_6px_rgba(129,140,248,0.5)]" />
+                      <span className="font-label-sm text-label-sm text-indigo-600 dark:text-indigo-300 font-semibold">3-Period SMA</span>
                     </div>
                   </div>
 
@@ -1248,10 +1256,10 @@ export const ExecutiveDashboard: React.FC = () => {
                     if (dataPoints.length === 0) return null;
                     const meanVal = dataPoints.reduce((a, b) => a + b.value, 0) / dataPoints.length;
                     return (
-                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-panel border border-border-subtle text-xs font-mono">
+                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-surface-panel/80 border border-slate-200 dark:border-border-subtle text-xs font-mono shadow-2xs">
                         <span className="w-3 h-0.5 border-t border-dashed border-slate-400 dark:border-slate-500" />
-                        <span className="text-on-surface-variant text-[11px]">Baseline Mean:</span>
-                        <span className="font-bold text-on-surface text-[11px]">
+                        <span className="text-slate-600 dark:text-slate-400 text-[11px]">Baseline Mean:</span>
+                        <span className="font-bold text-slate-900 dark:text-slate-100 text-[11px]">
                           {meanVal >= 1000 ? `${(meanVal / 1000).toFixed(1)}k` : meanVal.toFixed(1)}
                         </span>
                       </div>
@@ -1260,13 +1268,13 @@ export const ExecutiveDashboard: React.FC = () => {
                 </div>
 
                 {/* Telemetry SVG Chart - Strictly Bounded & Clamped (No Overflow) */}
-                <div className="w-full h-72 relative mt-2 bg-surface-panel/30 rounded-lg p-3 flex flex-col justify-between border border-border-subtle overflow-hidden">
+                <div className="w-full h-72 relative mt-2 bg-slate-50/80 dark:bg-surface-panel/30 rounded-xl p-3 flex flex-col justify-between border border-slate-200 dark:border-border-subtle overflow-hidden">
                   {/* Dynamic SVG with safe viewBox bounds */}
                   {(() => {
                     const rawPoints = currentTrend?.dataPoints || [];
                     if (rawPoints.length < 2) {
                       return (
-                        <div className="h-48 flex items-center justify-center text-on-surface-variant font-label-sm text-label-sm">
+                        <div className="h-48 flex items-center justify-center text-slate-500 font-label-sm text-label-sm">
                           Insufficient data points to render time series trend.
                         </div>
                       );
@@ -1322,34 +1330,34 @@ export const ExecutiveDashboard: React.FC = () => {
                                 <path d="M 40 0 L 0 0 0 28" fill="none" stroke="currentColor" className="text-border-subtle" strokeWidth="0.8" strokeDasharray="2 2" opacity="0.4" />
                               </pattern>
                               <linearGradient id="smaFillGrad" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stopColor="#10B981" stopOpacity="0.18" />
-                                <stop offset="100%" stopColor="#10B981" stopOpacity="0.0" />
+                                <stop offset="0%" stopColor="#818CF8" stopOpacity="0.18" />
+                                <stop offset="100%" stopColor="#818CF8" stopOpacity="0.0" />
                               </linearGradient>
                             </defs>
                             <rect width="100%" height="100%" fill="url(#telemetryGrid)" />
 
-                            {/* Shaded Area for SMA */}
+                            {/* Shaded Area for SMA in harmonious Indigo */}
                             <path d={dArea} fill="url(#smaFillGrad)" />
 
-                            {/* Baseline Mean Grid Reference Line (Clean without overlapping text collision) */}
+                            {/* Baseline Mean Grid Reference Line */}
                             <line x1={xMin - 5} y1={yMean} x2={xMax + 5} y2={yMean} stroke="#64748b" strokeWidth="1" strokeDasharray="3 3" opacity="0.4" />
 
-                            {/* Line: Actual telemetry */}
+                            {/* Line: Actual telemetry in Electric Cyan */}
                             <path
                               d={dActual}
                               fill="none"
-                              stroke="#38BDF8"
+                              stroke="#22D3EE"
                               strokeWidth="2"
                               strokeLinecap="round"
                               strokeLinejoin="round"
-                              className="opacity-90"
+                              className="opacity-95"
                             />
 
-                            {/* Line: 3-Period SMA */}
+                            {/* Line: 3-Period SMA in Indigo */}
                             <path
                               d={dSma}
                               fill="none"
-                              stroke="#10B981"
+                              stroke="#818CF8"
                               strokeWidth="2.5"
                               strokeLinecap="round"
                               strokeLinejoin="round"
@@ -1358,15 +1366,15 @@ export const ExecutiveDashboard: React.FC = () => {
                             {/* Indicator Pulse Point on the latest observation */}
                             {lastPt && (
                               <g>
-                                <circle cx={lastPt.x} cy={lastPt.y} r="4" fill="#10B981" />
-                                <circle cx={lastPt.x} cy={lastPt.y} r="8" fill="#10B981" opacity="0.3" className="animate-pulse" />
+                                <circle cx={lastPt.x} cy={lastPt.y} r="4" fill="#22D3EE" />
+                                <circle cx={lastPt.x} cy={lastPt.y} r="8" fill="#22D3EE" opacity="0.35" className="animate-pulse" />
                               </g>
                             )}
                           </svg>
                         </div>
 
-                        {/* Horizontal Date Labels - Clean, non-overlapping, strictly aligned */}
-                        <div className="flex justify-between items-center font-mono text-[11px] text-on-surface-variant pt-2 border-t border-border-subtle select-none px-1">
+                        {/* Horizontal Date Labels - Clean, non-overlapping */}
+                        <div className="flex justify-between items-center font-mono text-[11px] text-slate-500 dark:text-slate-400 pt-2 border-t border-border-subtle select-none px-1">
                           {labelIndices.map(idx => (
                             <span key={idx} className={idx === 0 ? 'text-left' : idx === dataPoints.length - 1 ? 'text-right' : 'text-center'}>
                               {dataPoints[idx]?.period}
@@ -1379,16 +1387,16 @@ export const ExecutiveDashboard: React.FC = () => {
                 </div>
               </div>
 
-              <div className="mt-3 pt-2 border-t border-border-subtle flex items-center justify-between text-label-sm font-label-sm text-on-surface-variant">
-                <span>Direction: <strong className="text-on-surface capitalize">{currentTrend?.direction || 'stable'}</strong> ({currentTrend?.changePercent !== undefined ? `${currentTrend.changePercent >= 0 ? '+' : ''}${currentTrend.changePercent}%` : 'N/A'})</span>
-                <span className="text-metric-emerald flex items-center gap-1 font-semibold">
-                  <span className="w-1.5 h-1.5 rounded-full bg-metric-emerald" /> Verified Telemetry Rate: 100%
+              <div className="mt-3 pt-2.5 border-t border-border-subtle flex items-center justify-between text-label-sm font-label-sm text-slate-600 dark:text-slate-400">
+                <span>Direction: <strong className="text-slate-900 dark:text-slate-100 capitalize">{currentTrend?.direction || 'stable'}</strong> ({currentTrend?.changePercent !== undefined ? `${currentTrend.changePercent >= 0 ? '+' : ''}${currentTrend.changePercent}%` : 'N/A'})</span>
+                <span className="text-cyan-600 dark:text-cyan-400 flex items-center gap-1.5 font-semibold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_#22D3EE]" /> Verified Telemetry Rate: 100%
                 </span>
               </div>
             </div>
 
             {/* RIGHT: Segment Share Donut & Decomposition (5 cols) */}
-            <div className="lg:col-span-5 bg-surface-card rounded-xl p-5 sm:p-6 shadow-xl border border-border-subtle flex flex-col justify-between">
+            <div className="lg:col-span-5 glass-card rounded-2xl p-5 sm:p-6 shadow-xl border border-white/10 dark:border-white/10 flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between pb-3 border-b border-border-subtle">
                   <Tooltip
@@ -1398,19 +1406,19 @@ export const ExecutiveDashboard: React.FC = () => {
                     content="Decomposes total business volume across categorical segments with an interactive center rollup. Click on any segment row below to drill into filtered transaction rows."
                   >
                     <div className="flex items-center gap-2 cursor-help">
-                      <PieChart className="w-5 h-5 text-metric-cyan" />
-                      <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold uppercase tracking-wide">
+                      <PieChart className="w-5 h-5 text-cyan-500 dark:text-cyan-400" />
+                      <h3 className="font-headline-sm text-headline-sm text-slate-900 dark:text-slate-100 font-bold uppercase tracking-wide">
                         SEGMENT SHARE OF TOTAL
                       </h3>
                     </div>
                   </Tooltip>
 
                   <div className="flex items-center gap-2">
-                    <span className="font-label-sm text-label-sm text-on-surface-variant uppercase font-bold">DIMENSION:</span>
+                    <span className="font-label-sm text-label-sm text-slate-700 dark:text-slate-300 uppercase font-bold">DIMENSION:</span>
                     <select
                       value={selectedDimension}
                       onChange={(e) => setSelectedDimension(e.target.value)}
-                      className="h-7 px-2 bg-surface-panel text-on-surface font-label-sm text-label-sm rounded border border-border-subtle focus:outline-none cursor-pointer"
+                      className="glass-input h-8 px-2.5 bg-surface-panel text-slate-900 dark:text-slate-100 font-label-sm text-label-sm rounded-lg border border-border-subtle focus:outline-none cursor-pointer"
                     >
                       {stringCols.map(c => (
                         <option key={c.name} value={c.name}>{c.name}</option>
@@ -1423,13 +1431,14 @@ export const ExecutiveDashboard: React.FC = () => {
                 {(() => {
                   const segments = (currentCategoryData || []).slice(0, 6);
                   const totalCatValue = segments.reduce((acc, curr) => acc + (curr.value || 0), 0);
+                  // Harmonious, unified enterprise palette matching Cyan / Electric Blue identity
                   const colors = [
-                    { stroke: '#10B981', dot: 'bg-metric-emerald' },
-                    { stroke: '#38BDF8', dot: 'bg-metric-cyan' },
-                    { stroke: '#818CF8', dot: 'bg-metric-indigo' },
-                    { stroke: '#F59E0B', dot: 'bg-metric-amber' },
-                    { stroke: '#F43F5E', dot: 'bg-metric-coral' },
-                    { stroke: '#94A3B8', dot: 'bg-slate-400' }
+                    { stroke: '#06B6D4', dot: 'bg-cyan-400' },     // Electric Cyan
+                    { stroke: '#3B82F6', dot: 'bg-blue-500' },     // Electric Blue
+                    { stroke: '#6366F1', dot: 'bg-indigo-500' },   // Indigo
+                    { stroke: '#8B5CF6', dot: 'bg-purple-500' },   // Violet
+                    { stroke: '#EC4899', dot: 'bg-pink-500' },     // Magenta
+                    { stroke: '#F59E0B', dot: 'bg-amber-500' }     // Amber
                   ];
 
                   const circumference = 2 * Math.PI * 38; // ~238.76
@@ -1441,7 +1450,7 @@ export const ExecutiveDashboard: React.FC = () => {
                       <div className="sm:col-span-5 flex items-center justify-center relative">
                         <div className="w-40 h-40 relative flex items-center justify-center">
                           <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                            <circle cx="50" cy="50" r="38" fill="transparent" stroke="#1E293B" strokeWidth="12" />
+                            <circle cx="50" cy="50" r="38" fill="transparent" stroke="currentColor" className="text-slate-200 dark:text-slate-800" strokeWidth="12" />
                             {totalCatValue > 0 && segments.map((seg, idx) => {
                               const shareRatio = seg.value / totalCatValue;
                               const dash = shareRatio * circumference;
@@ -1463,13 +1472,13 @@ export const ExecutiveDashboard: React.FC = () => {
                               );
                             })}
                           </svg>
-                          {/* Donut Center Aggregate */}
-                          <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none px-2">
-                            <span className="font-label-caps text-label-caps uppercase text-on-surface-variant font-bold tracking-wider">TOTAL</span>
-                            <span className="font-headline-lg text-headline-lg text-on-surface font-extrabold leading-tight">
+                          {/* Donut Center Aggregate with clean non-clipping typography */}
+                          <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none px-1">
+                            <span className="font-label-caps text-label-caps uppercase text-slate-500 dark:text-slate-400 font-bold tracking-wider text-[10px]">TOTAL</span>
+                            <span className="font-headline-lg text-headline-lg text-slate-900 dark:text-white font-extrabold leading-tight my-0.5">
                               {totalCatValue >= 1000000 ? `${(totalCatValue / 1000000).toFixed(1)}M` : totalCatValue >= 1000 ? `${(totalCatValue / 1000).toFixed(1)}k` : Math.round(totalCatValue).toLocaleString()}
                             </span>
-                            <span className="font-label-caps text-label-caps text-metric-cyan font-medium truncate max-w-[80px]">
+                            <span className="text-[10px] font-mono text-cyan-600 dark:text-cyan-400 font-medium truncate max-w-[85px]" title={selectedDimension}>
                               {selectedDimension || 'Volume'}
                             </span>
                           </div>
@@ -1483,21 +1492,21 @@ export const ExecutiveDashboard: React.FC = () => {
                             <div 
                               key={idx} 
                               onClick={() => handleDrilldown(seg.category)}
-                              className="flex items-center justify-between p-1.5 rounded bg-surface-panel/60 hover:bg-surface-elevated transition-colors border border-border-subtle cursor-pointer"
+                              className="flex items-center justify-between p-2 rounded-lg bg-slate-50/90 dark:bg-surface-panel/80 hover:bg-sky-50 dark:hover:bg-cyan-500/15 transition-all border border-slate-200 dark:border-border-subtle cursor-pointer"
                               title={`Click to filter granular rows by ${seg.category}`}
                             >
                               <div className="flex items-center gap-2 min-w-0">
                                 <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${colors[idx % colors.length].dot}`} />
-                                <span className="text-on-surface font-medium truncate max-w-[130px]">{seg.category}</span>
+                                <span className="text-slate-800 dark:text-slate-200 font-medium truncate max-w-[130px]">{seg.category}</span>
                               </div>
                               <div className="flex items-center gap-2.5 font-mono flex-shrink-0">
-                                <span className="text-on-surface font-bold">{seg.share ? `${seg.share.toFixed(1)}%` : '0%'}</span>
-                                <span className="text-on-surface-variant text-[10px]">{seg.value >= 1000 ? `${(seg.value / 1000).toFixed(1)}k` : seg.value.toLocaleString()}</span>
+                                <span className="text-slate-900 dark:text-slate-100 font-bold">{seg.share ? `${seg.share.toFixed(1)}%` : '0%'}</span>
+                                <span className="text-slate-500 dark:text-slate-400 text-[10px]">{seg.value >= 1000 ? `${(seg.value / 1000).toFixed(1)}k` : seg.value.toLocaleString()}</span>
                               </div>
                             </div>
                           ))
                         ) : (
-                          <div className="text-xs text-on-surface-variant p-2 text-center">
+                          <div className="text-xs text-slate-500 p-2 text-center">
                             No categorical dimensions found in current dataset.
                           </div>
                         )}
@@ -1507,11 +1516,11 @@ export const ExecutiveDashboard: React.FC = () => {
                 })()}
               </div>
 
-              <div className="pt-2 border-t border-border-subtle flex items-center justify-between text-label-sm font-label-sm text-on-surface-variant">
-                <span>Active Segments: {currentCategoryData?.length || 0}</span>
+              <div className="pt-2.5 border-t border-border-subtle flex items-center justify-between text-label-sm font-label-sm text-slate-600 dark:text-slate-400">
+                <span>Active Segments: <strong className="text-slate-900 dark:text-slate-100">{currentCategoryData?.length || 0}</strong></span>
                 <span 
                   onClick={() => setActiveTab('pareto')}
-                  className="text-metric-cyan hover:underline flex items-center gap-1 cursor-pointer font-medium"
+                  className="text-cyan-600 dark:text-cyan-400 hover:underline flex items-center gap-1 cursor-pointer font-medium"
                 >
                   <span>Inspect Pareto Tail</span>
                   <ExternalLink className="w-3 h-3" />
@@ -1523,46 +1532,46 @@ export const ExecutiveDashboard: React.FC = () => {
           {/* ACTIONABLE NOTIFICATION CALLOUTS */}
           <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Outlier Alert Callout */}
-            <div className="bg-surface-card rounded-xl p-4 shadow-md border border-border-subtle flex items-start gap-3 relative overflow-hidden group hover:bg-surface-panel transition-colors">
-              <div className="w-9 h-9 rounded-lg bg-red-500/20 text-metric-coral flex items-center justify-center shrink-0 border border-red-500/30">
-                <AlertTriangle className="w-5 h-5 text-metric-coral" />
+            <div className="glass-card rounded-2xl p-4 shadow-md border border-rose-200/80 dark:border-rose-500/25 flex items-start gap-3 relative overflow-hidden group hover:border-rose-400/50 transition-all">
+              <div className="w-9 h-9 rounded-xl bg-rose-500/10 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 border border-rose-400/30 shadow-[0_0_12px_rgba(244,63,94,0.15)]">
+                <AlertTriangle className="w-5 h-5 text-rose-600 dark:text-rose-400" />
               </div>
               <div className="flex-1 flex flex-col gap-0.5">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-headline-sm text-headline-sm text-on-surface font-bold">
+                  <span className="font-headline-sm text-headline-sm text-slate-900 dark:text-slate-100 font-bold">
                     {primaryAnomaly ? primaryAnomaly.title : 'Statistical Dispersion Audit'}
                   </span>
-                  <span className="px-1.5 py-0.5 rounded bg-red-500/20 text-metric-coral font-label-caps text-label-caps uppercase font-bold tracking-wider">
+                  <span className="px-2 py-0.5 rounded font-label-caps text-label-caps uppercase font-bold tracking-wider bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-400/30">
                     {primaryAnomaly?.severity ? primaryAnomaly.severity.toUpperCase() : 'AUDITED'}
                   </span>
                 </div>
-                <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
+                <p className="font-body-sm text-body-sm text-slate-600 dark:text-slate-300 mt-0.5">
                   {primaryAnomaly ? primaryAnomaly.reason : 'All numerical distributions conform to standard statistical limits.'}
                 </p>
-                <p className="font-body-sm text-body-sm text-metric-coral font-medium mt-1">
+                <p className="font-body-sm text-body-sm text-rose-600 dark:text-rose-400 font-medium mt-1">
                   Action: {primaryAnomaly ? primaryAnomaly.recommendedAction : 'Continue periodic data hygiene and schema validation checks.'}
                 </p>
               </div>
             </div>
 
             {/* Growth Segment Callout */}
-            <div className="bg-surface-card rounded-xl p-4 shadow-md border border-border-subtle flex items-start gap-3 relative overflow-hidden group hover:bg-surface-panel transition-colors">
-              <div className="w-9 h-9 rounded-lg bg-[#00F5A0]/20 text-metric-emerald flex items-center justify-center shrink-0 border border-[#00F5A0]/30">
-                <TrendingUp className="w-5 h-5 text-metric-emerald" />
+            <div className="glass-card rounded-2xl p-4 shadow-md border border-white/10 dark:border-white/10 flex items-start gap-3 relative overflow-hidden group hover:border-sky-400/40 transition-all">
+              <div className="w-9 h-9 rounded-xl bg-sky-500/15 text-sky-600 dark:text-cyan-400 flex items-center justify-center shrink-0 border border-sky-400/30 shadow-[0_0_12px_rgba(2,132,199,0.2)]">
+                <TrendingUp className="w-5 h-5 text-sky-600 dark:text-cyan-400" />
               </div>
               <div className="flex-1 flex flex-col gap-0.5">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-headline-sm text-headline-sm text-on-surface font-bold">
+                  <span className="font-headline-sm text-headline-sm text-slate-900 dark:text-slate-100 font-bold">
                     {primaryOpportunity ? primaryOpportunity.title : 'Segment Optimization Directive'}
                   </span>
-                  <span className="px-1.5 py-0.5 rounded bg-[#00F5A0]/20 text-metric-emerald font-label-caps text-label-caps uppercase font-bold tracking-wider">
+                  <span className="px-2 py-0.5 rounded font-label-caps text-label-caps uppercase font-bold tracking-wider bg-sky-500/15 text-sky-700 dark:text-cyan-300 border border-sky-500/30">
                     {primaryOpportunity?.priority ? `PRIORITY: ${primaryOpportunity.priority.toUpperCase()}` : 'OPTIMAL'}
                   </span>
                 </div>
-                <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
+                <p className="font-body-sm text-body-sm text-slate-600 dark:text-slate-300 mt-0.5">
                   {primaryOpportunity ? primaryOpportunity.potentialImpact : 'Active data segments demonstrate balanced proportional distribution.'}
                 </p>
-                <p className="font-body-sm text-body-sm text-metric-emerald font-medium mt-1">
+                <p className="font-body-sm text-body-sm text-sky-600 dark:text-cyan-400 font-medium mt-1">
                   Next Step: {primaryOpportunity ? primaryOpportunity.action : 'Inspect categorical distributions in Pareto analysis.'}
                 </p>
               </div>
@@ -1571,27 +1580,27 @@ export const ExecutiveDashboard: React.FC = () => {
 
           {/* ATTACHED DASHBOARDS & CUSTOM VISUALIZATIONS SECTION */}
           <div className="space-y-4 pt-2">
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#2d2d2d] pb-3">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border-subtle pb-3">
               <div>
-                <h3 className="font-heading text-lg font-bold text-white tracking-wide uppercase flex items-center gap-2">
-                  <Layers className="w-4 h-4 text-[#21F1A8]" />
+                <h3 className="font-heading text-lg font-bold text-slate-900 dark:text-white tracking-wide uppercase flex items-center gap-2">
+                  <Layers className="w-4 h-4 text-sky-600 dark:text-cyan-400" />
                   ATTACHED DASHBOARD VISUALIZATIONS & CUSTOM CHARTS
                 </h3>
-                <p className="text-xs text-gray-400">
+                <p className="text-xs text-slate-600 dark:text-gray-400">
                   Attached visual widgets synchronized with active filters, drill-through, and export engines.
                 </p>
               </div>
 
               <div className="flex items-center gap-2">
-                <span className="px-2.5 py-1 rounded-lg bg-[#141414] text-[#21F1A8] border border-[#2d2d2d] text-xs font-mono font-semibold">
+                <span className="px-3 py-1.5 rounded-lg bg-sky-50 dark:bg-surface-panel text-sky-700 dark:text-cyan-300 border border-sky-200 dark:border-border-subtle text-xs font-mono font-semibold shadow-2xs">
                   {customVisuals.length} Visuals Attached
                 </span>
                 <button
                   onClick={() => setCurrentTab('dashboard_builder')}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#252525] hover:bg-[#333] text-white text-xs font-medium border border-[#3d3d3d] hover:border-[#21F1A8]/50 transition-colors"
+                  className="glass-btn-secondary px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
                 >
                   <span>Open Dashboard Builder</span>
-                  <ExternalLink className="w-3 h-3 text-[#21F1A8]" />
+                  <ExternalLink className="w-3 h-3 text-sky-600 dark:text-cyan-400" />
                 </button>
               </div>
             </div>
@@ -1630,27 +1639,27 @@ export const ExecutiveDashboard: React.FC = () => {
                   return (
                     <div 
                       key={vis.id || vIdx} 
-                      className="bg-surface-card border border-border-subtle rounded-xl p-5 space-y-4 hover:border-[#00F5A0]/40 transition-all flex flex-col justify-between shadow-lg"
+                      className="glass-card border border-white/10 dark:border-white/10 rounded-2xl p-5 space-y-4 hover:border-sky-400/40 transition-all flex flex-col justify-between shadow-lg"
                     >
                       {/* Widget Header */}
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
-                            <h4 className="font-headline-sm text-headline-sm font-semibold text-on-surface uppercase truncate">
+                            <h4 className="font-headline-sm text-headline-sm font-semibold text-slate-900 dark:text-slate-100 uppercase truncate">
                               {vis.title}
                             </h4>
-                            <span className="px-2 py-0.5 rounded bg-surface-panel text-metric-emerald border border-border-subtle text-label-caps font-label-caps uppercase font-bold">
+                            <span className="px-2 py-0.5 rounded bg-sky-500/10 text-sky-700 dark:text-cyan-300 border border-sky-500/20 text-label-caps font-label-caps uppercase font-bold">
                               {visType}
                             </span>
                           </div>
-                          <div className="font-body-sm text-body-sm text-on-surface-variant pt-0.5">
-                            {agg.toUpperCase()}({val}) by {cat} • Total: <strong className="text-on-surface font-semibold">{formatVal(total)}</strong>
+                          <div className="font-body-sm text-body-sm text-slate-600 dark:text-slate-400 pt-0.5">
+                            {agg.toUpperCase()}({val}) by {cat} • Total: <strong className="text-slate-900 dark:text-slate-100 font-semibold">{formatVal(total)}</strong>
                           </div>
                         </div>
 
                         <button
                           onClick={() => handleDrilldown(items[0]?.category || '')}
-                          className="font-label-sm text-label-sm text-on-surface-variant hover:text-metric-emerald flex items-center gap-1 transition-colors"
+                          className="font-label-sm text-label-sm text-slate-500 dark:text-slate-400 hover:text-sky-600 dark:hover:text-cyan-400 flex items-center gap-1 transition-colors cursor-pointer"
                           title="Drill-through to records"
                         >
                           <span>Drilldown</span>
@@ -1666,7 +1675,7 @@ export const ExecutiveDashboard: React.FC = () => {
                               <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
                                 {(() => {
                                   let cumulativePct = 0;
-                                  const colors = ['#00F5A0', '#00D2FF', '#6366F1', '#F59E0B', '#EF4444', '#849588'];
+                                  const colors = ['#0284C7', '#38BDF8', '#6366F1', '#8B5CF6', '#F59E0B', '#64748B'];
                                   return items.slice(0, 6).map((item, idx) => {
                                     const strokeDasharray = `${item.share * 2.512} 251.2`;
                                     const strokeDashoffset = -cumulativePct * 2.512;
@@ -1688,15 +1697,15 @@ export const ExecutiveDashboard: React.FC = () => {
                                 })()}
                               </svg>
                               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
-                                <span className="font-label-caps text-label-caps uppercase text-on-surface-variant font-bold">TOTAL</span>
-                                <span className="font-headline-sm text-headline-sm font-bold text-on-surface">{formatVal(total)}</span>
+                                <span className="font-label-caps text-label-caps uppercase text-slate-500 dark:text-slate-400 font-bold">TOTAL</span>
+                                <span className="font-headline-sm text-headline-sm font-bold text-slate-900 dark:text-slate-100">{formatVal(total)}</span>
                               </div>
                             </div>
                             <div className="space-y-1.5 text-xs w-full max-w-[200px]">
                               {items.slice(0, 4).map((it, i) => (
                                 <div key={i} className="flex justify-between items-center text-label-sm font-label-sm">
-                                  <span className="text-on-surface truncate max-w-[110px]">{it.category}</span>
-                                  <span className="text-on-surface font-semibold">{it.share}%</span>
+                                  <span className="text-slate-800 dark:text-slate-200 truncate max-w-[110px]">{it.category}</span>
+                                  <span className="text-slate-900 dark:text-slate-100 font-semibold">{it.share}%</span>
                                 </div>
                               ))}
                             </div>
@@ -1704,7 +1713,7 @@ export const ExecutiveDashboard: React.FC = () => {
                         ) : visType === 'table' ? (
                           <div className="w-full overflow-x-auto">
                             <table className="w-full text-left font-body-sm text-body-sm">
-                              <thead className="bg-surface-panel text-on-surface-variant border-b border-border-subtle font-label-caps text-label-caps uppercase">
+                              <thead className="bg-slate-100 dark:bg-surface-panel text-slate-700 dark:text-slate-400 border-b border-slate-200 dark:border-border-subtle font-label-caps text-label-caps uppercase">
                                 <tr>
                                   <th className="p-2">Rank</th>
                                   <th className="p-2">{cat}</th>
@@ -1714,33 +1723,33 @@ export const ExecutiveDashboard: React.FC = () => {
                               </thead>
                               <tbody className="divide-y divide-border-subtle">
                                 {items.slice(0, 5).map((it, idx) => (
-                                  <tr key={idx} className="hover:bg-surface-elevated/70 transition-colors">
-                                    <td className="p-2 text-on-surface-variant font-mono">#{idx + 1}</td>
-                                    <td className="p-2 text-on-surface font-medium truncate max-w-[130px]">{it.category}</td>
-                                    <td className="p-2 text-right text-metric-emerald font-bold font-mono">{formatVal(it.value)}</td>
-                                    <td className="p-2 text-right text-on-surface font-mono">{it.share}%</td>
+                                  <tr key={idx} className="hover:bg-slate-100 dark:hover:bg-surface-elevated/70 transition-colors">
+                                    <td className="p-2 text-slate-500 font-mono">#{idx + 1}</td>
+                                    <td className="p-2 text-slate-800 dark:text-slate-200 font-medium truncate max-w-[130px]">{it.category}</td>
+                                    <td className="p-2 text-right text-sky-600 dark:text-cyan-400 font-bold font-mono">{formatVal(it.value)}</td>
+                                    <td className="p-2 text-right text-slate-900 dark:text-slate-100 font-mono">{it.share}%</td>
                                   </tr>
                                 ))}
                               </tbody>
                             </table>
                           </div>
                         ) : (
-                          /* Ranked Horizontal/Vertical Bars */
+                          /* Ranked Horizontal/Vertical Bars in Primary Sky/Blue palette */
                           <div className="w-full space-y-2.5">
                             {items.slice(0, 5).map((it, idx) => {
                               const pct = Math.min(100, Math.max(5, (it.value / maxVal) * 100));
                               return (
                                 <div key={idx} className="space-y-1">
                                   <div className="flex justify-between font-label-sm text-label-sm">
-                                    <span className="text-on-surface font-medium truncate max-w-[180px]">{it.category}</span>
-                                    <span className="text-on-surface font-bold">{formatVal(it.value)} <span className="text-on-surface-variant font-normal">({it.share}%)</span></span>
+                                    <span className="text-slate-800 dark:text-slate-200 font-medium truncate max-w-[180px]">{it.category}</span>
+                                    <span className="text-slate-900 dark:text-slate-100 font-bold">{formatVal(it.value)} <span className="text-slate-500 dark:text-slate-400 font-normal">({it.share}%)</span></span>
                                   </div>
-                                  <div className="w-full bg-surface-elevated h-2 rounded-full overflow-hidden">
+                                  <div className="w-full bg-slate-100 dark:bg-surface-elevated h-2.5 rounded-full overflow-hidden border border-slate-200/60 dark:border-transparent">
                                     <div 
-                                      className="h-full rounded-full transition-all duration-500"
+                                      className="h-full rounded-full transition-all duration-500 shadow-xs"
                                       style={{
                                         width: `${pct}%`,
-                                        backgroundColor: idx === 0 ? '#00F5A0' : idx === 1 ? '#00D2FF' : idx === 2 ? '#F59E0B' : '#6366F1'
+                                        backgroundColor: idx === 0 ? '#0284C7' : idx === 1 ? '#38BDF8' : idx === 2 ? '#6366F1' : '#8B5CF6'
                                       }}
                                     />
                                   </div>
@@ -1752,17 +1761,17 @@ export const ExecutiveDashboard: React.FC = () => {
                       </div>
 
                       {/* Widget Footer */}
-                      <div className="pt-2 border-t border-border-subtle flex items-center justify-between font-label-sm text-label-sm text-on-surface-variant">
+                      <div className="pt-2 border-t border-border-subtle flex items-center justify-between font-label-sm text-label-sm text-slate-500 dark:text-slate-400">
                         <span>Audited from {cleanRows.length.toLocaleString()} rows</span>
-                        <span className="text-metric-emerald font-medium">Properly Formatted</span>
+                        <span className="text-sky-600 dark:text-cyan-400 font-medium">Verified Telemetry</span>
                       </div>
                     </div>
                   );
                 })}
               </div>
             ) : (
-              <div className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-6 text-center space-y-3">
-                <Layers className="w-8 h-8 text-[#21F1A8] mx-auto opacity-70" />
+              <div className="glass-card border border-white/10 dark:border-white/10 rounded-2xl p-6 text-center space-y-3">
+                <Layers className="w-8 h-8 text-sky-600 dark:text-cyan-400 mx-auto opacity-70" />
                 <div className="space-y-1">
                   <h4 className="text-sm font-bold text-white">Attach Custom Dashboards</h4>
                   <p className="text-xs text-gray-400 max-w-md mx-auto">
@@ -1771,7 +1780,7 @@ export const ExecutiveDashboard: React.FC = () => {
                 </div>
                 <button
                   onClick={() => setCurrentTab('dashboard_builder')}
-                  className="px-4 py-2 rounded-xl bg-[#21F1A8] text-black font-semibold text-xs hover:bg-[#1cdb97] transition-all"
+                  className="glass-btn-primary px-4 py-2 rounded-xl font-semibold text-xs transition-all shadow-md"
                 >
                   Configure Visuals in Dashboard Builder
                 </button>
@@ -1824,12 +1833,12 @@ export const ExecutiveDashboard: React.FC = () => {
       {/* MULTI-CHART SUITE TAB (RADAR, FUNNEL, WATERFALL, TREEMAP, GAUGE) */}
       {activeTab === 'multivariate' && (
         <div className="space-y-6">
-          <div className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-5 space-y-1">
-            <h3 className="font-heading text-xl font-bold text-white tracking-wide uppercase flex items-center gap-2">
-              <Layers className="w-5 h-5 text-[#21F1A8]" />
+          <div className="glass-card rounded-2xl p-5 sm:p-6 space-y-1 shadow-xl border border-white/10 dark:border-white/10">
+            <h3 className="font-heading text-xl font-bold text-slate-900 dark:text-white tracking-wide uppercase flex items-center gap-2">
+              <Layers className="w-5 h-5 text-sky-600 dark:text-cyan-400" />
               COMPREHENSIVE MULTI-CHART ANALYTICS SUITE
             </h3>
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-slate-600 dark:text-gray-400">
               Interactive Radar/Spider Footprint, Conversion Funnel, Financial Variance Waterfall, Proportional Treemap, and Performance Gauge Dial.
             </p>
           </div>
@@ -1894,25 +1903,25 @@ export const ExecutiveDashboard: React.FC = () => {
 
       {/* 4. PARETO 80/20 TAB */}
       {activeTab === 'pareto' && (
-        <div className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-5 space-y-4">
+        <div className="glass-card rounded-2xl p-5 sm:p-6 space-y-4 shadow-xl border border-white/10 dark:border-white/10">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h3 className="font-heading text-xl font-bold text-white tracking-wide uppercase flex items-center gap-2">
-                <BarChart3 className="w-5 h-5 text-[#21F1A8]" />
+              <h3 className="font-heading text-xl font-bold text-slate-900 dark:text-white tracking-wide uppercase flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-sky-600 dark:text-cyan-400" />
                 PARETO PRINCIPLE (80/20 ANALYSIS)
               </h3>
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-slate-600 dark:text-gray-400">
                 Identify the critical 20% of contributors driving 80% of aggregate volume or financial output.
               </p>
             </div>
 
             {stringCols.length > 0 && (
               <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-400 font-mono">Dimension:</span>
+                <span className="text-xs text-slate-600 dark:text-gray-400 font-mono">Dimension:</span>
                 <select
                   value={selectedDimension}
                   onChange={(e) => setSelectedDimension(e.target.value)}
-                  className="bg-[#141414] text-xs text-[#21F1A8] font-mono px-3 py-1.5 rounded-lg border border-[#333] focus:border-[#21F1A8] focus:outline-none"
+                  className="glass-input text-xs text-slate-900 dark:text-cyan-300 font-mono px-3 py-1.5 rounded-lg border border-slate-300 dark:border-white/10 focus:border-sky-500 focus:outline-none"
                 >
                   {stringCols.map(c => (
                     <option key={c.name} value={c.name}>{c.name}</option>

@@ -30,6 +30,7 @@ import {
 import { usePlatform } from '../../store/usePlatformStore';
 import { BrandLogo } from '../common/BrandLogo';
 import { DEMO_DATASETS } from '../../data/demoDatasets';
+import { TaskModeSelector } from '../common/TaskModeSelector';
 
 export const LandingPage: React.FC = () => {
   const { setCurrentTab, loadDemoDataset, themeMode, project } = usePlatform();
@@ -201,6 +202,11 @@ export const LandingPage: React.FC = () => {
             </span>
           </div>
         </div>
+      </section>
+
+      {/* Automatic Task Detection & Working Mode Selector (Section 11) */}
+      <section className="px-1 sm:px-2">
+        <TaskModeSelector />
       </section>
 
       {/* 2. Interactive Data Engineering Pipeline DAG Visualization */}

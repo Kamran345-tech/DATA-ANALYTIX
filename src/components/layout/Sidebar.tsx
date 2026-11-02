@@ -177,6 +177,15 @@ const navSections: { title: string; items: NavItem[] }[] = [
         description: 'In-browser Pandas execution playground for custom Python transformations and statistical summaries.',
         proTip: 'Export clean Python scripts to automate scheduled workflows.',
         categoryTag: 'Python'
+      },
+      { 
+        id: 'excel_automation', 
+        label: 'Excel Automation (XLSX)', 
+        icon: FileSpreadsheet,
+        badge: 'XLSX',
+        description: 'Advanced Excel specialist: XLOOKUP, dynamic arrays, formula validator, assignment auto-completion, and downloadable .xlsx workbooks.',
+        proTip: 'Download completed workbooks with verified cell-referenced formulas.',
+        categoryTag: 'Excel'
       }
     ]
   },

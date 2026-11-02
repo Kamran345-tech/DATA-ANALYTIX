@@ -38,7 +38,7 @@ export const TimeSeriesAreaChart: React.FC<TimeSeriesProps> = ({
   data,
   metricName,
   forecastData,
-  color = '#21F1A8'
+  color = '#22D3EE'
 }) => {
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const [showSMA, setShowSMA] = useState(true);
@@ -104,7 +104,7 @@ export const TimeSeriesAreaChart: React.FC<TimeSeriesProps> = ({
 
   if (chartPoints.length < 2) {
     return (
-      <div className="h-64 flex items-center justify-center text-xs text-gray-500 bg-[#141414] rounded-xl border border-[#262626]">
+      <div className="h-64 flex items-center justify-center text-xs text-slate-500 bg-surface-panel/40 rounded-xl border border-border-subtle">
         Insufficient time-series data points to render chronological trend curve.
       </div>
     );
@@ -170,20 +170,20 @@ export const TimeSeriesAreaChart: React.FC<TimeSeriesProps> = ({
       {/* Control bar */}
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
         <div className="flex items-center gap-3">
-          <span className="flex items-center gap-1.5 text-gray-300 font-medium">
-            <span className="w-3 h-1 rounded bg-[#21F1A8]"></span>
+          <span className="flex items-center gap-1.5 text-slate-800 dark:text-slate-200 font-medium">
+            <span className="w-3 h-1 rounded bg-cyan-400"></span>
             {metricName} (Actual)
           </span>
           {smaCoords.length > 0 && (
-            <label className="flex items-center gap-1.5 cursor-pointer text-gray-400 hover:text-white">
+            <label className="flex items-center gap-1.5 cursor-pointer text-slate-600 dark:text-slate-300 hover:text-cyan-400">
               <input 
                 type="checkbox" 
                 checked={showSMA} 
                 onChange={(e) => setShowSMA(e.target.checked)}
-                className="rounded accent-[#21F1A8]"
+                className="rounded accent-cyan-400"
               />
               <span className="flex items-center gap-1 text-[11px]">
-                <span className="w-2.5 h-0.5 bg-amber-400"></span> 3-Period SMA
+                <span className="w-2.5 h-0.5 bg-indigo-400"></span> 3-Period SMA
               </span>
             </label>
           )}
@@ -197,7 +197,7 @@ export const TimeSeriesAreaChart: React.FC<TimeSeriesProps> = ({
         {activePt && (
           <div className="bg-[#141414] border border-[#21F1A8]/40 px-3 py-1 rounded-lg text-xs font-mono flex items-center gap-2">
             <span className="text-gray-400">{activePt.period}:</span>
-            <span className="text-[#21F1A8] font-bold">
+            <span className="text-cyan-400 font-bold">
               {activePt.value.toLocaleString()}
             </span>
             {activePt.isForecast && (
@@ -208,7 +208,7 @@ export const TimeSeriesAreaChart: React.FC<TimeSeriesProps> = ({
       </div>
 
       {/* Responsive SVG Container */}
-      <div className="relative w-full bg-[#141414] rounded-2xl border border-[#262626] p-2 overflow-hidden select-none">
+      <div className="relative w-full glass-card rounded-2xl border border-white/10 dark:border-white/10 p-2 overflow-hidden select-none">
         <svg 
           viewBox={`0 0 ${width} ${height}`} 
           className="w-full h-64 sm:h-72 overflow-visible"
@@ -216,12 +216,12 @@ export const TimeSeriesAreaChart: React.FC<TimeSeriesProps> = ({
         >
           <defs>
             <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#21F1A8" stopOpacity="0.35" />
-              <stop offset="100%" stopColor="#21F1A8" stopOpacity="0.0" />
+              <stop offset="0%" stopColor="#22D3EE" stopOpacity="0.25" />
+              <stop offset="100%" stopColor="#22D3EE" stopOpacity="0.0" />
             </linearGradient>
             <linearGradient id="forecastGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#00d8f6" stopOpacity="0.2" />
-              <stop offset="100%" stopColor="#00d8f6" stopOpacity="0.0" />
+              <stop offset="0%" stopColor="#60A5FA" stopOpacity="0.2" />
+              <stop offset="100%" stopColor="#60A5FA" stopOpacity="0.0" />
             </linearGradient>
           </defs>
 
@@ -236,16 +236,15 @@ export const TimeSeriesAreaChart: React.FC<TimeSeriesProps> = ({
                   y1={y} 
                   x2={width - paddingRight} 
                   y2={y} 
-                  stroke="#262626" 
+                  stroke="currentColor"
+                  className="text-slate-200 dark:text-slate-800" 
                   strokeDasharray="3,3" 
                 />
                 <text 
                   x={paddingLeft - 8} 
                   y={y + 3.5} 
                   textAnchor="end" 
-                  fill="#666" 
-                  fontSize="10" 
-                  fontFamily="monospace"
+                  className="fill-slate-500 dark:fill-slate-400 font-mono text-[10px]"
                 >
                   {Math.round(val).toLocaleString()}
                 </text>
@@ -256,23 +255,23 @@ export const TimeSeriesAreaChart: React.FC<TimeSeriesProps> = ({
           {/* Area under curve */}
           <path d={areaPath} fill="url(#areaGradient)" />
 
-          {/* Historical line */}
+          {/* Historical line in Electric Cyan */}
           <path 
             d={linePath} 
             fill="none" 
-            stroke="#21F1A8" 
+            stroke="#22D3EE" 
             strokeWidth="2.5" 
             strokeLinecap="round" 
             strokeLinejoin="round" 
           />
 
-          {/* SMA line */}
+          {/* SMA line in Indigo */}
           {showSMA && smaPath && (
             <path 
               d={smaPath} 
               fill="none" 
-              stroke="#fbbf24" 
-              strokeWidth="1.75" 
+              stroke="#818CF8" 
+              strokeWidth="2" 
               strokeDasharray="4,3" 
             />
           )}
@@ -282,7 +281,7 @@ export const TimeSeriesAreaChart: React.FC<TimeSeriesProps> = ({
             <path 
               d={forecastPath} 
               fill="none" 
-              stroke="#00d8f6" 
+              stroke="#60A5FA" 
               strokeWidth="2.5" 
               strokeDasharray="5,4" 
             />
@@ -2333,14 +2332,14 @@ export const FunnelConversionChart: React.FC<FunnelProps> = ({
     return <div className="p-4 text-xs text-gray-500">No funnel stage pipeline data available.</div>;
   }
 
-  const colors = ['#21F1A8', '#00d8f6', '#818cf8', '#f59e0b', '#ec4899', '#ef4444'];
+  const colors = ['#06b6d4', '#3b82f6', '#818cf8', '#f59e0b', '#ec4899', '#ef4444'];
 
   return (
     <div className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-5 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="space-y-0.5">
           <h3 className="font-heading text-lg font-bold text-white tracking-wide uppercase flex items-center gap-2">
-            <Filter className="w-4 h-4 text-[#21F1A8]" />
+            <Filter className="w-4 h-4 text-cyan-400" />
             {title}
           </h3>
           <p className="text-xs text-gray-400">Sequential stage drop-off and conversion efficiency flow.</p>
@@ -2633,7 +2632,7 @@ export const TreemapChart: React.FC<TreemapProps> = ({
 
   const total = useMemo(() => sorted.reduce((acc, c) => acc + c.value, 0), [sorted]);
 
-  const palette = ['#21F1A8', '#00d8f6', '#818cf8', '#f59e0b', '#ec4899', '#10b981', '#a855f7', '#64748b'];
+  const palette = ['#06b6d4', '#3b82f6', '#818cf8', '#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#64748b'];
 
   if (sorted.length === 0) {
     return <div className="p-4 text-xs text-gray-500">No data to render Treemap.</div>;
@@ -2644,12 +2643,12 @@ export const TreemapChart: React.FC<TreemapProps> = ({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="space-y-0.5">
           <h3 className="font-heading text-lg font-bold text-white tracking-wide uppercase flex items-center gap-2">
-            <Layers className="w-4 h-4 text-[#21F1A8]" />
+            <Layers className="w-4 h-4 text-cyan-400" />
             {title}
           </h3>
           <p className="text-xs text-gray-400">Proportional hierarchical area tiles representing contribution weight.</p>
         </div>
-        <span className="text-xs font-mono text-[#21F1A8] font-bold">Total: {total.toLocaleString()}</span>
+        <span className="text-xs font-mono text-cyan-400 font-bold">Total: {total.toLocaleString()}</span>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 bg-[#141414] p-3 rounded-xl border border-[#262626]">

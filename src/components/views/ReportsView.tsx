@@ -203,20 +203,20 @@ export const ReportsView: React.FC = () => {
       )}
 
       {/* Action Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-4 print:hidden">
-        <div className="flex items-center gap-2 text-xs text-gray-400">
-          <FileSpreadsheet className="w-4 h-4 text-[#21F1A8]" />
-          <span>Presentation-Ready Executive Report Layout</span>
+      <div className="flex flex-wrap items-center justify-between gap-3 glass-card border border-white/10 dark:border-white/10 rounded-2xl p-4 print:hidden">
+        <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-gray-400">
+          <FileSpreadsheet className="w-4 h-4 text-sky-600 dark:text-cyan-400" />
+          <span className="font-medium text-slate-700 dark:text-slate-300">Presentation-Ready Executive Report Layout</span>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           {/* Customize Headings Modal Trigger */}
           <button
             onClick={() => setIsHeadingsModalOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#262626] hover:bg-[#333] text-gray-200 hover:text-white font-medium text-xs border border-[#3a3a3a] transition-all"
+            className="glass-btn-secondary flex items-center gap-1.5 px-3 py-2 rounded-xl font-medium text-xs transition-all cursor-pointer"
             title="Customize report document heading and all section titles"
           >
-            <Pencil className="w-3.5 h-3.5 text-[#21F1A8]" />
+            <Pencil className="w-3.5 h-3.5 text-sky-600 dark:text-cyan-400" />
             <span>Customize Headings</span>
           </button>
 
@@ -224,7 +224,7 @@ export const ReportsView: React.FC = () => {
           <button
             onClick={handleDownloadBundleZip}
             disabled={isBundleGenerating}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition-all disabled:opacity-50 shadow-md shrink-0 whitespace-nowrap cursor-pointer"
+            className="glass-btn-primary flex items-center gap-1.5 px-3.5 py-2 rounded-xl font-bold text-xs transition-all disabled:opacity-50 shadow-md shrink-0 whitespace-nowrap cursor-pointer"
             title="Download both the created dashboard and executive report in a single ZIP package"
           >
             {isBundleGenerating ? (
@@ -239,20 +239,20 @@ export const ReportsView: React.FC = () => {
           <button
             onClick={handleDownloadPDF}
             disabled={isPdfGenerating}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#252525] hover:bg-[#303030] text-gray-200 hover:text-white font-medium text-xs border border-[#3a3a3a] transition-all disabled:opacity-50"
+            className="glass-btn-secondary flex items-center gap-1.5 px-3.5 py-2 rounded-xl font-medium text-xs transition-all disabled:opacity-50 cursor-pointer"
             title="Download Executive PDF Report"
           >
             {isPdfGenerating ? (
-              <Loader2 className="w-4 h-4 animate-spin text-cyan-400" />
+              <Loader2 className="w-4 h-4 animate-spin text-rose-400" />
             ) : (
-              <Download className="w-4 h-4 text-cyan-400" />
+              <Download className="w-4 h-4 text-sky-600 dark:text-cyan-400" />
             )}
             <span>Executive Report (PDF)</span>
           </button>
 
           <button
             onClick={() => setIsPresentationMode(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold text-xs shadow-sm transition-all cursor-pointer"
+            className="glass-btn-primary flex items-center gap-1.5 px-3.5 py-2 rounded-xl font-bold text-xs shadow-sm transition-all cursor-pointer"
             title="Open Fullscreen Boardroom Presentation Deck"
           >
             <Tv className="w-4 h-4" />
@@ -261,9 +261,9 @@ export const ReportsView: React.FC = () => {
 
           <button
             onClick={handlePrint}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#262626] hover:bg-[#333] text-gray-200 font-medium text-xs border border-[#3a3a3a] transition-all"
+            className="glass-btn-secondary flex items-center gap-1.5 px-3.5 py-2 rounded-xl font-medium text-xs transition-all cursor-pointer"
           >
-            <Printer className="w-4 h-4" /> Print Preview
+            <Printer className="w-4 h-4 text-slate-500" /> Print Preview
           </button>
         </div>
       </div>
@@ -854,11 +854,51 @@ export const ReportsView: React.FC = () => {
               </div>
 
               <div className="space-y-1">
-                <label className="font-bold uppercase text-gray-400">Section 5 Header (Quality Governance)</label>
+                <label className="font-bold uppercase text-gray-400">Section 5 Header (Key Performance Indicators)</label>
                 <input
                   type="text"
                   value={reportHeadings.section5}
                   onChange={(e) => updateReportHeading('section5', e.target.value)}
+                  className="w-full px-3 py-2 bg-[#121212] border border-[#333] rounded-xl text-white font-medium focus:border-[#21F1A8] focus:outline-none"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-bold uppercase text-gray-400">Section 6 Header (Analytical &amp; Statistical Findings)</label>
+                <input
+                  type="text"
+                  value={reportHeadings.section6}
+                  onChange={(e) => updateReportHeading('section6', e.target.value)}
+                  className="w-full px-3 py-2 bg-[#121212] border border-[#333] rounded-xl text-white font-medium focus:border-[#21F1A8] focus:outline-none"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-bold uppercase text-gray-400">Section 7 Header (Visualizations &amp; Segment Breakdown)</label>
+                <input
+                  type="text"
+                  value={reportHeadings.section7}
+                  onChange={(e) => updateReportHeading('section7', e.target.value)}
+                  className="w-full px-3 py-2 bg-[#121212] border border-[#333] rounded-xl text-white font-medium focus:border-[#21F1A8] focus:outline-none"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-bold uppercase text-gray-400">Section 8 Header (Strategic Business Recommendations)</label>
+                <input
+                  type="text"
+                  value={reportHeadings.section8}
+                  onChange={(e) => updateReportHeading('section8', e.target.value)}
+                  className="w-full px-3 py-2 bg-[#121212] border border-[#333] rounded-xl text-white font-medium focus:border-[#21F1A8] focus:outline-none"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-bold uppercase text-gray-400">Section 9 Header (Limitations, Assumptions &amp; Risk Factors)</label>
+                <input
+                  type="text"
+                  value={reportHeadings.section9}
+                  onChange={(e) => updateReportHeading('section9', e.target.value)}
                   className="w-full px-3 py-2 bg-[#121212] border border-[#333] rounded-xl text-white font-medium focus:border-[#21F1A8] focus:outline-none"
                 />
               </div>
@@ -870,19 +910,23 @@ export const ReportsView: React.FC = () => {
                 onClick={() => {
                   updateReportHeading('mainTitle', 'EXECUTIVE INTELLIGENCE BRIEF');
                   updateReportHeading('section1', '1. EXECUTIVE SUMMARY & BUSINESS HEALTH');
-                  updateReportHeading('section2', '2. KEY PERFORMANCE INDICATORS');
-                  updateReportHeading('section3', '3. AI INSIGHTS & MANAGEMENT DIRECTIVES');
-                  updateReportHeading('section4', '4. ATTACHED DASHBOARDS & SEGMENT BREAKDOWNS');
-                  updateReportHeading('section5', '5. DATA QUALITY AUDIT & GOVERNANCE');
+                  updateReportHeading('section2', '2. DATASET OVERVIEW & DIMENSIONS');
+                  updateReportHeading('section3', '3. METHODOLOGY & GOVERNANCE ARCHITECTURE');
+                  updateReportHeading('section4', '4. DATA QUALITY AUDIT FINDINGS');
+                  updateReportHeading('section5', '5. KEY PERFORMANCE INDICATORS');
+                  updateReportHeading('section6', '6. ANALYTICAL & STATISTICAL FINDINGS');
+                  updateReportHeading('section7', '7. VISUALIZATIONS & SEGMENT BREAKDOWN');
+                  updateReportHeading('section8', '8. STRATEGIC BUSINESS RECOMMENDATIONS');
+                  updateReportHeading('section9', '9. LIMITATIONS, ASSUMPTIONS & RISK FACTORS');
                 }}
-                className="text-xs text-gray-400 hover:text-white flex items-center gap-1"
+                className="text-xs text-gray-400 hover:text-white flex items-center gap-1 cursor-pointer"
               >
                 <RotateCcw className="w-3.5 h-3.5" /> Reset to Defaults
               </button>
               <button
                 type="button"
                 onClick={() => setIsHeadingsModalOpen(false)}
-                className="px-4 py-2 bg-[#21F1A8] text-black font-bold text-xs rounded-xl hover:bg-[#1cdb97]"
+                className="px-4 py-2 bg-[#21F1A8] text-black font-bold text-xs rounded-xl hover:bg-[#1cdb97] cursor-pointer"
               >
                 Done
               </button>

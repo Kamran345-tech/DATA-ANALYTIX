@@ -240,10 +240,10 @@ export const InteractiveSlicersBar: React.FC<{
                       className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
                         isActive
                           ? isLight 
-                            ? 'bg-emerald-600 text-white font-bold shadow-2xs' 
-                            : 'bg-[#21F1A8] text-slate-950 font-bold shadow-xs'
+                            ? 'bg-sky-600 text-white font-bold shadow-xs hover:bg-sky-700' 
+                            : 'bg-cyan-400 text-slate-950 font-bold shadow-xs'
                           : isLight 
-                            ? 'text-slate-700 hover:bg-white' 
+                            ? 'text-slate-700 hover:bg-white hover:text-slate-900' 
                             : 'text-gray-300 hover:bg-[#1a202c]'
                       }`}
                     >
@@ -291,7 +291,7 @@ export const InteractiveSlicersBar: React.FC<{
                 isLight ? 'bg-slate-100 border-slate-200 text-slate-800' : 'bg-[#11141c] border-[#222938] text-gray-300'
               }`}>
                 <div className="flex items-center gap-1 font-semibold uppercase text-[11px]">
-                  <BarChart2 className={`w-3.5 h-3.5 ${isLight ? 'text-emerald-700' : 'text-[#21F1A8]'}`} />
+                  <BarChart2 className={`w-3.5 h-3.5 ${isLight ? 'text-sky-600' : 'text-cyan-400'}`} />
                   <span>{primaryMetricCol}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
@@ -353,10 +353,10 @@ export const InteractiveSlicersBar: React.FC<{
                   className={`rounded-xl border p-3 flex flex-col justify-between transition-all ${
                     activeValues.length > 0
                       ? isLight 
-                        ? 'bg-emerald-50/40 border-emerald-300 ring-1 ring-emerald-300/40' 
-                        : 'bg-[#18212f] border-[#21F1A8]/40 ring-1 ring-[#21F1A8]/20'
+                        ? 'bg-sky-50/60 border-sky-300 ring-1 ring-sky-300/50 shadow-xs' 
+                        : 'bg-[#18212f] border-cyan-400/40 ring-1 ring-cyan-400/20'
                       : isLight 
-                        ? 'bg-slate-50/50 border-slate-200' 
+                        ? 'bg-white border-slate-200 shadow-xs' 
                         : 'bg-[#11141c] border-[#222938]'
                   }`}
                 >
@@ -364,13 +364,13 @@ export const InteractiveSlicersBar: React.FC<{
                   <div className="flex items-center justify-between pb-2 mb-2 border-b border-inherit">
                     <div className="flex items-center gap-1.5 min-w-0">
                       <span className={`text-xs font-bold truncate ${
-                        isLight ? 'text-slate-800' : 'text-gray-100'
+                        isLight ? 'text-slate-900' : 'text-gray-100'
                       }`}>
                         {slicer.columnName}
                       </span>
                       {activeValues.length > 0 && (
                         <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold ${
-                          isLight ? 'bg-emerald-200 text-emerald-900' : 'bg-[#21F1A8] text-slate-950'
+                          isLight ? 'bg-sky-100 text-sky-800 border border-sky-200' : 'bg-cyan-400 text-slate-950'
                         }`}>
                           {activeValues.length}
                         </span>
@@ -384,7 +384,7 @@ export const InteractiveSlicersBar: React.FC<{
                           onClick={() => setActiveSearchCol(activeSearchCol === slicer.columnName ? null : slicer.columnName)}
                           className={`p-1 rounded transition-colors ${
                             activeSearchCol === slicer.columnName
-                              ? isLight ? 'bg-emerald-100 text-emerald-800' : 'bg-[#21F1A8]/20 text-[#21F1A8]'
+                              ? isLight ? 'bg-sky-100 text-sky-800' : 'bg-cyan-400/20 text-cyan-300'
                               : isLight ? 'text-slate-400 hover:text-slate-700' : 'text-gray-500 hover:text-gray-300'
                           }`}
                           title="Search within slicer options"
@@ -434,11 +434,11 @@ export const InteractiveSlicersBar: React.FC<{
                       className={`px-2 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer flex items-center gap-1 ${
                         isAllSelected
                           ? isLight 
-                            ? 'bg-slate-800 text-white font-semibold shadow-2xs' 
-                            : 'bg-white text-slate-950 font-bold shadow-xs'
+                            ? 'bg-sky-50 text-sky-700 border border-sky-300 font-semibold shadow-2xs hover:bg-sky-100' 
+                            : 'bg-cyan-500/20 text-cyan-200 border border-cyan-400/40 font-semibold shadow-2xs hover:bg-cyan-500/30'
                           : isLight 
-                            ? 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100' 
-                            : 'bg-[#171d29] text-gray-400 border border-[#2b3547] hover:bg-[#202838]'
+                            ? 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-slate-900' 
+                            : 'bg-[#171d29] text-gray-400 border border-[#2b3547] hover:bg-[#202838] hover:text-white'
                       }`}
                     >
                       <span>(All)</span>
@@ -455,16 +455,16 @@ export const InteractiveSlicersBar: React.FC<{
                           className={`px-2 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
                             isSelected
                               ? isLight 
-                                ? 'bg-emerald-600 text-white font-bold shadow-xs ring-1 ring-emerald-600' 
-                                : 'bg-[#21F1A8] text-slate-950 font-bold shadow-xs ring-1 ring-[#21F1A8]'
+                                ? 'bg-sky-600 text-white font-bold shadow-xs ring-1 ring-sky-600' 
+                                : 'bg-cyan-400 text-slate-950 font-bold shadow-xs ring-1 ring-cyan-400'
                               : isLight 
-                                ? 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100 hover:border-slate-300' 
+                                ? 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100 hover:border-slate-300 hover:text-slate-900' 
                                 : 'bg-[#171d29] text-gray-300 border border-[#2b3547] hover:bg-[#202838] hover:border-gray-500'
                           }`}
                           title={`${value} (${count.toLocaleString()} occurrences)`}
                         >
                           <span className="truncate max-w-[120px]">{value}</span>
-                          <span className={`text-[10px] font-mono ${isSelected ? (isLight ? 'text-emerald-100' : 'text-slate-800 font-bold') : (isLight ? 'text-slate-400' : 'text-gray-500')}`}>
+                          <span className={`text-[10px] font-mono ${isSelected ? (isLight ? 'text-sky-100' : 'text-slate-950 font-bold') : (isLight ? 'text-slate-400' : 'text-gray-500')}`}>
                             {count}
                           </span>
                         </button>

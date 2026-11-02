@@ -303,83 +303,128 @@ DIVIDE([Total ${primaryMetric}] - SUM('${tableName}'[COGS]), [Total ${primaryMet
           </span>
         </div>
 
-        {/* Visual Lineage Nodes */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+        {/* Visual Lineage Nodes - Section 9 Architecture */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
           {[
             {
               id: 0,
-              step: '01. SOURCE INTAKE',
+              step: '01. SOURCE DATA',
               title: project.sourceFileName || 'data_source.csv',
-              metric: `${cleanRows.length} Rows Ingested`,
-              latency: '0.4ms',
-              status: 'Completed',
-              desc: 'Raw multi-format parser with byte-stream encoding validation'
+              metric: 'Multi-Format Ingestion',
+              latency: '0.2ms',
+              status: 'Connected',
+              desc: 'Supports CSV, XLSX, JSON, Parquet, and live SQL database servers'
             },
             {
               id: 1,
-              step: '02. DATA HYGIENE',
-              title: 'Auto-Cleanse & Dedup',
-              metric: '0 Dirty Rows',
-              latency: '0.6ms',
-              status: 'Certified',
-              desc: 'Trimmed whitespace, deduplicated keys, and imputed nulls'
+              step: '02. DATA INGESTION',
+              title: 'Type Inference & Parser',
+              metric: `${cleanRows.length.toLocaleString()} Records`,
+              latency: '0.4ms',
+              status: 'Ingested',
+              desc: 'Automated delimiter detection, UTF-8 decoding, and type casting'
             },
             {
               id: 2,
-              step: '03. STAR SCHEMA',
-              title: `${dataModel.tables.length} Tables Modeled`,
-              metric: `${dataModel.relationships.length} 1:N Joins Linked`,
-              latency: '0.3ms',
-              status: 'Validated',
-              desc: 'Fact table normalized with verified Dimension entity tables'
+              step: '03. RAW STORAGE',
+              title: 'Bronze Lake Partition',
+              metric: 'Immutable Raw Backup',
+              latency: '0.1ms',
+              status: 'Archived',
+              desc: 'Preserves untouched raw dataset snapshot per Section 4 governance'
             },
             {
               id: 3,
-              step: '04. DAX SEMANTIC',
-              title: '15 Measures Generated',
-              metric: 'Time Intelligence',
-              latency: '0.2ms',
-              status: 'Computed',
-              desc: 'Synthesized YoY, YTD, and multi-dimensional aggregations'
+              step: '04. DATA VALIDATION',
+              title: 'Schema Integrity Tests',
+              metric: `${qualityReport.overallScore}% Passed`,
+              latency: '0.5ms',
+              status: 'Validated',
+              desc: 'dbt and Great Expectations assertions auditing types and keys'
             },
             {
               id: 4,
-              step: '05. BI PRESENTATION',
-              title: 'Executive Slicers & Deck',
-              metric: '60 FPS Rendering',
+              step: '05. DATA CLEANING',
+              title: 'Silver Cleanse Engine',
+              metric: `${transformations.length} Steps Logged`,
+              latency: '0.6ms',
+              status: 'Certified',
+              desc: 'Whitespace trimming, null imputation, deduplication, and outlier caps'
+            },
+            {
+              id: 5,
+              step: '06. TRANSFORMATION',
+              title: 'Gold Business Logic',
+              metric: 'Reconciled Math',
+              latency: '0.3ms',
+              status: 'Computed',
+              desc: 'Calculated metrics, currency formatting, and business rule evaluation'
+            },
+            {
+              id: 6,
+              step: '07. DATA MODELING',
+              title: 'Kimball Star Schema',
+              metric: `${dataModel.tables.length} Tables, ${dataModel.relationships.length} Joins`,
+              latency: '0.3ms',
+              status: 'Modeled',
+              desc: 'Automated Fact table normalization and 1:N Dimension key mapping'
+            },
+            {
+              id: 7,
+              step: '08. DATA WAREHOUSE',
+              title: 'Analytical Store & DDL',
+              metric: 'In-Memory OLAP',
+              latency: '0.2ms',
+              status: 'Indexed',
+              desc: 'PostgreSQL/MySQL DDL schemas, primary/foreign indexing, and views'
+            },
+            {
+              id: 8,
+              step: '09. ANALYTICS',
+              title: 'DAX & Statistical Core',
+              metric: 'Verified Formulas',
+              latency: '0.2ms',
+              status: 'Aggregated',
+              desc: 'Time intelligence, YoY variance, Holt-Winters trend forecasts, and EDA'
+            },
+            {
+              id: 9,
+              step: '10. DASHBOARDS & REPORTS',
+              title: 'PBIP & Executive Deck',
+              metric: 'Live Presentation',
               latency: '0.1ms',
-              status: 'Live',
-              desc: 'Cross-filtering telemetry, presentation wallboard, and PDF engine'
+              status: 'Delivered',
+              desc: 'Interactive Power BI slicers, C-suite deck, and 14-folder export zip'
             }
           ].map(node => (
             <div
               key={node.id}
               onClick={() => setSelectedDagNode(node.id)}
-              className={`p-4 rounded-xl border transition-all cursor-pointer flex flex-col justify-between ${
+              className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between ${
                 selectedDagNode === node.id
                   ? isLight 
-                    ? 'bg-emerald-50 border-emerald-400 ring-2 ring-emerald-300' 
-                    : 'bg-[#182333] border-[#21F1A8] ring-2 ring-[#21F1A8]/30 shadow-lg'
+                    ? 'bg-cyan-50 border-cyan-400 ring-2 ring-cyan-300 shadow-md' 
+                    : 'bg-[#182333] border-cyan-400 ring-2 ring-cyan-400/30 shadow-lg shadow-cyan-500/10'
                   : isLight 
-                    ? 'bg-slate-50 border-slate-200 hover:bg-slate-100' 
-                    : 'bg-[#11141C] border-[#222938] hover:bg-[#151921]'
+                    ? 'bg-white border-slate-200 hover:bg-slate-50' 
+                    : 'glass-card border-white/10 hover:border-cyan-400/30'
               }`}
             >
               <div>
-                <div className="flex items-center justify-between text-[10px] font-mono font-bold text-emerald-400 mb-1">
+                <div className="flex items-center justify-between text-[10px] font-mono font-bold text-cyan-400 mb-1">
                   <span>{node.step}</span>
-                  <span className="text-gray-400">{node.latency}</span>
+                  <span className="text-slate-400">{node.latency}</span>
                 </div>
-                <div className="font-bold text-xs truncate mb-1" title={node.title}>{node.title}</div>
-                <div className="text-[11px] font-semibold text-emerald-300">{node.metric}</div>
-                <p className="text-[10px] text-gray-400 mt-1 line-clamp-2">{node.desc}</p>
+                <div className="font-bold text-xs truncate mb-1 text-slate-100" title={node.title}>{node.title}</div>
+                <div className="text-[11px] font-semibold text-cyan-300">{node.metric}</div>
+                <p className="text-[10px] text-slate-400 mt-1 line-clamp-2 leading-tight">{node.desc}</p>
               </div>
 
-              <div className="pt-3 mt-2 border-t border-inherit flex items-center justify-between text-[10px] font-semibold">
+              <div className="pt-2.5 mt-2 border-t border-white/10 flex items-center justify-between text-[10px] font-semibold">
                 <span className="text-emerald-400 flex items-center gap-1">
                   <CheckCircle2 className="w-3 h-3" /> {node.status}
                 </span>
-                <span className="text-gray-400 font-mono">Stage {node.id + 1}</span>
+                <span className="text-slate-400 font-mono">Stage {node.id + 1}</span>
               </div>
             </div>
           ))}

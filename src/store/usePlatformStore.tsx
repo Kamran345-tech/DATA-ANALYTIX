@@ -38,6 +38,7 @@ export type NavigationTab =
   | 'cleaning'
   | 'modeling'
   | 'data_engineering'
+  | 'excel_automation'
   | 'analysis'
   | 'dax_lab'
   | 'sql_lab'
@@ -50,6 +51,18 @@ export type NavigationTab =
   | 'how_to_modify'
   | 'settings'
   | 'blog';
+
+export type TaskMode = 
+  | 'excel_cleaning'
+  | 'data_analysis'
+  | 'powerbi_dev'
+  | 'sql_engineering'
+  | 'etl_pipeline'
+  | 'excel_assignment'
+  | 'business_trends'
+  | 'predictive'
+  | 'data_integration'
+  | 'data_quality';
 
 export interface LiveConnectionState {
   isConnected: boolean;
@@ -78,11 +91,15 @@ export interface GlobalFilterState {
 export interface ReportHeadings {
   mainTitle: string;
   subtitle?: string;
-  section1: string;
-  section2: string;
-  section3: string;
-  section4: string;
-  section5: string;
+  section1: string; // 1. Executive Summary & Business Health
+  section2: string; // 2. Dataset Overview & Dimensions
+  section3: string; // 3. Methodology & Governance Architecture
+  section4: string; // 4. Data Quality Audit Findings
+  section5: string; // 5. Key Performance Indicators
+  section6: string; // 6. Analytical & Statistical Findings
+  section7: string; // 7. Visualizations & Segment Breakdown
+  section8: string; // 8. Strategic Business Recommendations
+  section9: string; // 9. Limitations, Assumptions & Risk Factors
 }
 
 export interface PlatformContextType {
@@ -105,6 +122,10 @@ export interface PlatformContextType {
   uploadCompanyLogo: (logoDataUrl: string) => void;
   removeCompanyLogo: () => void;
   updateProjectMetadata: (updates: Partial<ProjectMetadata>) => void;
+
+  // Automatic Task Mode (Section 11)
+  activeTaskMode: TaskMode | null;
+  setTaskMode: (mode: TaskMode | null) => void;
 
   // Editable Report Headings
   reportHeadings: ReportHeadings;
@@ -208,20 +229,20 @@ const getInitialLogo = (): string | undefined => {
 };
 
 const defaultBrand: BrandConfig = {
-  companyName: 'Analytics Technologies',
+  companyName: 'Data Analytix',
   logoUrl: getInitialLogo(),
   tagline: 'Autonomous AI Data Intelligence & Performance Center',
   department: 'Strategic Analytics & BI',
   author: getInitialAuthor(),
-  themeColor: '#21F1A8',
-  backgroundColor: '#171717',
-  accentColor: '#00D8F6'
+  themeColor: '#0284C7',
+  backgroundColor: '#070D1B',
+  accentColor: '#22D3EE'
 };
 
 const defaultProject: ProjectMetadata = {
   id: 'proj-001',
   name: 'Global Enterprise Technology Sales & Margin Telemetry',
-  companyName: 'Analytics Technologies',
+  companyName: 'Data Analytix',
   department: 'Strategic Analytics & BI',
   author: getInitialAuthor(),
   createdAt: new Date().toISOString(),
@@ -288,10 +309,66 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const defaultReportHeadings: ReportHeadings = {
     mainTitle: 'EXECUTIVE INTELLIGENCE BRIEF',
     section1: '1. EXECUTIVE SUMMARY & BUSINESS HEALTH',
-    section2: '2. KEY PERFORMANCE INDICATORS',
-    section3: '3. AI INSIGHTS & MANAGEMENT DIRECTIVES',
-    section4: '4. ATTACHED DASHBOARDS & SEGMENT BREAKDOWNS',
-    section5: '5. DATA QUALITY AUDIT & GOVERNANCE'
+    section2: '2. DATASET OVERVIEW & DIMENSIONS',
+    section3: '3. METHODOLOGY & GOVERNANCE ARCHITECTURE',
+    section4: '4. DATA QUALITY AUDIT FINDINGS',
+    section5: '5. KEY PERFORMANCE INDICATORS',
+    section6: '6. ANALYTICAL & STATISTICAL FINDINGS',
+    section7: '7. VISUALIZATIONS & SEGMENT BREAKDOWN',
+    section8: '8. STRATEGIC BUSINESS RECOMMENDATIONS',
+    section9: '9. LIMITATIONS, ASSUMPTIONS & RISK FACTORS'
+  };
+
+  // Automatic Task Mode Detection & Execution (Section 11)
+  const [activeTaskMode, setActiveTaskModeState] = useState<TaskMode | null>(null);
+
+  const setTaskMode = (mode: TaskMode | null) => {
+    setActiveTaskModeState(mode);
+    if (!mode) return;
+    
+    // Automatic routing per Section 11 specifications
+    switch (mode) {
+      case 'excel_cleaning':
+        setCurrentTab('cleaning');
+        toast.info('Switched to Excel Data Cleaning Mode. Review null imputations and outlier caps.');
+        break;
+      case 'data_analysis':
+        setCurrentTab('analysis');
+        toast.info('Switched to Exploratory Data Analysis (EDA) Mode.');
+        break;
+      case 'powerbi_dev':
+        setCurrentTab('dashboard_builder');
+        toast.info('Switched to Power BI Development Mode. Compose custom visual cards.');
+        break;
+      case 'sql_engineering':
+        setCurrentTab('sql_lab');
+        toast.info('Switched to SQL Engineering Mode. Write and execute relational queries.');
+        break;
+      case 'etl_pipeline':
+        setCurrentTab('data_engineering');
+        toast.info('Switched to Data Engineering & Lineage DAG Mode.');
+        break;
+      case 'excel_assignment':
+        setCurrentTab('excel_automation');
+        toast.info('Switched to Excel Automation & Assignment Assistant Mode.');
+        break;
+      case 'business_trends':
+        setCurrentTab('executive_dashboard');
+        toast.info('Switched to Business Analytics & Trends Mode.');
+        break;
+      case 'predictive':
+        setCurrentTab('analysis');
+        toast.info('Switched to Predictive & Regression Analytics Mode.');
+        break;
+      case 'data_integration':
+        setCurrentTab('modeling');
+        toast.info('Switched to Data Integration & Schema Modeling Mode.');
+        break;
+      case 'data_quality':
+        setCurrentTab('quality');
+        toast.info('Switched to Data Quality & Hygiene Audit Mode.');
+        break;
+    }
   };
 
   const [reportHeadings, setReportHeadings] = useState<ReportHeadings>(() => {
@@ -1275,6 +1352,8 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         uploadCompanyLogo,
         removeCompanyLogo,
         updateProjectMetadata,
+        activeTaskMode,
+        setTaskMode,
         reportHeadings,
         updateReportHeading,
         updateKpi,

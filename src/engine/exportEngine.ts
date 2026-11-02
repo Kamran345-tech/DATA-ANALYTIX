@@ -29,6 +29,10 @@ export interface ExportDataPayload {
     section3?: string;
     section4?: string;
     section5?: string;
+    section6?: string;
+    section7?: string;
+    section8?: string;
+    section9?: string;
   };
 }
 
@@ -37,7 +41,7 @@ export function buildExcelWorkbook(payload: ExportDataPayload): Uint8Array {
 
   // 1. README Sheet
   const readmeData = [
-    ['ACUITYBI ENTERPRISE DATA ANALYST WORKBOOK'],
+    ['DATA ANALYTIX ENTERPRISE DATA ANALYST WORKBOOK'],
     ['Generated Date', new Date().toISOString()],
     ['Project Name', payload.project.name],
     ['Company', payload.brand.companyName],
@@ -135,20 +139,20 @@ export function buildExcelWorkbook(payload: ExportDataPayload): Uint8Array {
 
 export function generatePowerBIThemeJSON(brand: BrandConfig): string {
   return JSON.stringify({
-    name: `${brand.companyName} Tiffany Dark Theme`,
+    name: `${brand.companyName || 'Data Analytix'} Azure Blue Theme`,
     dataColors: [
-      brand.themeColor || '#21F1A8',
+      brand.themeColor || '#0284C7',
       '#00D8F6',
       '#6366F1',
       '#F59E0B',
       '#EC4899',
-      '#10B981',
+      '#3B82F6',
       '#8B5CF6',
       '#EF4444'
     ],
-    background: '#171717',
+    background: '#070D1B',
     foreground: '#FFFFFF',
-    tableAccent: brand.themeColor || '#21F1A8',
+    tableAccent: brand.themeColor || '#0284C7',
     visualStyles: {
       '*': {
         '*': {

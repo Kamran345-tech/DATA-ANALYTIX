@@ -13,6 +13,7 @@ import { DataQualityView } from './components/views/DataQualityView';
 import { DataCleaningLabView } from './components/views/DataCleaningLabView';
 import { DataModelingView } from './components/views/DataModelingView';
 import { DataEngineeringSuite } from './components/views/DataEngineeringSuite';
+import { ExcelAutomationView } from './components/views/ExcelAutomationView';
 import { AnalysisView } from './components/views/AnalysisView';
 import { DAXLabView } from './components/views/DAXLabView';
 import { SQLLabView } from './components/views/SQLLabView';
@@ -80,6 +81,8 @@ const MainContent: React.FC = () => {
         return <DataModelingView />;
       case 'data_engineering':
         return <DataEngineeringSuite />;
+      case 'excel_automation':
+        return <ExcelAutomationView />;
       case 'analysis':
         return <AnalysisView />;
       case 'dax_lab':
