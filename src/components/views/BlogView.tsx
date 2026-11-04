@@ -89,7 +89,7 @@ export const BlogView: React.FC = () => {
       {/* Header */}
       <div className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-6 flex flex-wrap items-center justify-between gap-4">
         <div className="space-y-1">
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#21F1A8] font-mono">
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-sky-400 font-mono">
             <Newspaper className="w-4 h-4" /> SEO & Knowledge Base
           </div>
           <h1 className="font-heading text-3xl sm:text-4xl font-bold text-white tracking-wide uppercase">
@@ -106,14 +106,14 @@ export const BlogView: React.FC = () => {
         <div className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-8 space-y-6">
           <button
             onClick={() => setSelectedPost(null)}
-            className="text-xs text-[#21F1A8] hover:underline flex items-center gap-1 font-semibold"
+            className="text-xs text-sky-400 hover:underline flex items-center gap-1 font-semibold"
           >
             ← Back to Articles
           </button>
 
           <div className="space-y-2 border-b border-[#282828] pb-4">
             <div className="flex items-center gap-2 text-xs text-gray-400 font-mono">
-              <span className="px-2 py-0.5 rounded bg-[#242424] text-[#21F1A8] font-bold uppercase">{selectedPost.category}</span>
+              <span className="px-2 py-0.5 rounded bg-[#242424] text-sky-400 font-bold uppercase">{selectedPost.category}</span>
               <span>• {selectedPost.readTime}</span>
               <span>• {selectedPost.date}</span>
             </div>
@@ -134,7 +134,7 @@ export const BlogView: React.FC = () => {
               placeholder="Search knowledge base articles..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-[#1c1c1c] text-xs text-white pl-9 pr-3 py-2.5 rounded-xl border border-[#333] focus:border-[#21F1A8] focus:outline-none"
+              className="w-full bg-[#1c1c1c] text-xs text-white pl-9 pr-3 py-2.5 rounded-xl border border-[#333] focus:border-sky-500 focus:outline-none"
             />
           </div>
 
@@ -143,14 +143,14 @@ export const BlogView: React.FC = () => {
               <div
                 key={post.id}
                 onClick={() => setSelectedPost(post)}
-                className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-6 space-y-3 cursor-pointer hover:border-[#21F1A8]/50 transition-colors group"
+                className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-6 space-y-3 cursor-pointer hover:border-sky-500/50 transition-colors group"
               >
                 <div className="flex items-center justify-between text-xs font-mono text-gray-400">
-                  <span className="px-2 py-0.5 rounded bg-[#222] text-[#21F1A8] font-semibold uppercase">{post.category}</span>
+                  <span className="px-2 py-0.5 rounded bg-[#222] text-sky-400 font-semibold uppercase">{post.category}</span>
                   <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {post.readTime}</span>
                 </div>
 
-                <h3 className="font-heading text-xl font-bold text-white group-hover:text-[#21F1A8] transition-colors uppercase">
+                <h3 className="font-heading text-xl font-bold text-white group-hover:text-sky-400 transition-colors uppercase">
                   {post.title}
                 </h3>
 
@@ -158,7 +158,7 @@ export const BlogView: React.FC = () => {
                   {post.excerpt}
                 </p>
 
-                <div className="pt-2 flex items-center gap-1 text-xs text-[#21F1A8] font-semibold">
+                <div className="pt-2 flex items-center gap-1 text-xs text-sky-400 font-semibold">
                   <span>Read Article</span>
                   <ChevronRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
                 </div>

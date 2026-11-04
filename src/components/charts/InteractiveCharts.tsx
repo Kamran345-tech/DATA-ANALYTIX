@@ -195,7 +195,7 @@ export const TimeSeriesAreaChart: React.FC<TimeSeriesProps> = ({
         </div>
 
         {activePt && (
-          <div className="bg-[#141414] border border-[#21F1A8]/40 px-3 py-1 rounded-lg text-xs font-mono flex items-center gap-2">
+          <div className="bg-[#141414] border border-cyan-400/40 px-3 py-1 rounded-lg text-xs font-mono flex items-center gap-2">
             <span className="text-gray-400">{activePt.period}:</span>
             <span className="text-cyan-400 font-bold">
               {activePt.value.toLocaleString()}
@@ -306,7 +306,7 @@ export const TimeSeriesAreaChart: React.FC<TimeSeriesProps> = ({
                     y1={paddingTop} 
                     x2={x} 
                     y2={paddingTop + innerHeight} 
-                    stroke="#21F1A8" 
+                    stroke="#00d8f6" 
                     strokeWidth="1" 
                     strokeDasharray="2,2" 
                   />
@@ -318,7 +318,7 @@ export const TimeSeriesAreaChart: React.FC<TimeSeriesProps> = ({
                   cy={y}
                   r={isHovered ? 6 : pt.isForecast ? 3.5 : 4}
                   fill={pt.isForecast ? '#00d8f6' : '#141414'}
-                  stroke={pt.isForecast ? '#00d8f6' : '#21F1A8'}
+                  stroke={pt.isForecast ? '#00d8f6' : '#0284C7'}
                   strokeWidth="2"
                   className="cursor-pointer transition-all"
                   onMouseEnter={() => setHoverIndex(idx)}
@@ -435,7 +435,7 @@ export const Pareto8020Chart: React.FC<ParetoProps> = ({
       {/* Header Insights */}
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
         <div className="flex items-center gap-2">
-          <span className="px-2 py-0.5 rounded bg-[#21F1A8]/15 text-[#21F1A8] font-bold text-[10px] font-mono">
+          <span className="px-2 py-0.5 rounded bg-cyan-500/15 text-cyan-400 font-bold text-[10px] font-mono">
             PARETO PRINCIPLE (80/20)
           </span>
           <span className="text-gray-300">
@@ -444,7 +444,7 @@ export const Pareto8020Chart: React.FC<ParetoProps> = ({
         </div>
         <div className="flex items-center gap-3 text-[11px] text-gray-400">
           <span className="flex items-center gap-1">
-            <span className="w-2.5 h-2.5 rounded-sm bg-[#21F1A8]"></span> Item Value
+            <span className="w-2.5 h-2.5 rounded-sm bg-cyan-500"></span> Item Value
           </span>
           <span className="flex items-center gap-1">
             <span className="w-2.5 h-0.5 bg-amber-400"></span> Cumulative %
@@ -519,8 +519,8 @@ export const Pareto8020Chart: React.FC<ParetoProps> = ({
                   width={barWidth}
                   height={Math.max(2, h)}
                   rx="4"
-                  fill={isSelected ? '#00d8f6' : isVital ? '#21F1A8' : '#2a4439'}
-                  className="transition-colors group-hover:fill-[#1cdb97]"
+                  fill={isSelected ? '#00d8f6' : isVital ? '#0284C7' : '#1e293b'}
+                  className="transition-colors group-hover:fill-sky-400"
                 />
                 {/* Bar Value text */}
                 <text
@@ -540,7 +540,7 @@ export const Pareto8020Chart: React.FC<ParetoProps> = ({
                   y={paddingTop + innerHeight + 16}
                   textAnchor="end"
                   transform={`rotate(-35, ${x + barWidth / 2}, ${paddingTop + innerHeight + 16})`}
-                  fill={isSelected ? '#21F1A8' : '#888'}
+                  fill={isSelected ? '#00d8f6' : '#888'}
                   fontSize="10"
                   className="truncate max-w-[80px]"
                 >
@@ -580,7 +580,7 @@ interface DonutProps {
   onSelectCategory?: (category: string) => void;
 }
 
-const PALETTE = ['#21F1A8', '#00d8f6', '#818cf8', '#f59e0b', '#ec4899', '#10b981', '#a855f7'];
+const PALETTE = ['#0284C7', '#00d8f6', '#38bdf8', '#818cf8', '#f59e0b', '#ec4899', '#6366f1'];
 
 export const DonutCompositionChart: React.FC<DonutProps> = ({
   data,
@@ -2459,7 +2459,7 @@ export const WaterfallChart: React.FC<WaterfallProps> = ({
           {enrichedSteps.map((step, idx) => {
             const h = Math.max(4, (Math.abs(step.value) / maxRunning) * 160);
             const bottomOffset = (Math.min(step.start, step.end) / maxRunning) * 160;
-            const barColor = step.isTotal ? '#00d8f6' : step.isPositive ? '#21F1A8' : '#ef4444';
+            const barColor = step.isTotal ? '#00d8f6' : step.isPositive ? '#0284C7' : '#ef4444';
 
             return (
               <div 
@@ -2526,15 +2526,15 @@ export const GaugeSpeedometerChart: React.FC<GaugeProps> = ({
   const rotation = -90 + (pct / 100) * 180;
 
   const statusColor = attainment 
-    ? (attainment >= 100 ? '#21F1A8' : attainment >= 80 ? '#f59e0b' : '#ef4444')
-    : '#21F1A8';
+    ? (attainment >= 100 ? '#00d8f6' : attainment >= 80 ? '#38bdf8' : '#ef4444')
+    : '#00d8f6';
 
   return (
     <div className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-5 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="space-y-0.5">
           <h3 className="font-heading text-lg font-bold text-white tracking-wide uppercase flex items-center gap-2">
-            <Gauge className="w-4 h-4 text-[#21F1A8]" />
+            <Gauge className="w-4 h-4 text-cyan-400" />
             {title}
           </h3>
           <p className="text-xs text-gray-400">Real-time target pacing against defined threshold milestones.</p>
@@ -2552,7 +2552,7 @@ export const GaugeSpeedometerChart: React.FC<GaugeProps> = ({
             <linearGradient id="gaugeArc" x1="0" y1="0" x2="1" y2="0">
               <stop offset="0%" stopColor="#ef4444" />
               <stop offset="50%" stopColor="#f59e0b" />
-              <stop offset="85%" stopColor="#21F1A8" />
+              <stop offset="85%" stopColor="#0284C7" />
               <stop offset="100%" stopColor="#00d8f6" />
             </linearGradient>
           </defs>

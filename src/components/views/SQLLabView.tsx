@@ -398,17 +398,17 @@ export const SQLLabView: React.FC = () => {
 
               {/* SQL Statement Executed */}
               <div className="space-y-2">
-                <h4 className="font-heading text-sm font-bold text-white uppercase text-[#21F1A8]">
+                <h4 className="font-heading text-sm font-bold text-sky-400 uppercase">
                   2. Executed SQL Statement
                 </h4>
-                <pre className="p-4 rounded-xl bg-[#0e0e0e] border border-[#2a2a2a] text-xs font-mono text-emerald-400 overflow-x-auto whitespace-pre leading-relaxed">
+                <pre className="p-4 rounded-xl bg-[#0e0e0e] border border-[#2a2a2a] text-xs font-mono text-sky-300 overflow-x-auto whitespace-pre leading-relaxed">
                   {query}
                 </pre>
               </div>
 
               {/* Results Data Sample */}
               <div className="space-y-2">
-                <h4 className="font-heading text-sm font-bold text-white uppercase text-[#21F1A8]">
+                <h4 className="font-heading text-sm font-bold text-sky-400 uppercase">
                   3. Cleaned Records Preview ({Math.min(result.rowCount, 10)} of {result.rowCount} Rows)
                 </h4>
                 <div className="overflow-x-auto rounded-xl border border-[#2d2d2d]">
@@ -438,7 +438,7 @@ export const SQLLabView: React.FC = () => {
               {/* Certification Footer */}
               <div className="pt-4 border-t border-[#2d2d2d] flex items-center justify-between text-xs text-gray-500 font-mono">
                 <span>Audited via Data Analytix SQL Engine</span>
-                <span className="text-[#21F1A8] font-bold">STATUS: BOARDROOM READY</span>
+                <span className="text-sky-400 font-bold">STATUS: BOARDROOM READY</span>
               </div>
             </div>
 
@@ -446,7 +446,7 @@ export const SQLLabView: React.FC = () => {
             <div className="p-4 border-t border-[#2d2d2d] flex items-center justify-between bg-[#141414]">
               <button
                 onClick={handleApplyCleanedToPlatform}
-                className="px-4 py-2 rounded-xl bg-[#21F1A8] text-black font-bold text-xs hover:bg-[#1cdb97] flex items-center gap-1.5"
+                className="px-4 py-2 rounded-xl bg-sky-600 text-white font-bold text-xs hover:bg-sky-500 flex items-center gap-1.5 shadow-md shadow-sky-600/30"
               >
                 <Wand2 className="w-4 h-4" />
                 <span>Apply as Active Platform Dataset</span>

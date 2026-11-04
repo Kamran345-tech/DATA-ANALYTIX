@@ -599,8 +599,8 @@ export const HowToUseView: React.FC = () => {
               <span
                 className={`px-2.5 py-1 text-xs font-bold font-mono uppercase tracking-wider rounded-lg flex items-center gap-1.5 ${
                   isLight
-                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                    : 'bg-[#21F1A8]/15 text-[#21F1A8] border border-[#21F1A8]/30'
+                    ? 'bg-sky-50 text-sky-800 border border-sky-200'
+                    : 'bg-cyan-500/15 text-cyan-400 border border-cyan-500/30'
                 }`}
               >
                 <Compass className="w-3.5 h-3.5" /> Complete Platform Documentation
@@ -638,7 +638,7 @@ export const HowToUseView: React.FC = () => {
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shadow-xs ${
                   isLight
                     ? 'bg-white text-slate-900 border border-slate-300 hover:bg-slate-100'
-                    : 'bg-[#262626] text-[#21F1A8] border border-[#21F1A8]/40 hover:bg-[#303030]'
+                    : 'bg-[#262626] text-cyan-400 border border-cyan-500/40 hover:bg-[#303030]'
                 }`}
               >
                 {isLight ? (
@@ -648,7 +648,7 @@ export const HowToUseView: React.FC = () => {
                   </>
                 ) : (
                   <>
-                    <Moon className="w-3.5 h-3.5 text-[#21F1A8] fill-[#21F1A8]" />
+                    <Moon className="w-3.5 h-3.5 text-cyan-400 fill-cyan-400" />
                     <span>Dark Mode</span>
                   </>
                 )}
@@ -672,8 +672,8 @@ export const HowToUseView: React.FC = () => {
               onChange={e => setSearchQuery(e.target.value)}
               className={`w-full text-xs sm:text-sm pl-10 pr-8 py-2.5 rounded-xl border transition-all focus:outline-none ${
                 isLight
-                  ? 'bg-slate-50 text-slate-900 border-slate-300 placeholder:text-slate-400 focus:bg-white focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/20'
-                  : 'bg-[#151515] text-white border-[#333] placeholder:text-gray-500 focus:border-[#21F1A8]'
+                  ? 'bg-slate-50 text-slate-900 border-slate-300 placeholder:text-slate-400 focus:bg-white focus:border-sky-600 focus:ring-2 focus:ring-sky-500/20'
+                  : 'bg-[#151515] text-white border-[#333] placeholder:text-gray-500 focus:border-cyan-400'
               }`}
             />
             {searchQuery && (
@@ -718,8 +718,8 @@ export const HowToUseView: React.FC = () => {
               onClick={() => setCurrentTab(step.targetTab)}
               className={`p-4 rounded-xl border transition-all cursor-pointer group flex flex-col justify-between ${
                 isLight
-                  ? 'bg-white border-slate-200 hover:border-emerald-500 hover:shadow-md'
-                  : 'bg-[#1c1c1c] border-[#2d2d2d] hover:border-[#21F1A8]/60 hover:shadow-lg'
+                  ? 'bg-white border-slate-200 hover:border-sky-500 hover:shadow-md'
+                  : 'bg-[#1c1c1c] border-[#2d2d2d] hover:border-cyan-400/60 hover:shadow-lg'
               }`}
             >
               <div className="space-y-2">
@@ -728,14 +728,14 @@ export const HowToUseView: React.FC = () => {
                     className={`text-xs font-mono font-bold px-2 py-0.5 rounded-md ${
                       isLight
                         ? 'bg-slate-100 text-slate-800 border border-slate-200'
-                        : 'bg-[#262626] text-[#21F1A8] border border-[#333]'
+                        : 'bg-[#131d2e] text-cyan-400 border border-cyan-500/30'
                     }`}
                   >
                     STEP {step.num}
                   </span>
                   <ArrowRight
                     className={`w-3.5 h-3.5 transition-transform group-hover:translate-x-1 ${
-                      isLight ? 'text-emerald-700' : 'text-[#21F1A8]'
+                      isLight ? 'text-sky-700' : 'text-cyan-400'
                     }`}
                   />
                 </div>
@@ -754,7 +754,7 @@ export const HowToUseView: React.FC = () => {
               </div>
 
               <div className="pt-3 mt-3 border-t border-slate-100 dark:border-[#262626] flex items-center justify-between text-[11px] font-semibold">
-                <span className={isLight ? 'text-emerald-700' : 'text-[#21F1A8]'}>
+                <span className={isLight ? 'text-sky-700' : 'text-cyan-400'}>
                   Open Module →
                 </span>
               </div>
@@ -776,8 +776,8 @@ export const HowToUseView: React.FC = () => {
               className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all border ${
                 isActive
                   ? isLight
-                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs font-bold'
-                    : 'bg-[#21F1A8] text-black border-[#21F1A8] font-bold'
+                    ? 'bg-sky-600 text-white border-sky-600 shadow-xs font-bold'
+                    : 'bg-cyan-500 text-slate-950 border-cyan-400 font-bold'
                   : isLight
                     ? 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
                     : 'bg-[#191919] text-gray-400 border-[#2d2d2d] hover:text-white hover:bg-[#222]'
@@ -788,8 +788,8 @@ export const HowToUseView: React.FC = () => {
                 className={`ml-1.5 px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
                   isActive
                     ? isLight
-                      ? 'bg-emerald-800 text-white'
-                      : 'bg-black/30 text-black'
+                      ? 'bg-sky-800 text-white'
+                      : 'bg-slate-900/40 text-slate-950 font-bold'
                     : isLight
                       ? 'bg-slate-100 text-slate-600'
                       : 'bg-[#262626] text-gray-400'
@@ -823,8 +823,8 @@ export const HowToUseView: React.FC = () => {
                   <div
                     className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border ${
                       isLight
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200 shadow-xs'
-                        : 'bg-[#21F1A8]/10 text-[#21F1A8] border-[#21F1A8]/30'
+                        ? 'bg-sky-50 text-sky-700 border-sky-200 shadow-xs'
+                        : 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30'
                     }`}
                   >
                     <Icon className="w-6 h-6" />
@@ -846,8 +846,8 @@ export const HowToUseView: React.FC = () => {
                         <span
                           className={`px-2 py-0.5 text-[10px] font-bold rounded uppercase tracking-wider ${
                             isLight
-                              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                              : 'bg-[#21F1A8]/15 text-[#21F1A8] border border-[#21F1A8]/30'
+                              ? 'bg-sky-50 text-sky-800 border border-sky-200'
+                              : 'bg-cyan-500/15 text-cyan-400 border border-cyan-500/30'
                           }`}
                         >
                           {mod.badge}
@@ -870,8 +870,8 @@ export const HowToUseView: React.FC = () => {
                   onClick={() => setCurrentTab(mod.id)}
                   className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl font-semibold text-xs transition-all shrink-0 shadow-xs ${
                     isLight
-                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                      : 'bg-[#21F1A8] hover:bg-[#1cdb97] text-black font-bold'
+                      ? 'bg-sky-600 hover:bg-sky-500 text-white font-bold'
+                      : 'bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold'
                   }`}
                 >
                   <span>Launch Module</span>
@@ -895,7 +895,7 @@ export const HowToUseView: React.FC = () => {
                   }`}
                 >
                   <div className="flex items-center gap-2">
-                    <CheckCircle2 className={`w-4 h-4 ${isLight ? 'text-emerald-700' : 'text-[#21F1A8]'}`} />
+                    <CheckCircle2 className={`w-4 h-4 ${isLight ? 'text-sky-700' : 'text-cyan-400'}`} />
                     <h3
                       className={`font-heading text-sm font-bold uppercase tracking-wider ${
                         isLight ? 'text-slate-900' : 'text-white'
@@ -910,7 +910,7 @@ export const HowToUseView: React.FC = () => {
                       <li key={i} className={`flex items-start gap-2 ${isLight ? 'text-slate-700' : 'text-gray-300'}`}>
                         <span
                           className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${
-                            isLight ? 'bg-emerald-600' : 'bg-[#21F1A8]'
+                            isLight ? 'bg-sky-600' : 'bg-cyan-400'
                           }`}
                         />
                         <span className="leading-relaxed">{item}</span>
@@ -926,7 +926,7 @@ export const HowToUseView: React.FC = () => {
                   }`}
                 >
                   <div className="flex items-center gap-2">
-                    <Play className={`w-4 h-4 ${isLight ? 'text-emerald-700' : 'text-[#21F1A8]'}`} />
+                    <Play className={`w-4 h-4 ${isLight ? 'text-sky-700' : 'text-cyan-400'}`} />
                     <h3
                       className={`font-heading text-sm font-bold uppercase tracking-wider ${
                         isLight ? 'text-slate-900' : 'text-white'
@@ -943,7 +943,7 @@ export const HowToUseView: React.FC = () => {
                           className={`w-5 h-5 rounded-md flex items-center justify-center font-mono font-bold text-[10px] shrink-0 ${
                             isLight
                               ? 'bg-white text-slate-900 border border-slate-300 shadow-2xs'
-                              : 'bg-[#222] text-[#21F1A8] border border-[#333]'
+                              : 'bg-[#222] text-cyan-400 border border-[#333]'
                           }`}
                         >
                           {i + 1}
@@ -959,8 +959,8 @@ export const HowToUseView: React.FC = () => {
                   <div
                     className={`mt-3 p-2.5 rounded-lg border flex items-start gap-2 text-xs ${
                       isLight
-                        ? 'bg-emerald-50 border-emerald-200 text-emerald-950'
-                        : 'bg-[#14221b] border-[#21F1A8]/30 text-[#8efad3]'
+                        ? 'bg-sky-50 border-sky-200 text-sky-950'
+                        : 'bg-[#0f1f2e] border-cyan-500/30 text-cyan-200'
                     }`}
                   >
                     <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
@@ -978,7 +978,7 @@ export const HowToUseView: React.FC = () => {
                 }`}
               >
                 <div className="flex items-center gap-2">
-                  <Layers className={`w-3.5 h-3.5 ${isLight ? 'text-emerald-700' : 'text-[#21F1A8]'}`} />
+                  <Layers className={`w-3.5 h-3.5 ${isLight ? 'text-sky-700' : 'text-cyan-400'}`} />
                   <span className="font-semibold">Deliverable Artifact:</span>
                   <span className={isLight ? 'text-slate-800 font-mono text-[11px]' : 'text-gray-300 font-mono text-[11px]'}>
                     {mod.outputArtifact}
@@ -988,7 +988,7 @@ export const HowToUseView: React.FC = () => {
                 <button
                   onClick={() => setCurrentTab(mod.id)}
                   className={`text-xs font-semibold flex items-center gap-1 hover:underline ${
-                    isLight ? 'text-emerald-700' : 'text-[#21F1A8]'
+                    isLight ? 'text-sky-700' : 'text-cyan-400'
                   }`}
                 >
                   <span>Open {mod.title}</span>
@@ -1013,7 +1013,7 @@ export const HowToUseView: React.FC = () => {
                 setSearchQuery('');
                 setSelectedCategory('all');
               }}
-              className="mt-3 px-4 py-2 text-xs font-bold rounded-lg bg-emerald-600 text-white"
+              className="mt-3 px-4 py-2 text-xs font-bold rounded-lg bg-sky-600 text-white"
             >
               Reset Filters
             </button>
@@ -1056,7 +1056,7 @@ export const HowToUseView: React.FC = () => {
                     isLight ? 'text-slate-900' : 'text-white'
                   }`}
                 >
-                  <span className={isLight ? 'text-emerald-700' : 'text-[#21F1A8]'}>Q:</span>
+                  <span className={isLight ? 'text-sky-700' : 'text-cyan-400'}>Q:</span>
                   <span>{faq.q}</span>
                 </h4>
                 <p className={`mt-2 text-xs leading-relaxed ${isLight ? 'text-slate-600' : 'text-gray-300'}`}>
@@ -1065,7 +1065,7 @@ export const HowToUseView: React.FC = () => {
               </div>
 
               <div className="mt-3 pt-2 border-t border-slate-200/50 dark:border-[#222] flex items-center gap-1.5 text-[11px]">
-                <Check className={`w-3.5 h-3.5 ${isLight ? 'text-emerald-600' : 'text-[#21F1A8]'}`} />
+                <Check className={`w-3.5 h-3.5 ${isLight ? 'text-sky-600' : 'text-cyan-400'}`} />
                 <span className={`font-mono ${isLight ? 'text-slate-500' : 'text-gray-500'}`}>
                   Verified Enterprise Architecture
                 </span>

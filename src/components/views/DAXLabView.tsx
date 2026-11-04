@@ -55,29 +55,29 @@ export const DAXLabView: React.FC = () => {
       {/* Header */}
       <div className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-6 flex flex-wrap items-center justify-between gap-4">
         <div className="space-y-1">
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#21F1A8] font-mono">
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-sky-400 font-mono">
             <Code2 className="w-4 h-4" /> Power BI & Tabular Semantic Engine
           </div>
           <h1 className="font-heading text-3xl sm:text-4xl font-bold text-white tracking-wide uppercase">
             DAX MEASURE LAB
           </h1>
           <p className="text-xs text-gray-400">
-            Formulas strictly mapped to your actual schema: <span className="font-mono text-[#21F1A8]">'{tableName}'</span>. Includes Time Intelligence, YoY, and Financial Margins.
+            Formulas strictly mapped to your actual schema: <span className="font-mono text-sky-400">'{tableName}'</span>. Includes Time Intelligence, YoY, and Financial Margins.
           </p>
         </div>
 
         <button
           onClick={downloadAllDAX}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#222] hover:bg-[#2c2c2c] text-white text-xs border border-[#383838] transition-colors"
+          className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#222] hover:bg-[#2c2c2c] text-white text-xs border border-[#383838] transition-colors cursor-pointer"
         >
-          <Download className="w-3.5 h-3.5 text-[#21F1A8]" /> Download .DAX Package
+          <Download className="w-3.5 h-3.5 text-sky-400" /> Download .DAX Package
         </button>
       </div>
 
       {/* Natural Language to DAX Generator */}
       <div className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-5 space-y-3">
         <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-[#21F1A8]" />
+          <Sparkles className="w-4 h-4 text-sky-400" />
           <h3 className="font-heading text-base font-bold text-white uppercase tracking-wide">
             NATURAL LANGUAGE → DAX SYNTHESIZER
           </h3>
@@ -90,29 +90,29 @@ export const DAXLabView: React.FC = () => {
             value={nlPrompt}
             onChange={(e) => setNlPrompt(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleGenerateNL()}
-            className="flex-1 bg-[#141414] text-xs text-white px-3.5 py-2.5 rounded-xl border border-[#333] focus:border-[#21F1A8] focus:outline-none"
+            className="flex-1 bg-[#141414] text-xs text-white px-3.5 py-2.5 rounded-xl border border-[#333] focus:border-sky-500 focus:outline-none"
           />
           <button
             onClick={handleGenerateNL}
-            className="px-5 py-2.5 rounded-xl bg-[#21F1A8] text-black font-semibold text-xs hover:bg-[#1cdb97] transition-colors shrink-0"
+            className="px-5 py-2.5 rounded-xl bg-sky-600 text-white font-semibold text-xs hover:bg-sky-500 transition-colors shrink-0 cursor-pointer shadow-md shadow-sky-600/20"
           >
             Generate DAX
           </button>
         </div>
 
         {generatedMeasure && (
-          <div className="p-4 rounded-xl bg-[#141414] border border-[#21F1A8]/40 space-y-2 text-xs">
+          <div className="p-4 rounded-xl bg-[#141414] border border-sky-500/40 space-y-2 text-xs">
             <div className="flex justify-between items-center">
-              <span className="font-bold text-[#21F1A8] font-mono">{generatedMeasure.name}</span>
+              <span className="font-bold text-sky-400 font-mono">{generatedMeasure.name}</span>
               <button
                 onClick={() => copyToClipboard(generatedMeasure.formula, 'nl-gen')}
-                className="text-xs text-gray-400 hover:text-white flex items-center gap-1"
+                className="text-xs text-gray-400 hover:text-white flex items-center gap-1 cursor-pointer"
               >
-                {copiedId === 'nl-gen' ? <Check className="w-3.5 h-3.5 text-[#21F1A8]" /> : <Copy className="w-3.5 h-3.5" />}
+                {copiedId === 'nl-gen' ? <Check className="w-3.5 h-3.5 text-sky-400" /> : <Copy className="w-3.5 h-3.5" />}
                 <span>{copiedId === 'nl-gen' ? 'Copied' : 'Copy Formula'}</span>
               </button>
             </div>
-            <pre className="p-3 rounded-lg bg-[#0d0d0d] font-mono text-[#21F1A8] overflow-x-auto">
+            <pre className="p-3 rounded-lg bg-[#0d0d0d] font-mono text-sky-300 overflow-x-auto">
               {generatedMeasure.formula}
             </pre>
             <p className="text-gray-400 text-[11px]">{generatedMeasure.explanation}</p>
@@ -126,9 +126,9 @@ export const DAXLabView: React.FC = () => {
           <button
             key={cat}
             onClick={() => setCategoryFilter(cat)}
-            className={`px-3 py-1.5 rounded-lg border font-medium transition-colors ${
+            className={`px-3 py-1.5 rounded-lg border font-medium transition-colors cursor-pointer ${
               categoryFilter === cat 
-                ? 'bg-[#21F1A8] text-black border-[#21F1A8]' 
+                ? 'bg-sky-600 text-white border-sky-500 shadow-sm' 
                 : 'bg-[#1c1c1c] text-gray-400 border-[#2d2d2d] hover:text-white'
             }`}
           >
@@ -142,7 +142,7 @@ export const DAXLabView: React.FC = () => {
         {filteredMeasures.map(measure => (
           <div 
             key={measure.id}
-            className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-5 space-y-3 hover:border-[#21F1A8]/30 transition-colors"
+            className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-5 space-y-3 hover:border-sky-500/30 transition-colors"
           >
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
@@ -157,12 +157,12 @@ export const DAXLabView: React.FC = () => {
 
               <button
                 onClick={() => copyToClipboard(measure.formula, measure.id)}
-                className="flex items-center gap-1 text-xs text-gray-400 hover:text-[#21F1A8] transition-colors"
+                className="flex items-center gap-1 text-xs text-gray-400 hover:text-sky-400 transition-colors cursor-pointer"
               >
                 {copiedId === measure.id ? (
                   <>
-                    <Check className="w-3.5 h-3.5 text-[#21F1A8]" />
-                    <span className="text-[#21F1A8]">Copied</span>
+                    <Check className="w-3.5 h-3.5 text-sky-400" />
+                    <span className="text-sky-400">Copied</span>
                   </>
                 ) : (
                   <>

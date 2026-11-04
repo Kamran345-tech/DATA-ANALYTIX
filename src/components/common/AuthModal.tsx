@@ -111,8 +111,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
         }`}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Top Accent Gradient Bar */}
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-400 via-indigo-500 to-emerald-400" />
+        {/* Top Accent Line - Refined hairline with soft tapered falloff */}
+        <div className={`absolute top-0 inset-x-0 h-[1.5px] pointer-events-none transition-all ${
+          isLight 
+            ? 'bg-gradient-to-r from-transparent via-sky-600/40 to-transparent' 
+            : 'bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent'
+        }`} />
 
         {/* Header with Close */}
         <div className={`flex items-center justify-between border-b pb-4 ${isLight ? 'border-slate-200' : 'border-[#273449]'}`}>

@@ -13,6 +13,8 @@ import {
   Layers,
   Settings2,
   Check,
+  Pencil,
+  X,
   Eye,
   Filter,
   FileText,
@@ -23,13 +25,25 @@ import {
   Grid,
   Compass,
   Gauge,
-  Activity
+  Activity,
+  Box,
+  Lightbulb,
+  Calendar,
+  CheckCircle2,
+  Zap,
+  Info
 } from 'lucide-react';
 import { usePlatform } from '../../store/usePlatformStore';
 import { VisualConfig } from '../../types';
 import { EditableDashboardTitle } from '../common/EditableDashboardTitle';
 import { generateEnterpriseReportPDF, downloadDashboardAndReportBundle } from '../../engine/exportEngine';
 import { safeMax } from '../../utils/mathUtils';
+import { 
+  recommendChartsForFields, 
+  recommendDatasetDashboard, 
+  computeBoxplotSummary,
+  ChartRecommendation 
+} from '../../engine/chartRecommendationEngine';
 
 export const DashboardBuilderView: React.FC = () => {
   const { 
@@ -45,17 +59,44 @@ export const DashboardBuilderView: React.FC = () => {
     transformations,
     customVisuals, 
     addCustomVisual, 
+    updateCustomVisual,
     removeCustomVisual, 
     setFilters,
-    openDrillThrough
+    openDrillThrough,
+    themeMode
   } = usePlatform();
 
+  const isLight = themeMode === 'light';
+
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isRecModalOpen, setIsRecModalOpen] = useState(false);
   const [nlPrompt, setNlPrompt] = useState('');
   const [activePreset, setActivePreset] = useState<string>('custom');
   const [isPdfGenerating, setIsPdfGenerating] = useState(false);
   const [isBundleGenerating, setIsBundleGenerating] = useState(false);
   const [downloadSuccess, setDownloadSuccess] = useState<string | null>(null);
+
+  // Inline chart title rename state
+  const [editingVisId, setEditingVisId] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState<string>('');
+
+  const handleAutoSyncVisuals = () => {
+    const recommendedSuite = recommendDatasetDashboard(columns, cleanRows);
+    customVisuals.forEach(v => removeCustomVisual(v.id));
+    recommendedSuite.forEach(v => addCustomVisual(v));
+    setDownloadSuccess(`Intelligent Recommendation Engine deployed ${recommendedSuite.length} schema-tailored visualizations!`);
+    setTimeout(() => setDownloadSuccess(null), 3500);
+  };
+
+  const handleSaveChartTitle = (id: string) => {
+    const trimmed = editingTitle.trim();
+    if (trimmed) {
+      updateCustomVisual(id, { title: trimmed });
+      setDownloadSuccess(`Renamed chart to "${trimmed}"`);
+      setTimeout(() => setDownloadSuccess(null), 2500);
+    }
+    setEditingVisId(null);
+  };
 
   // Form states for new visual modal
   const [title, setTitle] = useState('');
@@ -67,7 +108,7 @@ export const DashboardBuilderView: React.FC = () => {
     columns.find(c => c.dataType === 'number')?.name || columns[0]?.name || ''
   );
   const [aggregation, setAggregation] = useState<VisualConfig['aggregation']>('sum');
-  const [colorTheme, setColorTheme] = useState('#21F1A8');
+  const [colorTheme, setColorTheme] = useState('#0284C7');
 
   // Local state to override chart types or metrics per card
   const [visualOverrides, setVisualOverrides] = useState<Record<string, { type?: VisualConfig['type']; valueField?: string; categoryField?: string }>>({});
@@ -129,7 +170,7 @@ export const DashboardBuilderView: React.FC = () => {
       categoryField: catCol,
       valueField: numCol,
       aggregation: lower.includes('average') || lower.includes('avg') ? 'avg' : 'sum',
-      color: chosenType === 'donut' ? '#00d8f6' : '#21F1A8',
+      color: chosenType === 'donut' ? '#00d8f6' : '#0284C7',
       description: `Synthesized: "${nlPrompt}"`
     };
 
@@ -153,7 +194,7 @@ export const DashboardBuilderView: React.FC = () => {
         categoryField: str1,
         valueField: num1,
         aggregation: 'sum',
-        color: '#21F1A8'
+        color: '#0284C7'
       };
       const p2: VisualConfig = {
         id: `vis-p2-${Date.now()}`,
@@ -191,7 +232,7 @@ export const DashboardBuilderView: React.FC = () => {
         categoryField: str1,
         valueField: num1,
         aggregation: 'count',
-        color: '#21F1A8'
+        color: '#0284C7'
       };
       const p2: VisualConfig = {
         id: `vis-op2-${Date.now()}`,
@@ -213,7 +254,7 @@ export const DashboardBuilderView: React.FC = () => {
           valueField: num1,
           secondaryValueField: num2,
           aggregation: 'sum',
-          color: '#21F1A8'
+          color: '#0284C7'
         },
         {
           id: `vis-heatmap-${Date.now()}`,
@@ -232,7 +273,7 @@ export const DashboardBuilderView: React.FC = () => {
           categoryField: str1,
           valueField: num1,
           aggregation: 'sum',
-          color: '#21F1A8'
+          color: '#0284C7'
         },
         {
           id: `vis-hbar-${Date.now()}`,
@@ -259,7 +300,7 @@ export const DashboardBuilderView: React.FC = () => {
           categoryField: str1,
           valueField: num1,
           aggregation: 'sum',
-          color: '#21F1A8'
+          color: '#0284C7'
         },
         {
           id: `vis-donut-${Date.now()}`,
@@ -286,7 +327,7 @@ export const DashboardBuilderView: React.FC = () => {
           categoryField: str1,
           valueField: num1,
           aggregation: 'avg',
-          color: '#21F1A8'
+          color: '#0284C7'
         },
         {
           id: `vis-funnel-${Date.now()}`,
@@ -304,7 +345,7 @@ export const DashboardBuilderView: React.FC = () => {
           categoryField: str1,
           valueField: num1,
           aggregation: 'sum',
-          color: '#10b981'
+          color: '#0284C7'
         },
         {
           id: `vis-treemap-${Date.now()}`,
@@ -322,7 +363,7 @@ export const DashboardBuilderView: React.FC = () => {
           categoryField: str1,
           valueField: num1,
           aggregation: 'sum',
-          color: '#21F1A8'
+          color: '#0284C7'
         },
         {
           id: `vis-table-${Date.now()}`,
@@ -345,6 +386,7 @@ export const DashboardBuilderView: React.FC = () => {
     { type: 'area', label: 'Area' },
     { type: 'donut', label: 'Donut' },
     { type: 'pie', label: 'Pie' },
+    { type: 'boxplot', label: 'Boxplot' },
     { type: 'scatter', label: 'Scatter' },
     { type: 'heatmap', label: 'Heatmap' },
     { type: 'radar', label: 'Radar' },
@@ -534,7 +576,7 @@ export const DashboardBuilderView: React.FC = () => {
       <div style="background:#1c1c1c; border:1px solid #333; border-radius:14px; padding:16px;">
         <div style="font-size:11px; color:#888; text-transform:uppercase;">${k.name}</div>
         <div style="font-size:24px; font-weight:800; color:#fff; margin:6px 0;">${k.formattedValue}</div>
-        <div style="font-size:11px; color:#21F1A8;">Status: ${k.status}</div>
+        <div style="font-size:11px; color:#0284C7;">Status: ${k.status}</div>
       </div>
     `).join('');
 
@@ -542,7 +584,7 @@ export const DashboardBuilderView: React.FC = () => {
       <div style="background:#1c1c1c; border:1px solid #333; border-radius:16px; padding:20px; margin-bottom:20px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
           <h3 style="margin:0; font-size:16px; text-transform:uppercase; color:#fff;">${v.title}</h3>
-          <span style="font-size:11px; background:#141414; color:#21F1A8; padding:3px 8px; border-radius:6px; font-family:monospace;">${v.agg.toUpperCase()}(${v.val}) by ${v.cat}</span>
+          <span style="font-size:11px; background:#141414; color:#0284C7; padding:3px 8px; border-radius:6px; font-family:monospace;">${v.agg.toUpperCase()}(${v.val}) by ${v.cat}</span>
         </div>
         <div>
           ${v.items.map(it => `
@@ -552,7 +594,7 @@ export const DashboardBuilderView: React.FC = () => {
                 <span style="color:#fff; font-family:monospace; font-weight:600;">${it.value.toLocaleString()} (${it.share}%)</span>
               </div>
               <div style="background:#141414; height:8px; border-radius:4px; overflow:hidden;">
-                <div style="background:#21F1A8; width:${Math.min(100, Math.max(5, it.share))}%; height:100%; border-radius:4px;"></div>
+                <div style="background:#0284C7; width:${Math.min(100, Math.max(5, it.share))}%; height:100%; border-radius:4px;"></div>
               </div>
             </div>
           `).join('')}
@@ -576,7 +618,7 @@ export const DashboardBuilderView: React.FC = () => {
 <body>
   <div class="container">
     <div class="header">
-      <div style="color:#21F1A8; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1px;">${brand.companyName} • ${brand.department}</div>
+      <div style="color:#0284C7; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1px;">${brand.companyName} • ${brand.department}</div>
       <h1 style="font-size:28px; margin:8px 0; color:#fff; text-transform:uppercase;">${project.name}</h1>
       <div style="color:#888; font-size:12px;">Exported on: ${new Date().toLocaleString()} | Verified Enterprise Data Model (${cleanRows.length} rows)</div>
     </div>
@@ -670,17 +712,17 @@ export const DashboardBuilderView: React.FC = () => {
     <div className="space-y-6 pb-12 animate-fadeIn w-full max-w-7xl mx-auto">
       {/* Download notification toast */}
       {downloadSuccess && (
-        <div className="fixed top-20 right-6 z-50 bg-[#162920] border border-[#21F1A8] text-[#21F1A8] px-4 py-2.5 rounded-xl text-xs font-semibold shadow-xl flex items-center gap-2 animate-bounce">
-          <Check className="w-4 h-4" />
+        <div className="fixed top-20 right-6 z-50 bg-sky-950/90 border border-cyan-400 text-cyan-200 px-4 py-2.5 rounded-xl text-xs font-semibold shadow-xl flex items-center gap-2 animate-bounce">
+          <Check className="w-4 h-4 text-cyan-400" />
           <span>{downloadSuccess}</span>
         </div>
       )}
 
       {/* 1. Header & Actions */}
-      <div className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-4 sm:p-6 space-y-4">
+      <div className={`${isLight ? 'bg-white border-slate-200 text-slate-900 shadow-sm' : 'bg-[#1c1c1c] border-[#2d2d2d] text-white'} border rounded-2xl p-4 sm:p-6 space-y-4`}>
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="space-y-1.5">
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#21F1A8] font-mono">
+            <div className={`flex items-center gap-2 text-xs font-semibold uppercase tracking-wider font-mono ${isLight ? 'text-sky-700' : 'text-cyan-400'}`}>
               <SlidersHorizontal className="w-4 h-4" /> Custom Dashboard Composition Studio
             </div>
             
@@ -689,31 +731,59 @@ export const DashboardBuilderView: React.FC = () => {
               <EditableDashboardTitle className="text-2xl sm:text-3xl font-extrabold uppercase" showLabelPrefix={false} />
             </div>
 
-            <p className="text-xs text-gray-400">
+            <p className={`text-xs ${isLight ? 'text-slate-600' : 'text-gray-400'}`}>
               Build, customize, and download your analytical dashboard. Switch between Bar, Line, Donut, and Table views in real time.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
             {/* Quick Presets */}
-            <div className="hidden sm:flex items-center bg-[#141414] border border-[#333] rounded-xl p-1 text-xs">
+            <div className={`hidden sm:flex items-center border rounded-xl p-1 text-xs ${isLight ? 'bg-slate-100 border-slate-200' : 'bg-[#141414] border-[#333]'}`}>
               <button
                 onClick={() => loadPreset('financial')}
-                className="px-2.5 py-1 rounded-lg text-gray-300 hover:text-white hover:bg-[#252525] transition-colors"
+                className={`px-2.5 py-1 rounded-lg transition-colors ${isLight ? 'text-slate-700 hover:text-slate-900 hover:bg-white' : 'text-gray-300 hover:text-white hover:bg-[#252525]'}`}
               >
                 Executive Pack
               </button>
               <button
                 onClick={() => loadPreset('operations')}
-                className="px-2.5 py-1 rounded-lg text-gray-300 hover:text-white hover:bg-[#252525] transition-colors"
+                className={`px-2.5 py-1 rounded-lg transition-colors ${isLight ? 'text-slate-700 hover:text-slate-900 hover:bg-white' : 'text-gray-300 hover:text-white hover:bg-[#252525]'}`}
               >
                 Operations Pack
               </button>
             </div>
 
+            {/* Auto-Adapt to Dataset Button */}
+            <button
+              onClick={handleAutoSyncVisuals}
+              className={`flex items-center gap-1.5 px-3.5 py-2 sm:py-2.5 rounded-xl border font-bold text-xs transition-all cursor-pointer ${
+                isLight
+                  ? 'bg-sky-50 hover:bg-sky-100 text-sky-800 border-sky-300 shadow-xs'
+                  : 'bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 border-sky-500/40'
+              }`}
+              title="Automatically detect date, category, and numeric columns and rebuild charts"
+            >
+              <Sparkles className="w-4 h-4 text-sky-500 shrink-0" />
+              <span>Auto-Adapt to Dataset</span>
+            </button>
+
+            {/* Intelligent Schema Recommendations Modal Trigger */}
+            <button
+              onClick={() => setIsRecModalOpen(true)}
+              className={`flex items-center gap-1.5 px-3.5 py-2 sm:py-2.5 rounded-xl border font-bold text-xs transition-all cursor-pointer ${
+                isLight
+                  ? 'bg-sky-100 hover:bg-sky-200 text-sky-900 border-sky-400 shadow-xs'
+                  : 'bg-sky-500/20 hover:bg-sky-500/30 text-cyan-300 border-cyan-400/50 shadow-[0_0_12px_rgba(34,211,238,0.2)]'
+              }`}
+              title="View intelligent multi-type visualization recommendations tailored to your dataset schema"
+            >
+              <Lightbulb className="w-4 h-4 text-amber-500 shrink-0" />
+              <span>AI Schema Recommendations</span>
+            </button>
+
             <button
               onClick={() => setIsModalOpen(true)}
-              className="flex items-center gap-1.5 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-[#21F1A8] text-black font-semibold text-xs hover:bg-[#1cdb97] hover:glow-neon transition-all"
+              className="flex items-center gap-1.5 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-sky-600 text-white font-bold text-xs hover:bg-sky-500 shadow-md shadow-sky-600/20 transition-all cursor-pointer"
             >
               <Plus className="w-4 h-4" /> Add Custom Visual
             </button>
@@ -721,10 +791,10 @@ export const DashboardBuilderView: React.FC = () => {
         </div>
 
         {/* DOWNLOAD ACTION TOOLBAR (RULE: Download created dashboard & executive report) */}
-        <div className="pt-3 border-t border-[#262626] flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2 text-xs text-gray-400 font-mono">
-            <Layers className="w-3.5 h-3.5 text-[#21F1A8]" />
-            <span>Active Visuals: <strong className="text-white">{customVisuals.length} widgets</strong></span>
+        <div className={`pt-3 border-t flex flex-wrap items-center justify-between gap-3 ${isLight ? 'border-slate-200' : 'border-[#262626]'}`}>
+          <div className={`flex items-center gap-2 text-xs font-mono ${isLight ? 'text-slate-600' : 'text-gray-400'}`}>
+            <Layers className={`w-3.5 h-3.5 ${isLight ? 'text-sky-700' : 'text-cyan-400'}`} />
+            <span>Active Visuals: <strong className={isLight ? 'text-slate-900' : 'text-white'}>{customVisuals.length} widgets</strong></span>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -732,7 +802,7 @@ export const DashboardBuilderView: React.FC = () => {
             <button
               onClick={handleDownloadBundleZip}
               disabled={isBundleGenerating}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-all shadow-md shrink-0 whitespace-nowrap disabled:opacity-50 cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-700 hover:bg-sky-600 text-white text-xs font-semibold transition-all shadow-md shrink-0 whitespace-nowrap disabled:opacity-50 cursor-pointer"
               title="Download both the created dashboard and executive report in a single ZIP package"
             >
               {isBundleGenerating ? (
@@ -746,10 +816,14 @@ export const DashboardBuilderView: React.FC = () => {
             {/* Download Created Dashboard as JSON */}
             <button
               onClick={handleDownloadDashboardJSON}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#222] hover:bg-[#2a2a2a] text-white text-xs font-medium border border-[#333] hover:border-[#21F1A8]/50 transition-colors"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors ${
+                isLight
+                  ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300'
+                  : 'bg-[#222] hover:bg-[#2a2a2a] text-white border-[#333] hover:border-cyan-400/50'
+              }`}
               title="Download full created dashboard specification & data as JSON"
             >
-              <Download className="w-3.5 h-3.5 text-[#21F1A8]" />
+              <Download className={`w-3.5 h-3.5 ${isLight ? 'text-sky-700' : 'text-cyan-400'}`} />
               <span>Dashboard (JSON)</span>
             </button>
 
@@ -757,13 +831,17 @@ export const DashboardBuilderView: React.FC = () => {
             <button
               onClick={handleDownloadExecutivePDF}
               disabled={isPdfGenerating}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#222] hover:bg-[#2a2a2a] text-white text-xs font-medium border border-[#333] hover:border-cyan-400/50 transition-colors disabled:opacity-50"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors disabled:opacity-50 ${
+                isLight
+                  ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300'
+                  : 'bg-[#222] hover:bg-[#2a2a2a] text-white border-[#333] hover:border-cyan-400/50'
+              }`}
               title="Download verified Executive PDF Report"
             >
               {isPdfGenerating ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-cyan-400" />
+                <Loader2 className={`w-3.5 h-3.5 animate-spin ${isLight ? 'text-sky-700' : 'text-cyan-400'}`} />
               ) : (
-                <FileText className="w-3.5 h-3.5 text-cyan-400" />
+                <FileText className={`w-3.5 h-3.5 ${isLight ? 'text-sky-700' : 'text-cyan-400'}`} />
               )}
               <span>Executive Report (PDF)</span>
             </button>
@@ -771,10 +849,14 @@ export const DashboardBuilderView: React.FC = () => {
             {/* Download Standalone HTML Dashboard */}
             <button
               onClick={handleDownloadDashboardHTML}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#222] hover:bg-[#2a2a2a] text-white text-xs font-medium border border-[#333] hover:border-amber-400/50 transition-colors"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors ${
+                isLight
+                  ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300 hover:border-amber-500/50'
+                  : 'bg-[#222] hover:bg-[#2a2a2a] text-white border-[#333] hover:border-amber-400/50'
+              }`}
               title="Export standalone offline HTML dashboard"
             >
-              <FileSpreadsheet className="w-3.5 h-3.5 text-amber-400" />
+              <FileSpreadsheet className="w-3.5 h-3.5 text-amber-500" />
               <span>Offline HTML</span>
             </button>
           </div>
@@ -782,11 +864,11 @@ export const DashboardBuilderView: React.FC = () => {
       </div>
 
       {/* 2. Natural Language Visual Composer */}
-      <div className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-4 sm:p-5 space-y-2.5">
-        <div className="flex items-center gap-2 text-xs font-semibold text-white">
-          <Sparkles className="w-4 h-4 text-[#21F1A8]" />
+      <div className={`${isLight ? 'bg-white border-slate-200 text-slate-900 shadow-sm' : 'bg-[#1c1c1c] border-[#2d2d2d] text-white'} border rounded-2xl p-4 sm:p-5 space-y-2.5`}>
+        <div className={`flex items-center gap-2 text-xs font-semibold ${isLight ? 'text-slate-900' : 'text-white'}`}>
+          <Sparkles className={`w-4 h-4 ${isLight ? 'text-sky-700' : 'text-cyan-400'}`} />
           <span>NATURAL LANGUAGE DASHBOARD SYNTHESIS</span>
-          <span className="text-[10px] text-gray-400 font-mono hidden sm:inline">(Type what you want to chart and press Enter)</span>
+          <span className={`text-[10px] font-mono hidden sm:inline ${isLight ? 'text-slate-500' : 'text-gray-400'}`}>(Type what you want to chart and press Enter)</span>
         </div>
         <div className="flex flex-col sm:flex-row gap-2">
           <input
@@ -795,11 +877,19 @@ export const DashboardBuilderView: React.FC = () => {
             value={nlPrompt}
             onChange={(e) => setNlPrompt(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleAIGenerate()}
-            className="flex-1 bg-[#141414] text-xs text-white px-3.5 py-2.5 rounded-xl border border-[#333] focus:border-[#21F1A8] focus:outline-none"
+            className={`flex-1 text-xs px-3.5 py-2.5 rounded-xl border focus:outline-none ${
+              isLight
+                ? 'bg-slate-50 text-slate-900 border-slate-200 focus:border-sky-500 placeholder-slate-400'
+                : 'bg-[#141414] text-white border-[#333] focus:border-cyan-400 placeholder-gray-500'
+            }`}
           />
           <button
             onClick={handleAIGenerate}
-            className="px-4 py-2.5 rounded-xl bg-[#252525] hover:bg-[#2f2f2f] text-white text-xs font-medium border border-[#3d3d3d] hover:border-[#21F1A8]/50 transition-colors shrink-0"
+            className={`px-4 py-2.5 rounded-xl text-xs font-semibold border transition-colors shrink-0 cursor-pointer ${
+              isLight
+                ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300 hover:border-sky-400'
+                : 'bg-[#252525] hover:bg-[#2f2f2f] text-white border-[#3d3d3d] hover:border-cyan-400/50'
+            }`}
           >
             Synthesize Visual
           </button>
@@ -808,25 +898,27 @@ export const DashboardBuilderView: React.FC = () => {
 
       {/* 3. Visuals Canvas Grid */}
       {customVisuals.length === 0 ? (
-        <div className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-12 text-center space-y-4">
-          <Layers className="w-12 h-12 text-[#21F1A8] mx-auto opacity-70" />
+        <div className={`${isLight ? 'bg-white border-slate-200 text-slate-900 shadow-sm' : 'bg-[#1c1c1c] border-[#2d2d2d] text-white'} border rounded-2xl p-12 text-center space-y-4`}>
+          <Layers className={`w-12 h-12 mx-auto opacity-70 ${isLight ? 'text-sky-700' : 'text-cyan-400'}`} />
           <div className="space-y-1">
-            <h3 className="text-base font-bold text-white">Canvas Ready for Custom Analytics</h3>
-            <p className="text-xs text-gray-400 max-w-md mx-auto">
+            <h3 className={`text-base font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>Canvas Ready for Custom Analytics</h3>
+            <p className={`text-xs max-w-md mx-auto ${isLight ? 'text-slate-600' : 'text-gray-400'}`}>
               Add custom visualizations using the button above, or click below to load pre-built executive analytical widgets.
             </p>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <button
               onClick={() => loadPreset('all_charts')}
-              className="px-4 py-2.5 rounded-xl bg-[#21F1A8] text-black font-semibold text-xs hover:bg-[#1cdb97] shadow-lg shadow-[#21F1A8]/20 transition-all flex items-center gap-1.5"
+              className="px-4 py-2.5 rounded-xl bg-sky-600 text-white font-semibold text-xs hover:bg-sky-500 shadow-lg shadow-sky-600/20 transition-all flex items-center gap-1.5"
             >
               <Sparkles className="w-3.5 h-3.5" />
               <span>Load Complete Chart Suite (Scatter, Heatmap & All 14 Chart Types)</span>
             </button>
             <button
               onClick={() => loadPreset('financial')}
-              className="px-4 py-2.5 rounded-xl bg-[#222] text-white font-medium text-xs hover:bg-[#2a2a2a] border border-[#333] transition-all"
+              className={`px-4 py-2.5 rounded-xl font-medium text-xs border transition-all ${
+                isLight ? 'bg-slate-100 text-slate-800 hover:bg-slate-200 border-slate-300' : 'bg-[#222] text-white hover:bg-[#2a2a2a] border-[#333]'
+              }`}
             >
               Load Financial Essentials
             </button>
@@ -837,32 +929,95 @@ export const DashboardBuilderView: React.FC = () => {
           {customVisuals.map((vis) => {
             const override = visualOverrides[vis.id] || {};
             const activeType = override.type || vis.type;
-            const activeVal = override.valueField || vis.valueField;
-            const activeCat = override.categoryField || vis.categoryField;
+            const rawVal = override.valueField || vis.valueField;
+            const rawCat = override.categoryField || vis.categoryField;
 
-            const { items, grandTotal } = computeGroupedData(activeCat, activeVal, vis.aggregation);
+            const hasCat = columns.some(c => c.name === rawCat);
+            const hasVal = columns.some(c => c.name === rawVal);
+            const resolvedCat = hasCat ? rawCat : (stringCols[0]?.name || columns[0]?.name || 'Category');
+            const resolvedVal = hasVal ? rawVal : (numericCols[0]?.name || columns.find(c => c.dataType === 'number')?.name || resolvedCat);
+            const activeCat = resolvedCat;
+            const activeVal = resolvedVal;
+
+            const { items, grandTotal } = computeGroupedData(resolvedCat, resolvedVal, vis.aggregation);
             const maxVal = Math.max(safeMax(items.map(i => i.value), 1), 1);
-            const primaryColor = vis.color || '#21F1A8';
+            const primaryColor = vis.color && vis.color !== '#21F1A8' ? vis.color : '#0284C7';
 
             return (
               <div 
                 key={vis.id}
-                className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-5 space-y-4 hover:border-[#21F1A8]/40 transition-all flex flex-col justify-between"
+                className={`${isLight ? 'bg-white border-slate-200 text-slate-900 shadow-sm hover:border-sky-400' : 'bg-[#1c1c1c] border-[#2d2d2d] text-white hover:border-cyan-500/40'} border rounded-2xl p-5 space-y-4 transition-all flex flex-col justify-between`}
               >
                 {/* Visual Header & Toolbar */}
                 <div className="space-y-2">
                   <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <h3 className="font-heading text-lg font-bold text-white uppercase truncate">
-                        {vis.title}
-                      </h3>
-                      <div className="flex flex-wrap items-center gap-1.5 text-[10px] text-gray-400 font-mono pt-0.5">
-                        <span className="px-1.5 py-0.5 rounded bg-[#141414] text-[#21F1A8] border border-[#2d2d2d] uppercase">
-                          {vis.aggregation}({activeVal})
+                    <div className="min-w-0 flex-1">
+                      {editingVisId === vis.id ? (
+                        <div className="flex items-center gap-1.5 mb-1 animate-fadeIn">
+                          <input
+                            type="text"
+                            value={editingTitle}
+                            onChange={(e) => setEditingTitle(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleSaveChartTitle(vis.id);
+                              if (e.key === 'Escape') setEditingVisId(null);
+                            }}
+                            autoFocus
+                            placeholder="Chart Title..."
+                            className={`px-2.5 py-1 rounded-lg border font-bold text-sm focus:outline-none w-full max-w-xs ${
+                              isLight ? 'bg-slate-50 border-sky-500 text-slate-900' : 'bg-[#121212] border-cyan-400 text-white'
+                            }`}
+                          />
+                          <button
+                            onClick={() => handleSaveChartTitle(vis.id)}
+                            className="p-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white shrink-0 cursor-pointer shadow-xs"
+                            title="Save chart title"
+                          >
+                            <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                          </button>
+                          <button
+                            onClick={() => setEditingVisId(null)}
+                            className={`p-1.5 rounded-lg shrink-0 cursor-pointer ${
+                              isLight ? 'bg-slate-100 text-slate-600 hover:text-slate-900' : 'bg-[#282828] text-gray-400 hover:text-white'
+                            }`}
+                            title="Cancel"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 group/title">
+                          <h3 className={`font-heading text-lg font-bold uppercase truncate ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                            {vis.title}
+                          </h3>
+                          <button
+                            onClick={() => {
+                              setEditingVisId(vis.id);
+                              setEditingTitle(vis.title);
+                            }}
+                            className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-all shadow-2xs shrink-0 cursor-pointer border ${
+                              isLight
+                                ? 'bg-sky-50 hover:bg-sky-100 text-sky-800 border-sky-300'
+                                : 'bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 border-sky-500/30'
+                            }`}
+                            title="Rename this chart"
+                          >
+                            <Pencil className="w-3 h-3 text-sky-500 shrink-0" />
+                            <span className="font-semibold text-[11px]">Rename</span>
+                          </button>
+                        </div>
+                      )}
+                      <div className={`flex flex-wrap items-center gap-1.5 text-[10px] font-mono pt-0.5 ${isLight ? 'text-slate-500' : 'text-gray-400'}`}>
+                        <span className={`px-1.5 py-0.5 rounded border uppercase ${
+                          isLight ? 'bg-sky-50 text-sky-800 border-sky-200' : 'bg-[#141414] text-cyan-400 border-[#2d2d2d]'
+                        }`}>
+                          {vis.aggregation}({resolvedVal})
                         </span>
                         <span>by</span>
-                        <span className="px-1.5 py-0.5 rounded bg-[#141414] text-white border border-[#2d2d2d]">
-                          {activeCat}
+                        <span className={`px-1.5 py-0.5 rounded border ${
+                          isLight ? 'bg-slate-100 text-slate-800 border-slate-200' : 'bg-[#141414] text-white border-[#2d2d2d]'
+                        }`}>
+                          {resolvedCat}
                         </span>
                       </div>
                     </div>
@@ -875,11 +1030,15 @@ export const DashboardBuilderView: React.FC = () => {
                           ...prev,
                           [vis.id]: { ...prev[vis.id], type: e.target.value as any }
                         }))}
-                        className="px-2 py-1 rounded-lg bg-[#141414] border border-[#333] hover:border-[#21F1A8]/50 text-[#21F1A8] text-[11px] font-mono font-bold focus:outline-none uppercase cursor-pointer"
+                        className={`px-2 py-1 rounded-lg border text-[11px] font-mono font-bold focus:outline-none uppercase cursor-pointer ${
+                          isLight
+                            ? 'bg-slate-100 text-sky-800 border-slate-300 hover:border-sky-500'
+                            : 'bg-[#141414] border-[#333] hover:border-cyan-400/50 text-cyan-400'
+                        }`}
                         title="Select Chart Representation"
                       >
                         {ALL_CHART_TYPES.map(t => (
-                          <option key={t.type} value={t.type} className="bg-[#181818] text-white">
+                          <option key={t.type} value={t.type} className={isLight ? 'bg-white text-slate-900' : 'bg-[#181818] text-white'}>
                             {t.label}
                           </option>
                         ))}
@@ -888,7 +1047,9 @@ export const DashboardBuilderView: React.FC = () => {
                       {/* Export CSV */}
                       <button
                         onClick={() => handleExportCSV(vis.title, items)}
-                        className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-[#252525] transition-colors"
+                        className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                          isLight ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100' : 'text-gray-400 hover:text-white hover:bg-[#252525]'
+                        }`}
                         title="Export Chart Data as CSV"
                       >
                         <Download className="w-3.5 h-3.5" />
@@ -897,7 +1058,9 @@ export const DashboardBuilderView: React.FC = () => {
                       {/* Remove Visual */}
                       <button
                         onClick={() => removeCustomVisual(vis.id)}
-                        className="p-1.5 rounded-lg text-gray-400 hover:text-red-400 hover:bg-[#252525] transition-colors"
+                        className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                          isLight ? 'text-slate-600 hover:text-red-600 hover:bg-red-50' : 'text-gray-400 hover:text-red-400 hover:bg-[#252525]'
+                        }`}
                         title="Remove Visual"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -906,35 +1069,88 @@ export const DashboardBuilderView: React.FC = () => {
                   </div>
 
                   {/* Field Selectors */}
-                  <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-[#262626]">
+                  <div className={`flex flex-wrap items-center gap-2 pt-1 border-t ${isLight ? 'border-slate-100' : 'border-[#262626]'}`}>
                     <div className="flex items-center gap-1 text-[11px]">
-                      <span className="text-gray-500 font-mono">Axis:</span>
+                      <span className={`font-mono ${isLight ? 'text-slate-500' : 'text-gray-500'}`}>Axis:</span>
                       <select
-                        value={activeCat}
+                        value={resolvedCat}
                         onChange={(e) => setVisualOverrides(prev => ({
                           ...prev,
                           [vis.id]: { ...prev[vis.id], categoryField: e.target.value }
                         }))}
-                        className="bg-[#141414] text-xs text-gray-300 px-2 py-0.5 rounded border border-[#2e2e2e] focus:border-[#21F1A8] focus:outline-none"
+                        className={`text-xs px-2 py-0.5 rounded border focus:outline-none ${
+                          isLight
+                            ? 'bg-slate-50 text-slate-800 border-slate-200 focus:border-sky-500'
+                            : 'bg-[#141414] text-gray-300 border-[#2e2e2e] focus:border-cyan-400'
+                        }`}
                       >
-                        {columns.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
+                        {columns.map(c => <option key={c.name} value={c.name} className={isLight ? 'bg-white text-slate-900' : 'bg-[#181818] text-white'}>{c.name}</option>)}
                       </select>
                     </div>
 
                     <div className="flex items-center gap-1 text-[11px]">
-                      <span className="text-gray-500 font-mono">Metric:</span>
+                      <span className={`font-mono ${isLight ? 'text-slate-500' : 'text-gray-500'}`}>Metric:</span>
                       <select
-                        value={activeVal}
+                        value={resolvedVal}
                         onChange={(e) => setVisualOverrides(prev => ({
                           ...prev,
                           [vis.id]: { ...prev[vis.id], valueField: e.target.value }
                         }))}
-                        className="bg-[#141414] text-xs text-[#21F1A8] font-mono px-2 py-0.5 rounded border border-[#2e2e2e] focus:border-[#21F1A8] focus:outline-none"
+                        className={`text-xs font-mono px-2 py-0.5 rounded border focus:outline-none ${
+                          isLight
+                            ? 'bg-sky-50 text-sky-800 border-sky-200 focus:border-sky-500'
+                            : 'bg-[#141414] text-cyan-400 border-[#2e2e2e] focus:border-cyan-400'
+                        }`}
                       >
-                        {numericCols.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
+                        {numericCols.map(c => <option key={c.name} value={c.name} className={isLight ? 'bg-white text-slate-900' : 'bg-[#181818] text-white'}>{c.name}</option>)}
                       </select>
                     </div>
                   </div>
+
+                  {/* Intelligent Chart Recommendation Banner */}
+                  {(() => {
+                    const cardRecs = recommendChartsForFields(resolvedCat, resolvedVal, columns, cleanRows);
+                    const topRec = cardRecs[0];
+                    if (!topRec || topRec.type === activeType) return null;
+
+                    return (
+                      <div className={`mt-2 p-2 rounded-xl text-xs flex items-center justify-between gap-2 border transition-all ${
+                        isLight 
+                          ? 'bg-sky-50/90 border-sky-200 text-slate-800' 
+                          : 'bg-sky-950/40 border-sky-800/60 text-sky-200'
+                      }`}>
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <Lightbulb className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                          <span className="font-bold text-[11px] shrink-0 text-sky-700 dark:text-cyan-400">AI Suggestion:</span>
+                          <span className="truncate text-[11px] text-slate-600 dark:text-slate-300">
+                            {topRec.label} ({topRec.score}% fit) — {topRec.reason}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setVisualOverrides(prev => ({
+                              ...prev,
+                              [vis.id]: { 
+                                ...prev[vis.id], 
+                                type: topRec.type,
+                                categoryField: resolvedCat,
+                                valueField: resolvedVal
+                              }
+                            }));
+                            if (!vis.isCustomRenamed) {
+                              updateCustomVisual(vis.id, { title: topRec.suggestedTitle });
+                            }
+                          }}
+                          className="px-2.5 py-1 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold text-[11px] whitespace-nowrap shrink-0 transition-colors shadow-2xs cursor-pointer flex items-center gap-1"
+                          title={`Switch visualization to ${topRec.label}`}
+                        >
+                          <Sparkles className="w-3 h-3" />
+                          <span>Switch to {topRec.label}</span>
+                        </button>
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 {/* REAL CHART RENDERING ENGINE */}
@@ -958,9 +1174,9 @@ export const DashboardBuilderView: React.FC = () => {
                             title="Click bar to drill-through to granular records"
                           >
                             <div className="flex justify-between items-center text-xs">
-                              <span className="text-gray-300 font-medium truncate max-w-[200px] group-hover:text-[#21F1A8] transition-colors flex items-center gap-1">
+                              <span className="text-gray-300 font-medium truncate max-w-[200px] group-hover:text-cyan-400 transition-colors flex items-center gap-1">
                                 {item.category}
-                                <span className="opacity-0 group-hover:opacity-100 text-[10px] text-[#21F1A8] font-mono">↗</span>
+                                <span className="opacity-0 group-hover:opacity-100 text-[10px] text-cyan-400 font-mono">↗</span>
                               </span>
                               <div className="flex items-center gap-2 font-mono">
                                 <span className="text-white font-semibold">{item.value.toLocaleString()}</span>
@@ -1049,7 +1265,7 @@ export const DashboardBuilderView: React.FC = () => {
                         <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
                           {(() => {
                             let cumulativePct = 0;
-                            const colors = ['#21F1A8', '#00d8f6', '#f59e0b', '#ec4899', '#a855f7', '#64748b'];
+                            const colors = ['#0284C7', '#00d8f6', '#f59e0b', '#ec4899', '#a855f7', '#64748b'];
                             return items.slice(0, 6).map((item, idx) => {
                               const strokeDasharray = `${item.share * 2.512} 251.2`;
                               const strokeDashoffset = -cumulativePct * 2.512;
@@ -1072,33 +1288,39 @@ export const DashboardBuilderView: React.FC = () => {
                           })()}
                         </svg>
                         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                          <span className="text-[10px] text-gray-400 uppercase font-mono">Total</span>
-                          <span className="text-xs font-bold text-white font-mono">{grandTotal.toLocaleString()}</span>
+                          <span className={`text-[10px] uppercase font-mono ${isLight ? 'text-slate-500' : 'text-gray-400'}`}>Total</span>
+                          <span className={`text-xs font-bold font-mono ${isLight ? 'text-slate-900' : 'text-white'}`}>{grandTotal.toLocaleString()}</span>
                         </div>
                       </div>
 
                       {/* Legend */}
                       <div className="space-y-1.5 text-xs w-full max-w-[200px]">
                         {items.slice(0, 5).map((item, idx) => {
-                          const colors = ['#21F1A8', '#00d8f6', '#f59e0b', '#ec4899', '#a855f7', '#64748b'];
+                          const colors = ['#0284C7', '#00d8f6', '#f59e0b', '#ec4899', '#a855f7', '#64748b'];
                           return (
                             <div 
                               key={idx} 
                               onClick={() => openDrillThrough({
                                 title: `${vis.title} - ${item.category}`,
-                                subtitle: `Granular rows where ${activeCat} = "${item.category}"`,
-                                filterColumn: activeCat,
+                                subtitle: `Granular rows where ${resolvedCat} = "${item.category}"`,
+                                filterColumn: resolvedCat,
                                 filterValue: item.category,
                                 sourceContext: 'donut_slice'
                               })}
-                              className="flex items-center justify-between cursor-pointer p-1 -m-1 rounded hover:bg-[#1f1f1f] group transition-colors"
+                              className={`flex items-center justify-between cursor-pointer p-1 -m-1 rounded group transition-colors ${
+                                isLight ? 'hover:bg-slate-100' : 'hover:bg-[#1f1f1f]'
+                              }`}
                               title="Click to drill-through"
                             >
                               <div className="flex items-center gap-1.5 truncate">
                                 <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: colors[idx % colors.length] }} />
-                                <span className="text-gray-300 group-hover:text-[#21F1A8] transition-colors truncate">{item.category}</span>
+                                <span className={`transition-colors truncate ${
+                                  isLight ? 'text-slate-700 group-hover:text-sky-700' : 'text-gray-300 group-hover:text-cyan-400'
+                                }`}>{item.category}</span>
                               </div>
-                              <span className="font-mono text-gray-400 group-hover:text-white text-[11px]">{item.share}%</span>
+                              <span className={`font-mono text-[11px] ${
+                                isLight ? 'text-slate-500 group-hover:text-slate-900' : 'text-gray-400 group-hover:text-white'
+                              }`}>{item.share}%</span>
                             </div>
                           );
                         })}
@@ -1124,7 +1346,7 @@ export const DashboardBuilderView: React.FC = () => {
                             className="space-y-1 group cursor-pointer p-1 -m-1 rounded-lg hover:bg-[#141414] transition-colors"
                           >
                             <div className="flex justify-between items-center text-xs">
-                              <span className="text-gray-300 font-medium truncate max-w-[200px] group-hover:text-[#21F1A8] transition-colors">
+                              <span className="text-gray-300 font-medium truncate max-w-[200px] group-hover:text-cyan-400 transition-colors">
                                 {item.category}
                               </span>
                               <div className="flex items-center gap-2 font-mono">
@@ -1206,7 +1428,7 @@ export const DashboardBuilderView: React.FC = () => {
                         <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
                           {(() => {
                             let cumulativePct = 0;
-                            const colors = ['#21F1A8', '#00d8f6', '#f59e0b', '#ec4899', '#a855f7', '#64748b'];
+                            const colors = ['#0284C7', '#00d8f6', '#f59e0b', '#ec4899', '#a855f7', '#64748b'];
                             return items.slice(0, 6).map((item, idx) => {
                               const strokeDasharray = `${item.share * 1.57} 157`;
                               const strokeDashoffset = -cumulativePct * 1.57;
@@ -1231,7 +1453,7 @@ export const DashboardBuilderView: React.FC = () => {
                       </div>
                       <div className="space-y-1.5 text-xs w-full max-w-[200px] font-mono">
                         {items.slice(0, 5).map((it, idx) => {
-                          const colors = ['#21F1A8', '#00d8f6', '#f59e0b', '#ec4899', '#a855f7', '#64748b'];
+                          const colors = ['#0284C7', '#00d8f6', '#f59e0b', '#ec4899', '#a855f7', '#64748b'];
                           return (
                             <div key={idx} className="flex justify-between items-center text-[11px]">
                               <span className="flex items-center gap-1.5 text-gray-300 truncate max-w-[120px]">
@@ -1270,7 +1492,7 @@ export const DashboardBuilderView: React.FC = () => {
                                 })} 
                                 className="cursor-pointer group"
                               >
-                                <circle cx={cx} cy={cy} r="6" fill="#141414" stroke="#21F1A8" strokeWidth="2" className="group-hover:scale-125 transition-transform" />
+                                <circle cx={cx} cy={cy} r="6" fill="#141414" stroke="#0284C7" strokeWidth="2" className="group-hover:scale-125 transition-transform" />
                                 <text x={cx} y={cy - 9} textAnchor="middle" fill="#ccc" fontSize="9" fontFamily="monospace" className="opacity-0 group-hover:opacity-100">
                                   {it.value.toLocaleString()}
                                 </text>
@@ -1280,13 +1502,168 @@ export const DashboardBuilderView: React.FC = () => {
                         </svg>
                         <div className="flex justify-between text-[10px] text-gray-400 font-mono pt-1">
                           <span className="text-amber-400">Linear Trendline Fit</span>
-                          <span className="text-[#21F1A8]">Click coordinate to drilldown</span>
+                          <span className="text-cyan-400">Click coordinate to drilldown</span>
                         </div>
                       </div>
                     </div>
                   )}
 
-                  {/* 2D HEAT MAP */}
+                  {/* BOXPLOT (Tukey 5-Number Distribution & Outlier Detection) */}
+                  {activeType === 'boxplot' && (() => {
+                    const boxplotData = computeBoxplotSummary(cleanRows, resolvedCat, resolvedVal);
+                    if (boxplotData.length === 0) {
+                      return (
+                        <div className="p-8 text-center text-xs text-slate-500">
+                          Insufficient numerical variance to compute quartile distributions.
+                        </div>
+                      );
+                    }
+
+                    const allValues = boxplotData.flatMap(b => [b.min, b.max, ...b.outliers]);
+                    const globalMin = Math.min(...allValues);
+                    const globalMax = Math.max(...allValues);
+                    const range = Math.max(0.001, globalMax - globalMin);
+                    const plotH = 135;
+                    const plotW = 460;
+                    const paddingX = 45;
+                    const groupW = (plotW - paddingX * 2) / Math.max(1, boxplotData.length);
+                    const scaleY = (v: number) => 15 + plotH - ((v - globalMin) / range) * plotH;
+
+                    return (
+                      <div className="w-full space-y-2">
+                        <div className="relative w-full">
+                          <svg viewBox="0 0 470 190" className="w-full h-48 overflow-visible select-none">
+                            {[0, 0.25, 0.5, 0.75, 1].map((pct, idx) => {
+                              const yPos = 15 + plotH * (1 - pct);
+                              const valLabel = globalMin + range * pct;
+                              return (
+                                <g key={idx}>
+                                  <line x1="35" y1={yPos} x2="465" y2={yPos} stroke={isLight ? '#e2e8f0' : '#282828'} strokeDasharray="3,3" />
+                                  <text x="30" y={yPos + 3} textAnchor="end" fill={isLight ? '#64748b' : '#6b7280'} fontSize="9" fontFamily="monospace">
+                                    {valLabel >= 1000 ? `${(valLabel / 1000).toFixed(1)}k` : Math.round(valLabel)}
+                                  </text>
+                                </g>
+                              );
+                            })}
+
+                            {boxplotData.map((stat, idx) => {
+                              const centerX = paddingX + idx * groupW + groupW / 2;
+                              const boxWidth = Math.min(34, Math.max(16, groupW * 0.52));
+                              const yMin = scaleY(stat.min);
+                              const yQ1 = scaleY(stat.q1);
+                              const yMedian = scaleY(stat.median);
+                              const yQ3 = scaleY(stat.q3);
+                              const yMax = scaleY(stat.max);
+                              const yMean = scaleY(stat.mean);
+
+                              return (
+                                <g 
+                                  key={idx}
+                                  className="group cursor-pointer"
+                                  onClick={() => openDrillThrough({
+                                    title: `${vis.title} - ${stat.category}`,
+                                    subtitle: `Quartile Summary for ${stat.category}: Median ${stat.median.toLocaleString()}, IQR ${stat.iqr.toLocaleString()}`,
+                                    filterColumn: resolvedCat,
+                                    filterValue: stat.category,
+                                    sourceContext: 'chart_bar'
+                                  })}
+                                >
+                                  {/* Whisker dashed line */}
+                                  <line x1={centerX} y1={yMin} x2={centerX} y2={yMax} stroke={primaryColor} strokeWidth="1.5" strokeDasharray="2,2" />
+
+                                  {/* Whiskers End Caps */}
+                                  <line x1={centerX - boxWidth * 0.35} y1={yMin} x2={centerX + boxWidth * 0.35} y2={yMin} stroke={primaryColor} strokeWidth="2" strokeLinecap="round" />
+                                  <line x1={centerX - boxWidth * 0.35} y1={yMax} x2={centerX + boxWidth * 0.35} y2={yMax} stroke={primaryColor} strokeWidth="2" strokeLinecap="round" />
+
+                                  {/* Interquartile Box (Q1 to Q3) */}
+                                  <rect 
+                                    x={centerX - boxWidth / 2} 
+                                    y={Math.min(yQ1, yQ3)} 
+                                    width={boxWidth} 
+                                    height={Math.max(4, Math.abs(yQ3 - yQ1))} 
+                                    fill={primaryColor} 
+                                    fillOpacity={isLight ? 0.22 : 0.35}
+                                    stroke={primaryColor} 
+                                    strokeWidth="2" 
+                                    rx="3"
+                                    className="group-hover:fill-opacity-50 transition-all"
+                                  />
+
+                                  {/* Median Line */}
+                                  <line 
+                                    x1={centerX - boxWidth / 2} 
+                                    y1={yMedian} 
+                                    x2={centerX + boxWidth / 2} 
+                                    y2={yMedian} 
+                                    stroke={isLight ? '#0284c7' : '#38bdf8'} 
+                                    strokeWidth="2.5" 
+                                    strokeLinecap="round" 
+                                  />
+
+                                  {/* Mean Diamond */}
+                                  <polygon 
+                                    points={`${centerX},${yMean - 3} ${centerX + 3},${yMean} ${centerX},${yMean + 3} ${centerX - 3},${yMean}`}
+                                    fill="#f59e0b"
+                                  />
+
+                                  {/* Outliers */}
+                                  {stat.outliers.map((outlierVal, oIdx) => {
+                                    const yOutlier = scaleY(outlierVal);
+                                    return (
+                                      <circle 
+                                        key={oIdx} 
+                                        cx={centerX} 
+                                        cy={yOutlier} 
+                                        r="3.5" 
+                                        fill="#ef4444" 
+                                        stroke="#fff" 
+                                        strokeWidth="1"
+                                      />
+                                    );
+                                  })}
+
+                                  {/* Category Label */}
+                                  <text 
+                                    x={centerX} 
+                                    y="172" 
+                                    textAnchor="middle" 
+                                    fill={isLight ? '#1e293b' : '#cbd5e1'} 
+                                    fontSize="10" 
+                                    fontWeight="600"
+                                    fontFamily="sans-serif"
+                                  >
+                                    {stat.category.length > 8 ? `${stat.category.slice(0, 7)}…` : stat.category}
+                                  </text>
+                                </g>
+                              );
+                            })}
+                          </svg>
+                        </div>
+
+                        {/* Boxplot Metrics Ribbon */}
+                        <div className={`p-2 rounded-xl border text-[11px] font-mono grid grid-cols-2 sm:grid-cols-4 gap-2 ${
+                          isLight ? 'bg-slate-50 border-slate-200 text-slate-700' : 'bg-[#151515] border-[#292929] text-gray-300'
+                        }`}>
+                          <div className="flex items-center gap-1.5 truncate">
+                            <span className="w-2 h-2 rounded-full bg-sky-500 shrink-0"></span>
+                            <span>Median: <strong>{boxplotData[0]?.median.toLocaleString()}</strong></span>
+                          </div>
+                          <div className="flex items-center gap-1.5 truncate">
+                            <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0"></span>
+                            <span>Mean: <strong>{boxplotData[0]?.mean.toFixed(1)}</strong></span>
+                          </div>
+                          <div className="flex items-center gap-1.5 truncate">
+                            <span className="w-2 h-2 rounded-full bg-sky-400 shrink-0"></span>
+                            <span>IQR: <strong>{boxplotData[0]?.iqr.toLocaleString()}</strong></span>
+                          </div>
+                          <div className="flex items-center gap-1.5 truncate">
+                            <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0"></span>
+                            <span>Outliers: <strong>{boxplotData.reduce((acc, b) => acc + b.outliers.length, 0)} detected</strong></span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
                   {activeType === 'heatmap' && (
                     <div className="w-full space-y-1.5">
                       <div className="grid grid-cols-4 sm:grid-cols-8 gap-1.5 font-mono text-center">
@@ -1303,11 +1680,11 @@ export const DashboardBuilderView: React.FC = () => {
                                 sourceContext: 'table_row'
                               })}
                               className="p-2 rounded-lg border border-[#282828] cursor-pointer hover:border-white transition-all flex flex-col justify-between"
-                              style={{ backgroundColor: `rgba(33, 241, 168, ${intensity})` }}
+                              style={{ backgroundColor: `rgba(2, 132, 199, ${intensity})` }}
                               title={`${it.category}: ${it.value.toLocaleString()}`}
                             >
-                              <span className="text-[10px] text-black font-extrabold truncate">{it.category}</span>
-                              <span className="text-[9px] text-black font-bold font-mono">
+                              <span className="text-[10px] text-white font-extrabold truncate">{it.category}</span>
+                              <span className="text-[9px] text-white font-bold font-mono">
                                 {it.value >= 1000 ? `${(it.value / 1000).toFixed(1)}k` : it.value}
                               </span>
                             </div>
@@ -1316,7 +1693,7 @@ export const DashboardBuilderView: React.FC = () => {
                       </div>
                       <div className="flex justify-between text-[10px] text-gray-400 font-mono pt-1">
                         <span>Intensity Scale: 0 to {maxVal.toLocaleString()}</span>
-                        <span className="text-[#21F1A8]">2D Heat Density Grid</span>
+                        <span className="text-cyan-400">2D Heat Density Grid</span>
                       </div>
                     </div>
                   )}
@@ -1339,7 +1716,7 @@ export const DashboardBuilderView: React.FC = () => {
                             const r = (it.value / maxVal) * 75;
                             return `${100 + r * Math.cos(angle)},${100 + r * Math.sin(angle)}`;
                           }).join(' ');
-                          return <polygon points={polyPts} fill="#21F1A8" fillOpacity="0.25" stroke="#21F1A8" strokeWidth="2" />;
+                          return <polygon points={polyPts} fill="#0284C7" fillOpacity="0.25" stroke="#0284C7" strokeWidth="2" />;
                         })()}
                       </svg>
                     </div>
@@ -1363,12 +1740,12 @@ export const DashboardBuilderView: React.FC = () => {
                             className="cursor-pointer group space-y-0.5"
                           >
                             <div className="flex justify-between text-[11px] font-mono">
-                              <span className="text-gray-300 group-hover:text-[#21F1A8]">{idx + 1}. {it.category}</span>
+                              <span className="text-gray-300 group-hover:text-cyan-400">{idx + 1}. {it.category}</span>
                               <span className="text-white font-bold">{it.value.toLocaleString()} ({it.share}%)</span>
                             </div>
                             <div className="flex justify-center w-full">
                               <div 
-                                className="h-6 rounded-md bg-[#21F1A8] text-black text-[10px] font-bold font-mono flex items-center justify-center transition-all group-hover:brightness-125" 
+                                className="h-6 rounded-md bg-sky-600 text-white text-[10px] font-bold font-mono flex items-center justify-center transition-all group-hover:brightness-125" 
                                 style={{ width: `${w}%` }}
                               >
                                 {it.value.toLocaleString()}
@@ -1401,7 +1778,7 @@ export const DashboardBuilderView: React.FC = () => {
                             >
                               <span className="text-[9px] font-mono text-white mb-1">{it.value.toLocaleString()}</span>
                               <div 
-                                className={`w-full max-w-[36px] rounded transition-all group-hover:brightness-125 ${isPos ? 'bg-[#21F1A8]' : 'bg-red-400'}`} 
+                                className={`w-full max-w-[36px] rounded transition-all group-hover:brightness-125 ${isPos ? 'bg-sky-500' : 'bg-rose-500'}`} 
                                 style={{ height: `${h}px` }} 
                               />
                               <span className="text-[9px] text-gray-400 font-mono truncate max-w-[50px] mt-1.5">{it.category}</span>
@@ -1416,7 +1793,7 @@ export const DashboardBuilderView: React.FC = () => {
                   {activeType === 'treemap' && (
                     <div className="w-full grid grid-cols-2 sm:grid-cols-4 gap-2 font-mono">
                       {items.slice(0, 6).map((it, idx) => {
-                        const colors = ['#21F1A8', '#00d8f6', '#f59e0b', '#ec4899', '#818cf8', '#10b981'];
+                        const colors = ['#0284C7', '#00d8f6', '#38bdf8', '#818cf8', '#f59e0b', '#ec4899'];
                         const c = colors[idx % colors.length];
                         const isBig = idx === 0 || idx === 1;
                         return (
@@ -1452,7 +1829,7 @@ export const DashboardBuilderView: React.FC = () => {
                           <path 
                             d="M 20 100 A 80 80 0 0 1 180 100" 
                             fill="none" 
-                            stroke="#21F1A8" 
+                            stroke="#0284C7" 
                             strokeWidth="16" 
                             strokeLinecap="round" 
                             strokeDasharray="251" 
@@ -1464,7 +1841,7 @@ export const DashboardBuilderView: React.FC = () => {
                       </div>
                       <div className="text-center font-mono mt-1">
                         <span className="text-lg font-extrabold text-white">{grandTotal.toLocaleString()}</span>
-                        <span className="text-[10px] text-[#21F1A8] block">Aggregate Total Target Attainment</span>
+                        <span className="text-[10px] text-cyan-400 block">Aggregate Total Target Attainment</span>
                       </div>
                     </div>
                   )}
@@ -1492,16 +1869,18 @@ export const DashboardBuilderView: React.FC = () => {
                                 filterValue: it.category,
                                 sourceContext: 'table_row'
                               })}
-                              className="hover:bg-[#1f1f1f] transition-colors cursor-pointer group"
+                              className={`transition-colors cursor-pointer group ${isLight ? 'hover:bg-slate-50' : 'hover:bg-[#1f1f1f]'}`}
                               title="Click row to drill-through to granular records"
                             >
-                              <td className="p-2 text-gray-500 font-bold">#{idx + 1}</td>
-                              <td className="p-2 text-white font-sans group-hover:text-[#21F1A8] transition-colors flex items-center gap-1">
+                              <td className="p-2 text-gray-400 font-bold">#{idx + 1}</td>
+                              <td className={`p-2 font-sans transition-colors flex items-center gap-1 ${
+                                isLight ? 'text-slate-800 group-hover:text-sky-700' : 'text-white group-hover:text-cyan-400'
+                              }`}>
                                 {it.category}
-                                <span className="opacity-0 group-hover:opacity-100 text-[10px] text-[#21F1A8]">↗</span>
+                                <span className={`opacity-0 group-hover:opacity-100 text-[10px] ${isLight ? 'text-sky-600' : 'text-cyan-400'}`}>↗</span>
                               </td>
-                              <td className="p-2 text-right text-[#21F1A8] font-semibold">{it.value.toLocaleString()}</td>
-                              <td className="p-2 text-right text-gray-400">{it.share}%</td>
+                              <td className={`p-2 text-right font-semibold ${isLight ? 'text-sky-800' : 'text-cyan-400'}`}>{it.value.toLocaleString()}</td>
+                              <td className={`p-2 text-right ${isLight ? 'text-slate-500' : 'text-gray-400'}`}>{it.share}%</td>
                             </tr>
                           ))}
                         </tbody>
@@ -1511,7 +1890,9 @@ export const DashboardBuilderView: React.FC = () => {
                 </div>
 
                 {/* Footer Insight */}
-                <div className="pt-2 border-t border-[#262626] flex items-center justify-between text-[10px] text-gray-400 font-mono">
+                <div className={`pt-2 border-t flex items-center justify-between text-[10px] font-mono ${
+                  isLight ? 'border-slate-100 text-slate-500' : 'border-[#262626] text-gray-400'
+                }`}>
                   <span>Aggregation: {vis.aggregation.toUpperCase()}</span>
                   <span>Top {items.length} segments analyzed</span>
                 </div>
@@ -1524,15 +1905,15 @@ export const DashboardBuilderView: React.FC = () => {
       {/* 4. Add Visual Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fadeIn">
-          <div className="bg-[#1c1c1c] border border-[#333] rounded-3xl p-6 max-w-lg w-full space-y-5 animate-scaleUp">
-            <div className="flex items-center justify-between border-b border-[#2d2d2d] pb-3">
-              <h3 className="font-heading text-xl font-bold text-white uppercase flex items-center gap-2">
-                <Plus className="w-5 h-5 text-[#21F1A8]" />
+          <div className={`${isLight ? 'bg-white border-slate-200 text-slate-900 shadow-2xl' : 'bg-[#1c1c1c] border-[#333] text-white'} border rounded-3xl p-6 max-w-lg w-full space-y-5 animate-scaleUp`}>
+            <div className={`flex items-center justify-between border-b pb-3 ${isLight ? 'border-slate-200' : 'border-[#2d2d2d]'}`}>
+              <h3 className={`font-heading text-xl font-bold uppercase flex items-center gap-2 ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                <Plus className="w-5 h-5 text-sky-500" />
                 COMPOSE NEW VISUAL
               </h3>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="text-gray-400 hover:text-white"
+                className={`p-1 rounded-lg transition-colors ${isLight ? 'text-slate-400 hover:text-slate-900' : 'text-gray-400 hover:text-white'}`}
               >
                 ✕
               </button>
@@ -1540,24 +1921,32 @@ export const DashboardBuilderView: React.FC = () => {
 
             <form onSubmit={handleCreateVisual} className="space-y-4 text-xs">
               <div className="space-y-1.5">
-                <label className="text-gray-300 font-medium">Visualization Title</label>
+                <label className={isLight ? 'text-slate-700 font-semibold' : 'text-gray-300 font-medium'}>Visualization Title</label>
                 <input
                   type="text"
                   placeholder="e.g. Regional Sales Volume Breakdown"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full bg-[#141414] text-white p-2.5 rounded-xl border border-[#333] focus:border-[#21F1A8] focus:outline-none"
+                  className={`w-full p-2.5 rounded-xl border focus:outline-none ${
+                    isLight
+                      ? 'bg-slate-50 text-slate-900 border-slate-200 focus:border-sky-500'
+                      : 'bg-[#141414] text-white border-[#333] focus:border-cyan-400'
+                  }`}
                   required
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <label className="text-gray-300 font-medium">Chart Representation</label>
+                  <label className={isLight ? 'text-slate-700 font-semibold' : 'text-gray-300 font-medium'}>Chart Representation</label>
                   <select
                     value={type}
                     onChange={(e) => setType(e.target.value as any)}
-                    className="w-full bg-[#141414] text-white p-2.5 rounded-xl border border-[#333] focus:border-[#21F1A8] focus:outline-none"
+                    className={`w-full p-2.5 rounded-xl border focus:outline-none ${
+                      isLight
+                        ? 'bg-slate-50 text-slate-900 border-slate-200 focus:border-sky-500'
+                        : 'bg-[#141414] text-white border-[#333] focus:border-cyan-400'
+                    }`}
                   >
                     <option value="bar">Vertical Bar Chart (Ranking & Comparison)</option>
                     <option value="horizontal_bar">Horizontal Bar Chart (Ranked Progress)</option>
@@ -1565,6 +1954,7 @@ export const DashboardBuilderView: React.FC = () => {
                     <option value="area">Area Fill Chart (Volume Growth)</option>
                     <option value="donut">Donut Ring (Part-to-Whole)</option>
                     <option value="pie">Pie Chart (Proportional Sectors)</option>
+                    <option value="boxplot">Quartile Boxplot (Variance & Outlier Discovery)</option>
                     <option value="scatter">Scatter Plot (Correlation & Bivariate)</option>
                     <option value="heatmap">2D Heat Map (Density & Co-occurrence)</option>
                     <option value="radar">Radar / Spider Chart (Multi-Axis Footprint)</option>
@@ -1577,11 +1967,15 @@ export const DashboardBuilderView: React.FC = () => {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-gray-300 font-medium">Aggregation Function</label>
+                  <label className={isLight ? 'text-slate-700 font-semibold' : 'text-gray-300 font-medium'}>Aggregation Function</label>
                   <select
                     value={aggregation}
                     onChange={(e) => setAggregation(e.target.value as any)}
-                    className="w-full bg-[#141414] text-white p-2.5 rounded-xl border border-[#333] focus:border-[#21F1A8] focus:outline-none"
+                    className={`w-full p-2.5 rounded-xl border focus:outline-none ${
+                      isLight
+                        ? 'bg-slate-50 text-slate-900 border-slate-200 focus:border-sky-500'
+                        : 'bg-[#141414] text-white border-[#333] focus:border-cyan-400'
+                    }`}
                   >
                     <option value="sum">SUM (Total Aggregate)</option>
                     <option value="avg">AVERAGE (Mean Value)</option>
@@ -1594,64 +1988,147 @@ export const DashboardBuilderView: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <label className="text-gray-300 font-medium">Dimension (Category Axis)</label>
+                  <label className={isLight ? 'text-slate-700 font-semibold' : 'text-gray-300 font-medium'}>Dimension (Category Axis)</label>
                   <select
                     value={catField}
                     onChange={(e) => setCatField(e.target.value)}
-                    className="w-full bg-[#141414] text-white p-2.5 rounded-xl border border-[#333] focus:border-[#21F1A8] focus:outline-none"
+                    className={`w-full p-2.5 rounded-xl border focus:outline-none ${
+                      isLight
+                        ? 'bg-slate-50 text-slate-900 border-slate-200 focus:border-sky-500'
+                        : 'bg-[#141414] text-white border-[#333] focus:border-cyan-400'
+                    }`}
                   >
                     {columns.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
                   </select>
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-gray-300 font-medium">Metric (Numerical Value)</label>
+                  <label className={isLight ? 'text-slate-700 font-semibold' : 'text-gray-300 font-medium'}>Metric (Numerical Value)</label>
                   <select
                     value={valField}
                     onChange={(e) => setValField(e.target.value)}
-                    className="w-full bg-[#141414] text-[#21F1A8] font-mono p-2.5 rounded-xl border border-[#333] focus:border-[#21F1A8] focus:outline-none"
+                    className={`w-full font-mono p-2.5 rounded-xl border focus:outline-none ${
+                      isLight
+                        ? 'bg-sky-50 text-sky-800 border-sky-200 focus:border-sky-500'
+                        : 'bg-[#141414] text-cyan-400 border-[#333] focus:border-cyan-400'
+                    }`}
                   >
                     {numericCols.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
                   </select>
                 </div>
               </div>
 
+              {/* DYNAMIC AI SCHEMA RECOMMENDATIONS PANEL */}
+              {(() => {
+                const modalRecs = recommendChartsForFields(catField, valField, columns, cleanRows);
+                if (modalRecs.length === 0) return null;
+                const topFit = modalRecs[0];
+
+                return (
+                  <div className={`p-3.5 rounded-2xl border space-y-2.5 ${
+                    isLight ? 'bg-sky-50/70 border-sky-200' : 'bg-[#141d26] border-sky-900/60'
+                  }`}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <Sparkles className="w-4 h-4 text-sky-500" />
+                        <span className={`font-bold text-xs uppercase tracking-wide ${isLight ? 'text-sky-900' : 'text-sky-300'}`}>
+                          Schema Recommendations
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setType(topFit.type);
+                          setTitle(topFit.suggestedTitle);
+                        }}
+                        className="px-2.5 py-1 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold text-[11px] shadow-xs cursor-pointer transition-all flex items-center gap-1"
+                      >
+                        <Zap className="w-3 h-3" />
+                        <span>Apply Best Fit ({topFit.label})</span>
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {modalRecs.slice(0, 4).map((rec) => {
+                        const isSelected = type === rec.type;
+                        return (
+                          <div
+                            key={rec.type}
+                            onClick={() => {
+                              setType(rec.type);
+                              setTitle(rec.suggestedTitle);
+                            }}
+                            className={`p-2.5 rounded-xl border text-left cursor-pointer transition-all ${
+                              isSelected
+                                ? isLight
+                                  ? 'bg-white border-sky-500 ring-2 ring-sky-400 shadow-xs'
+                                  : 'bg-sky-950/80 border-cyan-400 ring-2 ring-cyan-400 shadow-md'
+                                : isLight
+                                  ? 'bg-white/80 border-slate-200 hover:border-sky-300 hover:bg-white'
+                                  : 'bg-[#111720] border-[#202b38] hover:border-sky-700 hover:bg-[#15202b]'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-1 mb-1">
+                              <span className={`font-bold text-xs ${isSelected ? (isLight ? 'text-sky-900' : 'text-cyan-300') : (isLight ? 'text-slate-800' : 'text-white')}`}>
+                                {rec.label}
+                              </span>
+                              <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold uppercase ${
+                                rec.badge === 'Best Fit'
+                                  ? 'bg-sky-500/20 text-sky-600 dark:text-cyan-300 border border-sky-400/40'
+                                  : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                              }`}>
+                                {rec.score}% Match
+                              </span>
+                            </div>
+                            <p className={`text-[11px] line-clamp-2 leading-relaxed ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>
+                              {rec.reason}
+                            </p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
+
               {/* Color Theme Selector */}
               <div className="space-y-1.5">
-                <label className="text-gray-300 font-medium">Accent Color Theme</label>
+                <label className={isLight ? 'text-slate-700 font-semibold' : 'text-gray-300 font-medium'}>Accent Color Theme</label>
                 <div className="flex items-center gap-3 pt-1">
                   {[
-                    { color: '#21F1A8', label: 'Tiffany Neon' },
+                    { color: '#0284C7', label: 'Azure Blue' },
                     { color: '#00d8f6', label: 'Cyan' },
-                    { color: '#f59e0b', label: 'Amber' },
-                    { color: '#ec4899', label: 'Rose' },
-                    { color: '#a855f7', label: 'Purple' }
+                    { color: '#38bdf8', label: 'Sky' },
+                    { color: '#818cf8', label: 'Indigo' },
+                    { color: '#f59e0b', label: 'Amber' }
                   ].map(c => (
                     <button
                       type="button"
                       key={c.color}
                       onClick={() => setColorTheme(c.color)}
-                      className={`w-7 h-7 rounded-full border-2 transition-all flex items-center justify-center ${colorTheme === c.color ? 'border-white scale-110' : 'border-transparent opacity-70'}`}
+                      className={`w-7 h-7 rounded-full border-2 transition-all flex items-center justify-center cursor-pointer ${colorTheme === c.color ? 'border-sky-500 scale-110 shadow-sm' : 'border-transparent opacity-70'}`}
                       style={{ backgroundColor: c.color }}
                       title={c.label}
                     >
-                      {colorTheme === c.color && <Check className="w-3.5 h-3.5 text-black" />}
+                      {colorTheme === c.color && <Check className="w-3.5 h-3.5 text-white" />}
                     </button>
                   ))}
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-[#2d2d2d]">
+              <div className={`flex justify-end gap-2 pt-3 border-t ${isLight ? 'border-slate-200' : 'border-[#2d2d2d]'}`}>
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-[#262626] text-gray-300 hover:bg-[#333] transition-colors"
+                  className={`px-4 py-2 rounded-xl transition-colors cursor-pointer ${
+                    isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200' : 'bg-[#262626] text-gray-300 hover:bg-[#333]'
+                  }`}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-[#21F1A8] text-black font-semibold hover:bg-[#1cdb97] transition-all"
+                  className="px-5 py-2 rounded-xl bg-sky-600 text-white font-semibold hover:bg-sky-500 transition-all cursor-pointer shadow-md shadow-sky-600/20"
                 >
                   Create & Mount Visual
                 </button>
@@ -1660,6 +2137,131 @@ export const DashboardBuilderView: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* 5. Intelligent Multi-Chart Recommendation Engine Modal */}
+      {isRecModalOpen && (() => {
+        const recommendedSuite = recommendDatasetDashboard(columns, cleanRows);
+        return (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fadeIn">
+            <div className={`${isLight ? 'bg-white border-slate-200 text-slate-900 shadow-2xl' : 'bg-[#181818] border-[#333] text-white'} border rounded-3xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto space-y-5 animate-scaleUp`}>
+              <div className={`flex items-start justify-between border-b pb-3 ${isLight ? 'border-slate-200' : 'border-[#2d2d2d]'}`}>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="p-1.5 rounded-lg bg-sky-500/10 text-sky-600 dark:text-cyan-400 border border-sky-500/20">
+                      <Lightbulb className="w-5 h-5 text-amber-500" />
+                    </span>
+                    <h3 className={`font-heading text-xl font-bold uppercase tracking-tight ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                      AI Schema Recommendation Suite
+                    </h3>
+                  </div>
+                  <p className={`text-xs ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                    Analyzed {columns.length} columns & {cleanRows.length.toLocaleString()} rows in <strong>{project.name}</strong>. The recommendation engine identified optimal visualization types based on temporal continuity, cardinality, and numerical dispersion.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setIsRecModalOpen(false)}
+                  className={`p-1 rounded-lg transition-colors cursor-pointer ${isLight ? 'text-slate-400 hover:text-slate-900' : 'text-gray-400 hover:text-white'}`}
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Action Banner: Deploy Complete Suite */}
+              <div className={`p-4 rounded-2xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${
+                isLight ? 'bg-sky-50 border-sky-200' : 'bg-sky-950/40 border-sky-800/60'
+              }`}>
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2 font-bold text-xs text-sky-700 dark:text-cyan-300">
+                    <Sparkles className="w-4 h-4 text-sky-500" />
+                    <span>Balanced 5-Chart Adaptive Suite</span>
+                  </div>
+                  <p className={`text-xs ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>
+                    Deploy a diverse ensemble of Heatmaps, Boxplots, Donut shares, Ranked Bars, and Scatter plots.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    customVisuals.forEach(v => removeCustomVisual(v.id));
+                    recommendedSuite.forEach(v => addCustomVisual(v));
+                    setIsRecModalOpen(false);
+                    setDownloadSuccess(`Deployed ${recommendedSuite.length} recommended schema charts!`);
+                    setTimeout(() => setDownloadSuccess(null), 3000);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs shadow-md shadow-sky-600/25 whitespace-nowrap cursor-pointer transition-all flex items-center gap-1.5"
+                >
+                  <Zap className="w-3.5 h-3.5" />
+                  <span>Deploy Complete Suite</span>
+                </button>
+              </div>
+
+              {/* Recommended Visuals List */}
+              <div className="space-y-3">
+                <h4 className={`text-xs font-bold uppercase tracking-wider font-mono ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
+                  Recommended Visuals ({recommendedSuite.length})
+                </h4>
+
+                <div className="space-y-2.5">
+                  {recommendedSuite.map((recVis, idx) => (
+                    <div 
+                      key={recVis.id || idx}
+                      className={`p-3.5 rounded-2xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 transition-all ${
+                        isLight 
+                          ? 'bg-slate-50/80 border-slate-200 hover:border-sky-300 hover:bg-white' 
+                          : 'bg-[#141414] border-[#292929] hover:border-cyan-400/50 hover:bg-[#1a1a1a]'
+                      }`}
+                    >
+                      <div className="space-y-1 min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-bold text-xs text-slate-900 dark:text-white uppercase truncate">
+                            {recVis.title}
+                          </span>
+                          <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase bg-sky-500/10 text-sky-700 dark:text-cyan-300 border border-sky-500/20">
+                            {recVis.type.replace('_', ' ')}
+                          </span>
+                          <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">
+                            {recVis.aggregation.toUpperCase()}({recVis.valueField}) by {recVis.categoryField}
+                          </span>
+                        </div>
+                        <p className={`text-xs ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                          {recVis.description || 'Analyzed data distribution and field semantics to maximize cognitive clarity.'}
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          addCustomVisual(recVis);
+                          setIsRecModalOpen(false);
+                          setDownloadSuccess(`Added ${recVis.title}!`);
+                          setTimeout(() => setDownloadSuccess(null), 2500);
+                        }}
+                        className="px-3 py-1.5 rounded-xl border font-bold text-xs shrink-0 cursor-pointer transition-all flex items-center gap-1 bg-white dark:bg-surface-panel hover:bg-sky-50 dark:hover:bg-cyan-500/15 text-sky-700 dark:text-cyan-300 border-slate-200 dark:border-border-subtle"
+                        title="Add this visual to your active dashboard canvas"
+                      >
+                        <Plus className="w-3.5 h-3.5 text-sky-500" />
+                        <span>Add Visual</span>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className={`flex justify-end pt-3 border-t ${isLight ? 'border-slate-200' : 'border-[#2d2d2d]'}`}>
+                <button
+                  type="button"
+                  onClick={() => setIsRecModalOpen(false)}
+                  className={`px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer ${
+                    isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-700' : 'bg-[#252525] text-slate-300 hover:bg-[#303030]'
+                  }`}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 };

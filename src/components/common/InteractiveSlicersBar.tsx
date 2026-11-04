@@ -13,7 +13,9 @@ import {
   Sliders,
   Sparkles,
   BarChart2,
-  CalendarRange
+  CalendarRange,
+  Plus,
+  Columns
 } from 'lucide-react';
 import { usePlatform } from '../../store/usePlatformStore';
 import { safeMin, safeMax } from '../../utils/mathUtils';
@@ -47,20 +49,85 @@ export const InteractiveSlicersBar: React.FC<{
   const [activeSearchCol, setActiveSearchCol] = useState<string | null>(null);
   const [slicerSearchTerms, setSlicerSearchTerms] = useState<Record<string, string>>({});
 
-  // 1. Extract suitable categorical columns for Slicers (distinct 2..60)
-  const slicerColumns: SlicerMeta[] = useMemo(() => {
-    const candidates = columns.filter(c => 
+  // Dynamic active slicer column list (customizable by user, persisted in localStorage)
+  const [activeSlicerColNames, setActiveSlicerColNames] = useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('acuitybi_active_slicers');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        } catch {}
+      }
+    }
+    const defaultCandidates = columns.filter(c => 
       c.dataType === 'string' && 
       !c.isPrimaryKeyCandidate && 
       !c.name.toLowerCase().endsWith('id') &&
       c.distinctCount >= 2 &&
       c.distinctCount <= 60
     );
+    return defaultCandidates.slice(0, 6).map(c => c.name);
+  });
 
-    // Limit to top 6 most informative slicers
-    const selected = candidates.slice(0, 6);
+  const [isAddSlicerModalOpen, setIsAddSlicerModalOpen] = useState(false);
+  const [addSlicerSearchQuery, setAddSlicerSearchQuery] = useState('');
 
-    return selected.map(col => {
+  // Available columns that can be added as slicers
+  const availableColumnsToAdd = useMemo(() => {
+    return columns.filter(c => 
+      !activeSlicerColNames.includes(c.name) &&
+      !c.isPrimaryKeyCandidate &&
+      c.distinctCount >= 2 &&
+      c.distinctCount <= 300
+    ).filter(c => 
+      !addSlicerSearchQuery.trim() || 
+      c.name.toLowerCase().includes(addSlicerSearchQuery.toLowerCase())
+    );
+  }, [columns, activeSlicerColNames, addSlicerSearchQuery]);
+
+  const handleAddSlicerColumn = (colName: string) => {
+    setActiveSlicerColNames(prev => {
+      if (prev.includes(colName)) return prev;
+      const next = [...prev, colName];
+      try { localStorage.setItem('acuitybi_active_slicers', JSON.stringify(next)); } catch {}
+      return next;
+    });
+    setIsAddSlicerModalOpen(false);
+    setAddSlicerSearchQuery('');
+  };
+
+  const handleRemoveSlicerColumn = (colName: string) => {
+    clearSlicer(colName);
+    setActiveSlicerColNames(prev => {
+      const next = prev.filter(c => c !== colName);
+      try { localStorage.setItem('acuitybi_active_slicers', JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
+
+  const handleResetToDefaultSlicers = () => {
+    clearAllSlicers();
+    const defaultCandidates = columns.filter(c => 
+      c.dataType === 'string' && 
+      !c.isPrimaryKeyCandidate && 
+      !c.name.toLowerCase().endsWith('id') &&
+      c.distinctCount >= 2 &&
+      c.distinctCount <= 60
+    );
+    const defs = defaultCandidates.slice(0, 6).map(c => c.name);
+    setActiveSlicerColNames(defs);
+    try { localStorage.removeItem('acuitybi_active_slicers'); } catch {}
+  };
+
+  // 1. Extract suitable columns for Slicers from activeSlicerColNames
+  const slicerColumns: SlicerMeta[] = useMemo(() => {
+    // Keep order according to activeSlicerColNames
+    const resolvedCols = activeSlicerColNames
+      .map(name => columns.find(c => c.name === name))
+      .filter((col): col is typeof columns[0] => Boolean(col));
+
+    return resolvedCols.map(col => {
       const counts: Record<string, number> = {};
       cleanRows.forEach(r => {
         const v = String(r[col.name] ?? '').trim();
@@ -77,7 +144,7 @@ export const InteractiveSlicersBar: React.FC<{
         totalDistinct: sortedValues.length
       };
     });
-  }, [columns, cleanRows]);
+  }, [columns, cleanRows, activeSlicerColNames]);
 
   // 2. Identify primary date column
   const dateCol = useMemo(() => {
@@ -138,7 +205,7 @@ export const InteractiveSlicersBar: React.FC<{
       }`}>
         <div className="flex items-center gap-3">
           <div className={`p-1.5 rounded-lg flex items-center justify-center ${
-            isLight ? 'bg-emerald-100 text-emerald-800' : 'bg-[#21F1A8]/15 text-[#21F1A8]'
+            isLight ? 'bg-sky-100 text-sky-800' : 'bg-cyan-500/15 text-cyan-400'
           }`}>
             <SlidersHorizontal className="w-4 h-4" />
           </div>
@@ -151,10 +218,15 @@ export const InteractiveSlicersBar: React.FC<{
               </span>
               <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold ${
                 activeSlicerCount > 0
-                  ? isLight ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-[#21F1A8]/20 text-[#21F1A8] border border-[#21F1A8]/40'
+                  ? isLight ? 'bg-sky-100 text-sky-800 border border-sky-300' : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
                   : isLight ? 'bg-slate-200 text-slate-700' : 'bg-[#222938] text-gray-400'
               }`}>
                 {activeSlicerCount} Active
+              </span>
+              <span className={`px-1.5 py-0.2 rounded text-[10px] font-mono ${
+                isLight ? 'bg-slate-100 text-slate-600' : 'bg-[#1b2230] text-gray-400'
+              }`}>
+                {slicerColumns.length} Slicers
               </span>
             </div>
             <p className={`text-[11px] ${isLight ? 'text-slate-500' : 'text-gray-400'}`}>
@@ -163,22 +235,36 @@ export const InteractiveSlicersBar: React.FC<{
           </div>
         </div>
 
-        {/* Controls: Record counter, Reset, Collapse */}
+        {/* Controls: Record counter, Add Slicer, Reset, Collapse */}
         <div className="flex items-center gap-2">
           {/* Row filter stats badge */}
           <div className={`px-3 py-1.5 rounded-xl border text-xs font-mono flex items-center gap-2 ${
             isFiltered
-              ? isLight ? 'bg-emerald-50 text-emerald-900 border-emerald-300 font-bold' : 'bg-[#21F1A8]/15 text-[#21F1A8] border-[#21F1A8]/30 font-bold'
+              ? isLight ? 'bg-sky-50 text-sky-900 border-sky-300 font-bold' : 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30 font-bold'
               : isLight ? 'bg-slate-100 text-slate-600 border-slate-200' : 'bg-[#1a202c] text-gray-400 border-[#2d3748]'
           }`}>
-            <span className={`w-2 h-2 rounded-full ${isFiltered ? (isLight ? 'bg-emerald-600 animate-pulse' : 'bg-[#21F1A8] animate-pulse') : (isLight ? 'bg-slate-400' : 'bg-gray-500')}`} />
+            <span className={`w-2 h-2 rounded-full ${isFiltered ? (isLight ? 'bg-sky-600 animate-pulse' : 'bg-cyan-400 animate-pulse') : (isLight ? 'bg-slate-400' : 'bg-gray-500')}`} />
             <span>
               {filteredRows.length.toLocaleString()} / {cleanRows.length.toLocaleString()} rows
               {isFiltered && ` (${Math.round((filteredRows.length / (cleanRows.length || 1)) * 100)}%)`}
             </span>
           </div>
 
-          {/* Reset All Slicers */}
+          {/* Add Slicer Button */}
+          <button
+            onClick={() => setIsAddSlicerModalOpen(true)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
+              isLight 
+                ? 'bg-sky-50 text-sky-700 border-sky-300 hover:bg-sky-100 shadow-2xs' 
+                : 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30 hover:bg-cyan-500/25'
+            }`}
+            title="Add any dataset column as a live slicer"
+          >
+            <Plus className="w-3.5 h-3.5 text-sky-600 dark:text-cyan-400" />
+            <span>Add Slicer</span>
+          </button>
+
+          {/* Reset All Active Slicer Filters */}
           {hasActiveFilters && (
             <button
               onClick={clearAllSlicers}
@@ -193,6 +279,19 @@ export const InteractiveSlicersBar: React.FC<{
               <span>Clear Slicers</span>
             </button>
           )}
+
+          {/* Reset Slicers to Default Columns */}
+          <button
+            onClick={handleResetToDefaultSlicers}
+            className={`p-1.5 rounded-xl border transition-colors ${
+              isLight 
+                ? 'bg-white border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-100' 
+                : 'bg-[#1b2230] border-[#2d3748] text-gray-400 hover:text-white hover:bg-[#252f44]'
+            }`}
+            title="Reset slicers to default columns"
+          >
+            <Columns className="w-4 h-4" />
+          </button>
 
           {/* Collapse / Expand Toggle */}
           <button
@@ -405,6 +504,17 @@ export const InteractiveSlicersBar: React.FC<{
                           Reset
                         </button>
                       )}
+
+                      {/* Remove Slicer Card Button */}
+                      <button
+                        onClick={() => handleRemoveSlicerColumn(slicer.columnName)}
+                        className={`p-1 rounded transition-colors ${
+                          isLight ? 'text-slate-400 hover:text-rose-600 hover:bg-rose-50' : 'text-gray-500 hover:text-rose-400 hover:bg-rose-500/10'
+                        }`}
+                        title={`Remove ${slicer.columnName} slicer`}
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
                     </div>
                   </div>
 
@@ -488,7 +598,7 @@ export const InteractiveSlicersBar: React.FC<{
               isLight ? 'border-slate-200 text-slate-700' : 'border-[#222938] text-gray-300'
             }`}>
               <span className="text-[11px] font-bold uppercase tracking-wider flex items-center gap-1">
-                <Filter className="w-3 h-3 text-emerald-500" />
+                <Filter className="w-3 h-3 text-sky-600 dark:text-cyan-400" />
                 Active Slicers:
               </span>
 
@@ -500,8 +610,8 @@ export const InteractiveSlicersBar: React.FC<{
                     key={col}
                     className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs border font-medium ${
                       isLight 
-                        ? 'bg-emerald-50 text-emerald-900 border-emerald-300' 
-                        : 'bg-[#21F1A8]/15 text-[#21F1A8] border-[#21F1A8]/30'
+                        ? 'bg-sky-50 text-sky-900 border-sky-300' 
+                        : 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30'
                     }`}
                   >
                     <span className="font-bold">{col}:</span>
@@ -544,7 +654,120 @@ export const InteractiveSlicersBar: React.FC<{
               )}
             </div>
           )}
+        </div>
+      )}
 
+      {/* =================================================================== */}
+      {/* ADD SLICER MODAL                                                    */}
+      {/* =================================================================== */}
+      {isAddSlicerModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className={`w-full max-w-lg rounded-2xl border p-5 shadow-2xl space-y-4 animate-scaleUp ${
+            isLight ? 'bg-white border-slate-200' : 'bg-[#111622] border-[#2a364f]'
+          }`}>
+            <div className="flex items-center justify-between pb-3 border-b border-inherit">
+              <div className="flex items-center gap-2">
+                <div className={`p-2 rounded-xl ${isLight ? 'bg-sky-100 text-sky-700' : 'bg-cyan-500/20 text-cyan-400'}`}>
+                  <Plus className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className={`text-sm font-bold uppercase tracking-wider ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                    Add Slicer Column
+                  </h3>
+                  <p className={`text-xs ${isLight ? 'text-slate-500' : 'text-gray-400'}`}>
+                    Select any dataset dimension to add as a live interactive slicer card
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsAddSlicerModalOpen(false)}
+                className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                  isLight ? 'text-slate-500 hover:bg-slate-100' : 'text-gray-400 hover:bg-white/10'
+                }`}
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Column search input */}
+            <div className="relative">
+              <Search className={`w-4 h-4 absolute left-3 top-2.5 ${isLight ? 'text-slate-400' : 'text-gray-500'}`} />
+              <input
+                type="text"
+                value={addSlicerSearchQuery}
+                onChange={(e) => setAddSlicerSearchQuery(e.target.value)}
+                placeholder="Search available columns..."
+                className={`w-full pl-9 pr-3 py-2 text-xs rounded-xl border focus:outline-none ${
+                  isLight 
+                    ? 'bg-slate-50 border-slate-300 text-slate-900 placeholder:text-slate-400 focus:border-sky-500' 
+                    : 'bg-[#161c28] border-[#2b3547] text-white placeholder:text-gray-500 focus:border-cyan-400'
+                }`}
+                autoFocus
+              />
+            </div>
+
+            {/* Available Columns List */}
+            <div className="max-h-64 overflow-y-auto space-y-1.5 pr-1">
+              {availableColumnsToAdd.length > 0 ? (
+                availableColumnsToAdd.map(col => (
+                  <div
+                    key={col.name}
+                    className={`flex items-center justify-between p-2.5 rounded-xl border transition-all ${
+                      isLight 
+                        ? 'bg-slate-50 border-slate-200 hover:bg-sky-50/70 hover:border-sky-200' 
+                        : 'bg-[#161d2a] border-[#263145] hover:bg-[#1f293b] hover:border-cyan-500/30'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className={`text-xs font-bold truncate ${isLight ? 'text-slate-800' : 'text-gray-100'}`}>
+                        {col.name}
+                      </span>
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-semibold ${
+                        col.dataType === 'number'
+                          ? isLight ? 'bg-amber-100 text-amber-800' : 'bg-amber-500/20 text-amber-300'
+                          : isLight ? 'bg-slate-200 text-slate-700' : 'bg-gray-800 text-gray-300'
+                      }`}>
+                        {col.dataType}
+                      </span>
+                      <span className={`text-[10px] font-mono ${isLight ? 'text-slate-500' : 'text-gray-400'}`}>
+                        {col.distinctCount} distinct values
+                      </span>
+                    </div>
+
+                    <button
+                      onClick={() => handleAddSlicerColumn(col.name)}
+                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${
+                        isLight 
+                          ? 'bg-sky-600 hover:bg-sky-700 text-white shadow-xs' 
+                          : 'bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow-xs'
+                      }`}
+                    >
+                      <Plus className="w-3 h-3" />
+                      <span>Add</span>
+                    </button>
+                  </div>
+                ))
+              ) : (
+                <div className={`p-6 text-center text-xs ${isLight ? 'text-slate-500' : 'text-gray-400'}`}>
+                  {addSlicerSearchQuery ? 'No matching columns found.' : 'All eligible columns are already active as slicers.'}
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between pt-2 border-t border-inherit text-xs">
+              <span className={isLight ? 'text-slate-500' : 'text-gray-400'}>
+                {activeSlicerColNames.length} active slicers currently
+              </span>
+              <button
+                onClick={() => setIsAddSlicerModalOpen(false)}
+                className={`px-3 py-1.5 rounded-lg font-semibold cursor-pointer ${
+                  isLight ? 'bg-slate-200 text-slate-800 hover:bg-slate-300' : 'bg-gray-800 text-gray-200 hover:bg-gray-700'
+                }`}
+              >
+                Close
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

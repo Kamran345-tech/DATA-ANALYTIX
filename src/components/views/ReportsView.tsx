@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   FileSpreadsheet, 
   Printer, 
@@ -17,14 +17,21 @@ import {
   X,
   RotateCcw,
   Sparkles,
-  Tv
+  Tv,
+  Plus,
+  RefreshCw,
+  BarChart2,
+  PieChart,
+  LineChart,
+  Table as TableIcon
 } from 'lucide-react';
-import { KPI } from '../../types';
+import { KPI, VisualConfig } from '../../types';
 import { usePlatform, ReportHeadings } from '../../store/usePlatformStore';
 import { generateEnterpriseReportPDF, downloadDashboardAndReportBundle, ExportDataPayload } from '../../engine/exportEngine';
 import { EditableDashboardTitle } from '../common/EditableDashboardTitle';
 import { KpiCardEditorModal } from '../common/KpiCardEditorModal';
 import { parseRobustNumber } from '../../engine/dataParser';
+import { InteractiveSlicersBar } from '../common/InteractiveSlicersBar';
 
 export const ReportsView: React.FC = () => {
   const { 
@@ -34,19 +41,33 @@ export const ReportsView: React.FC = () => {
     qualityReport, 
     cleanRows, 
     rawRows, 
+    filteredRows,
     columns, 
     dataModel, 
     daxMeasures, 
     transformations, 
     customVisuals, 
+    updateCustomVisual,
+    addCustomVisual,
     reportHeadings, 
     updateReportHeading,
-    setIsPresentationMode 
+    setIsPresentationMode,
+    themeMode
   } = usePlatform();
+
+  const isLight = themeMode === 'light';
 
   const [isPdfGenerating, setIsPdfGenerating] = useState(false);
   const [isBundleGenerating, setIsBundleGenerating] = useState(false);
   const [downloadSuccess, setDownloadSuccess] = useState<string | null>(null);
+
+  // New Custom Chart Modal State (Add custom charts dynamically to report)
+  const [isAddChartModalOpen, setIsAddChartModalOpen] = useState(false);
+  const [newChartTitle, setNewChartTitle] = useState('');
+  const [newChartType, setNewChartType] = useState<VisualConfig['type']>('bar');
+  const [newChartCat, setNewChartCat] = useState('');
+  const [newChartVal, setNewChartVal] = useState('');
+  const [newChartAgg, setNewChartAgg] = useState<VisualConfig['aggregation']>('sum');
 
   // KPI Editor Modal state
   const [editingKpi, setEditingKpi] = useState<KPI | null>(null);
@@ -57,6 +78,28 @@ export const ReportsView: React.FC = () => {
   // Inline heading editing state
   const [inlineEditingKey, setInlineEditingKey] = useState<keyof ReportHeadings | null>(null);
   const [inlineHeadingVal, setInlineHeadingVal] = useState<string>('');
+
+  // Inline Visual Widget Title Editing state (for Section 4 charts)
+  const [editingVisId, setEditingVisId] = useState<string | null>(null);
+  const [editingVisTitle, setEditingVisTitle] = useState<string>('');
+
+  const handleStartVisEdit = (id: string, currentTitle: string) => {
+    setEditingVisId(id);
+    setEditingVisTitle(currentTitle);
+  };
+
+  const handleSaveVisTitle = (id: string) => {
+    if (editingVisTitle.trim()) {
+      updateCustomVisual(id, { title: editingVisTitle.trim(), isCustomRenamed: true } as any);
+      setDownloadSuccess(`Renamed visual to "${editingVisTitle.trim()}"`);
+      setTimeout(() => setDownloadSuccess(null), 2500);
+    }
+    setEditingVisId(null);
+  };
+
+  const handleCancelVisEdit = () => {
+    setEditingVisId(null);
+  };
 
   const handleStartInlineEdit = (key: keyof ReportHeadings) => {
     setInlineEditingKey(key);
@@ -80,6 +123,66 @@ export const ReportsView: React.FC = () => {
     window.print();
   };
 
+  // Dynamic filtered KPI values and filtered rows computation
+  const isFiltered = filteredRows.length < cleanRows.length;
+  const effectiveRows = filteredRows;
+
+  const computeFilteredKpi = (kpi: KPI) => {
+    if (!isFiltered) {
+      return { formatted: kpi.formattedValue, raw: kpi.value, isFiltered: false };
+    }
+    const vals = effectiveRows
+      .map(r => Number(r[kpi.sourceColumn]))
+      .filter(v => typeof v === 'number' && !isNaN(v));
+
+    if (vals.length === 0) {
+      return { formatted: '0', raw: 0, isFiltered: true };
+    }
+
+    let computed = 0;
+    if (kpi.aggregation === 'avg') {
+      computed = vals.reduce((a, b) => a + b, 0) / vals.length;
+    } else if (kpi.aggregation === 'count') {
+      computed = effectiveRows.length;
+    } else if (kpi.aggregation === 'distinct_count') {
+      computed = new Set(effectiveRows.map(r => String(r[kpi.sourceColumn]))).size;
+    } else if (kpi.aggregation === 'min') {
+      computed = Math.min(...vals);
+    } else if (kpi.aggregation === 'max') {
+      computed = Math.max(...vals);
+    } else {
+      computed = vals.reduce((a, b) => a + b, 0);
+    }
+
+    const isCurrency = /revenue|sales|profit|margin|cost|price|income|amount/i.test(kpi.name) || kpi.formattedValue.startsWith('$');
+    const isPercent = /margin|rate|percent|share|yield/i.test(kpi.name) || kpi.formattedValue.endsWith('%');
+
+    let formatted = '';
+    if (isCurrency) {
+      if (Math.abs(computed) >= 1_000_000) formatted = `$${(computed / 1_000_000).toFixed(2)}M`;
+      else if (Math.abs(computed) >= 1_000) formatted = `$${(computed / 1_000).toFixed(1)}K`;
+      else formatted = `$${computed.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+    } else if (isPercent) {
+      formatted = `${computed.toFixed(1)}%`;
+    } else {
+      formatted = computed >= 1000 ? Math.round(computed).toLocaleString() : computed.toFixed(1);
+    }
+
+    return { formatted, raw: computed, isFiltered: true };
+  };
+
+  const reportKpis = useMemo(() => {
+    return analytics.kpis.map(k => {
+      const f = computeFilteredKpi(k);
+      return {
+        ...k,
+        formattedValue: f.formatted,
+        value: f.raw,
+        isFiltered: f.isFiltered
+      };
+    });
+  }, [analytics.kpis, effectiveRows, isFiltered]);
+
   const handleDownloadPDF = () => {
     setIsPdfGenerating(true);
     try {
@@ -87,10 +190,10 @@ export const ReportsView: React.FC = () => {
         project,
         brand,
         rawRows,
-        cleanRows,
+        cleanRows: effectiveRows,
         columns,
         dataModel,
-        kpis: analytics.kpis,
+        kpis: reportKpis,
         daxMeasures,
         insights: analytics.insights,
         transformations,
@@ -105,7 +208,7 @@ export const ReportsView: React.FC = () => {
         opportunities: analytics.opportunities
       });
       doc.save(`${project.name.replace(/[^a-zA-Z0-9_]/g, '_')}_Executive_Report.pdf`);
-      setDownloadSuccess('Executive PDF Report downloaded successfully!');
+      setDownloadSuccess(`Executive PDF Report (${effectiveRows.length.toLocaleString()} rows) downloaded!`);
       setTimeout(() => setDownloadSuccess(null), 3000);
     } catch (err: any) {
       console.error(err);
@@ -123,10 +226,10 @@ export const ReportsView: React.FC = () => {
         project,
         brand,
         rawRows,
-        cleanRows,
+        cleanRows: effectiveRows,
         columns,
         dataModel,
-        kpis: analytics.kpis,
+        kpis: reportKpis,
         daxMeasures,
         insights: analytics.insights,
         transformations,
@@ -140,7 +243,7 @@ export const ReportsView: React.FC = () => {
         anomalies: analytics.anomalies,
         opportunities: analytics.opportunities
       });
-      setDownloadSuccess('Combined Dashboard & Executive Report bundle downloaded successfully!');
+      setDownloadSuccess(`Combined Dashboard & Report bundle (${effectiveRows.length.toLocaleString()} rows) downloaded!`);
       setTimeout(() => setDownloadSuccess(null), 3500);
     } catch (err: any) {
       console.error(err);
@@ -155,7 +258,7 @@ export const ReportsView: React.FC = () => {
   const computeVisualBreakdown = (catField: string, valField: string, agg: string = 'sum') => {
     const map: Record<string, { sum: number; count: number; min: number; max: number }> = {};
     let totalSum = 0;
-    cleanRows.forEach(r => {
+    effectiveRows.forEach(r => {
       const cat = String(r[catField] !== undefined && r[catField] !== null ? r[catField] : 'Unassigned');
       const parsed = parseRobustNumber(r[valField]);
       const val = parsed.value !== null && !isNaN(parsed.value) ? parsed.value : 0;
@@ -184,20 +287,107 @@ export const ReportsView: React.FC = () => {
 
     // Audit fix: When aggregation is average, grand total must be true weighted average
     const grandTotal = agg === 'avg'
-      ? (cleanRows.length > 0 ? totalSum / cleanRows.length : 0)
-      : (agg === 'count' ? cleanRows.length : totalSum);
+      ? (effectiveRows.length > 0 ? totalSum / effectiveRows.length : 0)
+      : (agg === 'count' ? effectiveRows.length : totalSum);
 
     return { items: items.slice(0, 8), total: grandTotal, totalSum, totalSegments: items.length };
   };
 
   const attachedVisuals = customVisuals.length > 0 ? customVisuals : (analytics.visuals || []);
+  const numericCols = useMemo(() => columns.filter(c => c.dataType === 'number'), [columns]);
+  const stringCols = useMemo(() => columns.filter(c => c.dataType === 'string' || c.dataType === 'date'), [columns]);
+
+  const handleAddCustomChart = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newChartTitle.trim()) return;
+    const cat = newChartCat || stringCols[0]?.name || 'Category';
+    const val = newChartVal || numericCols[0]?.name || 'Value';
+    const newVisual: VisualConfig = {
+      id: `vis-custom-${Date.now()}`,
+      title: newChartTitle.trim(),
+      type: newChartType,
+      categoryField: cat,
+      valueField: val,
+      aggregation: newChartAgg,
+      color: '#0284C7',
+      description: `${newChartAgg.toUpperCase()}(${val}) by ${cat}`,
+      isCustomRenamed: true
+    };
+    addCustomVisual(newVisual);
+    setIsAddChartModalOpen(false);
+    setNewChartTitle('');
+    setDownloadSuccess(`Added chart: "${newVisual.title}"`);
+    setTimeout(() => setDownloadSuccess(null), 2500);
+  };
+
+  const handleAutoSyncCharts = () => {
+    const primaryVal = numericCols[0]?.name;
+    const secondaryVal = numericCols[1]?.name || primaryVal;
+    const primaryCat = stringCols.find(c => c.distinctCount > 1 && c.distinctCount < 50)?.name || stringCols[0]?.name;
+    const secondaryCat = stringCols.find(c => c.name !== primaryCat && c.distinctCount > 1 && c.distinctCount < 50)?.name || stringCols[1]?.name || primaryCat;
+    const dateCol = columns.find(c => c.dataType === 'date')?.name;
+
+    if (!primaryVal || !primaryCat) {
+      setDownloadSuccess('No valid columns found to auto-generate charts.');
+      setTimeout(() => setDownloadSuccess(null), 2500);
+      return;
+    }
+
+    const generated: VisualConfig[] = [];
+    if (dateCol) {
+      generated.push({
+        id: `vis-sync-${Date.now()}-1`,
+        title: `${primaryVal.toUpperCase()} TREND OVER TIME`,
+        type: 'line',
+        categoryField: dateCol,
+        valueField: primaryVal,
+        aggregation: 'sum',
+        color: '#0284C7'
+      });
+    }
+    generated.push({
+      id: `vis-sync-${Date.now()}-2`,
+      title: `${primaryVal.toUpperCase()} BY ${primaryCat.toUpperCase()}`,
+      type: 'bar',
+      categoryField: primaryCat,
+      valueField: primaryVal,
+      aggregation: 'sum',
+      color: '#00D8F6'
+    });
+    if (secondaryCat && secondaryCat !== primaryCat) {
+      generated.push({
+        id: `vis-sync-${Date.now()}-3`,
+        title: `SHARE BY ${secondaryCat.toUpperCase()}`,
+        type: 'donut',
+        categoryField: secondaryCat,
+        valueField: primaryVal,
+        aggregation: 'sum',
+        color: '#38BDF8'
+      });
+    }
+    if (secondaryVal) {
+      generated.push({
+        id: `vis-sync-${Date.now()}-4`,
+        title: `PERFORMANCE MATRIX (${primaryCat.toUpperCase()})`,
+        type: 'table',
+        categoryField: primaryCat,
+        valueField: secondaryVal,
+        aggregation: 'sum',
+        color: '#0284C7'
+      });
+    }
+
+    generated.forEach(v => addCustomVisual(v));
+    setDownloadSuccess(`Auto-generated ${generated.length} charts tailored to ${project.name}!`);
+    setTimeout(() => setDownloadSuccess(null), 3000);
+  };
 
   return (
     <div className="space-y-6 pb-16 animate-fadeIn max-w-4xl mx-auto">
       {/* Toast Notification */}
       {downloadSuccess && (
-        <div className="fixed top-20 right-6 z-50 bg-[#162920] border border-[#21F1A8] text-[#21F1A8] px-4 py-2.5 rounded-xl text-xs font-semibold shadow-xl flex items-center gap-2 animate-bounce">
-          <Check className="w-4 h-4" />
+        <div className="fixed top-20 right-6 z-50 bg-[#0f2130] border border-cyan-400 text-cyan-300 px-4 py-2.5 rounded-xl text-xs font-semibold shadow-xl flex items-center gap-2 animate-bounce">
+          <Check className="w-4 h-4 text-cyan-400" />
           <span>{downloadSuccess}</span>
         </div>
       )}
@@ -268,16 +458,21 @@ export const ReportsView: React.FC = () => {
         </div>
       </div>
 
+      {/* Interactive Live Slicers Bar for Report View */}
+      <div className="print:hidden">
+        <InteractiveSlicersBar />
+      </div>
+
       {/* Printable Report Document */}
-      <div className="bg-[#171717] border border-[#333] rounded-3xl p-8 sm:p-12 space-y-10 shadow-2xl print:bg-white print:text-black print:border-none print:shadow-none print:p-0">
+      <div className={`${isLight ? 'bg-white border-slate-200 text-slate-900 shadow-xl' : 'bg-[#171717] border-[#333] text-white shadow-2xl'} rounded-3xl p-8 sm:p-12 space-y-10 print:bg-white print:text-black print:border-none print:shadow-none print:p-0`}>
         {/* Document Header */}
-        <div className="border-b border-[#333] pb-8 flex flex-wrap items-start justify-between gap-6 print:border-gray-300">
+        <div className={`border-b ${isLight ? 'border-slate-200' : 'border-[#333]'} pb-8 flex flex-wrap items-start justify-between gap-6 print:border-gray-300`}>
           <div className="space-y-2 flex-1 min-w-[280px]">
             <div className="flex items-center gap-2">
-              <span className="font-heading text-xl font-bold tracking-wider text-white print:text-black">
+              <span className={`font-heading text-xl font-bold tracking-wider ${isLight ? 'text-slate-900' : 'text-white'} print:text-black`}>
                 {brand.companyName}
               </span>
-              <span className="text-xs text-[#21F1A8] print:text-emerald-700 font-mono">
+              <span className={`text-xs ${isLight ? 'text-sky-700 font-bold' : 'text-cyan-400'} print:text-sky-700 font-mono`}>
                 • {brand.department}
               </span>
             </div>
@@ -295,18 +490,18 @@ export const ReportsView: React.FC = () => {
                       if (e.key === 'Escape') handleCancelInlineEdit();
                     }}
                     autoFocus
-                    className="flex-1 px-3 py-1.5 bg-[#121212] border border-[#21F1A8] text-white rounded-lg text-2xl font-extrabold uppercase focus:outline-none"
+                    className={`flex-1 px-3 py-1.5 ${isLight ? 'bg-white border-sky-500 text-slate-900' : 'bg-[#121212] border-cyan-400 text-white'} border rounded-lg text-2xl font-extrabold uppercase focus:outline-none focus:ring-2 focus:ring-sky-500`}
                   />
                   <button
                     onClick={handleSaveInlineEdit}
-                    className="p-2 bg-[#21F1A8] text-black rounded-lg hover:bg-[#1cdb97]"
+                    className="p-2 bg-sky-600 hover:bg-sky-500 text-white rounded-lg shadow-xs"
                     title="Save title"
                   >
                     <Check className="w-4 h-4 stroke-[3]" />
                   </button>
                   <button
                     onClick={handleCancelInlineEdit}
-                    className="p-2 bg-[#2a2a2a] text-gray-300 rounded-lg hover:bg-[#333]"
+                    className={`p-2 ${isLight ? 'bg-slate-200 text-slate-700 hover:bg-slate-300' : 'bg-[#2a2a2a] text-gray-300 hover:bg-[#333]'} rounded-lg`}
                     title="Cancel"
                   >
                     <X className="w-4 h-4" />
@@ -314,12 +509,12 @@ export const ReportsView: React.FC = () => {
                 </div>
               ) : (
                 <div className="flex items-center gap-2.5 flex-wrap">
-                  <h1 className="font-heading text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white print:text-black tracking-wide uppercase">
+                  <h1 className={`font-heading text-3xl sm:text-4xl lg:text-5xl font-extrabold ${isLight ? 'text-slate-900' : 'text-white'} print:text-black tracking-wide uppercase`}>
                     {reportHeadings.mainTitle || 'EXECUTIVE INTELLIGENCE BRIEF'}
                   </h1>
                   <button
                     onClick={() => handleStartInlineEdit('mainTitle')}
-                    className="p-1.5 rounded-lg bg-[#242424] hover:bg-[#333] text-gray-400 hover:text-[#21F1A8] transition-colors print:hidden opacity-70 group-hover:opacity-100"
+                    className={`p-1.5 rounded-lg ${isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-600' : 'bg-[#242424] hover:bg-[#333] text-gray-400'} hover:text-sky-600 transition-colors print:hidden opacity-70 group-hover:opacity-100`}
                     title="Change main report title"
                   >
                     <Pencil className="w-4 h-4" />
@@ -331,16 +526,16 @@ export const ReportsView: React.FC = () => {
             <div className="print:hidden py-1">
               <EditableDashboardTitle className="text-base font-semibold" showLabelPrefix={true} />
             </div>
-            <p className="text-xs text-gray-400 print:text-gray-600">
-              Project: <span className="text-gray-200 print:text-black font-medium">{project.name}</span> • Dataset: <span className="font-mono text-gray-300 print:text-black">{project.sourceFileName}</span>
+            <p className={`text-xs ${isLight ? 'text-slate-600' : 'text-gray-400'} print:text-gray-600`}>
+              Project: <span className={`${isLight ? 'text-slate-900' : 'text-gray-200'} print:text-black font-medium`}>{project.name}</span> • Dataset: <span className={`font-mono ${isLight ? 'text-slate-700' : 'text-gray-300'} print:text-black`}>{project.sourceFileName}</span>
             </p>
           </div>
 
-          <div className="text-right text-xs text-gray-400 print:text-gray-600 space-y-1">
-            <div>Date: <strong className="text-white print:text-black font-mono">{new Date().toLocaleDateString()}</strong></div>
-            <div>Author: <strong className="text-white print:text-black">{brand.author}</strong></div>
+          <div className={`text-right text-xs ${isLight ? 'text-slate-600' : 'text-gray-400'} print:text-gray-600 space-y-1`}>
+            <div>Date: <strong className={`${isLight ? 'text-slate-900' : 'text-white'} print:text-black font-mono`}>{new Date().toLocaleDateString()}</strong></div>
+            <div>Author: <strong className={`${isLight ? 'text-slate-900' : 'text-white'} print:text-black`}>{brand.author}</strong></div>
             <div>Version: <span className="font-mono">{project.version}</span></div>
-            <div className="text-[#21F1A8] print:text-emerald-700 font-semibold">
+            <div className={`${isLight ? 'text-sky-700 font-bold' : 'text-cyan-400 font-semibold'} print:text-sky-700`}>
               Quality Audit: {qualityReport.overallScore}%
             </div>
           </div>
@@ -360,19 +555,19 @@ export const ReportsView: React.FC = () => {
                     if (e.key === 'Escape') handleCancelInlineEdit();
                   }}
                   autoFocus
-                  className="px-3 py-1 bg-[#121212] border border-[#21F1A8] text-[#21F1A8] rounded-lg text-lg font-bold uppercase focus:outline-none"
+                  className={`px-3 py-1 ${isLight ? 'bg-white border-sky-500 text-slate-900' : 'bg-[#121212] border-cyan-400 text-cyan-300'} border rounded-lg text-lg font-bold uppercase focus:outline-none`}
                 />
-                <button onClick={handleSaveInlineEdit} className="p-1.5 bg-[#21F1A8] text-black rounded"><Check className="w-3.5 h-3.5" /></button>
-                <button onClick={handleCancelInlineEdit} className="p-1.5 bg-[#2a2a2a] text-gray-300 rounded"><X className="w-3.5 h-3.5" /></button>
+                <button onClick={handleSaveInlineEdit} className="p-1.5 bg-sky-600 text-white rounded"><Check className="w-3.5 h-3.5" /></button>
+                <button onClick={handleCancelInlineEdit} className={`p-1.5 ${isLight ? 'bg-slate-200 text-slate-700' : 'bg-[#2a2a2a] text-gray-300'} rounded`}><X className="w-3.5 h-3.5" /></button>
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <h2 className="font-heading text-xl sm:text-2xl font-bold text-[#21F1A8] print:text-emerald-800 uppercase tracking-wide">
+                <h2 className={`font-heading text-xl sm:text-2xl font-bold ${isLight ? 'text-sky-900' : 'text-cyan-400'} print:text-sky-800 uppercase tracking-wide`}>
                   {reportHeadings.section1 || '1. EXECUTIVE SUMMARY & BUSINESS HEALTH'}
                 </h2>
                 <button
                   onClick={() => handleStartInlineEdit('section1')}
-                  className="p-1 text-gray-500 hover:text-[#21F1A8] opacity-60 group-hover:opacity-100 transition-opacity print:hidden"
+                  className={`p-1 ${isLight ? 'text-slate-400 hover:text-sky-600' : 'text-gray-500 hover:text-cyan-400'} opacity-60 group-hover:opacity-100 transition-opacity print:hidden`}
                   title="Change Section 1 Heading"
                 >
                   <Pencil className="w-3.5 h-3.5" />
@@ -381,9 +576,10 @@ export const ReportsView: React.FC = () => {
             )}
           </div>
 
-          <div className="p-5 rounded-2xl bg-[#1c1c1c] print:bg-gray-50 border border-[#2a2a2a] print:border-gray-200 text-xs text-gray-300 print:text-gray-800 leading-relaxed space-y-2">
+          <div className={`p-5 rounded-2xl ${isLight ? 'bg-slate-50 border-slate-200 text-slate-800' : 'bg-[#1c1c1c] border-[#2a2a2a] text-gray-300'} print:bg-gray-50 border print:border-gray-200 text-xs print:text-gray-800 leading-relaxed space-y-2`}>
             <p>
-              This report provides a verified assessment based on <strong>{cleanRows.length.toLocaleString()}</strong> audited transaction records. Overall data health scored <strong>{qualityReport.overallScore}%</strong> on completeness, validity, and uniqueness.
+              This report provides a verified assessment based on <strong>{effectiveRows.length.toLocaleString()}</strong>
+              {isFiltered && ` (filtered from ${cleanRows.length.toLocaleString()} total)`} audited transaction records. Overall data health scored <strong>{qualityReport.overallScore}%</strong> on completeness, validity, and uniqueness.
             </p>
             {analytics.businessHealthScore && (
               <p>
@@ -407,19 +603,19 @@ export const ReportsView: React.FC = () => {
                     if (e.key === 'Escape') handleCancelInlineEdit();
                   }}
                   autoFocus
-                  className="px-3 py-1 bg-[#121212] border border-[#21F1A8] text-[#21F1A8] rounded-lg text-lg font-bold uppercase focus:outline-none"
+                  className="px-3 py-1 bg-[#121212] border border-cyan-400 text-cyan-300 rounded-lg text-lg font-bold uppercase focus:outline-none"
                 />
-                <button onClick={handleSaveInlineEdit} className="p-1.5 bg-[#21F1A8] text-black rounded"><Check className="w-3.5 h-3.5" /></button>
+                <button onClick={handleSaveInlineEdit} className="p-1.5 bg-sky-600 text-white rounded"><Check className="w-3.5 h-3.5" /></button>
                 <button onClick={handleCancelInlineEdit} className="p-1.5 bg-[#2a2a2a] text-gray-300 rounded"><X className="w-3.5 h-3.5" /></button>
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <h2 className="font-heading text-xl sm:text-2xl font-bold text-[#21F1A8] print:text-emerald-800 uppercase tracking-wide">
+                <h2 className="font-heading text-xl sm:text-2xl font-bold text-cyan-400 print:text-sky-800 uppercase tracking-wide">
                   {reportHeadings.section2 || '2. KEY PERFORMANCE INDICATORS'}
                 </h2>
                 <button
                   onClick={() => handleStartInlineEdit('section2')}
-                  className="p-1 text-gray-500 hover:text-[#21F1A8] opacity-60 group-hover:opacity-100 transition-opacity print:hidden"
+                  className="p-1 text-gray-500 hover:text-cyan-400 opacity-60 group-hover:opacity-100 transition-opacity print:hidden"
                   title="Change Section 2 Heading"
                 >
                   <Pencil className="w-3.5 h-3.5" />
@@ -430,23 +626,24 @@ export const ReportsView: React.FC = () => {
             {/* Quick KPI Customizer Trigger */}
             <div className="flex items-center gap-2 print:hidden">
               <span className="text-[11px] text-gray-400 font-mono">
-                {analytics.kpis.length} Metrics Analyzed
+                {reportKpis.length} Metrics Analyzed
+                {isFiltered && ` (${effectiveRows.length.toLocaleString()} rows)`}
               </span>
               <button
                 type="button"
                 onClick={() => setEditingKpi(analytics.kpis[0] || null)}
-                className="px-2.5 py-1 rounded-lg bg-[#242424] hover:bg-[#333] text-gray-200 hover:text-[#21F1A8] text-xs font-medium border border-[#333] flex items-center gap-1.5 transition-all shadow-xs"
+                className="px-2.5 py-1 rounded-lg bg-[#242424] hover:bg-[#333] text-gray-200 hover:text-cyan-400 text-xs font-medium border border-[#333] hover:border-cyan-500/40 flex items-center gap-1.5 transition-all shadow-xs"
                 title="Change metric headings, columns, and aggregation formulas"
               >
-                <Sliders className="w-3 h-3 text-[#21F1A8]" />
+                <Sliders className="w-3 h-3 text-cyan-400" />
                 <span>Customize Metrics & Formulas</span>
               </button>
             </div>
           </div>
 
-          <div className="overflow-x-auto rounded-xl border border-[#2a2a2a] print:border-gray-200">
+          <div className={`overflow-x-auto rounded-xl border ${isLight ? 'border-slate-200 bg-white' : 'border-[#2a2a2a] bg-[#141414]'} print:border-gray-200`}>
             <table className="w-full text-left text-xs">
-              <thead className="bg-[#141414] print:bg-gray-100 text-gray-400 print:text-gray-700 uppercase font-mono border-b border-[#2a2a2a] print:border-gray-300">
+              <thead className={`${isLight ? 'bg-slate-100 text-slate-700 border-slate-200' : 'bg-[#141414] text-gray-400 border-[#2a2a2a]'} uppercase font-mono border-b print:bg-gray-100 print:border-gray-300`}>
                 <tr>
                   <th className="p-3">Metric Heading</th>
                   <th className="p-3">Current Value</th>
@@ -457,34 +654,41 @@ export const ReportsView: React.FC = () => {
                   <th className="p-3 text-right print:hidden">Edit</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#222] print:divide-gray-200 font-mono">
-                {analytics.kpis.map(k => (
-                  <tr key={k.id} className="text-gray-300 print:text-black hover:bg-[#1f1f1f]/60 print:hover:bg-transparent">
+              <tbody className={`divide-y ${isLight ? 'divide-slate-200' : 'divide-[#222]'} print:divide-gray-200 font-mono`}>
+                {reportKpis.map(k => (
+                  <tr key={k.id} className={`${isLight ? 'text-slate-800 hover:bg-slate-50' : 'text-gray-300 hover:bg-[#1f1f1f]/60'} print:text-black print:hover:bg-transparent`}>
                     <td className="p-3 font-bold font-sans flex items-center gap-2">
-                      <span>{k.name}</span>
-                      <span className="text-[10px] text-gray-500 font-mono uppercase">[{k.aggregation}]</span>
+                      <span className={isLight ? 'text-slate-900 font-bold' : 'text-white'}>{k.name}</span>
+                      <span className={`text-[10px] ${isLight ? 'text-slate-500' : 'text-gray-500'} font-mono uppercase`}>[{k.aggregation}]</span>
                     </td>
-                    <td className="p-3 text-white print:text-black font-bold">{k.formattedValue}</td>
-                    <td className="p-3 text-gray-400 print:text-gray-600">{k.formattedPreviousValue || 'N/A'}</td>
+                    <td className={`p-3 ${isLight ? 'text-slate-900 font-extrabold' : 'text-white font-bold'} print:text-black flex items-center gap-1.5`}>
+                      <span>{k.formattedValue}</span>
+                      {k.isFiltered && (
+                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-600 dark:text-sky-400 font-mono font-normal">
+                          Filtered
+                        </span>
+                      )}
+                    </td>
+                    <td className={`p-3 ${isLight ? 'text-slate-600' : 'text-gray-400'} print:text-gray-600`}>{k.formattedPreviousValue || 'N/A'}</td>
                     <td className="p-3">
                       {k.changePercent !== undefined ? (
-                        <span className={k.changePercent >= 0 ? 'text-[#21F1A8] print:text-emerald-700 font-bold' : 'text-red-400 print:text-red-700 font-bold'}>
+                        <span className={k.changePercent >= 0 ? (isLight ? 'text-sky-700 font-bold' : 'text-cyan-400 font-bold') : 'text-rose-600 font-bold'}>
                           {k.changePercent >= 0 ? '+' : ''}{k.changePercent}%
                         </span>
                       ) : '—'}
                     </td>
                     <td className="p-3">
-                      <span className="px-2 py-0.5 rounded text-[10px] uppercase font-bold bg-[#262626] print:bg-gray-200">
+                      <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold ${isLight ? 'bg-slate-200 text-slate-800' : 'bg-[#262626] text-gray-200'} print:bg-gray-200`}>
                         {k.status}
                       </span>
                     </td>
-                    <td className="p-3 text-gray-400 text-[11px] truncate max-w-[180px]" title={k.calculation}>
+                    <td className={`p-3 ${isLight ? 'text-slate-600' : 'text-gray-400'} text-[11px] truncate max-w-[180px]`} title={k.calculation}>
                       {k.calculation}
                     </td>
                     <td className="p-3 text-right print:hidden">
                       <button
                         onClick={() => setEditingKpi(k)}
-                        className="px-2 py-1 rounded bg-[#252525] hover:bg-[#333] text-gray-300 hover:text-[#21F1A8] text-[11px] font-sans font-medium border border-[#333] transition-colors"
+                        className={`px-2 py-1 rounded ${isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300' : 'bg-[#252525] hover:bg-[#333] text-gray-300 hover:text-cyan-400 border-[#333]'} text-[11px] font-sans font-medium border transition-colors cursor-pointer`}
                         title={`Customize ${k.name}`}
                       >
                         <Pencil className="w-3 h-3 inline mr-1" />
@@ -512,19 +716,19 @@ export const ReportsView: React.FC = () => {
                     if (e.key === 'Escape') handleCancelInlineEdit();
                   }}
                   autoFocus
-                  className="px-3 py-1 bg-[#121212] border border-[#21F1A8] text-[#21F1A8] rounded-lg text-lg font-bold uppercase focus:outline-none"
+                  className={`px-3 py-1 ${isLight ? 'bg-white border-sky-500 text-slate-900' : 'bg-[#121212] border-cyan-400 text-cyan-300'} border rounded-lg text-lg font-bold uppercase focus:outline-none`}
                 />
-                <button onClick={handleSaveInlineEdit} className="p-1.5 bg-[#21F1A8] text-black rounded"><Check className="w-3.5 h-3.5" /></button>
-                <button onClick={handleCancelInlineEdit} className="p-1.5 bg-[#2a2a2a] text-gray-300 rounded"><X className="w-3.5 h-3.5" /></button>
+                <button onClick={handleSaveInlineEdit} className="p-1.5 bg-sky-600 text-white rounded"><Check className="w-3.5 h-3.5" /></button>
+                <button onClick={handleCancelInlineEdit} className={`p-1.5 ${isLight ? 'bg-slate-200 text-slate-700' : 'bg-[#2a2a2a] text-gray-300'} rounded`}><X className="w-3.5 h-3.5" /></button>
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <h2 className="font-heading text-xl sm:text-2xl font-bold text-[#21F1A8] print:text-emerald-800 uppercase tracking-wide">
+                <h2 className={`font-heading text-xl sm:text-2xl font-bold ${isLight ? 'text-sky-900' : 'text-cyan-400'} print:text-sky-800 uppercase tracking-wide`}>
                   {reportHeadings.section3 || '3. AI INSIGHTS & MANAGEMENT DIRECTIVES'}
                 </h2>
                 <button
                   onClick={() => handleStartInlineEdit('section3')}
-                  className="p-1 text-gray-500 hover:text-[#21F1A8] opacity-60 group-hover:opacity-100 transition-opacity print:hidden"
+                  className={`p-1 ${isLight ? 'text-slate-400 hover:text-sky-600' : 'text-gray-500 hover:text-cyan-400'} opacity-60 group-hover:opacity-100 transition-opacity print:hidden`}
                   title="Change Section 3 Heading"
                 >
                   <Pencil className="w-3.5 h-3.5" />
@@ -537,17 +741,17 @@ export const ReportsView: React.FC = () => {
             {analytics.insights.map(ins => (
               <div 
                 key={ins.id}
-                className="p-5 rounded-2xl bg-[#1c1c1c] print:bg-gray-50 border border-[#2a2a2a] print:border-gray-200 space-y-2 text-xs text-gray-300 print:text-gray-800"
+                className={`p-5 rounded-2xl ${isLight ? 'bg-slate-50 border-slate-200 text-slate-800' : 'bg-[#1c1c1c] border-[#2a2a2a] text-gray-300'} print:bg-gray-50 border print:border-gray-200 space-y-2 text-xs`}
               >
                 <div className="flex justify-between items-center">
-                  <h4 className="font-bold text-white print:text-black text-sm">{ins.title}</h4>
-                  <span className="font-mono text-[10px] uppercase text-[#21F1A8] print:text-emerald-700 font-bold">
+                  <h4 className={`font-bold ${isLight ? 'text-slate-900' : 'text-white'} print:text-black text-sm`}>{ins.title}</h4>
+                  <span className={`font-mono text-[10px] uppercase ${isLight ? 'text-sky-700 font-bold' : 'text-cyan-400 font-bold'} print:text-sky-700`}>
                     [{ins.category}]
                   </span>
                 </div>
                 <p><strong>Observed Impact:</strong> {ins.what}</p>
                 <p><strong>Root Driver:</strong> {ins.why}</p>
-                <div className="p-3 rounded-xl bg-[#141414] print:bg-emerald-50 border border-[#21F1A8]/30 print:border-emerald-300 text-white print:text-emerald-900">
+                <div className={`p-3 rounded-xl ${isLight ? 'bg-sky-50 border-sky-200 text-sky-900' : 'bg-[#132238] border-cyan-500/30 text-white'} print:bg-sky-50 border print:border-sky-300`}>
                   <strong>Recommended Management Action:</strong> {ins.action}
                 </div>
               </div>
@@ -558,7 +762,7 @@ export const ReportsView: React.FC = () => {
         {/* 4. Attached Dashboard Visualizations & Detailed Segment Breakdowns */}
         {attachedVisuals.length > 0 && (
           <section className="space-y-6">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#333] print:border-gray-300 pb-2 group">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b ${isLight ? 'border-slate-200' : 'border-[#333]'} print:border-gray-300 pb-3 group">
               {inlineEditingKey === 'section4' ? (
                 <div className="flex items-center gap-2 max-w-xl animate-fadeIn">
                   <input
@@ -570,113 +774,202 @@ export const ReportsView: React.FC = () => {
                       if (e.key === 'Escape') handleCancelInlineEdit();
                     }}
                     autoFocus
-                    className="px-3 py-1 bg-[#121212] border border-[#21F1A8] text-[#21F1A8] rounded-lg text-lg font-bold uppercase focus:outline-none"
+                    className={`px-3 py-1 ${isLight ? 'bg-white border-sky-500 text-slate-900' : 'bg-[#121212] border-cyan-400 text-cyan-300'} border rounded-lg text-lg font-bold uppercase focus:outline-none`}
                   />
-                  <button onClick={handleSaveInlineEdit} className="p-1.5 bg-[#21F1A8] text-black rounded"><Check className="w-3.5 h-3.5" /></button>
-                  <button onClick={handleCancelInlineEdit} className="p-1.5 bg-[#2a2a2a] text-gray-300 rounded"><X className="w-3.5 h-3.5" /></button>
+                  <button onClick={handleSaveInlineEdit} className="p-1.5 bg-sky-600 text-white rounded"><Check className="w-3.5 h-3.5" /></button>
+                  <button onClick={handleCancelInlineEdit} className={`p-1.5 ${isLight ? 'bg-slate-200 text-slate-700' : 'bg-[#2a2a2a] text-gray-300'} rounded`}><X className="w-3.5 h-3.5" /></button>
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
-                  <h2 className="font-heading text-xl sm:text-2xl font-bold text-[#21F1A8] print:text-emerald-800 uppercase tracking-wide">
+                  <h2 className={`font-heading text-xl sm:text-2xl font-bold ${isLight ? 'text-sky-900' : 'text-cyan-400'} print:text-sky-800 uppercase tracking-wide`}>
                     {reportHeadings.section4 || '4. ATTACHED DASHBOARDS & SEGMENT BREAKDOWNS'}
                   </h2>
                   <button
                     onClick={() => handleStartInlineEdit('section4')}
-                    className="p-1 text-gray-500 hover:text-[#21F1A8] opacity-60 group-hover:opacity-100 transition-opacity print:hidden"
+                    className={`p-1 ${isLight ? 'text-slate-400 hover:text-sky-600' : 'text-gray-500 hover:text-cyan-400'} opacity-60 group-hover:opacity-100 transition-opacity print:hidden`}
                     title="Change Section 4 Heading"
                   >
                     <Pencil className="w-3.5 h-3.5" />
                   </button>
                 </div>
               )}
-              <span className="text-xs font-mono text-gray-400 print:text-gray-600">
-                {attachedVisuals.length} Active Visuals Attached
-              </span>
+
+              <div className="flex flex-wrap items-center gap-2 print:hidden">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNewChartCat(stringCols[0]?.name || '');
+                    setNewChartVal(numericCols[0]?.name || '');
+                    setIsAddChartModalOpen(true);
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold flex items-center gap-1 shadow-xs cursor-pointer"
+                  title="Add custom chart directly to this report"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add Custom Chart</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleAutoSyncCharts}
+                  className={`px-2.5 py-1 rounded-lg ${isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300' : 'bg-[#242424] hover:bg-[#333] text-gray-200 border-[#333]'} text-xs font-semibold flex items-center gap-1 border shadow-xs cursor-pointer`}
+                  title="Auto-adapt charts to match the current dataset schema"
+                >
+                  <RefreshCw className="w-3.5 h-3.5 text-sky-600 dark:text-cyan-400" />
+                  <span>Auto-Adapt to Dataset</span>
+                </button>
+
+                <span className={`text-xs font-mono ${isLight ? 'text-slate-600' : 'text-gray-400'} print:text-gray-600 pl-1`}>
+                  ({attachedVisuals.length} Visuals)
+                </span>
+              </div>
             </div>
 
             <div className="space-y-6">
               {attachedVisuals.map((vis, vIdx) => {
-                const cat = vis.categoryField || columns.find(c => c.dataType === 'string')?.name || 'Category';
-                const val = vis.valueField || columns.find(c => c.dataType === 'number')?.name || 'Value';
+                const visKey = vis.id || `vis-${vIdx}`;
+                // Dynamically resolve category and value columns to match the currently loaded dataset
+                const hasCatCol = columns.some(c => c.name === vis.categoryField);
+                const validCat = hasCatCol 
+                  ? vis.categoryField 
+                  : (columns.find(c => c.dataType === 'string' && c.distinctCount > 1 && c.distinctCount < 50)?.name
+                     || columns.find(c => c.dataType === 'string')?.name 
+                     || columns[0]?.name 
+                     || 'Category');
+
+                const hasValCol = columns.some(c => c.name === vis.valueField);
+                const validVal = hasValCol 
+                  ? vis.valueField 
+                  : (columns.find(c => c.dataType === 'number' && !c.isPrimaryKeyCandidate)?.name 
+                     || columns.find(c => c.dataType === 'number')?.name 
+                     || columns[1]?.name 
+                     || 'Value');
+
                 const agg = (vis.aggregation || 'sum').toLowerCase();
-                const isCur = /revenue|sales|profit|margin|cost|amount|price|salary|spend/i.test(val);
-                const { items, total, totalSegments } = computeVisualBreakdown(cat, val, agg);
+                const isCur = /revenue|sales|profit|margin|cost|amount|price|salary|spend/i.test(validVal);
+                const { items, total, totalSegments } = computeVisualBreakdown(validCat, validVal, agg);
                 const formatVal = (n: number) => isCur 
                   ? `$${n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}` 
                   : n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 
+                const displayTitle = (!hasCatCol && !hasValCol && !(vis as any).isCustomRenamed)
+                  ? `${validVal.replace(/([A-Z])/g, ' $1').trim().toUpperCase()} BY ${validCat.replace(/([A-Z])/g, ' $1').trim().toUpperCase()}`
+                  : vis.title;
+
                 return (
                   <div 
-                    key={vis.id || vIdx} 
-                    className="p-5 sm:p-6 rounded-2xl bg-[#1c1c1c] print:bg-white border border-[#2a2a2a] print:border-gray-200 space-y-4 break-inside-avoid shadow-lg"
+                    key={visKey} 
+                    className={`p-5 sm:p-6 rounded-2xl ${isLight ? 'bg-slate-50 border-slate-200 text-slate-900 shadow-md' : 'bg-[#1c1c1c] border-[#2a2a2a] text-white shadow-lg'} print:bg-white border print:border-gray-200 space-y-4 break-inside-avoid`}
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-mono font-bold text-[#21F1A8] print:text-emerald-700 uppercase">
+                          <span className={`text-xs font-mono font-bold ${isLight ? 'text-sky-700' : 'text-cyan-400'} print:text-sky-700 uppercase`}>
                             Widget 4.{vIdx + 1}
                           </span>
-                          <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-[#262626] print:bg-gray-200 text-gray-300 print:text-gray-800">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-mono uppercase ${isLight ? 'bg-slate-200 text-slate-800' : 'bg-[#262626] text-gray-300'} print:bg-gray-200 print:text-gray-800`}>
                             {vis.type || 'bar'}
                           </span>
                         </div>
-                        <h4 className="font-bold text-white print:text-black text-base uppercase">
-                          {vis.title}
-                        </h4>
-                        <p className="text-[11px] text-gray-400 print:text-gray-600">
-                          Metric: <span className="font-mono text-gray-300 print:text-black">{agg.toUpperCase()}({val})</span> grouped by <span className="font-mono text-gray-300 print:text-black">{cat}</span>
+
+                        {/* Inline Chart Title Rename Support */}
+                        {editingVisId === visKey ? (
+                          <div className="flex items-center gap-1.5 my-1">
+                            <input
+                              type="text"
+                              value={editingVisTitle}
+                              onChange={(e) => setEditingVisTitle(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleSaveVisTitle(visKey);
+                                if (e.key === 'Escape') handleCancelVisEdit();
+                              }}
+                              autoFocus
+                              className={`px-2.5 py-1 text-sm ${isLight ? 'bg-white border-sky-500 text-slate-900' : 'bg-[#121212] border-cyan-400 text-cyan-300'} border rounded-lg font-bold uppercase focus:outline-none`}
+                            />
+                            <button
+                              onClick={() => handleSaveVisTitle(visKey)}
+                              className="p-1.5 bg-sky-600 hover:bg-sky-500 text-white rounded-lg shadow-xs cursor-pointer"
+                              title="Save chart title"
+                            >
+                              <Check className="w-3.5 h-3.5 stroke-[3]" />
+                            </button>
+                            <button
+                              onClick={handleCancelVisEdit}
+                              className={`p-1.5 ${isLight ? 'bg-slate-200 text-slate-700 hover:bg-slate-300' : 'bg-[#2a2a2a] text-gray-300 hover:bg-[#333]'} rounded-lg cursor-pointer`}
+                              title="Cancel"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2 group/visTitle">
+                            <h4 className={`font-bold ${isLight ? 'text-slate-900' : 'text-white'} print:text-black text-base uppercase`}>
+                              {displayTitle}
+                            </h4>
+                            <button
+                              onClick={() => handleStartVisEdit(visKey, displayTitle)}
+                              className={`p-1 ${isLight ? 'text-slate-400 hover:text-sky-600' : 'text-gray-500 hover:text-cyan-400'} opacity-60 group-hover/visTitle:opacity-100 transition-opacity print:hidden cursor-pointer`}
+                              title="Rename chart title"
+                            >
+                              <Pencil className="w-3 h-3" />
+                            </button>
+                          </div>
+                        )}
+
+                        <p className={`text-[11px] ${isLight ? 'text-slate-600' : 'text-gray-400'} print:text-gray-600`}>
+                          Metric: <span className={`font-mono ${isLight ? 'text-slate-800 font-bold' : 'text-gray-300'} print:text-black`}>{agg.toUpperCase()}({validVal})</span> grouped by <span className={`font-mono ${isLight ? 'text-slate-800 font-bold' : 'text-gray-300'} print:text-black`}>{validCat}</span>
                         </p>
                       </div>
                       <div className="text-right">
-                        <span className="text-[10px] uppercase font-mono text-gray-400 print:text-gray-600">
+                        <span className={`text-[10px] uppercase font-mono ${isLight ? 'text-slate-500' : 'text-gray-400'} print:text-gray-600`}>
                           {agg === 'avg' ? 'Overall Average' : 'Grand Total'}
                         </span>
-                        <div className="text-lg font-bold text-[#21F1A8] print:text-emerald-800 font-mono">
+                        <div className={`text-lg font-bold ${isLight ? 'text-sky-800' : 'text-cyan-400'} print:text-sky-800 font-mono`}>
                           {formatVal(total)}
                         </div>
                       </div>
                     </div>
 
                     {/* Breakdown Table */}
-                    <div className="overflow-x-auto rounded-xl border border-[#2a2a2a] print:border-gray-200">
+                    <div className={`overflow-x-auto rounded-xl border ${isLight ? 'border-slate-200 bg-white' : 'border-[#2a2a2a] bg-[#141414]'} print:border-gray-200`}>
                       <table className="w-full text-left text-xs font-mono">
-                        <thead className="bg-[#141414] print:bg-gray-100 text-gray-400 print:text-gray-700 uppercase text-[10px]">
+                        <thead className={`${isLight ? 'bg-slate-100 text-slate-700 border-slate-200' : 'bg-[#141414] text-gray-400 border-[#2a2a2a]'} uppercase text-[10px] border-b print:bg-gray-100 print:border-gray-300`}>
                           <tr>
                             <th className="p-2.5 text-center w-12">#</th>
                             <th className="p-2.5">Category / Segment</th>
-                            <th className="p-2.5 text-right">{agg.toUpperCase()}({val})</th>
+                            <th className="p-2.5 text-right">{agg.toUpperCase()}({validVal})</th>
                             <th className="p-2.5 text-center w-36">Share %</th>
                             <th className="p-2.5 text-right w-24">Rows</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-[#222] print:divide-gray-200">
+                        <tbody className={`divide-y ${isLight ? 'divide-slate-200' : 'divide-[#222]'} print:divide-gray-200`}>
                           {items.map((it, idx) => (
-                            <tr key={idx} className="hover:bg-[#222]/40 print:hover:bg-transparent">
-                              <td className="p-2.5 text-center text-gray-500">#{idx + 1}</td>
-                              <td className="p-2.5 text-white print:text-black font-sans font-medium">{it.category}</td>
-                              <td className="p-2.5 text-right font-bold text-[#21F1A8] print:text-emerald-800">{formatVal(it.val)}</td>
+                            <tr key={idx} className={`${isLight ? 'hover:bg-slate-50 text-slate-800' : 'hover:bg-[#222]/40 text-gray-300'} print:hover:bg-transparent`}>
+                              <td className={`p-2.5 text-center ${isLight ? 'text-slate-400' : 'text-gray-500'}`}>#{idx + 1}</td>
+                              <td className={`p-2.5 ${isLight ? 'text-slate-900 font-bold' : 'text-white'} print:text-black font-sans font-medium`}>{it.category}</td>
+                              <td className={`p-2.5 text-right font-bold ${isLight ? 'text-sky-800' : 'text-cyan-400'} print:text-sky-800`}>{formatVal(it.val)}</td>
                               <td className="p-2.5">
                                 <div className="flex items-center gap-2">
-                                  <div className="w-full bg-[#111] print:bg-gray-200 h-2 rounded-full overflow-hidden">
+                                  <div className={`w-full ${isLight ? 'bg-slate-200' : 'bg-[#111]'} print:bg-gray-200 h-2 rounded-full overflow-hidden`}>
                                     <div 
-                                      className="bg-[#21F1A8] print:bg-emerald-700 h-full rounded-full" 
+                                      className={`${isLight ? 'bg-sky-600' : 'bg-cyan-500'} print:bg-sky-700 h-full rounded-full`} 
                                       style={{ width: `${Math.min(100, Math.max(4, it.share))}%` }} 
                                     />
                                   </div>
-                                  <span className="text-[10px] text-gray-400 print:text-gray-600 shrink-0 w-10 text-right">
+                                  <span className={`text-[10px] ${isLight ? 'text-slate-600' : 'text-gray-400'} print:text-gray-600 shrink-0 w-10 text-right`}>
                                     {it.share.toFixed(1)}%
                                   </span>
                                 </div>
                               </td>
-                              <td className="p-2.5 text-right text-gray-400 print:text-gray-600">{it.count.toLocaleString()}</td>
+                              <td className={`p-2.5 text-right ${isLight ? 'text-slate-600' : 'text-gray-400'} print:text-gray-600`}>{it.count.toLocaleString()}</td>
                             </tr>
                           ))}
-                          <tr className="bg-[#141414] print:bg-gray-100 font-bold text-white print:text-black">
-                            <td className="p-2.5 text-center text-[#21F1A8] print:text-emerald-700">∑</td>
+                          <tr className={`${isLight ? 'bg-slate-100 font-bold text-slate-900' : 'bg-[#141414] font-bold text-white'} print:bg-gray-100 print:text-black`}>
+                            <td className={`p-2.5 text-center ${isLight ? 'text-sky-700' : 'text-cyan-400'} print:text-sky-700`}>∑</td>
                             <td className="p-2.5 font-sans">
                               {agg === 'avg' ? `Overall Mean across ${items.length} segments` : `Top ${items.length} segments (${totalSegments} total)`}
                             </td>
-                            <td className="p-2.5 text-right text-[#21F1A8] print:text-emerald-800">{formatVal(total)}</td>
+                            <td className={`p-2.5 text-right ${isLight ? 'text-sky-800' : 'text-cyan-400'} print:text-sky-800`}>{formatVal(total)}</td>
                             <td className="p-2.5 text-center text-xs">100.0%</td>
                             <td className="p-2.5 text-right">{cleanRows.length.toLocaleString()}</td>
                           </tr>
@@ -704,19 +997,19 @@ export const ReportsView: React.FC = () => {
                     if (e.key === 'Escape') handleCancelInlineEdit();
                   }}
                   autoFocus
-                  className="px-3 py-1 bg-[#121212] border border-[#21F1A8] text-[#21F1A8] rounded-lg text-lg font-bold uppercase focus:outline-none"
+                  className={`px-3 py-1 ${isLight ? 'bg-white border-sky-500 text-slate-900' : 'bg-[#121212] border-cyan-400 text-cyan-300'} border rounded-lg text-lg font-bold uppercase focus:outline-none`}
                 />
-                <button onClick={handleSaveInlineEdit} className="p-1.5 bg-[#21F1A8] text-black rounded"><Check className="w-3.5 h-3.5" /></button>
-                <button onClick={handleCancelInlineEdit} className="p-1.5 bg-[#2a2a2a] text-gray-300 rounded"><X className="w-3.5 h-3.5" /></button>
+                <button onClick={handleSaveInlineEdit} className="p-1.5 bg-sky-600 text-white rounded"><Check className="w-3.5 h-3.5" /></button>
+                <button onClick={handleCancelInlineEdit} className={`p-1.5 ${isLight ? 'bg-slate-200 text-slate-700' : 'bg-[#2a2a2a] text-gray-300'} rounded`}><X className="w-3.5 h-3.5" /></button>
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <h2 className="font-heading text-xl sm:text-2xl font-bold text-[#21F1A8] print:text-emerald-800 uppercase tracking-wide">
+                <h2 className={`font-heading text-xl sm:text-2xl font-bold ${isLight ? 'text-sky-900' : 'text-cyan-400'} print:text-sky-800 uppercase tracking-wide`}>
                   {reportHeadings.section5 || '5. DATA QUALITY AUDIT & GOVERNANCE'}
                 </h2>
                 <button
                   onClick={() => handleStartInlineEdit('section5')}
-                  className="p-1 text-gray-500 hover:text-[#21F1A8] opacity-60 group-hover:opacity-100 transition-opacity print:hidden"
+                  className={`p-1 ${isLight ? 'text-slate-400 hover:text-sky-600' : 'text-gray-500 hover:text-cyan-400'} opacity-60 group-hover:opacity-100 transition-opacity print:hidden`}
                   title="Change Section 5 Heading"
                 >
                   <Pencil className="w-3.5 h-3.5" />
@@ -725,9 +1018,9 @@ export const ReportsView: React.FC = () => {
             )}
           </div>
 
-          <div className="overflow-x-auto rounded-xl border border-[#2a2a2a] print:border-gray-200">
+          <div className={`overflow-x-auto rounded-xl border ${isLight ? 'border-slate-200 bg-white' : 'border-[#2a2a2a]'} print:border-gray-200`}>
             <table className="w-full text-left text-xs font-mono">
-              <thead className="bg-[#141414] print:bg-gray-100 text-gray-400 print:text-gray-700 uppercase text-[10px]">
+              <thead className={`${isLight ? 'bg-slate-100 text-slate-700 border-slate-200' : 'bg-[#141414] text-gray-400 border-[#2a2a2a]'} uppercase text-[10px] border-b print:bg-gray-100 print:border-gray-300`}>
                 <tr>
                   <th className="p-2.5">Audit Dimension</th>
                   <th className="p-2.5">Score / Status</th>
@@ -735,30 +1028,30 @@ export const ReportsView: React.FC = () => {
                   <th className="p-2.5">Certification Recommendation</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#222] print:divide-gray-200">
+              <tbody className={`divide-y ${isLight ? 'divide-slate-200' : 'divide-[#222]'} print:divide-gray-200`}>
                 <tr>
-                  <td className="p-2.5 text-white print:text-black font-sans font-medium">Completeness</td>
-                  <td className="p-2.5 text-[#21F1A8] print:text-emerald-700 font-bold">{qualityReport.completenessScore}%</td>
-                  <td className="p-2.5 text-gray-400 print:text-gray-600">{qualityReport.issues.filter(i => i.type === 'missing_values').length} missing indicators</td>
-                  <td className="p-2.5 text-gray-400 print:text-gray-600 font-sans">Verify source data entry validation</td>
+                  <td className={`p-2.5 ${isLight ? 'text-slate-900 font-bold' : 'text-white'} print:text-black font-sans font-medium`}>Completeness</td>
+                  <td className={`p-2.5 ${isLight ? 'text-sky-700' : 'text-cyan-400'} print:text-sky-700 font-bold`}>{qualityReport.completenessScore}%</td>
+                  <td className={`p-2.5 ${isLight ? 'text-slate-600' : 'text-gray-400'} print:text-gray-600`}>{qualityReport.issues.filter(i => i.type === 'missing_values').length} missing indicators</td>
+                  <td className={`p-2.5 ${isLight ? 'text-slate-600' : 'text-gray-400'} print:text-gray-600 font-sans`}>Verify source data entry validation</td>
                 </tr>
                 <tr>
-                  <td className="p-2.5 text-white print:text-black font-sans font-medium">Uniqueness</td>
-                  <td className="p-2.5 text-[#21F1A8] print:text-emerald-700 font-bold">{qualityReport.uniquenessScore}%</td>
-                  <td className="p-2.5 text-gray-400 print:text-gray-600">{qualityReport.issues.filter(i => i.type === 'duplicates').length} duplicate flags</td>
-                  <td className="p-2.5 text-gray-400 print:text-gray-600 font-sans">Auto-deduplicated in clean data layer</td>
+                  <td className={`p-2.5 ${isLight ? 'text-slate-900 font-bold' : 'text-white'} print:text-black font-sans font-medium`}>Uniqueness</td>
+                  <td className={`p-2.5 ${isLight ? 'text-sky-700' : 'text-cyan-400'} print:text-sky-700 font-bold`}>{qualityReport.uniquenessScore}%</td>
+                  <td className={`p-2.5 ${isLight ? 'text-slate-600' : 'text-gray-400'} print:text-gray-600`}>{qualityReport.issues.filter(i => i.type === 'duplicates').length} duplicate flags</td>
+                  <td className={`p-2.5 ${isLight ? 'text-slate-600' : 'text-gray-400'} print:text-gray-600 font-sans`}>Auto-deduplicated in clean data layer</td>
                 </tr>
                 <tr>
-                  <td className="p-2.5 text-white print:text-black font-sans font-medium">Validity & Consistency</td>
-                  <td className="p-2.5 text-[#21F1A8] print:text-emerald-700 font-bold">{qualityReport.validityScore}%</td>
-                  <td className="p-2.5 text-gray-400 print:text-gray-600">{qualityReport.issues.filter(i => i.type === 'type_mismatch' || i.type === 'formatting').length} format warnings</td>
-                  <td className="p-2.5 text-gray-400 print:text-gray-600 font-sans">Schema data types enforced</td>
+                  <td className={`p-2.5 ${isLight ? 'text-slate-900 font-bold' : 'text-white'} print:text-black font-sans font-medium`}>Validity & Consistency</td>
+                  <td className={`p-2.5 ${isLight ? 'text-sky-700' : 'text-cyan-400'} print:text-sky-700 font-bold`}>{qualityReport.validityScore}%</td>
+                  <td className={`p-2.5 ${isLight ? 'text-slate-600' : 'text-gray-400'} print:text-gray-600`}>{qualityReport.issues.filter(i => i.type === 'type_mismatch' || i.type === 'formatting').length} format warnings</td>
+                  <td className={`p-2.5 ${isLight ? 'text-slate-600' : 'text-gray-400'} print:text-gray-600 font-sans`}>Schema data types enforced</td>
                 </tr>
-                <tr className="bg-[#141414] print:bg-gray-100 font-bold text-white print:text-black">
+                <tr className={`${isLight ? 'bg-slate-100 font-bold text-slate-900' : 'bg-[#141414] font-bold text-white'} print:bg-gray-100 print:text-black`}>
                   <td className="p-2.5 font-sans">Overall Quality Score</td>
-                  <td className="p-2.5 text-[#21F1A8] print:text-emerald-800 text-sm">{qualityReport.overallScore}%</td>
-                  <td className="p-2.5">{qualityReport.totalIssuesCount} total flags tracked</td>
-                  <td className="p-2.5 text-[#21F1A8] print:text-emerald-700 font-sans">Certified Boardroom Grade</td>
+                  <td className={`p-2.5 ${isLight ? 'text-sky-800' : 'text-cyan-400'} print:text-sky-800 text-sm`}>{qualityReport.overallScore}%</td>
+                  <td className={`p-2.5 ${isLight ? 'text-slate-700' : 'text-gray-300'}`}>{qualityReport.totalIssuesCount} total flags tracked</td>
+                  <td className={`p-2.5 ${isLight ? 'text-sky-700' : 'text-cyan-400'} print:text-sky-700 font-sans`}>Certified Boardroom Grade</td>
                 </tr>
               </tbody>
             </table>
@@ -789,7 +1082,7 @@ export const ReportsView: React.FC = () => {
           <div className="w-full max-w-xl bg-[#181818] border border-[#333] rounded-2xl shadow-2xl p-6 space-y-5 text-gray-100 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-[#2c2c2c] pb-3">
               <div className="flex items-center gap-2">
-                <div className="p-2 rounded-lg bg-[#21F1A8]/15 text-[#21F1A8]">
+                <div className="p-2 rounded-lg bg-cyan-500/15 text-cyan-400">
                   <Pencil className="w-4 h-4" />
                 </div>
                 <div>
@@ -809,7 +1102,7 @@ export const ReportsView: React.FC = () => {
                   type="text"
                   value={reportHeadings.mainTitle}
                   onChange={(e) => updateReportHeading('mainTitle', e.target.value)}
-                  className="w-full px-3 py-2 bg-[#121212] border border-[#333] rounded-xl text-white font-medium focus:border-[#21F1A8] focus:outline-none"
+                  className="w-full px-3 py-2 bg-[#121212] border border-[#333] rounded-xl text-white font-medium focus:border-cyan-400 focus:outline-none"
                 />
               </div>
 
@@ -819,7 +1112,7 @@ export const ReportsView: React.FC = () => {
                   type="text"
                   value={reportHeadings.section1}
                   onChange={(e) => updateReportHeading('section1', e.target.value)}
-                  className="w-full px-3 py-2 bg-[#121212] border border-[#333] rounded-xl text-white font-medium focus:border-[#21F1A8] focus:outline-none"
+                  className="w-full px-3 py-2 bg-[#121212] border border-[#333] rounded-xl text-white font-medium focus:border-cyan-400 focus:outline-none"
                 />
               </div>
 
@@ -829,7 +1122,7 @@ export const ReportsView: React.FC = () => {
                   type="text"
                   value={reportHeadings.section2}
                   onChange={(e) => updateReportHeading('section2', e.target.value)}
-                  className="w-full px-3 py-2 bg-[#121212] border border-[#333] rounded-xl text-white font-medium focus:border-[#21F1A8] focus:outline-none"
+                  className="w-full px-3 py-2 bg-[#121212] border border-[#333] rounded-xl text-white font-medium focus:border-cyan-400 focus:outline-none"
                 />
               </div>
 
@@ -839,7 +1132,7 @@ export const ReportsView: React.FC = () => {
                   type="text"
                   value={reportHeadings.section3}
                   onChange={(e) => updateReportHeading('section3', e.target.value)}
-                  className="w-full px-3 py-2 bg-[#121212] border border-[#333] rounded-xl text-white font-medium focus:border-[#21F1A8] focus:outline-none"
+                  className="w-full px-3 py-2 bg-[#121212] border border-[#333] rounded-xl text-white font-medium focus:border-cyan-400 focus:outline-none"
                 />
               </div>
 
@@ -849,7 +1142,7 @@ export const ReportsView: React.FC = () => {
                   type="text"
                   value={reportHeadings.section4}
                   onChange={(e) => updateReportHeading('section4', e.target.value)}
-                  className="w-full px-3 py-2 bg-[#121212] border border-[#333] rounded-xl text-white font-medium focus:border-[#21F1A8] focus:outline-none"
+                  className="w-full px-3 py-2 bg-[#121212] border border-[#333] rounded-xl text-white font-medium focus:border-cyan-400 focus:outline-none"
                 />
               </div>
 
@@ -859,7 +1152,7 @@ export const ReportsView: React.FC = () => {
                   type="text"
                   value={reportHeadings.section5}
                   onChange={(e) => updateReportHeading('section5', e.target.value)}
-                  className="w-full px-3 py-2 bg-[#121212] border border-[#333] rounded-xl text-white font-medium focus:border-[#21F1A8] focus:outline-none"
+                  className="w-full px-3 py-2 bg-[#121212] border border-[#333] rounded-xl text-white font-medium focus:border-cyan-400 focus:outline-none"
                 />
               </div>
 
@@ -869,7 +1162,7 @@ export const ReportsView: React.FC = () => {
                   type="text"
                   value={reportHeadings.section6}
                   onChange={(e) => updateReportHeading('section6', e.target.value)}
-                  className="w-full px-3 py-2 bg-[#121212] border border-[#333] rounded-xl text-white font-medium focus:border-[#21F1A8] focus:outline-none"
+                  className="w-full px-3 py-2 bg-[#121212] border border-[#333] rounded-xl text-white font-medium focus:border-cyan-400 focus:outline-none"
                 />
               </div>
 
@@ -879,7 +1172,7 @@ export const ReportsView: React.FC = () => {
                   type="text"
                   value={reportHeadings.section7}
                   onChange={(e) => updateReportHeading('section7', e.target.value)}
-                  className="w-full px-3 py-2 bg-[#121212] border border-[#333] rounded-xl text-white font-medium focus:border-[#21F1A8] focus:outline-none"
+                  className="w-full px-3 py-2 bg-[#121212] border border-[#333] rounded-xl text-white font-medium focus:border-cyan-400 focus:outline-none"
                 />
               </div>
 
@@ -889,7 +1182,7 @@ export const ReportsView: React.FC = () => {
                   type="text"
                   value={reportHeadings.section8}
                   onChange={(e) => updateReportHeading('section8', e.target.value)}
-                  className="w-full px-3 py-2 bg-[#121212] border border-[#333] rounded-xl text-white font-medium focus:border-[#21F1A8] focus:outline-none"
+                  className="w-full px-3 py-2 bg-[#121212] border border-[#333] rounded-xl text-white font-medium focus:border-cyan-400 focus:outline-none"
                 />
               </div>
 
@@ -899,7 +1192,7 @@ export const ReportsView: React.FC = () => {
                   type="text"
                   value={reportHeadings.section9}
                   onChange={(e) => updateReportHeading('section9', e.target.value)}
-                  className="w-full px-3 py-2 bg-[#121212] border border-[#333] rounded-xl text-white font-medium focus:border-[#21F1A8] focus:outline-none"
+                  className="w-full px-3 py-2 bg-[#121212] border border-[#333] rounded-xl text-white font-medium focus:border-cyan-400 focus:outline-none"
                 />
               </div>
             </div>
@@ -926,11 +1219,125 @@ export const ReportsView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsHeadingsModalOpen(false)}
-                className="px-4 py-2 bg-[#21F1A8] text-black font-bold text-xs rounded-xl hover:bg-[#1cdb97] cursor-pointer"
+                className="px-4 py-2 bg-sky-600 text-white hover:bg-sky-500 font-bold text-xs rounded-xl cursor-pointer"
               >
                 Done
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Custom Chart Modal */}
+      {isAddChartModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+          <div className={`w-full max-w-lg ${isLight ? 'bg-white border-slate-200 text-slate-900' : 'bg-[#181818] border-[#333] text-gray-100'} border rounded-2xl shadow-2xl p-6 space-y-5 max-h-[90vh] overflow-y-auto`}>
+            <div className={`flex items-center justify-between border-b ${isLight ? 'border-slate-200' : 'border-[#2c2c2c]'} pb-3`}>
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-lg bg-sky-500/15 text-sky-600 dark:text-cyan-400">
+                  <BarChart2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className={`font-bold text-base ${isLight ? 'text-slate-900' : 'text-white'}`}>Add Custom Chart</h3>
+                  <p className={`text-xs ${isLight ? 'text-slate-600' : 'text-gray-400'}`}>Map fields from {project.name}</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setIsAddChartModalOpen(false)} 
+                className={`p-1.5 rounded-lg ${isLight ? 'hover:bg-slate-100 text-slate-500' : 'hover:bg-[#282828] text-gray-400 hover:text-white'} cursor-pointer`}
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddCustomChart} className="space-y-4 text-xs">
+              <div className="space-y-1">
+                <label className={`font-bold uppercase ${isLight ? 'text-slate-700' : 'text-gray-400'}`}>Chart Title</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Revenue by Region, MRR by Tier..."
+                  value={newChartTitle}
+                  onChange={(e) => setNewChartTitle(e.target.value)}
+                  className={`w-full px-3 py-2 ${isLight ? 'bg-slate-50 border-slate-300 text-slate-900 focus:border-sky-500' : 'bg-[#121212] border-[#333] text-white focus:border-cyan-400'} border rounded-xl font-medium focus:outline-none`}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className={`font-bold uppercase ${isLight ? 'text-slate-700' : 'text-gray-400'}`}>Chart Type</label>
+                  <select
+                    value={newChartType}
+                    onChange={(e) => setNewChartType(e.target.value as any)}
+                    className={`w-full px-3 py-2 ${isLight ? 'bg-slate-50 border-slate-300 text-slate-900' : 'bg-[#121212] border-[#333] text-white'} border rounded-xl font-medium focus:outline-none cursor-pointer`}
+                  >
+                    <option value="bar">Bar Chart</option>
+                    <option value="line">Line / Trend</option>
+                    <option value="donut">Donut / Proportion</option>
+                    <option value="table">Table Matrix</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className={`font-bold uppercase ${isLight ? 'text-slate-700' : 'text-gray-400'}`}>Aggregation</label>
+                  <select
+                    value={newChartAgg}
+                    onChange={(e) => setNewChartAgg(e.target.value as any)}
+                    className={`w-full px-3 py-2 ${isLight ? 'bg-slate-50 border-slate-300 text-slate-900' : 'bg-[#121212] border-[#333] text-white'} border rounded-xl font-medium focus:outline-none cursor-pointer`}
+                  >
+                    <option value="sum">SUM</option>
+                    <option value="avg">AVERAGE</option>
+                    <option value="count">COUNT</option>
+                    <option value="min">MIN</option>
+                    <option value="max">MAX</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className={`font-bold uppercase ${isLight ? 'text-slate-700' : 'text-gray-400'}`}>Category / Dimension Axis</label>
+                  <select
+                    value={newChartCat || stringCols[0]?.name || ''}
+                    onChange={(e) => setNewChartCat(e.target.value)}
+                    className={`w-full px-3 py-2 ${isLight ? 'bg-slate-50 border-slate-300 text-slate-900' : 'bg-[#121212] border-[#333] text-white'} border rounded-xl font-medium focus:outline-none cursor-pointer`}
+                  >
+                    {stringCols.map(c => (
+                      <option key={c.name} value={c.name}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className={`font-bold uppercase ${isLight ? 'text-slate-700' : 'text-gray-400'}`}>Metric / Value Column</label>
+                  <select
+                    value={newChartVal || numericCols[0]?.name || ''}
+                    onChange={(e) => setNewChartVal(e.target.value)}
+                    className={`w-full px-3 py-2 ${isLight ? 'bg-slate-50 border-slate-300 text-slate-900' : 'bg-[#121212] border-[#333] text-white'} border rounded-xl font-medium focus:outline-none cursor-pointer`}
+                  >
+                    {numericCols.map(c => (
+                      <option key={c.name} value={c.name}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setIsAddChartModalOpen(false)}
+                  className={`px-4 py-2 ${isLight ? 'bg-slate-100 text-slate-700 hover:bg-slate-200' : 'bg-[#252525] text-gray-300 hover:bg-[#333]'} rounded-xl font-medium cursor-pointer`}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-sky-600 hover:bg-sky-500 text-white font-bold rounded-xl shadow-xs cursor-pointer"
+                >
+                  Add Chart to Report
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

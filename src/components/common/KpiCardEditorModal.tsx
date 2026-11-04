@@ -273,7 +273,7 @@ export const KpiCardEditorModal: React.FC<KpiCardEditorModalProps> = ({
                   value={customUnit}
                   onChange={(e) => setCustomUnit(e.target.value)}
                   placeholder="Custom unit suffix e.g. pts, °C, hrs, kg, tickets, orders..."
-                  className={`w-full px-3 py-2 rounded-xl border text-xs focus:outline-none focus:ring-2 focus:ring-[#21F1A8] shadow-xs ${
+                  className={`w-full px-3 py-2 rounded-xl border text-xs focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 shadow-xs ${
                     isLight ? 'bg-gray-50 border-gray-300 text-gray-900' : 'bg-[#121212] border-[#2c2c2c] text-white'
                   }`}
                 />
@@ -294,7 +294,7 @@ export const KpiCardEditorModal: React.FC<KpiCardEditorModalProps> = ({
                   onClick={() => setStatusMode(s)}
                   className={`px-3 py-1.5 rounded-lg border font-medium transition-all ${
                     statusMode === s
-                      ? 'bg-[#21F1A8]/20 border-[#21F1A8] text-[#21F1A8] font-bold'
+                      ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300 font-bold'
                       : 'bg-surface-panel border-border-subtle text-on-surface-variant hover:text-on-surface'
                   }`}
                 >
@@ -307,17 +307,17 @@ export const KpiCardEditorModal: React.FC<KpiCardEditorModalProps> = ({
           {/* 5. Live Calculation Preview Box */}
           <div className="space-y-1.5 pt-2 border-t border-border-subtle">
             <label className="text-xs font-bold uppercase tracking-wider text-on-surface-variant flex items-center gap-1.5">
-              <Eye className="w-3.5 h-3.5 text-[#21F1A8]" />
+              <Eye className="w-3.5 h-3.5 text-cyan-400" />
               <span>Live Calculation Preview</span>
             </label>
             <div className={`p-4 rounded-xl border shadow-inner ${
-              isLight ? 'bg-emerald-50/50 border-emerald-200' : 'bg-[#121212] border-[#222]'
+              isLight ? 'bg-sky-50/50 border-sky-200' : 'bg-[#121212] border-[#222]'
             }`}>
               <div className="flex items-center justify-between mb-2">
                 <span className="font-label-caps text-label-caps uppercase text-on-surface-variant font-bold truncate max-w-[200px]">
                   {previewKpi.name}
                 </span>
-                <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-[#21F1A8]/20 text-[#21F1A8] border border-[#21F1A8]/30">
+                <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
                   {previewKpi.status}
                 </span>
               </div>
@@ -327,7 +327,7 @@ export const KpiCardEditorModal: React.FC<KpiCardEditorModalProps> = ({
                 </span>
                 {previewKpi.changePercent !== undefined && (
                   <span className={`text-xs font-bold flex items-center gap-0.5 ${
-                    previewKpi.changePercent >= 0 ? 'text-[#21F1A8]' : 'text-red-400'
+                    previewKpi.changePercent >= 0 ? 'text-cyan-400' : 'text-red-400'
                   }`}>
                     {previewKpi.changePercent >= 0 ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />}
                     {previewKpi.changePercent >= 0 ? '+' : ''}{previewKpi.changePercent}%
@@ -363,7 +363,7 @@ export const KpiCardEditorModal: React.FC<KpiCardEditorModalProps> = ({
             <button
               type="button"
               onClick={handleSave}
-              className="px-5 py-2 rounded-xl bg-[#21F1A8] text-black text-xs font-bold hover:bg-[#1cdb97] transition-all shadow-md shadow-[#21F1A8]/20 flex items-center gap-1.5"
+              className="px-5 py-2 rounded-xl bg-sky-600 text-white text-xs font-bold hover:bg-sky-500 transition-all shadow-md shadow-sky-600/20 flex items-center gap-1.5"
             >
               <Check className="w-4 h-4 stroke-[2.5]" /> Save & Apply Everywhere
             </button>

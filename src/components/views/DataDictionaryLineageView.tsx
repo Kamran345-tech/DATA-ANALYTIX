@@ -33,7 +33,7 @@ export const DataDictionaryLineageView: React.FC = () => {
       {/* Header */}
       <div className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-6 flex flex-wrap items-center justify-between gap-4">
         <div className="space-y-1">
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#21F1A8] font-mono">
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-sky-400 font-mono">
             <BookOpen className="w-4 h-4" /> Traceability & Data Governance
           </div>
           <h1 className="font-heading text-3xl sm:text-4xl font-bold text-white tracking-wide uppercase">
@@ -49,7 +49,7 @@ export const DataDictionaryLineageView: React.FC = () => {
           <button
             onClick={() => setActiveTab('lineage')}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-              activeTab === 'lineage' ? 'bg-[#21F1A8] text-black' : 'text-gray-400 hover:text-white'
+              activeTab === 'lineage' ? 'bg-sky-600 text-white' : 'text-gray-400 hover:text-white'
             }`}
           >
             Data Lineage Graph
@@ -57,7 +57,7 @@ export const DataDictionaryLineageView: React.FC = () => {
           <button
             onClick={() => setActiveTab('dictionary')}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-              activeTab === 'dictionary' ? 'bg-[#21F1A8] text-black' : 'text-gray-400 hover:text-white'
+              activeTab === 'dictionary' ? 'bg-sky-600 text-white' : 'text-gray-400 hover:text-white'
             }`}
           >
             Column Data Dictionary
@@ -76,10 +76,10 @@ export const DataDictionaryLineageView: React.FC = () => {
             {lineageNodes.map((node, idx) => (
               <div 
                 key={node.id} 
-                className="p-4 rounded-xl bg-[#141414] border border-[#2a2a2a] space-y-2 relative group hover:border-[#21F1A8]/50 transition-colors"
+                className="p-4 rounded-xl bg-[#141414] border border-[#2a2a2a] space-y-2 relative group hover:border-sky-500/50 transition-colors"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-mono text-[#21F1A8] bg-[#21F1A8]/10 px-2 py-0.5 rounded font-bold">
+                  <span className="text-[10px] font-mono text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded font-bold border border-sky-500/20">
                     STEP {node.id}
                   </span>
                   {idx < lineageNodes.length - 1 && (

@@ -269,6 +269,7 @@ export interface VisualConfig {
     | 'waterfall' 
     | 'treemap' 
     | 'gauge' 
+    | 'boxplot'
     | 'kpi_card' 
     | 'table';
   categoryField: string;
@@ -281,6 +282,7 @@ export interface VisualConfig {
   sortBy?: 'value_desc' | 'value_asc' | 'category_asc' | 'category_desc';
   topN?: number;
   description?: string;
+  isCustomRenamed?: boolean;
 }
 
 export interface DashboardPage {

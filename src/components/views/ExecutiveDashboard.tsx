@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -38,9 +38,11 @@ import {
   Building2,
   CheckCircle2,
   Tv,
-  Network
+  Network,
+  Check,
+  Plus
 } from 'lucide-react';
-import { KPI } from '../../types';
+import { KPI, VisualConfig } from '../../types';
 import { usePlatform } from '../../store/usePlatformStore';
 import { GlobalFilterBar } from '../common/GlobalFilterBar';
 import { InteractiveSlicersBar } from '../common/InteractiveSlicersBar';
@@ -66,6 +68,10 @@ import {
   GaugeSpeedometerChart
 } from '../charts/InteractiveCharts';
 import { safeMin, safeMax, safeDownsample } from '../../utils/mathUtils';
+import { 
+  recommendDatasetDashboard, 
+  computeBoxplotSummary 
+} from '../../engine/chartRecommendationEngine';
 
 type DashboardTab = 
   | 'overview' 
@@ -94,6 +100,9 @@ export const ExecutiveDashboard: React.FC = () => {
     daxMeasures,
     transformations,
     customVisuals,
+    updateCustomVisual,
+    addCustomVisual,
+    removeCustomVisual,
     setCurrentTab,
     filters,
     setFilters,
@@ -108,7 +117,7 @@ export const ExecutiveDashboard: React.FC = () => {
 
   const isLight = themeMode === 'light';
 
-  // Multiple visual styling themes
+  // Multiple visual styling themes with dedicated palette tokens
   const [visualTheme, setVisualTheme] = useState<DashboardVisualTheme>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('acuitybi_dashboard_theme');
@@ -116,6 +125,93 @@ export const ExecutiveDashboard: React.FC = () => {
     }
     return 'cyber_emerald';
   });
+
+  const themePalettes: Record<DashboardVisualTheme, {
+    name: string;
+    trendActual: string;
+    trendSma: string;
+    trendAreaGrad: string;
+    donutColors: { stroke: string; dot: string }[];
+    barColors: string[];
+  }> = {
+    cyber_emerald: {
+      name: 'Azure Blue',
+      trendActual: '#0284C7',
+      trendSma: '#6366F1',
+      trendAreaGrad: '#6366F1',
+      donutColors: [
+        { stroke: '#0284C7', dot: 'bg-sky-600' },
+        { stroke: '#38BDF8', dot: 'bg-sky-400' },
+        { stroke: '#6366F1', dot: 'bg-indigo-500' },
+        { stroke: '#8B5CF6', dot: 'bg-purple-500' },
+        { stroke: '#EC4899', dot: 'bg-pink-500' },
+        { stroke: '#F59E0B', dot: 'bg-amber-500' }
+      ],
+      barColors: ['#0284C7', '#38BDF8', '#6366F1', '#8B5CF6']
+    },
+    wall_street: {
+      name: 'Wall St',
+      trendActual: '#10B981',
+      trendSma: '#F59E0B',
+      trendAreaGrad: '#F59E0B',
+      donutColors: [
+        { stroke: '#10B981', dot: 'bg-emerald-500' },
+        { stroke: '#059669', dot: 'bg-emerald-600' },
+        { stroke: '#F59E0B', dot: 'bg-amber-500' },
+        { stroke: '#D97706', dot: 'bg-amber-600' },
+        { stroke: '#0D9488', dot: 'bg-teal-600' },
+        { stroke: '#64748B', dot: 'bg-slate-500' }
+      ],
+      barColors: ['#10B981', '#059669', '#F59E0B', '#D97706']
+    },
+    power_bi: {
+      name: 'Power BI',
+      trendActual: '#F2C811',
+      trendSma: '#0078D4',
+      trendAreaGrad: '#0078D4',
+      donutColors: [
+        { stroke: '#F2C811', dot: 'bg-amber-400' },
+        { stroke: '#0078D4', dot: 'bg-blue-600' },
+        { stroke: '#5C2D91', dot: 'bg-purple-700' },
+        { stroke: '#D83B01', dot: 'bg-orange-600' },
+        { stroke: '#107C41', dot: 'bg-green-700' },
+        { stroke: '#00B7C3', dot: 'bg-cyan-600' }
+      ],
+      barColors: ['#F2C811', '#0078D4', '#5C2D91', '#D83B01']
+    },
+    sunset_royal: {
+      name: 'Royal',
+      trendActual: '#A855F7',
+      trendSma: '#EC4899',
+      trendAreaGrad: '#EC4899',
+      donutColors: [
+        { stroke: '#A855F7', dot: 'bg-purple-500' },
+        { stroke: '#EC4899', dot: 'bg-pink-500' },
+        { stroke: '#F43F5E', dot: 'bg-rose-500' },
+        { stroke: '#8B5CF6', dot: 'bg-violet-500' },
+        { stroke: '#38BDF8', dot: 'bg-sky-400' },
+        { stroke: '#F59E0B', dot: 'bg-amber-500' }
+      ],
+      barColors: ['#A855F7', '#EC4899', '#F43F5E', '#8B5CF6']
+    },
+    nordic_light: {
+      name: 'Frost',
+      trendActual: '#38BDF8',
+      trendSma: '#2DD4BF',
+      trendAreaGrad: '#2DD4BF',
+      donutColors: [
+        { stroke: '#38BDF8', dot: 'bg-sky-400' },
+        { stroke: '#2DD4BF', dot: 'bg-teal-400' },
+        { stroke: '#0EA5E9', dot: 'bg-sky-500' },
+        { stroke: '#14B8A6', dot: 'bg-teal-500' },
+        { stroke: '#60A5FA', dot: 'bg-blue-400' },
+        { stroke: '#94A3B8', dot: 'bg-slate-400' }
+      ],
+      barColors: ['#38BDF8', '#2DD4BF', '#0EA5E9', '#14B8A6']
+    }
+  };
+
+  const activeThemeConfig = themePalettes[visualTheme] || themePalettes.cyber_emerald;
 
   const handleSetVisualTheme = (thm: DashboardVisualTheme) => {
     setVisualTheme(thm);
@@ -218,6 +314,109 @@ export const ExecutiveDashboard: React.FC = () => {
   const [selectedDimension, setSelectedDimension] = useState<string>(
     stringCols[0]?.name || Object.keys(analytics.categoryPerformance)[0] || ''
   );
+
+  // Automatically adapt trend metric and segment dimension when active dataset changes
+  useEffect(() => {
+    if (numericCols.length > 0 && !numericCols.some(c => c.name === selectedTrendMetric)) {
+      setSelectedTrendMetric(numericCols[0].name);
+    }
+    if (stringCols.length > 0 && !stringCols.some(c => c.name === selectedDimension)) {
+      setSelectedDimension(stringCols[0].name);
+    }
+  }, [columns, numericCols, stringCols]);
+
+  // Visual card renaming & creation state in Executive Dashboard
+  const [editingVisId, setEditingVisId] = useState<string | null>(null);
+  const [editingVisTitle, setEditingVisTitle] = useState('');
+  const [isAddVisModalOpen, setIsAddVisModalOpen] = useState(false);
+  const [newVisTitle, setNewVisTitle] = useState('');
+  const [newVisType, setNewVisType] = useState<VisualConfig['type']>('bar');
+  const [newVisCat, setNewVisCat] = useState('');
+  const [newVisVal, setNewVisVal] = useState('');
+  const [newVisAgg, setNewVisAgg] = useState<VisualConfig['aggregation']>('sum');
+
+  const handleSaveVisTitle = (id: string) => {
+    if (editingVisTitle.trim()) {
+      updateCustomVisual(id, { title: editingVisTitle.trim(), isCustomRenamed: true } as any);
+      setDownloadSuccess(`Renamed visual to "${editingVisTitle.trim()}"`);
+      setTimeout(() => setDownloadSuccess(null), 2500);
+    }
+    setEditingVisId(null);
+  };
+
+  const handleAddCustomVisual = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newVisTitle.trim()) return;
+    const cat = newVisCat || stringCols[0]?.name || 'Category';
+    const val = newVisVal || numericCols[0]?.name || 'Value';
+    const newVisual: VisualConfig = {
+      id: `vis-dash-${Date.now()}`,
+      title: newVisTitle.trim(),
+      type: newVisType,
+      categoryField: cat,
+      valueField: val,
+      aggregation: newVisAgg,
+      color: '#0284C7',
+      description: `${newVisAgg.toUpperCase()}(${val}) by ${cat}`,
+      isCustomRenamed: true
+    };
+    addCustomVisual(newVisual);
+    setIsAddVisModalOpen(false);
+    setNewVisTitle('');
+    setDownloadSuccess(`Added chart: "${newVisual.title}"`);
+    setTimeout(() => setDownloadSuccess(null), 2500);
+  };
+
+  const handleAutoSyncVisuals = () => {
+    const recommendedSuite = recommendDatasetDashboard(columns, cleanRows);
+    customVisuals.forEach(v => removeCustomVisual(v.id));
+    recommendedSuite.forEach(v => addCustomVisual(v));
+    setDownloadSuccess(`Intelligent Recommendation Engine deployed ${recommendedSuite.length} schema-tailored visualizations!`);
+    setTimeout(() => setDownloadSuccess(null), 3500);
+  };
+
+  // Handle Persona selection dynamically altering metrics, dimensions, and layout
+  const handlePersonaSelect = (persona: DashboardPersona) => {
+    setDashboardPersona(persona);
+    if (persona === 'wallboard') {
+      setIsPresentationMode(true);
+      return;
+    }
+
+    if (persona === 'operations') {
+      // Find volume/units/count metric
+      const volCol = numericCols.find(c => /unit|qty|volume|count|order|trans/i.test(c.name))?.name;
+      if (volCol) setSelectedTrendMetric(volCol);
+      // Find operational dimension
+      const opDim = stringCols.find(c => /channel|status|type|priority|vendor|carrier|facility|line/i.test(c.name))?.name;
+      if (opDim) setSelectedDimension(opDim);
+      setDownloadSuccess('Switched perspective to Operational Velocity: metrics aligned to units & channel throughput');
+    } else if (persona === 'growth') {
+      // Find revenue or growth metric
+      const revCol = numericCols.find(c => /revenue|sales|growth|turnover|gmv/i.test(c.name))?.name || numericCols[0]?.name;
+      if (revCol) setSelectedTrendMetric(revCol);
+      // Find customer segment or region dimension
+      const segDim = stringCols.find(c => /segment|region|territory|market|country/i.test(c.name))?.name;
+      if (segDim) setSelectedDimension(segDim);
+      setDownloadSuccess('Switched perspective to Growth & Commercial: metrics aligned to revenue & market segments');
+    } else if (persona === 'finance') {
+      // Find profit, margin, or cost metric
+      const finCol = numericCols.find(c => /profit|margin|cost|expense|cogs|ebit/i.test(c.name))?.name || numericCols[1]?.name || numericCols[0]?.name;
+      if (finCol) setSelectedTrendMetric(finCol);
+      // Find product category dimension
+      const catDim = stringCols.find(c => /category|product|item|service|department/i.test(c.name))?.name;
+      if (catDim) setSelectedDimension(catDim);
+      setDownloadSuccess('Switched perspective to Financial Controller: metrics aligned to gross profit & product categories');
+    } else if (persona === 'c_suite') {
+      // Primary executive revenue and top accounts
+      const revCol = numericCols.find(c => /revenue|sales|income/i.test(c.name))?.name || numericCols[0]?.name;
+      if (revCol) setSelectedTrendMetric(revCol);
+      const custDim = stringCols.find(c => /customer|client|account|name/i.test(c.name))?.name || stringCols[0]?.name;
+      if (custDim) setSelectedDimension(custDim);
+      setDownloadSuccess('Switched perspective to C-Suite Executive: top-line revenue & key accounts');
+    }
+    setTimeout(() => setDownloadSuccess(null), 2500);
+  };
 
   // Active trend data with guaranteed fallback
   const currentTrend = useMemo(() => {
@@ -742,11 +941,7 @@ export const ExecutiveDashboard: React.FC = () => {
               ].map(p => (
                 <button
                   key={p.id}
-                  onClick={() => {
-                    setDashboardPersona(p.id as DashboardPersona);
-                    setDownloadSuccess(`Switched dashboard view to ${p.label}`);
-                    setTimeout(() => setDownloadSuccess(null), 2000);
-                  }}
+                  onClick={() => handlePersonaSelect(p.id as DashboardPersona)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1 border shadow-xs ${
                     dashboardPersona === p.id
                       ? isLight 
@@ -997,7 +1192,7 @@ export const ExecutiveDashboard: React.FC = () => {
           {displayKpis.map((kpi, kIdx) => {
             const isPositive = (kpi.changePercent ?? 0) >= 0;
             const statusTheme = kpi.status === 'Above Target'
-              ? { text: 'text-emerald-400', bg: 'bg-emerald-500/20', dot: 'bg-emerald-400', border: 'border-emerald-500/30', stroke: '#34D399' }
+              ? { text: 'text-cyan-400', bg: 'bg-cyan-500/20', dot: 'bg-cyan-400', border: 'border-cyan-500/30', stroke: '#22D3EE' }
               : kpi.status === 'At Risk'
               ? { text: 'text-rose-400', bg: 'bg-rose-500/20', dot: 'bg-rose-400', border: 'border-rose-500/30', stroke: '#F43F5E' }
               : kpi.status === 'Below Target'
@@ -1058,7 +1253,7 @@ export const ExecutiveDashboard: React.FC = () => {
                           {filteredKpi.formatted}
                         </span>
                         {filteredKpi.isFiltered && (
-                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30">
+                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-400 font-bold border border-sky-500/30">
                             Filtered
                           </span>
                         )}
@@ -1072,11 +1267,11 @@ export const ExecutiveDashboard: React.FC = () => {
                         {kpi.changePercent !== undefined ? (
                           <>
                             {isPositive ? (
-                              <ArrowUpRight className="w-3.5 h-3.5 text-metric-emerald" />
+                              <ArrowUpRight className="w-3.5 h-3.5 text-cyan-400" />
                             ) : (
                               <ArrowDownRight className="w-3.5 h-3.5 text-metric-coral" />
                             )}
-                            <span className={`font-bold ${isPositive ? 'text-metric-emerald' : 'text-metric-coral'}`}>
+                            <span className={`font-bold ${isPositive ? 'text-cyan-400' : 'text-metric-coral'}`}>
                               {isPositive ? '+' : ''}{kpi.changePercent}%
                             </span>
                             <span className="text-on-surface-variant font-normal">vs prior window</span>
@@ -1118,7 +1313,7 @@ export const ExecutiveDashboard: React.FC = () => {
       {activeTab === 'overview' && (
         <div className="space-y-6">
           {/* AI DECISION DIRECTIVES SECTION */}
-          <section className="w-full glass-card rounded-2xl p-5 sm:p-6 shadow-xl border border-white/10 dark:border-white/10 relative overflow-hidden">
+          <section className="w-full bg-white dark:bg-surface-card rounded-2xl p-5 sm:p-6 shadow-sm dark:shadow-xl border border-slate-200 dark:border-white/10 relative overflow-hidden">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-4">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-cyan-500/15 text-cyan-500 dark:text-cyan-400 border border-cyan-400/30 flex items-center justify-center shadow-[0_0_18px_rgba(34,211,238,0.25)]">
@@ -1206,7 +1401,7 @@ export const ExecutiveDashboard: React.FC = () => {
           {/* DUAL TELEMETRY VISUALIZATIONS */}
           <section className="grid grid-cols-1 lg:grid-cols-12 gap-5">
             {/* LEFT: Chronological Trend Performance Chart (7 cols) */}
-            <div className="lg:col-span-7 glass-card rounded-2xl p-5 sm:p-6 shadow-xl border border-white/10 dark:border-white/10 flex flex-col justify-between">
+            <div className="lg:col-span-7 bg-white dark:bg-surface-card rounded-2xl p-5 sm:p-6 shadow-sm dark:shadow-xl border border-slate-200 dark:border-white/10 flex flex-col justify-between">
               <div>
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border-subtle">
                   <Tooltip
@@ -1241,12 +1436,12 @@ export const ExecutiveDashboard: React.FC = () => {
                 <div className="flex flex-wrap items-center justify-between gap-3 my-3">
                   <div className="flex items-center gap-4">
                     <div className="flex items-center gap-1.5">
-                      <span className="w-3 h-1 bg-cyan-400 rounded-full shadow-[0_0_6px_rgba(34,211,238,0.5)]" />
+                      <span className="w-3 h-1 rounded-full shadow-xs" style={{ backgroundColor: activeThemeConfig.trendActual }} />
                       <span className="font-label-sm text-label-sm text-slate-700 dark:text-slate-300 font-medium">Actual ({selectedTrendMetric || 'Series'})</span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <span className="w-3 h-1 bg-indigo-400 rounded-full shadow-[0_0_6px_rgba(129,140,248,0.5)]" />
-                      <span className="font-label-sm text-label-sm text-indigo-600 dark:text-indigo-300 font-semibold">3-Period SMA</span>
+                      <span className="w-3 h-1 rounded-full shadow-xs" style={{ backgroundColor: activeThemeConfig.trendSma }} />
+                      <span className="font-label-sm text-label-sm font-semibold" style={{ color: activeThemeConfig.trendSma }}>3-Period SMA</span>
                     </div>
                   </div>
 
@@ -1330,34 +1525,34 @@ export const ExecutiveDashboard: React.FC = () => {
                                 <path d="M 40 0 L 0 0 0 28" fill="none" stroke="currentColor" className="text-border-subtle" strokeWidth="0.8" strokeDasharray="2 2" opacity="0.4" />
                               </pattern>
                               <linearGradient id="smaFillGrad" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stopColor="#818CF8" stopOpacity="0.18" />
-                                <stop offset="100%" stopColor="#818CF8" stopOpacity="0.0" />
+                                <stop offset="0%" stopColor={activeThemeConfig.trendAreaGrad} stopOpacity="0.22" />
+                                <stop offset="100%" stopColor={activeThemeConfig.trendAreaGrad} stopOpacity="0.0" />
                               </linearGradient>
                             </defs>
                             <rect width="100%" height="100%" fill="url(#telemetryGrid)" />
 
-                            {/* Shaded Area for SMA in harmonious Indigo */}
+                            {/* Shaded Area for SMA */}
                             <path d={dArea} fill="url(#smaFillGrad)" />
 
                             {/* Baseline Mean Grid Reference Line */}
                             <line x1={xMin - 5} y1={yMean} x2={xMax + 5} y2={yMean} stroke="#64748b" strokeWidth="1" strokeDasharray="3 3" opacity="0.4" />
 
-                            {/* Line: Actual telemetry in Electric Cyan */}
+                            {/* Line: Actual telemetry */}
                             <path
                               d={dActual}
                               fill="none"
-                              stroke="#22D3EE"
-                              strokeWidth="2"
+                              stroke={activeThemeConfig.trendActual}
+                              strokeWidth="2.2"
                               strokeLinecap="round"
                               strokeLinejoin="round"
                               className="opacity-95"
                             />
 
-                            {/* Line: 3-Period SMA in Indigo */}
+                            {/* Line: 3-Period SMA */}
                             <path
                               d={dSma}
                               fill="none"
-                              stroke="#818CF8"
+                              stroke={activeThemeConfig.trendSma}
                               strokeWidth="2.5"
                               strokeLinecap="round"
                               strokeLinejoin="round"
@@ -1366,8 +1561,8 @@ export const ExecutiveDashboard: React.FC = () => {
                             {/* Indicator Pulse Point on the latest observation */}
                             {lastPt && (
                               <g>
-                                <circle cx={lastPt.x} cy={lastPt.y} r="4" fill="#22D3EE" />
-                                <circle cx={lastPt.x} cy={lastPt.y} r="8" fill="#22D3EE" opacity="0.35" className="animate-pulse" />
+                                <circle cx={lastPt.x} cy={lastPt.y} r="4" fill={activeThemeConfig.trendActual} />
+                                <circle cx={lastPt.x} cy={lastPt.y} r="8" fill={activeThemeConfig.trendActual} opacity="0.35" className="animate-pulse" />
                               </g>
                             )}
                           </svg>
@@ -1396,7 +1591,7 @@ export const ExecutiveDashboard: React.FC = () => {
             </div>
 
             {/* RIGHT: Segment Share Donut & Decomposition (5 cols) */}
-            <div className="lg:col-span-5 glass-card rounded-2xl p-5 sm:p-6 shadow-xl border border-white/10 dark:border-white/10 flex flex-col justify-between">
+            <div className="lg:col-span-5 bg-white dark:bg-surface-card rounded-2xl p-5 sm:p-6 shadow-sm dark:shadow-xl border border-slate-200 dark:border-white/10 flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between pb-3 border-b border-border-subtle">
                   <Tooltip
@@ -1431,15 +1626,7 @@ export const ExecutiveDashboard: React.FC = () => {
                 {(() => {
                   const segments = (currentCategoryData || []).slice(0, 6);
                   const totalCatValue = segments.reduce((acc, curr) => acc + (curr.value || 0), 0);
-                  // Harmonious, unified enterprise palette matching Cyan / Electric Blue identity
-                  const colors = [
-                    { stroke: '#06B6D4', dot: 'bg-cyan-400' },     // Electric Cyan
-                    { stroke: '#3B82F6', dot: 'bg-blue-500' },     // Electric Blue
-                    { stroke: '#6366F1', dot: 'bg-indigo-500' },   // Indigo
-                    { stroke: '#8B5CF6', dot: 'bg-purple-500' },   // Violet
-                    { stroke: '#EC4899', dot: 'bg-pink-500' },     // Magenta
-                    { stroke: '#F59E0B', dot: 'bg-amber-500' }     // Amber
-                  ];
+                  const colors = activeThemeConfig.donutColors;
 
                   const circumference = 2 * Math.PI * 38; // ~238.76
                   let runningOffset = 0;
@@ -1532,7 +1719,7 @@ export const ExecutiveDashboard: React.FC = () => {
           {/* ACTIONABLE NOTIFICATION CALLOUTS */}
           <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Outlier Alert Callout */}
-            <div className="glass-card rounded-2xl p-4 shadow-md border border-rose-200/80 dark:border-rose-500/25 flex items-start gap-3 relative overflow-hidden group hover:border-rose-400/50 transition-all">
+            <div className="bg-white dark:bg-surface-card rounded-2xl p-4 shadow-sm dark:shadow-md border border-rose-200 dark:border-rose-500/25 flex items-start gap-3 relative overflow-hidden group hover:border-rose-400/50 transition-all">
               <div className="w-9 h-9 rounded-xl bg-rose-500/10 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 border border-rose-400/30 shadow-[0_0_12px_rgba(244,63,94,0.15)]">
                 <AlertTriangle className="w-5 h-5 text-rose-600 dark:text-rose-400" />
               </div>
@@ -1555,7 +1742,7 @@ export const ExecutiveDashboard: React.FC = () => {
             </div>
 
             {/* Growth Segment Callout */}
-            <div className="glass-card rounded-2xl p-4 shadow-md border border-white/10 dark:border-white/10 flex items-start gap-3 relative overflow-hidden group hover:border-sky-400/40 transition-all">
+            <div className="bg-white dark:bg-surface-card rounded-2xl p-4 shadow-sm dark:shadow-md border border-slate-200 dark:border-white/10 flex items-start gap-3 relative overflow-hidden group hover:border-sky-400/40 transition-all">
               <div className="w-9 h-9 rounded-xl bg-sky-500/15 text-sky-600 dark:text-cyan-400 flex items-center justify-center shrink-0 border border-sky-400/30 shadow-[0_0_12px_rgba(2,132,199,0.2)]">
                 <TrendingUp className="w-5 h-5 text-sky-600 dark:text-cyan-400" />
               </div>
@@ -1591,15 +1778,40 @@ export const ExecutiveDashboard: React.FC = () => {
                 </p>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNewVisCat(stringCols[0]?.name || '');
+                    setNewVisVal(numericCols[0]?.name || '');
+                    setIsAddVisModalOpen(true);
+                  }}
+                  className="px-2.5 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold flex items-center gap-1 shadow-xs cursor-pointer"
+                  title="Add a new custom visual card to this dashboard"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add Custom Visual</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleAutoSyncVisuals}
+                  className="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-surface-panel hover:bg-slate-200 dark:hover:bg-surface-elevated text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-border-subtle text-xs font-semibold flex items-center gap-1 shadow-2xs cursor-pointer"
+                  title="Auto-adapt all visual cards to match current dataset schema"
+                >
+                  <RefreshCw className="w-3.5 h-3.5 text-sky-600 dark:text-cyan-400" />
+                  <span>Auto-Adapt to Dataset</span>
+                </button>
+
                 <span className="px-3 py-1.5 rounded-lg bg-sky-50 dark:bg-surface-panel text-sky-700 dark:text-cyan-300 border border-sky-200 dark:border-border-subtle text-xs font-mono font-semibold shadow-2xs">
-                  {customVisuals.length} Visuals Attached
+                  {customVisuals.length} Visuals
                 </span>
+
                 <button
                   onClick={() => setCurrentTab('dashboard_builder')}
                   className="glass-btn-secondary px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
                 >
-                  <span>Open Dashboard Builder</span>
+                  <span>Dashboard Builder</span>
                   <ExternalLink className="w-3 h-3 text-sky-600 dark:text-cyan-400" />
                 </button>
               </div>
@@ -1608,15 +1820,24 @@ export const ExecutiveDashboard: React.FC = () => {
             {customVisuals.length > 0 ? (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                 {customVisuals.map((vis, vIdx) => {
-                  const cat = vis.categoryField || stringCols[0]?.name || 'Category';
-                  const val = vis.valueField || numericCols[0]?.name || 'Value';
+                  const visKey = vis.id || String(vIdx);
+                  const hasCat = columns.some(c => c.name === vis.categoryField);
+                  const cat = hasCat ? vis.categoryField : (stringCols[0]?.name || columns[0]?.name || 'Category');
+
+                  const hasVal = columns.some(c => c.name === vis.valueField);
+                  const val = hasVal ? vis.valueField : (numericCols[0]?.name || columns[1]?.name || 'Value');
+
                   const agg = vis.aggregation || 'sum';
                   const visType = vis.type || 'bar';
 
-                  // Aggregate values
+                  const displayTitle = (vis.title && vis.title.trim())
+                    || `${val.replace(/([A-Z])/g, ' $1').trim().toUpperCase()} BY ${cat.replace(/([A-Z])/g, ' $1').trim().toUpperCase()}`;
+
+                  // Aggregate values using filtered rows
                   const groupMap = new Map<string, { sum: number; count: number }>();
                   let total = 0;
-                  cleanRows.forEach(r => {
+                  const effectiveVisualRows = filteredRows.length > 0 ? filteredRows : cleanRows;
+                  effectiveVisualRows.forEach(r => {
                     const k = String(r[cat] ?? 'Unknown');
                     const num = Number(r[val]) || 0;
                     const cur = groupMap.get(k) || { sum: 0, count: 0 };
@@ -1633,25 +1854,60 @@ export const ExecutiveDashboard: React.FC = () => {
                   })).sort((a, b) => b.value - a.value).slice(0, 8);
 
                   const maxVal = Math.max(safeMax(items.map(i => i.value), 1), 1);
-                  const isCur = /revenue|sales|profit|margin|cost|amount|price/i.test(val);
+                  const isCur = /revenue|sales|profit|margin|cost|amount|price|mrr|cac/i.test(val);
                   const formatVal = (n: number) => isCur ? `$${Math.round(n).toLocaleString()}` : Math.round(n).toLocaleString();
 
                   return (
                     <div 
-                      key={vis.id || vIdx} 
-                      className="glass-card border border-white/10 dark:border-white/10 rounded-2xl p-5 space-y-4 hover:border-sky-400/40 transition-all flex flex-col justify-between shadow-lg"
+                      key={visKey} 
+                      className="bg-white dark:bg-surface-card border border-slate-200 dark:border-white/10 rounded-2xl p-5 space-y-4 hover:border-sky-400/40 transition-all flex flex-col justify-between shadow-sm dark:shadow-lg"
                     >
                       {/* Widget Header */}
                       <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-headline-sm text-headline-sm font-semibold text-slate-900 dark:text-slate-100 uppercase truncate">
-                              {vis.title}
-                            </h4>
-                            <span className="px-2 py-0.5 rounded bg-sky-500/10 text-sky-700 dark:text-cyan-300 border border-sky-500/20 text-label-caps font-label-caps uppercase font-bold">
-                              {visType}
-                            </span>
-                          </div>
+                        <div className="min-w-0 flex-1">
+                          {editingVisId === visKey ? (
+                            <div className="flex items-center gap-1.5 mb-1 animate-fadeIn">
+                              <input
+                                type="text"
+                                value={editingVisTitle}
+                                onChange={(e) => setEditingVisTitle(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') handleSaveVisTitle(vis.id);
+                                  if (e.key === 'Escape') setEditingVisId(null);
+                                }}
+                                autoFocus
+                                className="px-2.5 py-1 text-xs bg-slate-50 dark:bg-surface-panel border border-sky-500 rounded font-bold text-slate-900 dark:text-slate-100 uppercase focus:outline-none w-full max-w-xs"
+                              />
+                              <button onClick={() => handleSaveVisTitle(vis.id)} className="p-1 rounded bg-sky-600 text-white cursor-pointer" title="Save title"><Check className="w-3.5 h-3.5" /></button>
+                              <button onClick={() => setEditingVisId(null)} className="p-1 rounded bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 cursor-pointer" title="Cancel"><X className="w-3.5 h-3.5" /></button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2 group/visTitle">
+                              <h4 className={`font-heading text-base font-bold uppercase truncate ${
+                                isLight ? 'text-slate-900' : 'text-white'
+                              }`}>
+                                {displayTitle}
+                              </h4>
+                              <button
+                                onClick={() => {
+                                  setEditingVisId(visKey);
+                                  setEditingVisTitle(displayTitle);
+                                }}
+                                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-all shadow-2xs shrink-0 cursor-pointer border ${
+                                  isLight
+                                    ? 'bg-sky-50 hover:bg-sky-100 text-sky-800 border-sky-300'
+                                    : 'bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 border-sky-500/30'
+                                }`}
+                                title="Rename this visual"
+                              >
+                                <Pencil className="w-3 h-3 text-sky-500 shrink-0" />
+                                <span className="font-semibold text-[11px]">Rename</span>
+                              </button>
+                              <span className="px-2 py-0.5 rounded bg-sky-500/10 text-sky-700 dark:text-cyan-300 border border-sky-500/20 text-label-caps font-label-caps uppercase font-bold shrink-0">
+                                {visType}
+                              </span>
+                            </div>
+                          )}
                           <div className="font-body-sm text-body-sm text-slate-600 dark:text-slate-400 pt-0.5">
                             {agg.toUpperCase()}({val}) by {cat} • Total: <strong className="text-slate-900 dark:text-slate-100 font-semibold">{formatVal(total)}</strong>
                           </div>
@@ -1659,7 +1915,7 @@ export const ExecutiveDashboard: React.FC = () => {
 
                         <button
                           onClick={() => handleDrilldown(items[0]?.category || '')}
-                          className="font-label-sm text-label-sm text-slate-500 dark:text-slate-400 hover:text-sky-600 dark:hover:text-cyan-400 flex items-center gap-1 transition-colors cursor-pointer"
+                          className="font-label-sm text-label-sm text-slate-500 dark:text-slate-400 hover:text-sky-600 dark:hover:text-cyan-400 flex items-center gap-1 transition-colors cursor-pointer shrink-0"
                           title="Drill-through to records"
                         >
                           <span>Drilldown</span>
@@ -1675,7 +1931,7 @@ export const ExecutiveDashboard: React.FC = () => {
                               <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
                                 {(() => {
                                   let cumulativePct = 0;
-                                  const colors = ['#0284C7', '#38BDF8', '#6366F1', '#8B5CF6', '#F59E0B', '#64748B'];
+                                  const colors = activeThemeConfig.donutColors.map(c => c.stroke);
                                   return items.slice(0, 6).map((item, idx) => {
                                     const strokeDasharray = `${item.share * 2.512} 251.2`;
                                     const strokeDashoffset = -cumulativePct * 2.512;
@@ -1710,6 +1966,124 @@ export const ExecutiveDashboard: React.FC = () => {
                               ))}
                             </div>
                           </div>
+                        ) : visType === 'boxplot' ? (
+                          /* Tukey Quartile Boxplot in Executive Dashboard */
+                          (() => {
+                            const bData = computeBoxplotSummary(effectiveVisualRows, cat, val);
+                            if (bData.length === 0) return <div className="text-xs text-slate-500 p-4 text-center">Insufficient dispersion for boxplot.</div>;
+                            const allVals = bData.flatMap(b => [b.min, b.max, ...b.outliers]);
+                            const gMin = Math.min(...allVals);
+                            const gMax = Math.max(...allVals);
+                            const rng = Math.max(0.001, gMax - gMin);
+                            const pH = 110;
+                            const pW = 380;
+                            const padX = 35;
+                            const gW = (pW - padX * 2) / Math.max(1, bData.length);
+                            const scY = (v: number) => 10 + pH - ((v - gMin) / rng) * pH;
+
+                            return (
+                              <div className="w-full space-y-2">
+                                <svg viewBox="0 0 390 145" className="w-full h-36 overflow-visible select-none">
+                                  {[0, 0.5, 1].map((pct, idx) => {
+                                    const y = 10 + pH * (1 - pct);
+                                    return <line key={idx} x1="25" y1={y} x2="385" y2={y} stroke={isLight ? '#e2e8f0' : '#282828'} strokeDasharray="3,3" />;
+                                  })}
+                                  {bData.map((st, idx) => {
+                                    const cX = padX + idx * gW + gW / 2;
+                                    const bW = Math.min(26, Math.max(14, gW * 0.5));
+                                    const yMin = scY(st.min);
+                                    const yQ1 = scY(st.q1);
+                                    const yMed = scY(st.median);
+                                    const yQ3 = scY(st.q3);
+                                    const yMax = scY(st.max);
+
+                                    return (
+                                      <g key={idx} className="cursor-pointer group" onClick={() => handleDrilldown(st.category)}>
+                                        <line x1={cX} y1={yMin} x2={cX} y2={yMax} stroke="#0284C7" strokeWidth="1.5" strokeDasharray="2,2" />
+                                        <line x1={cX - bW * 0.35} y1={yMin} x2={cX + bW * 0.35} y2={yMin} stroke="#0284C7" strokeWidth="2" />
+                                        <line x1={cX - bW * 0.35} y1={yMax} x2={cX + bW * 0.35} y2={yMax} stroke="#0284C7" strokeWidth="2" />
+                                        <rect x={cX - bW / 2} y={Math.min(yQ1, yQ3)} width={bW} height={Math.max(4, Math.abs(yQ3 - yQ1))} fill="#0284C7" fillOpacity={isLight ? 0.25 : 0.4} stroke="#0284C7" strokeWidth="1.5" rx="2" />
+                                        <line x1={cX - bW / 2} y1={yMed} x2={cX + bW / 2} y2={yMed} stroke={isLight ? '#0369a1' : '#38bdf8'} strokeWidth="2.5" />
+                                        {st.outliers.map((oVal, oIdx) => (
+                                          <circle key={oIdx} cx={cX} cy={scY(oVal)} r="3" fill="#ef4444" stroke="#fff" strokeWidth="0.8" />
+                                        ))}
+                                        <text x={cX} y="138" textAnchor="middle" fill={isLight ? '#334155' : '#94a3b8'} fontSize="9" fontWeight="600">
+                                          {st.category.length > 7 ? `${st.category.slice(0, 6)}…` : st.category}
+                                        </text>
+                                      </g>
+                                    );
+                                  })}
+                                </svg>
+                                <div className="flex justify-between items-center text-[10px] font-mono text-slate-500 pt-1 border-t border-border-subtle">
+                                  <span>Median: {bData[0]?.median ? formatVal(bData[0].median) : 'N/A'}</span>
+                                  <span className="text-sky-600 dark:text-cyan-400 font-semibold">Tukey 5-Number Boxplot</span>
+                                </div>
+                              </div>
+                            );
+                          })()
+                        ) : visType === 'heatmap' ? (
+                          /* Heatmap Matrix in Executive Dashboard */
+                          <div className="w-full space-y-1.5">
+                            <div className="grid grid-cols-4 sm:grid-cols-6 gap-1.5 font-mono text-center">
+                              {items.slice(0, 12).map((it, idx) => {
+                                const intensity = Math.min(1, Math.max(0.18, it.value / maxVal));
+                                return (
+                                  <div
+                                    key={idx}
+                                    onClick={() => handleDrilldown(it.category)}
+                                    className="p-1.5 rounded-lg border border-slate-200 dark:border-white/10 cursor-pointer hover:border-sky-500 transition-all flex flex-col justify-between"
+                                    style={{ backgroundColor: `rgba(2, 132, 199, ${intensity})` }}
+                                    title={`${it.category}: ${formatVal(it.value)}`}
+                                  >
+                                    <span className="text-[10px] text-white font-extrabold truncate">{it.category}</span>
+                                    <span className="text-[9px] text-white font-bold font-mono">
+                                      {it.value >= 1000 ? `${(it.value / 1000).toFixed(1)}k` : it.value}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                            <div className="flex justify-between text-[10px] text-slate-500 dark:text-slate-400 font-mono pt-1">
+                              <span>Max Density: {formatVal(maxVal)}</span>
+                              <span className="text-sky-600 dark:text-cyan-400 font-semibold">Temporal Heat Density</span>
+                            </div>
+                          </div>
+                        ) : visType === 'line' ? (
+                          /* Line / Spline Trend in Executive Dashboard */
+                          <div className="w-full">
+                            {items.length >= 2 ? (
+                              <div className="relative w-full">
+                                <svg viewBox="0 0 400 130" className="w-full h-32 overflow-visible select-none">
+                                  {[0, 0.5, 1].map((pct, i) => (
+                                    <line key={i} x1="25" y1={10 + 100 * (1 - pct)} x2="385" y2={10 + 100 * (1 - pct)} stroke={isLight ? '#e2e8f0' : '#282828'} strokeDasharray="3,3" />
+                                  ))}
+                                  {(() => {
+                                    const coords = items.map((it, i) => ({
+                                      x: 25 + (i / Math.max(1, items.length - 1)) * 360,
+                                      y: 10 + 100 - (it.value / maxVal) * 100
+                                    }));
+                                    const pD = coords.reduce((acc, c, i) => i === 0 ? `M ${c.x},${c.y}` : `${acc} L ${c.x},${c.y}`, '');
+                                    const aD = `${pD} L ${coords[coords.length - 1].x},110 L ${coords[0].x},110 Z`;
+                                    return (
+                                      <>
+                                        <path d={aD} fill="rgba(2, 132, 199, 0.18)" />
+                                        <path d={pD} fill="none" stroke="#0284C7" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                                        {coords.map((c, i) => (
+                                          <circle key={i} cx={c.x} cy={c.y} r="3.5" fill={isLight ? '#ffffff' : '#0f172a'} stroke="#0284C7" strokeWidth="2" />
+                                        ))}
+                                      </>
+                                    );
+                                  })()}
+                                </svg>
+                                <div className="flex justify-between text-[10px] text-slate-500 font-mono pt-1">
+                                  <span className="truncate max-w-[100px]">{items[0]?.category}</span>
+                                  <span className="truncate max-w-[100px]">{items[items.length - 1]?.category}</span>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="p-4 text-center text-xs text-slate-500">Need at least 2 points for line chart.</div>
+                            )}
+                          </div>
                         ) : visType === 'table' ? (
                           <div className="w-full overflow-x-auto">
                             <table className="w-full text-left font-body-sm text-body-sm">
@@ -1734,7 +2108,7 @@ export const ExecutiveDashboard: React.FC = () => {
                             </table>
                           </div>
                         ) : (
-                          /* Ranked Horizontal/Vertical Bars in Primary Sky/Blue palette */
+                          /* Ranked Horizontal/Vertical Bars */
                           <div className="w-full space-y-2.5">
                             {items.slice(0, 5).map((it, idx) => {
                               const pct = Math.min(100, Math.max(5, (it.value / maxVal) * 100));
@@ -1749,7 +2123,7 @@ export const ExecutiveDashboard: React.FC = () => {
                                       className="h-full rounded-full transition-all duration-500 shadow-xs"
                                       style={{
                                         width: `${pct}%`,
-                                        backgroundColor: idx === 0 ? '#0284C7' : idx === 1 ? '#38BDF8' : idx === 2 ? '#6366F1' : '#8B5CF6'
+                                        backgroundColor: activeThemeConfig.barColors[idx % activeThemeConfig.barColors.length]
                                       }}
                                     />
                                   </div>
@@ -1762,7 +2136,7 @@ export const ExecutiveDashboard: React.FC = () => {
 
                       {/* Widget Footer */}
                       <div className="pt-2 border-t border-border-subtle flex items-center justify-between font-label-sm text-label-sm text-slate-500 dark:text-slate-400">
-                        <span>Audited from {cleanRows.length.toLocaleString()} rows</span>
+                        <span>Audited from {effectiveVisualRows.length.toLocaleString()} rows</span>
                         <span className="text-sky-600 dark:text-cyan-400 font-medium">Verified Telemetry</span>
                       </div>
                     </div>
@@ -1976,6 +2350,120 @@ export const ExecutiveDashboard: React.FC = () => {
           kpi={editingKpi}
           onClose={() => setEditingKpi(null)}
         />
+      )}
+
+      {/* Add Custom Visual Modal */}
+      {isAddVisModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+          <div className="w-full max-w-lg bg-white dark:bg-surface-card border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl p-6 space-y-5 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-border-subtle pb-3">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-lg bg-sky-500/15 text-sky-600 dark:text-cyan-400">
+                  <BarChart3 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base text-slate-900 dark:text-slate-100">Add Custom Visual</h3>
+                  <p className="text-xs text-slate-600 dark:text-slate-400">Map metrics & dimensions from {project.name}</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setIsAddVisModalOpen(false)} 
+                className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-surface-panel text-slate-500 dark:text-slate-400 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddCustomVisual} className="space-y-4 text-xs">
+              <div className="space-y-1">
+                <label className="font-bold uppercase text-slate-700 dark:text-slate-300">Visual Title</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. MRR by Plan Tier, Revenue by Channel..."
+                  value={newVisTitle}
+                  onChange={(e) => setNewVisTitle(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-surface-panel border border-slate-300 dark:border-border-subtle rounded-xl text-slate-900 dark:text-slate-100 font-medium focus:border-sky-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="font-bold uppercase text-slate-700 dark:text-slate-300">Chart Type</label>
+                  <select
+                    value={newVisType}
+                    onChange={(e) => setNewVisType(e.target.value as any)}
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-surface-panel border border-slate-300 dark:border-border-subtle rounded-xl text-slate-900 dark:text-slate-100 font-medium focus:outline-none cursor-pointer"
+                  >
+                    <option value="bar">Bar Chart</option>
+                    <option value="line">Line / Trend</option>
+                    <option value="donut">Donut / Proportion</option>
+                    <option value="table">Table Matrix</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-bold uppercase text-slate-700 dark:text-slate-300">Aggregation</label>
+                  <select
+                    value={newVisAgg}
+                    onChange={(e) => setNewVisAgg(e.target.value as any)}
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-surface-panel border border-slate-300 dark:border-border-subtle rounded-xl text-slate-900 dark:text-slate-100 font-medium focus:outline-none cursor-pointer"
+                  >
+                    <option value="sum">SUM</option>
+                    <option value="avg">AVERAGE</option>
+                    <option value="count">COUNT</option>
+                    <option value="min">MIN</option>
+                    <option value="max">MAX</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="font-bold uppercase text-slate-700 dark:text-slate-300">Dimension / Axis</label>
+                  <select
+                    value={newVisCat || stringCols[0]?.name || ''}
+                    onChange={(e) => setNewVisCat(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-surface-panel border border-slate-300 dark:border-border-subtle rounded-xl text-slate-900 dark:text-slate-100 font-medium focus:outline-none cursor-pointer"
+                  >
+                    {stringCols.map(c => (
+                      <option key={c.name} value={c.name}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-bold uppercase text-slate-700 dark:text-slate-300">Metric Column</label>
+                  <select
+                    value={newVisVal || numericCols[0]?.name || ''}
+                    onChange={(e) => setNewVisVal(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-surface-panel border border-slate-300 dark:border-border-subtle rounded-xl text-slate-900 dark:text-slate-100 font-medium focus:outline-none cursor-pointer"
+                  >
+                    {numericCols.map(c => (
+                      <option key={c.name} value={c.name}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setIsAddVisModalOpen(false)}
+                  className="px-4 py-2 bg-slate-100 dark:bg-surface-panel hover:bg-slate-200 dark:hover:bg-surface-elevated text-slate-700 dark:text-slate-300 rounded-xl font-medium cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-sky-600 hover:bg-sky-500 text-white font-bold rounded-xl shadow-xs cursor-pointer"
+                >
+                  Add Visual to Dashboard
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -113,7 +113,7 @@ const MainContent: React.FC = () => {
   };
 
   return (
-    <div className={`h-screen max-h-screen overflow-hidden ${themeMode === 'light' ? 'bg-[#f8fafc] text-slate-900 theme-light' : 'bg-surface-base text-on-surface theme-dark'} flex flex-col font-sans transition-colors duration-200`}>
+    <div className={`h-screen max-h-screen overflow-hidden ${themeMode === 'light' ? 'bg-[#f8fafc] text-slate-900 theme-light' : 'bg-surface-base text-on-surface theme-dark dark'} flex flex-col font-sans transition-colors duration-200`}>
       {!isPresentationMode && <Navbar />}
 
       <div className="flex flex-1 overflow-hidden min-h-0 relative">

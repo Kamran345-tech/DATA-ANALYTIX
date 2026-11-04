@@ -36,6 +36,7 @@ import {
   WhatIfScenarioSimulator 
 } from '../charts/InteractiveCharts';
 import { safeMin, safeMax, safeDownsample } from '../../utils/mathUtils';
+import { InteractiveSlicersBar } from './InteractiveSlicersBar';
 
 type SlideId = 'overview' | 'trajectory' | 'mix' | 'lineage' | 'simulator';
 
@@ -47,6 +48,7 @@ export const ExecutivePresentationDeck: React.FC = () => {
     qualityReport, 
     cleanRows, 
     filteredRows, 
+    filters,
     columns, 
     dataModel,
     isPresentationMode, 
@@ -58,6 +60,7 @@ export const ExecutivePresentationDeck: React.FC = () => {
   const isLight = themeMode === 'light';
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isSlicersDrawerOpen, setIsSlicersDrawerOpen] = useState(false);
   const [timerSeconds, setTimerSeconds] = useState(10);
   const [isWallboardMode, setIsWallboardMode] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date().toLocaleTimeString());
@@ -127,8 +130,74 @@ export const ExecutivePresentationDeck: React.FC = () => {
     };
   }, [analytics.trends, primaryMetric]);
 
-  // Category performance
+  // Dynamic filtered KPI values and filtered rows computation
+  const isFiltered = filteredRows.length < cleanRows.length;
+  const effectiveRows = filteredRows;
+  const activeFilterCount = Object.keys(filters).length;
+
+  const computeFilteredKpi = (kpi: any) => {
+    if (!isFiltered || !kpi) {
+      return { formatted: kpi?.formattedValue || '$0', raw: kpi?.value || 0, isFiltered: false };
+    }
+    const vals = effectiveRows
+      .map(r => Number(r[kpi.sourceColumn]))
+      .filter(v => typeof v === 'number' && !isNaN(v));
+
+    if (vals.length === 0) {
+      return { formatted: '0', raw: 0, isFiltered: true };
+    }
+
+    let computed = 0;
+    if (kpi.aggregation === 'avg') {
+      computed = vals.reduce((a, b) => a + b, 0) / vals.length;
+    } else if (kpi.aggregation === 'count') {
+      computed = effectiveRows.length;
+    } else if (kpi.aggregation === 'distinct_count') {
+      computed = new Set(effectiveRows.map(r => String(r[kpi.sourceColumn]))).size;
+    } else if (kpi.aggregation === 'min') {
+      computed = safeMin(vals);
+    } else if (kpi.aggregation === 'max') {
+      computed = safeMax(vals);
+    } else {
+      computed = vals.reduce((a, b) => a + b, 0);
+    }
+
+    const isCurrency = /revenue|sales|profit|margin|cost|price|income|amount/i.test(kpi.name) || (kpi.formattedValue && kpi.formattedValue.startsWith('$'));
+    const isPercent = /margin|rate|percent|share|yield/i.test(kpi.name) || (kpi.formattedValue && kpi.formattedValue.endsWith('%'));
+
+    let formatted = '';
+    if (isCurrency) {
+      if (Math.abs(computed) >= 1_000_000) formatted = `$${(computed / 1_000_000).toFixed(2)}M`;
+      else if (Math.abs(computed) >= 1_000) formatted = `$${(computed / 1_000).toFixed(1)}K`;
+      else formatted = `$${computed.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+    } else if (isPercent) {
+      formatted = `${computed.toFixed(1)}%`;
+    } else {
+      formatted = computed >= 1000 ? Math.round(computed).toLocaleString() : computed.toFixed(1);
+    }
+
+    return { formatted, raw: computed, isFiltered: true };
+  };
+
+  // Category performance (reacts dynamically to slicers)
   const currentCategoryData = useMemo(() => {
+    if (isFiltered && primaryDimension && effectiveRows.length > 0) {
+      const counts = new Map<string, number>();
+      effectiveRows.forEach(r => {
+        const val = String(r[primaryDimension] ?? 'Other');
+        counts.set(val, (counts.get(val) || 0) + 1);
+      });
+      const total = effectiveRows.length;
+      return Array.from(counts.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 6)
+        .map(([category, count]) => ({
+          category,
+          value: count,
+          share: total > 0 ? Math.round((count / total) * 100) : 0,
+          rowCount: count
+        }));
+    }
     const keys = Object.keys(analytics.categoryPerformance || {});
     if (keys.length > 0 && analytics.categoryPerformance[keys[0]]) {
       return analytics.categoryPerformance[keys[0]].map(c => ({
@@ -144,7 +213,7 @@ export const ExecutivePresentationDeck: React.FC = () => {
       { category: 'Commercial', value: 22000, share: 18, rowCount: 25 },
       { category: 'Other', value: 12000, share: 10, rowCount: 15 }
     ];
-  }, [analytics.categoryPerformance]);
+  }, [isFiltered, primaryDimension, effectiveRows, analytics.categoryPerformance]);
 
   // Dynamic directives
   const activeDirectives = useMemo(() => {
@@ -277,8 +346,35 @@ export const ExecutivePresentationDeck: React.FC = () => {
           </div>
         )}
 
-        {/* Right: Wallboard toggle, theme, clock & EXIT */}
+        {/* Right: Slicers toggle, Wallboard toggle, theme, clock & EXIT */}
         <div className="flex items-center gap-2.5">
+          {/* Live Slicers Filter Drawer Toggle */}
+          <button
+            onClick={() => setIsSlicersDrawerOpen(!isSlicersDrawerOpen)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
+              isSlicersDrawerOpen
+                ? isLight 
+                  ? 'bg-sky-600 text-white border-sky-600 shadow-xs' 
+                  : 'bg-cyan-500 text-slate-950 font-bold border-cyan-400 shadow-[0_0_12px_rgba(34,211,238,0.3)]'
+                : isLight 
+                  ? 'bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200' 
+                  : 'bg-[#151D2C] border-[#2A374D] text-gray-300 hover:bg-[#1E293B]'
+            }`}
+            title="Toggle Slicers Ribbon in Boardroom Deck"
+          >
+            <Sliders className="w-3.5 h-3.5" />
+            <span>Slicers</span>
+            {activeFilterCount > 0 && (
+              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold ${
+                isSlicersDrawerOpen
+                  ? isLight ? 'bg-white text-sky-800' : 'bg-slate-950 text-cyan-300'
+                  : 'bg-cyan-500/20 text-cyan-400'
+              }`}>
+                {activeFilterCount}
+              </span>
+            )}
+          </button>
+
           {/* Wallboard / Slide mode toggle */}
           <button
             onClick={() => setIsWallboardMode(!isWallboardMode)}
@@ -339,6 +435,15 @@ export const ExecutivePresentationDeck: React.FC = () => {
         </div>
       </div>
 
+      {/* COLLAPSIBLE SLICERS DRAWER */}
+      {isSlicersDrawerOpen && (
+        <div className={`px-6 py-3 border-b shrink-0 animate-fadeIn transition-colors ${
+          isLight ? 'bg-white/95 border-slate-300 shadow-md' : 'bg-[#0E131F]/95 border-[#1E293B]'
+        }`}>
+          <InteractiveSlicersBar />
+        </div>
+      )}
+
       {/* =================================================================== */}
       {/* MAIN PRESENTATION CANVAS                                            */}
       {/* =================================================================== */}
@@ -351,34 +456,44 @@ export const ExecutivePresentationDeck: React.FC = () => {
           <div className="space-y-6">
             {/* Wallboard Header KPIs */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {(analytics.kpis.slice(0, 4) || []).map(kpi => (
-                <div 
-                  key={kpi.id} 
-                  className={`p-5 rounded-2xl border shadow-md flex flex-col justify-between ${
-                    isLight ? 'bg-white border-slate-200' : 'bg-[#0E131F] border-[#1E293B]'
-                  }`}
-                >
-                  <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-gray-400">
-                    <span>{kpi.name}</span>
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] ${
-                      kpi.status === 'Above Target' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-cyan-500/20 text-cyan-400'
-                    }`}>
-                      {kpi.status}
-                    </span>
+              {(analytics.kpis.slice(0, 4) || []).map(kpi => {
+                const kpiVal = computeFilteredKpi(kpi);
+                return (
+                  <div 
+                    key={kpi.id} 
+                    className={`p-5 rounded-2xl border shadow-md flex flex-col justify-between ${
+                      isLight ? 'bg-white border-slate-200' : 'bg-[#0E131F] border-[#1E293B]'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-gray-400">
+                      <span>{kpi.name}</span>
+                      <div className="flex items-center gap-1.5">
+                        {kpiVal.isFiltered && (
+                          <span className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-sky-500/15 text-sky-600 dark:text-cyan-300 border border-sky-400/30">
+                            Filtered ({effectiveRows.length})
+                          </span>
+                        )}
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] ${
+                          kpi.status === 'Above Target' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-cyan-500/20 text-cyan-400'
+                        }`}>
+                          {kpi.status}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="my-2">
+                      <span className="text-3xl lg:text-4xl font-extrabold tracking-tight font-heading">
+                        {kpiVal.formatted}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs pt-2 border-t border-inherit">
+                      <span className="text-gray-400">{kpiVal.isFiltered ? `Active (${effectiveRows.length} rows)` : `${kpi.period} Baseline`}</span>
+                      <span className="text-emerald-400 font-semibold flex items-center">
+                        <ArrowUpRight className="w-3.5 h-3.5 mr-0.5" /> +{kpi.changePercent || 5.4}%
+                      </span>
+                    </div>
                   </div>
-                  <div className="my-2">
-                    <span className="text-3xl lg:text-4xl font-extrabold tracking-tight font-heading">
-                      {kpi.formattedValue}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs pt-2 border-t border-inherit">
-                    <span className="text-gray-400">{kpi.period} Baseline</span>
-                    <span className="text-emerald-400 font-semibold flex items-center">
-                      <ArrowUpRight className="w-3.5 h-3.5 mr-0.5" /> +{kpi.changePercent || 5.4}%
-                    </span>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* 2-Column Visual Telemetry Grid */}
@@ -448,35 +563,45 @@ export const ExecutivePresentationDeck: React.FC = () => {
             {slides[currentSlideIndex].id === 'overview' && (
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  {(analytics.kpis.slice(0, 4) || []).map((kpi, idx) => (
-                    <div 
-                      key={kpi.id}
-                      className={`p-6 rounded-2xl border transition-all ${
-                        isLight 
-                          ? 'bg-white border-slate-200 shadow-md' 
-                          : 'bg-[#0E131F] border-[#1E293B] hover:border-[#21F1A8]/50'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">
-                        <span>{kpi.name}</span>
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] ${
-                          kpi.status === 'Above Target' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-cyan-500/20 text-cyan-400'
-                        }`}>
-                          {kpi.status}
-                        </span>
+                  {(analytics.kpis.slice(0, 4) || []).map((kpi, idx) => {
+                    const kpiVal = computeFilteredKpi(kpi);
+                    return (
+                      <div 
+                        key={kpi.id}
+                        className={`p-6 rounded-2xl border transition-all ${
+                          isLight 
+                            ? 'bg-white border-slate-200 shadow-md' 
+                            : 'bg-[#0E131F] border-[#1E293B] hover:border-[#21F1A8]/50'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">
+                          <span>{kpi.name}</span>
+                          <div className="flex items-center gap-1.5">
+                            {kpiVal.isFiltered && (
+                              <span className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-sky-500/15 text-sky-600 dark:text-cyan-300 border border-sky-400/30">
+                                Sliced ({effectiveRows.length})
+                              </span>
+                            )}
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] ${
+                              kpi.status === 'Above Target' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-cyan-500/20 text-cyan-400'
+                            }`}>
+                              {kpi.status}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-4xl font-extrabold tracking-tight font-heading my-2">
+                          {kpiVal.formatted}
+                        </div>
+                        <div className="text-xs text-emerald-400 font-semibold flex items-center">
+                          <ArrowUpRight className="w-4 h-4 mr-1" />
+                          <span>+{kpi.changePercent || 5.2}% vs previous window</span>
+                        </div>
+                        <p className="text-[11px] text-gray-400 mt-2">
+                          {kpiVal.isFiltered ? `Filtered across ${effectiveRows.length} active records` : `Calculation: ${kpi.calculation}`}
+                        </p>
                       </div>
-                      <div className="text-4xl font-extrabold tracking-tight font-heading my-2">
-                        {kpi.formattedValue}
-                      </div>
-                      <div className="text-xs text-emerald-400 font-semibold flex items-center">
-                        <ArrowUpRight className="w-4 h-4 mr-1" />
-                        <span>+{kpi.changePercent || 5.2}% vs previous window</span>
-                      </div>
-                      <p className="text-[11px] text-gray-400 mt-2">
-                        Calculation: {kpi.calculation}
-                      </p>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 {/* Directives Banner */}

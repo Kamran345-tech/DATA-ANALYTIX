@@ -870,56 +870,62 @@ export function computeAnalytics(
     }
   }
 
-  // 13. Default Visual Configurations
+  // 13. Default Visual Configurations - Dynamically Adaptive to ANY Loaded Dataset
   const visuals: VisualConfig[] = [];
-  if (primaryDateCol && revCol) {
-    visuals.push({
-      id: 'vis-rev-trend',
-      title: `${formatColumnTitle(revCol)} Over Time`,
-      type: 'line',
-      categoryField: primaryDateCol,
-      valueField: revCol,
-      aggregation: 'sum',
-      color: '#21F1A8',
-      sortBy: 'category_asc'
-    });
-  }
-  if (stringCols.length > 0 && revCol) {
-    visuals.push({
-      id: 'vis-cat-bar',
-      title: `${formatColumnTitle(revCol)} by ${formatColumnTitle(stringCols[0].name)}`,
-      type: 'bar',
-      categoryField: stringCols[0].name,
-      valueField: revCol,
-      aggregation: 'sum',
-      color: '#38BDF8',
-      sortBy: 'value_desc'
-    });
-  }
-  if (stringCols.length > 1 && revCol) {
-    visuals.push({
-      id: 'vis-donut-sub',
-      title: `Distribution by ${formatColumnTitle(stringCols[1].name)}`,
-      type: 'donut',
-      categoryField: stringCols[1].name,
-      valueField: revCol,
-      aggregation: 'sum',
-      color: '#A78BFA',
-      sortBy: 'value_desc'
-    });
-  }
-  if (stringCols.length > 0 && (profitCol || (numericCols.length > 1 ? numericCols[1].name : revCol) || numericCols[0]?.name)) {
-    const secondVal = profitCol || (numericCols.length > 1 ? numericCols[1].name : revCol) || (numericCols[0]?.name ?? 'Value');
-    visuals.push({
-      id: 'vis-table-summary',
-      title: `Aggregated Performance Table (${formatColumnTitle(stringCols[0].name)})`,
-      type: 'table',
-      categoryField: stringCols[0].name,
-      valueField: secondVal,
-      aggregation: 'sum',
-      color: '#F59E0B',
-      sortBy: 'value_desc'
-    });
+  const primaryValCol = revCol || numericCols[0]?.name;
+  const secondaryValCol = profitCol || (numericCols.length > 1 ? numericCols[1].name : primaryValCol);
+  const primaryCatCol = stringCols[0]?.name || (columns.find(c => c.dataType === 'string')?.name) || 'Category';
+  const secondaryCatCol = stringCols[1]?.name || stringCols[0]?.name;
+
+  if (primaryValCol) {
+    if (primaryDateCol) {
+      visuals.push({
+        id: `vis-${tableName.toLowerCase()}-trend`,
+        title: `${formatColumnTitle(primaryValCol)} Over Time`,
+        type: 'line',
+        categoryField: primaryDateCol,
+        valueField: primaryValCol,
+        aggregation: 'sum',
+        color: '#0284C7',
+        sortBy: 'category_asc'
+      });
+    }
+    if (primaryCatCol) {
+      visuals.push({
+        id: `vis-${tableName.toLowerCase()}-cat-bar`,
+        title: `${formatColumnTitle(primaryValCol)} by ${formatColumnTitle(primaryCatCol)}`,
+        type: 'bar',
+        categoryField: primaryCatCol,
+        valueField: primaryValCol,
+        aggregation: 'sum',
+        color: '#00D8F6',
+        sortBy: 'value_desc'
+      });
+    }
+    if (secondaryCatCol && secondaryCatCol !== primaryCatCol) {
+      visuals.push({
+        id: `vis-${tableName.toLowerCase()}-donut-sub`,
+        title: `Distribution by ${formatColumnTitle(secondaryCatCol)}`,
+        type: 'donut',
+        categoryField: secondaryCatCol,
+        valueField: primaryValCol,
+        aggregation: 'sum',
+        color: '#38BDF8',
+        sortBy: 'value_desc'
+      });
+    }
+    if (primaryCatCol && secondaryValCol) {
+      visuals.push({
+        id: `vis-${tableName.toLowerCase()}-table-summary`,
+        title: `Aggregated Performance Table (${formatColumnTitle(primaryCatCol)})`,
+        type: 'table',
+        categoryField: primaryCatCol,
+        valueField: secondaryValCol,
+        aggregation: 'sum',
+        color: '#0284C7',
+        sortBy: 'value_desc'
+      });
+    }
   }
 
   // 14. Methodology & Data Governance Log

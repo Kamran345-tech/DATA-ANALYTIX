@@ -188,6 +188,7 @@ export interface PlatformContextType {
   customVisuals: VisualConfig[];
   setCustomVisuals: React.Dispatch<React.SetStateAction<VisualConfig[]>>;
   addCustomVisual: (visual: VisualConfig) => void;
+  updateCustomVisual: (id: string, updates: Partial<VisualConfig>) => void;
   removeCustomVisual: (id: string) => void;
   auditLogs: { timestamp: string; action: string; details: string }[];
 
@@ -279,10 +280,10 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       localStorage.setItem('acuitybi_theme', mode);
       if (mode === 'light') {
         document.documentElement.classList.add('theme-light');
-        document.documentElement.classList.remove('theme-dark');
+        document.documentElement.classList.remove('theme-dark', 'dark');
       } else {
         document.documentElement.classList.remove('theme-light');
-        document.documentElement.classList.add('theme-dark');
+        document.documentElement.classList.add('theme-dark', 'dark');
       }
     }
   };
@@ -295,10 +296,10 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (typeof window !== 'undefined') {
       if (themeMode === 'light') {
         document.documentElement.classList.add('theme-light');
-        document.documentElement.classList.remove('theme-dark');
+        document.documentElement.classList.remove('theme-dark', 'dark');
       } else {
         document.documentElement.classList.remove('theme-light');
-        document.documentElement.classList.add('theme-dark');
+        document.documentElement.classList.add('theme-dark', 'dark');
       }
     }
   }, [themeMode]);
@@ -780,6 +781,10 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   function addCustomVisual(visual: VisualConfig) {
     setCustomVisuals(prev => [...prev, visual]);
+  }
+
+  function updateCustomVisual(id: string, updates: Partial<VisualConfig>) {
+    setCustomVisuals(prev => prev.map(v => v.id === id ? { ...v, ...updates } : v));
   }
 
   function removeCustomVisual(id: string) {
@@ -1400,6 +1405,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         customVisuals,
         setCustomVisuals,
         addCustomVisual,
+        updateCustomVisual,
         removeCustomVisual,
         auditLogs,
         drillThrough,

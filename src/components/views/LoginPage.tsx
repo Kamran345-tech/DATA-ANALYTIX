@@ -297,10 +297,14 @@ export const LoginPage: React.FC = () => {
 
         {/* Right Center: Elevated Authentication Card */}
         <div className="my-auto py-6 max-w-md w-full mx-auto space-y-6 relative z-10">
-          {/* Card Frame */}
-          <div className="glass-panel rounded-3xl p-6 sm:p-8 relative transition-all duration-300 shadow-[0_20px_50px_rgba(0,0,0,0.45),0_0_30px_rgba(34,211,238,0.08)]">
-            {/* Top Accent Gradient Bar with Subtle Glow */}
-            <div className="absolute top-0 left-0 right-0 h-1 rounded-t-3xl bg-gradient-to-r from-cyan-400 via-indigo-500 to-violet-500 shadow-[0_0_12px_rgba(34,211,238,0.4)]" />
+          {/* Card Frame with clipped rounded corners */}
+          <div className="glass-panel rounded-3xl overflow-hidden p-6 sm:p-8 relative transition-all duration-300 shadow-[0_20px_50px_rgba(0,0,0,0.45),0_0_30px_rgba(34,211,238,0.08)]">
+            {/* Top Accent Line - Refined hairline with soft tapered falloff */}
+            <div className={`absolute top-0 inset-x-0 h-[1.5px] pointer-events-none transition-all ${
+              isLight 
+                ? 'bg-gradient-to-r from-transparent via-sky-600/40 to-transparent' 
+                : 'bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent'
+            }`} />
 
             {/* Header Titles */}
             <div className="space-y-1.5 pt-1 mb-5">

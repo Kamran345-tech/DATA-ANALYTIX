@@ -112,7 +112,7 @@ export const AnalysisView: React.FC = () => {
       {/* 1. Header */}
       <div className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-4 sm:p-6 flex flex-wrap items-center justify-between gap-4">
         <div className="space-y-1">
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#21F1A8] font-mono">
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-sky-400 font-mono">
             <Activity className="w-4 h-4" /> Data Analyst Statistical Workbench
           </div>
           <h1 className="font-heading text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-wide uppercase">
@@ -126,9 +126,9 @@ export const AnalysisView: React.FC = () => {
         <div className="flex items-center gap-2">
           <button
             onClick={exportStatsCSV}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#1f1f1f] border border-[#333] hover:border-[#21F1A8] text-white text-xs font-medium transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#1f1f1f] border border-[#333] hover:border-sky-500 text-white text-xs font-medium transition-colors cursor-pointer"
           >
-            <Download className="w-3.5 h-3.5 text-[#21F1A8]" />
+            <Download className="w-3.5 h-3.5 text-sky-400" />
             <span className="hidden sm:inline">Export EDA as CSV</span>
           </button>
         </div>
@@ -138,9 +138,9 @@ export const AnalysisView: React.FC = () => {
       <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar text-xs font-semibold">
         <button
           onClick={() => setActiveTab('eda')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl whitespace-nowrap transition-all ${
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl whitespace-nowrap transition-all cursor-pointer ${
             activeTab === 'eda'
-              ? 'bg-[#21F1A8] text-black shadow-lg shadow-[#21F1A8]/20'
+              ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/20'
               : 'bg-[#1c1c1c] text-gray-300 hover:bg-[#252525] hover:text-white border border-[#2e2e2e]'
           }`}
         >
@@ -149,9 +149,9 @@ export const AnalysisView: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('correlation')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl whitespace-nowrap transition-all ${
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl whitespace-nowrap transition-all cursor-pointer ${
             activeTab === 'correlation'
-              ? 'bg-[#21F1A8] text-black shadow-lg shadow-[#21F1A8]/20'
+              ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/20'
               : 'bg-[#1c1c1c] text-gray-300 hover:bg-[#252525] hover:text-white border border-[#2e2e2e]'
           }`}
         >
@@ -160,9 +160,9 @@ export const AnalysisView: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('distribution')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl whitespace-nowrap transition-all ${
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl whitespace-nowrap transition-all cursor-pointer ${
             activeTab === 'distribution'
-              ? 'bg-[#21F1A8] text-black shadow-lg shadow-[#21F1A8]/20'
+              ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/20'
               : 'bg-[#1c1c1c] text-gray-300 hover:bg-[#252525] hover:text-white border border-[#2e2e2e]'
           }`}
         >
@@ -171,9 +171,9 @@ export const AnalysisView: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('outliers')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl whitespace-nowrap transition-all ${
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl whitespace-nowrap transition-all cursor-pointer ${
             activeTab === 'outliers'
-              ? 'bg-[#21F1A8] text-black shadow-lg shadow-[#21F1A8]/20'
+              ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/20'
               : 'bg-[#1c1c1c] text-gray-300 hover:bg-[#252525] hover:text-white border border-[#2e2e2e]'
           }`}
         >
@@ -182,9 +182,9 @@ export const AnalysisView: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('forecast')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl whitespace-nowrap transition-all ${
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl whitespace-nowrap transition-all cursor-pointer ${
             activeTab === 'forecast'
-              ? 'bg-[#21F1A8] text-black shadow-lg shadow-[#21F1A8]/20'
+              ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/20'
               : 'bg-[#1c1c1c] text-gray-300 hover:bg-[#252525] hover:text-white border border-[#2e2e2e]'
           }`}
         >
@@ -198,7 +198,7 @@ export const AnalysisView: React.FC = () => {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="font-heading text-lg sm:text-xl font-bold text-white uppercase flex items-center gap-2">
-                <Table2 className="w-5 h-5 text-[#21F1A8]" />
+                <Table2 className="w-5 h-5 text-sky-400" />
                 NUMERICAL ATTRIBUTES DESCRIPTIVE SUMMARY
               </h2>
               <p className="text-xs text-gray-400">
@@ -213,7 +213,7 @@ export const AnalysisView: React.FC = () => {
                 placeholder="Search numeric columns..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-[#141414] text-xs text-white pl-8 pr-3 py-1.5 rounded-xl border border-[#333] focus:border-[#21F1A8] focus:outline-none"
+                className="w-full bg-[#141414] text-xs text-white pl-8 pr-3 py-1.5 rounded-xl border border-[#333] focus:border-sky-500 focus:outline-none"
               />
             </div>
           </div>
@@ -250,7 +250,7 @@ export const AnalysisView: React.FC = () => {
                         {stat.column}
                       </td>
                       <td className="p-3 text-right text-gray-300">{stat.count.toLocaleString()}</td>
-                      <td className="p-3 text-right text-[#21F1A8] font-bold">{stat.mean.toLocaleString()}</td>
+                      <td className="p-3 text-right text-sky-400 font-bold">{stat.mean.toLocaleString()}</td>
                       <td className="p-3 text-right text-white">{stat.median.toLocaleString()}</td>
                       <td className="p-3 text-right text-gray-400">{stat.stdDev.toLocaleString()}</td>
                       <td className="p-3 text-right text-gray-400">{stat.min.toLocaleString()}</td>
@@ -287,7 +287,7 @@ export const AnalysisView: React.FC = () => {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 className="font-heading text-lg sm:text-xl font-bold text-white uppercase flex items-center gap-2">
-                  <BarChart2 className="w-5 h-5 text-[#21F1A8]" />
+                  <BarChart2 className="w-5 h-5 text-sky-400" />
                   PEARSON CORRELATION MATRIX
                 </h2>
                 <p className="text-xs text-gray-400">
@@ -310,12 +310,12 @@ export const AnalysisView: React.FC = () => {
                   const isModerate = Math.abs(r) >= 0.4 && Math.abs(r) < 0.7;
 
                   return (
-                    <div key={idx} className="p-4 rounded-xl bg-[#141414] border border-[#282828] space-y-2.5 hover:border-[#21F1A8]/40 transition-colors">
+                    <div key={idx} className="p-4 rounded-xl bg-[#141414] border border-[#282828] space-y-2.5 hover:border-sky-500/40 transition-colors">
                       <div className="flex items-center justify-between text-xs">
                         <span className="text-white font-medium truncate max-w-[170px]">{pair.x} ↔ {pair.y}</span>
                         <span className={`font-mono font-bold px-2 py-0.5 rounded text-xs ${
                           isStrong
-                            ? (isPositive ? 'bg-[#21F1A8]/20 text-[#21F1A8]' : 'bg-red-500/20 text-red-400')
+                            ? (isPositive ? 'bg-sky-500/20 text-sky-400' : 'bg-red-500/20 text-red-400')
                             : isModerate
                             ? 'bg-amber-500/20 text-amber-300'
                             : 'bg-[#222] text-gray-400'
@@ -354,7 +354,7 @@ export const AnalysisView: React.FC = () => {
                     <select
                       value={scatterColX}
                       onChange={(e) => setScatterColX(e.target.value)}
-                      className="bg-[#141414] text-[#21F1A8] px-2.5 py-1 rounded-lg border border-[#333] focus:border-[#21F1A8] focus:outline-none"
+                      className="bg-[#141414] text-sky-400 px-2.5 py-1 rounded-lg border border-[#333] focus:border-sky-500 focus:outline-none"
                     >
                       {numericCols.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
                     </select>
@@ -365,7 +365,7 @@ export const AnalysisView: React.FC = () => {
                     <select
                       value={scatterColY}
                       onChange={(e) => setScatterColY(e.target.value)}
-                      className="bg-[#141414] text-cyan-400 px-2.5 py-1 rounded-lg border border-[#333] focus:border-[#21F1A8] focus:outline-none"
+                      className="bg-[#141414] text-cyan-400 px-2.5 py-1 rounded-lg border border-[#333] focus:border-sky-500 focus:outline-none"
                     >
                       {numericCols.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
                     </select>
@@ -400,7 +400,7 @@ export const AnalysisView: React.FC = () => {
                           cx={getX(pt.x)}
                           cy={getY(pt.y)}
                           r="4"
-                          fill="#21F1A8"
+                          fill="#0284C7"
                           opacity="0.75"
                           className="hover:scale-150 hover:opacity-100 transition-all cursor-pointer"
                         >
@@ -430,7 +430,7 @@ export const AnalysisView: React.FC = () => {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="font-heading text-lg sm:text-xl font-bold text-white uppercase flex items-center gap-2">
-                <Sigma className="w-5 h-5 text-[#21F1A8]" />
+                <Sigma className="w-5 h-5 text-sky-400" />
                 PARAMETRIC FREQUENCY HISTOGRAM
               </h2>
               <p className="text-xs text-gray-400">
@@ -444,7 +444,7 @@ export const AnalysisView: React.FC = () => {
                 <select
                   value={selectedHistCol}
                   onChange={(e) => setSelectedHistCol(e.target.value)}
-                  className="bg-[#141414] text-[#21F1A8] font-mono px-3 py-1.5 rounded-lg border border-[#333] focus:border-[#21F1A8] focus:outline-none"
+                  className="bg-[#141414] text-sky-400 font-mono px-3 py-1.5 rounded-lg border border-[#333] focus:border-sky-500 focus:outline-none"
                 >
                   {numericCols.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
                 </select>
@@ -456,8 +456,8 @@ export const AnalysisView: React.FC = () => {
                   <button
                     key={b}
                     onClick={() => setNumBins(b)}
-                    className={`px-2.5 py-1 rounded-lg font-mono text-xs transition-colors ${
-                      numBins === b ? 'bg-[#21F1A8] text-black font-bold' : 'bg-[#141414] text-gray-400 hover:text-white border border-[#333]'
+                    className={`px-2.5 py-1 rounded-lg font-mono text-xs transition-colors cursor-pointer ${
+                      numBins === b ? 'bg-sky-600 text-white font-bold' : 'bg-[#141414] text-gray-400 hover:text-white border border-[#333]'
                     }`}
                   >
                     {b}
@@ -475,7 +475,7 @@ export const AnalysisView: React.FC = () => {
             </div>
             <div className="p-3 bg-[#141414] rounded-xl border border-[#282828]">
               <span className="text-gray-500 font-mono">Mean (μ)</span>
-              <div className="text-base font-bold text-[#21F1A8] font-mono">{Math.round(histData.mean * 100) / 100}</div>
+              <div className="text-base font-bold text-sky-400 font-mono">{Math.round(histData.mean * 100) / 100}</div>
             </div>
             <div className="p-3 bg-[#141414] rounded-xl border border-[#282828]">
               <span className="text-gray-500 font-mono">Median (M)</span>
@@ -524,7 +524,7 @@ export const AnalysisView: React.FC = () => {
                           y={y}
                           width={Math.max(4, barWidth - 4)}
                           height={Math.max(2, h)}
-                          fill="#21F1A8"
+                          fill="#0284C7"
                           rx="3"
                           className="transition-all group-hover:brightness-125"
                         />
@@ -574,7 +574,7 @@ export const AnalysisView: React.FC = () => {
 
           {analytics.anomalies.length === 0 ? (
             <div className="p-8 text-center text-xs text-gray-400 bg-[#141414] rounded-xl border border-[#262626] space-y-2">
-              <CheckCircle2 className="w-8 h-8 text-[#21F1A8] mx-auto" />
+              <CheckCircle2 className="w-8 h-8 text-sky-400 mx-auto" />
               <div className="font-bold text-white text-sm">Clean Statistical Profile</div>
               <p>No critical anomalies exceeding 1.5x IQR were discovered in the analyzed rows.</p>
             </div>
@@ -601,7 +601,7 @@ export const AnalysisView: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="p-2.5 rounded-xl bg-[#1e2722] border border-[#21F1A8]/30 text-[#21F1A8]">
+                  <div className="p-2.5 rounded-xl bg-sky-950/30 border border-sky-500/30 text-sky-300">
                     <strong className="text-white block text-[10px] uppercase font-mono">Action Recommendation:</strong>
                     <span>{anom.recommendedAction}</span>
                   </div>
@@ -618,7 +618,7 @@ export const AnalysisView: React.FC = () => {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="space-y-0.5">
               <h2 className="font-heading text-lg sm:text-xl font-bold text-white uppercase flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-[#21F1A8]" />
+                <TrendingUp className="w-5 h-5 text-sky-400" />
                 HOLT-WINTERS EXPONENTIAL TIME-SERIES FORECAST
               </h2>
               <p className="text-xs text-gray-400 font-mono">
@@ -627,7 +627,7 @@ export const AnalysisView: React.FC = () => {
             </div>
 
             {forecast?.isAvailable && (
-              <span className="px-2.5 py-1 rounded-lg bg-[#21F1A8]/15 text-[#21F1A8] font-mono text-xs font-semibold border border-[#21F1A8]/30">
+              <span className="px-2.5 py-1 rounded-lg bg-sky-500/15 text-sky-300 font-mono text-xs font-semibold border border-sky-500/30">
                 Verified Forecast Available
               </span>
             )}
@@ -647,10 +647,10 @@ export const AnalysisView: React.FC = () => {
                   </thead>
                   <tbody className="divide-y divide-[#222]">
                     {forecast.data.map((pt, i) => (
-                      <tr key={i} className={pt.forecast ? 'bg-[#21F1A8]/5 text-[#21F1A8]' : 'text-gray-300'}>
+                      <tr key={i} className={pt.forecast ? 'bg-sky-500/10 text-sky-300' : 'text-gray-300'}>
                         <td className="p-3 font-bold">{pt.period}</td>
                         <td className="p-3 text-right">{pt.actual !== undefined ? pt.actual.toLocaleString() : '—'}</td>
-                        <td className="p-3 text-right font-bold text-[#21F1A8]">
+                        <td className="p-3 text-right font-bold text-sky-400">
                           {pt.forecast !== undefined ? pt.forecast.toLocaleString() : '—'}
                         </td>
                         <td className="p-3 text-right text-cyan-400">
