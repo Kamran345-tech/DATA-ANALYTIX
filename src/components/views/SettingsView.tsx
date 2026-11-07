@@ -17,22 +17,44 @@ import {
   Play,
   AlertTriangle,
   AlertCircle,
-  CheckCircle2
+  CheckCircle2,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { usePlatform } from '../../store/usePlatformStore';
 import { useFirebaseAuth } from '../../store/useFirebaseAuth';
 import { useToast } from '../../store/useToast';
+import { 
+  FEATURE_METADATA, 
+  loadFeatureFlags, 
+  saveFeatureFlags, 
+  resetFeatureFlags, 
+  FeatureFlags 
+} from '../../config/features';
 
 export const SettingsView: React.FC = () => {
-  const { brand, setBrand, project, updateProjectMetadata, auditLogs, setCurrentTab } = usePlatform();
+  const { 
+    brand, 
+    setBrand, 
+    project, 
+    updateProjectMetadata, 
+    auditLogs, 
+    setCurrentTab,
+    themeMode,
+    setThemeMode,
+    uiMode,
+    setUiMode
+  } = usePlatform();
   const { currentUser, setIsAuthModalOpen, logout } = useFirebaseAuth();
   const { success, warning, error, info, progress, complete, clearAll } = useToast();
 
+  const isLight = themeMode === 'light';
   const [companyName, setCompanyName] = useState(brand.companyName);
   const [department, setDepartment] = useState(brand.department);
   const [author, setAuthor] = useState(brand.author);
   const [themeColor, setThemeColor] = useState(brand.themeColor);
   const [savedNotice, setSavedNotice] = useState(false);
+  const [features, setFeatures] = useState<FeatureFlags>(() => loadFeatureFlags());
 
   const handleSaveBranding = (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,6 +91,138 @@ export const SettingsView: React.FC = () => {
             <Check className="w-4 h-4" /> Configuration Saved
           </span>
         )}
+      </div>
+
+      {/* Appearance & Interface Mode Card */}
+      <div className={`rounded-2xl p-6 space-y-4 border ${
+        isLight ? 'bg-white border-slate-200 shadow-sm text-slate-800' : 'bg-[#1c1c1c] border-[#2d2d2d] text-white'
+      }`}>
+        <div className={`flex flex-wrap items-center justify-between gap-3 border-b pb-3 ${
+          isLight ? 'border-slate-200' : 'border-[#2d2d2d]'
+        }`}>
+          <h3 className={`font-heading text-xl font-bold uppercase tracking-wide flex items-center gap-2 ${
+            isLight ? 'text-slate-900' : 'text-white'
+          }`}>
+            <Palette className="w-4 h-4 text-sky-500 dark:text-sky-400" />
+            APPEARANCE & INTERFACE DESIGN
+          </h3>
+          <button
+            type="button"
+            onClick={() => {
+              setUiMode('classic');
+              success('Interface Reset', 'Appearance restored to Classic mode.');
+            }}
+            className={`px-3 py-1 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors border cursor-pointer ${
+              isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300' : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+            }`}
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            Reset to Classic
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+          {/* Classic Interface Option */}
+          <div
+            onClick={() => setUiMode('classic')}
+            className={`p-4 rounded-xl border cursor-pointer transition-all ${
+              uiMode === 'classic'
+                ? isLight ? 'border-cyan-600 bg-cyan-50 shadow-md ring-1 ring-cyan-500/40' : 'border-cyan-500 bg-cyan-950/20 shadow-md ring-1 ring-cyan-500/40'
+                : isLight ? 'border-slate-200 bg-slate-50 hover:border-slate-300' : 'border-[#2d2d2d] bg-[#141414] hover:border-slate-600'
+            }`}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className={`font-bold text-sm ${isLight ? 'text-slate-900' : 'text-white'}`}>Classic Layout</span>
+              {uiMode === 'classic' && (
+                <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold ${
+                  isLight ? 'bg-cyan-100 text-cyan-800' : 'bg-cyan-500/20 text-cyan-300'
+                }`}>
+                  Active
+                </span>
+              )}
+            </div>
+            <p className={`text-xs leading-relaxed mb-3 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+              Standard proven layout with dark/light themes, flat sidebar navigation, and historical telemetry styling.
+            </p>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setUiMode('classic'); }}
+              className={`w-full py-1.5 rounded-lg text-xs font-semibold cursor-pointer ${
+                uiMode === 'classic' ? 'bg-cyan-600 text-white' : isLight ? 'bg-slate-200 text-slate-700 hover:bg-slate-300' : 'bg-slate-800 text-slate-300'
+              }`}
+            >
+              {uiMode === 'classic' ? 'Selected' : 'Use Classic'}
+            </button>
+          </div>
+
+          {/* Modern Interface Option */}
+          <div
+            onClick={() => setUiMode('modern')}
+            className={`p-4 rounded-xl border cursor-pointer transition-all ${
+              uiMode === 'modern'
+                ? isLight ? 'border-sky-600 bg-sky-50 shadow-md ring-1 ring-sky-500/40' : 'border-sky-500 bg-sky-950/20 shadow-md ring-1 ring-sky-500/40'
+                : isLight ? 'border-slate-200 bg-slate-50 hover:border-slate-300' : 'border-[#2d2d2d] bg-[#141414] hover:border-slate-600'
+            }`}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-sky-500 dark:text-sky-400" />
+                <span className={`font-bold text-sm ${isLight ? 'text-slate-900' : 'text-white'}`}>Modern Enterprise</span>
+              </div>
+              {uiMode === 'modern' && (
+                <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold ${
+                  isLight ? 'bg-sky-100 text-sky-800' : 'bg-sky-500/20 text-sky-300'
+                }`}>
+                  Active
+                </span>
+              )}
+            </div>
+            <p className={`text-xs leading-relaxed mb-3 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+              WCAG AA deep slate palette (#0B1120 / #111A2E), 5-stage collapsible workflow rail, Ctrl+K command palette, and tabular metrics.
+            </p>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setUiMode('modern'); }}
+              className={`w-full py-1.5 rounded-lg text-xs font-semibold cursor-pointer ${
+                uiMode === 'modern' ? 'bg-sky-600 text-white' : isLight ? 'bg-slate-200 text-slate-700 hover:bg-slate-300' : 'bg-slate-800 text-slate-300'
+              }`}
+            >
+              {uiMode === 'modern' ? 'Selected' : 'Use Modern'}
+            </button>
+          </div>
+        </div>
+
+        {/* Theme Mode Toggle (Dark vs Light) */}
+        <div className={`p-3.5 rounded-xl border flex items-center justify-between ${
+          isLight ? 'bg-slate-50 border-slate-200' : 'bg-[#141414] border-[#2d2d2d]'
+        }`}>
+          <div className="space-y-0.5">
+            <span className={`text-xs font-semibold ${isLight ? 'text-slate-900 font-bold' : 'text-white'}`}>Color Theme</span>
+            <p className={`text-[11px] ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Works in both Classic and Modern modes.</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setThemeMode('dark')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
+                themeMode === 'dark' ? 'bg-sky-600 text-white shadow-xs' : 'bg-slate-800 text-slate-400 hover:text-white'
+              }`}
+            >
+              <Moon className="w-3.5 h-3.5 text-sky-300" />
+              <span>Dark</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setThemeMode('light')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
+                themeMode === 'light' ? 'bg-sky-600 text-white shadow-xs' : 'bg-slate-800 text-slate-400 hover:text-white'
+              }`}
+            >
+              <Sun className="w-3.5 h-3.5 text-amber-300" />
+              <span>Light</span>
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -408,6 +562,89 @@ export const SettingsView: React.FC = () => {
               ))}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      {/* Experiments & Alternatives (Feature Flags) Panel */}
+      <div className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-6 space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#2d2d2d] pb-4">
+          <div>
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-cyan-400 font-mono">
+              <Sparkles className="w-4 h-4" /> Additive Architecture
+            </div>
+            <h3 className="font-heading text-xl font-bold text-white uppercase tracking-wide mt-1">
+              EXPERIMENTS & ALTERNATIVES
+            </h3>
+            <p className="text-xs text-gray-400 mt-1">
+              Toggle additive alternatives next to Classic behavior. Defaults to Classic mode.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              const reset = resetFeatureFlags();
+              setFeatures(reset);
+              success('Flags Reset', 'All features have been returned to Classic mode.');
+            }}
+            className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold flex items-center gap-1.5 transition-colors border border-slate-700"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            Reset to Classic
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4">
+          {FEATURE_METADATA.map((meta) => {
+            const isEnabled = features[meta.key];
+
+            return (
+              <div
+                key={meta.key}
+                className="p-4 rounded-xl bg-[#141414] border border-[#2a2a2a] flex flex-wrap items-center justify-between gap-4 transition-colors hover:border-[#3a3a3a]"
+              >
+                <div className="space-y-1 max-w-xl">
+                  <div className="flex items-center gap-2.5">
+                    <span className="font-bold text-sm text-white">{meta.label}</span>
+                    <span
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                        isEnabled
+                          ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
+                          : 'bg-slate-800 text-slate-400'
+                      }`}
+                    >
+                      {isEnabled ? 'New Alternative' : 'Classic Mode'}
+                    </span>
+                    <span className="text-[10px] font-mono text-gray-500 uppercase">
+                      [{meta.category}]
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-400 leading-relaxed">
+                    {meta.description}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={isEnabled}
+                      onChange={(e) => {
+                        const updated: FeatureFlags = {
+                          ...features,
+                          [meta.key]: e.target.checked
+                        };
+                        saveFeatureFlags(updated);
+                        setFeatures(updated);
+                      }}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-slate-800 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-600"></div>
+                  </label>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

@@ -335,6 +335,19 @@ export const ExecutiveDashboard: React.FC = () => {
   const [newVisVal, setNewVisVal] = useState('');
   const [newVisAgg, setNewVisAgg] = useState<VisualConfig['aggregation']>('sum');
 
+  // Chronological Trend Aggregation, Styling & Interactive Tooltip State
+  const [trendGranularity, setTrendGranularity] = useState<'auto' | 'monthly' | 'weekly' | 'smooth' | 'raw'>('auto');
+  const [trendChartType, setTrendChartType] = useState<'area' | 'bar'>('area');
+  const [hoveredTrendPt, setHoveredTrendPt] = useState<{
+    idx: number;
+    x: number;
+    y: number;
+    period: string;
+    value: number;
+    sma?: number;
+    deltaVsMean: number;
+  } | null>(null);
+
   const handleSaveVisTitle = (id: string) => {
     if (editingVisTitle.trim()) {
       updateCustomVisual(id, { title: editingVisTitle.trim(), isCustomRenamed: true } as any);
@@ -1222,11 +1235,13 @@ export const ExecutiveDashboard: React.FC = () => {
                   onClick={() => {
                     openDrillThrough({ title: kpi.name, subtitle: kpi.definition, kpi, sourceContext: 'kpi_card' });
                   }}
-                  className="glass-card rounded-2xl p-4 sm:p-5 flex flex-col justify-between relative group cursor-pointer select-none h-full"
+                  className="glass-card rounded-2xl p-4 sm:p-5 flex flex-col justify-between relative group cursor-pointer select-none card-3d h-full"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="font-label-caps text-label-caps uppercase text-on-surface-variant tracking-wider font-bold truncate max-w-[130px] sm:max-w-[155px]" title={kpi.name}>
+                      <span className={`font-mono text-xs uppercase tracking-wider font-bold truncate max-w-[130px] sm:max-w-[155px] ${
+                        isLight ? 'text-slate-700' : 'text-slate-300'
+                      }`} title={kpi.name}>
                         {kpi.name}
                       </span>
                       <button
@@ -1235,13 +1250,15 @@ export const ExecutiveDashboard: React.FC = () => {
                           e.stopPropagation();
                           setEditingKpi(kpi);
                         }}
-                        className="p-1 rounded hover:bg-slate-200 dark:hover:bg-surface-elevated text-slate-500 dark:text-on-surface-variant hover:text-cyan-500 dark:hover:text-cyan-400 transition-colors shrink-0 group-hover:opacity-100 opacity-60"
+                        className={`p-1 rounded transition-colors shrink-0 group-hover:opacity-100 opacity-60 ${
+                          isLight ? 'hover:bg-slate-200 text-slate-400 hover:text-sky-600' : 'hover:bg-surface-elevated text-slate-400 hover:text-cyan-400'
+                        }`}
                         title="Customize heading, column & calculation formula"
                       >
                         <Pencil className="w-3.5 h-3.5" />
                       </button>
                     </div>
-                    <span className={`px-2 py-0.5 rounded-full ${statusTheme.bg} ${statusTheme.text} text-label-caps font-label-caps uppercase font-bold tracking-wide flex items-center gap-1 shrink-0`}>
+                    <span className={`px-2 py-0.5 rounded-full ${statusTheme.bg} ${statusTheme.text} text-[10px] font-mono uppercase font-bold tracking-wide flex items-center gap-1 shrink-0`}>
                       <span className={`w-1.5 h-1.5 rounded-full ${statusTheme.dot}`} /> {kpi.status}
                     </span>
                   </div>
@@ -1249,55 +1266,64 @@ export const ExecutiveDashboard: React.FC = () => {
                   <div className="my-3 flex items-end justify-between gap-2">
                     <div className="flex flex-col min-w-0">
                       <div className="flex items-baseline gap-2 flex-wrap">
-                        <span className="font-metric-display text-metric-display text-on-surface font-extrabold tracking-tight leading-none truncate" title={filteredKpi.formatted}>
+                        <span className={`font-metric-display text-metric-display font-extrabold tracking-tight leading-none truncate tabular-nums ${
+                          isLight ? 'text-slate-900 font-extrabold' : 'text-white'
+                        }`} title={filteredKpi.formatted}>
                           {filteredKpi.formatted}
                         </span>
                         {filteredKpi.isFiltered && (
-                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-400 font-bold border border-sky-500/30">
+                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-500 dark:text-sky-400 font-bold border border-sky-500/30">
                             Filtered
                           </span>
                         )}
                       </div>
                       {filteredKpi.isFiltered && (
-                        <div className="text-[11px] font-mono text-on-surface-variant mt-0.5">
+                        <div className="text-[11px] font-mono text-slate-500 dark:text-slate-400 mt-0.5">
                           of {kpi.formattedValue} total
                         </div>
                       )}
-                      <div className="flex items-center gap-1 mt-1.5 font-label-sm text-label-sm">
+                      <div className="flex items-center gap-1 mt-1.5 text-xs font-mono">
                         {kpi.changePercent !== undefined ? (
                           <>
                             {isPositive ? (
-                              <ArrowUpRight className="w-3.5 h-3.5 text-cyan-400" />
+                              <ArrowUpRight className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
                             ) : (
-                              <ArrowDownRight className="w-3.5 h-3.5 text-metric-coral" />
+                              <ArrowDownRight className="w-3.5 h-3.5 text-rose-500" />
                             )}
-                            <span className={`font-bold ${isPositive ? 'text-cyan-400' : 'text-metric-coral'}`}>
+                            <span className={`font-bold tabular-nums ${isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'}`}>
                               {isPositive ? '+' : ''}{kpi.changePercent}%
                             </span>
-                            <span className="text-on-surface-variant font-normal">vs prior window</span>
+                            <span className={isLight ? 'text-slate-500' : 'text-slate-400'}>vs prior window</span>
                           </>
                         ) : (
-                          <span className="text-on-surface-variant font-normal text-[11px] font-mono">
+                          <span className={`text-[11px] font-mono ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
                             Formula: {kpi.aggregation.toUpperCase()}
                           </span>
                         )}
                       </div>
                     </div>
 
-                    {/* Micro inline Sparkline SVG */}
+                    {/* Micro inline Sparkline SVG with 3D drop shadow */}
                     <div className="w-20 sm:w-24 h-10 shrink-0">
-                      <svg className="w-full h-full fill-none stroke-2" viewBox="0 0 100 40">
-                        <path d={sparkPath} stroke={statusTheme.stroke} />
-                        <path className="fill-current stroke-none opacity-10" d={`${sparkPath} L 100 40 L 0 40 Z`} style={{ color: statusTheme.stroke }} />
+                      <svg className="w-full h-full fill-none stroke-2 overflow-visible" viewBox="0 0 100 40">
+                        <defs>
+                          <filter id={`spark-shadow-${kpi.id}`} x="-20%" y="-20%" width="140%" height="150%">
+                            <feDropShadow dx="0" dy="2" stdDeviation="1.5" floodColor="#000000" floodOpacity="0.45" />
+                          </filter>
+                        </defs>
+                        <path d={sparkPath} stroke={statusTheme.stroke} strokeWidth="2.5" strokeLinecap="round" filter={`url(#spark-shadow-${kpi.id})`} />
+                        <path className="fill-current stroke-none opacity-20" d={`${sparkPath} L 100 40 L 0 40 Z`} style={{ color: statusTheme.stroke }} />
                       </svg>
                     </div>
                   </div>
 
-                  <div className="pt-2 border-t border-border-subtle flex items-center justify-between text-on-surface-variant font-label-sm text-label-sm">
+                  <div className={`pt-2 border-t border-border-subtle flex items-center justify-between text-xs font-mono ${
+                    isLight ? 'text-slate-500' : 'text-slate-400'
+                  }`}>
                     <span className="truncate max-w-[150px]" title={kpi.traceableSource}>
                       Src: {kpi.traceableSource}
                     </span>
-                    <span className={`${statusTheme.text} hover:underline flex items-center gap-0.5 font-medium shrink-0`}>
+                    <span className={`${statusTheme.text} hover:underline flex items-center gap-0.5 font-semibold shrink-0 cursor-pointer`}>
                       <span>{kpi.period || 'Audited Scope'}</span>
                       <ExternalLink className="w-3 h-3" />
                     </span>
@@ -1313,7 +1339,11 @@ export const ExecutiveDashboard: React.FC = () => {
       {activeTab === 'overview' && (
         <div className="space-y-6">
           {/* AI DECISION DIRECTIVES SECTION */}
-          <section className="w-full bg-white dark:bg-surface-card rounded-2xl p-5 sm:p-6 shadow-sm dark:shadow-xl border border-slate-200 dark:border-white/10 relative overflow-hidden">
+          <section className={`w-full rounded-2xl p-5 sm:p-6 border relative overflow-hidden ${
+            isLight
+              ? 'bg-white border-slate-200 shadow-sm'
+              : 'bg-surface-card border-white/10 shadow-xl'
+          }`}>
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-4">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-cyan-500/15 text-cyan-500 dark:text-cyan-400 border border-cyan-400/30 flex items-center justify-center shadow-[0_0_18px_rgba(34,211,238,0.25)]">
@@ -1354,10 +1384,16 @@ export const ExecutiveDashboard: React.FC = () => {
                     tag={dir.category}
                     content={dir.significance || dir.why}
                   >
-                    <div className="bg-white/95 dark:bg-surface-panel/80 rounded-xl p-4 sm:p-5 border border-slate-200/90 dark:border-white/10 flex flex-col justify-between relative hover:border-cyan-400/40 transition-all shadow-sm dark:shadow-md h-full">
+                    <div className={`rounded-xl p-4 sm:p-5 border flex flex-col justify-between relative hover:border-cyan-400/50 transition-all card-3d h-full ${
+                      isLight
+                        ? 'bg-white border-slate-200/90 shadow-sm'
+                        : 'bg-surface-panel border-white/10 shadow-lg'
+                    }`}>
                       <div>
                         <div className="flex items-center justify-between mb-3.5">
-                          <span className="font-headline-sm text-headline-sm text-slate-900 dark:text-slate-100 font-bold truncate pr-2">
+                          <span className={`font-headline-sm text-headline-sm font-bold truncate pr-2 ${
+                            isLight ? 'text-slate-900' : 'text-slate-100'
+                          }`}>
                             {dir.title}
                           </span>
                           <span className={`px-2 py-0.5 rounded font-label-caps text-label-caps tracking-widest uppercase font-bold border shrink-0 ${categoryTheme.bg}`}>
@@ -1369,7 +1405,9 @@ export const ExecutiveDashboard: React.FC = () => {
                             <span className="font-label-caps text-label-caps text-cyan-600 dark:text-cyan-400 uppercase tracking-wider block font-bold text-[11px]">
                               WHAT
                             </span>
-                            <p className="font-body-sm text-body-sm text-slate-800 dark:text-slate-200 mt-1 leading-relaxed font-medium">
+                            <p className={`font-body-sm text-body-sm mt-1 leading-relaxed font-medium ${
+                              isLight ? 'text-slate-800' : 'text-slate-200'
+                            }`}>
                               {dir.what}
                             </p>
                           </div>
@@ -1377,17 +1415,25 @@ export const ExecutiveDashboard: React.FC = () => {
                             <span className="font-label-caps text-label-caps text-indigo-600 dark:text-indigo-400 uppercase tracking-wider block font-bold text-[11px]">
                               WHY
                             </span>
-                            <p className="font-body-sm text-body-sm text-slate-700 dark:text-slate-300 mt-1 leading-relaxed font-normal">
+                            <p className={`font-body-sm text-body-sm mt-1 leading-relaxed font-normal ${
+                              isLight ? 'text-slate-700' : 'text-slate-300'
+                            }`}>
                               {dir.why}
                             </p>
                           </div>
                         </div>
                       </div>
-                      <div className="mt-4 p-3 bg-sky-50 dark:bg-cyan-950/40 rounded-lg border border-sky-200 dark:border-cyan-500/30">
+                      <div className={`mt-4 p-3 rounded-lg border ${
+                        isLight 
+                          ? 'bg-sky-50 border-sky-200' 
+                          : 'bg-cyan-950/40 border-cyan-500/30 shadow-inner'
+                      }`}>
                         <span className="font-label-caps text-label-caps text-sky-700 dark:text-cyan-300 uppercase tracking-wider flex items-center gap-1.5 font-bold text-[11px]">
                           <Zap className="w-3.5 h-3.5 text-sky-600 dark:text-cyan-400" /> MANAGEMENT ACTION
                         </span>
-                        <p className="font-body-sm text-body-sm text-slate-800 dark:text-cyan-100 mt-1 font-medium leading-relaxed">
+                        <p className={`font-body-sm text-body-sm mt-1 font-medium leading-relaxed ${
+                          isLight ? 'text-slate-800' : 'text-cyan-100'
+                        }`}>
                           {dir.action}
                         </p>
                       </div>
@@ -1401,29 +1447,100 @@ export const ExecutiveDashboard: React.FC = () => {
           {/* DUAL TELEMETRY VISUALIZATIONS */}
           <section className="grid grid-cols-1 lg:grid-cols-12 gap-5">
             {/* LEFT: Chronological Trend Performance Chart (7 cols) */}
-            <div className="lg:col-span-7 bg-white dark:bg-surface-card rounded-2xl p-5 sm:p-6 shadow-sm dark:shadow-xl border border-slate-200 dark:border-white/10 flex flex-col justify-between">
+            <div className={`lg:col-span-7 rounded-2xl p-5 sm:p-6 border flex flex-col justify-between card-3d ${
+              isLight
+                ? 'bg-white border-slate-200 shadow-sm'
+                : 'bg-surface-card border-white/10 shadow-xl'
+            }`}>
               <div>
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border-subtle">
+                {/* Header: Title, Metric Selector, Granularity & View Controls */}
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-border-subtle">
                   <Tooltip
                     side="right"
-                    title="Chronological Trend Telemetry"
-                    tag="Time-Series Spline"
-                    content="Visualizes raw chronological observations in electric cyan coupled with a 3-period Simple Moving Average (SMA) in indigo to smooth cyclical noise and highlight momentum."
+                    title="Executive Chronological Telemetry"
+                    tag="Macroeconomic Spline"
+                    content="Transforms granular transactions into executive trajectory curves. Switch between Monthly rollup, Exponential Smoothing, or Raw telemetry to analyze seasonal momentum."
                   >
                     <div className="flex items-center gap-2 cursor-help">
-                      <Activity className="w-5 h-5 text-cyan-500 dark:text-cyan-400" />
-                      <h3 className="font-headline-sm text-headline-sm text-slate-900 dark:text-slate-100 font-bold uppercase tracking-wide">
-                        CHRONOLOGICAL TREND PERFORMANCE
-                      </h3>
+                      <div className="w-8 h-8 rounded-xl bg-cyan-500/15 text-cyan-500 dark:text-cyan-400 border border-cyan-400/30 flex items-center justify-center shadow-xs">
+                        <Activity className="w-4 h-4 text-cyan-500 dark:text-cyan-400" />
+                      </div>
+                      <div>
+                        <h3 className="font-headline-sm text-headline-sm text-slate-900 dark:text-slate-100 font-bold uppercase tracking-wide">
+                          CHRONOLOGICAL TREND PERFORMANCE
+                        </h3>
+                        <p className={`text-[11px] font-mono ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                          {trendGranularity === 'auto' ? 'Auto-Aggregated Trajectory' : trendGranularity === 'monthly' ? 'Monthly Calendar Rollup' : trendGranularity === 'smooth' ? 'Gaussian Trendline' : trendGranularity === 'weekly' ? 'Weekly Interval Rollup' : 'Raw Granular Telemetry'}
+                        </p>
+                      </div>
                     </div>
                   </Tooltip>
 
-                  <div className="flex items-center gap-2">
-                    <span className="font-label-sm text-label-sm text-slate-700 dark:text-slate-300 uppercase font-bold">METRIC:</span>
+                  {/* Controls: Metric Select & Granularity Toggles */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    {/* Time Rollup Filter */}
+                    <div className={`flex items-center p-0.5 rounded-lg border text-xs font-mono ${
+                      isLight ? 'bg-slate-100 border-slate-200' : 'bg-surface-panel border-border-subtle'
+                    }`}>
+                      {(['auto', 'monthly', 'smooth', 'raw'] as const).map(mode => (
+                        <button
+                          key={mode}
+                          type="button"
+                          onClick={() => setTrendGranularity(mode)}
+                          className={`px-2 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer capitalize ${
+                            trendGranularity === mode
+                              ? isLight 
+                                ? 'bg-white text-sky-700 shadow-xs border border-slate-200 font-bold' 
+                                : 'bg-cyan-500/20 text-cyan-300 shadow-xs border border-cyan-500/40 font-bold'
+                              : isLight ? 'text-slate-600 hover:text-slate-900' : 'text-slate-400 hover:text-slate-200'
+                          }`}
+                          title={`Switch trend view to ${mode}`}
+                        >
+                          {mode === 'auto' ? 'Auto' : mode === 'monthly' ? 'Monthly' : mode === 'smooth' ? 'Smooth' : 'Raw'}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Chart Mode: Area vs Bar */}
+                    <div className={`flex items-center p-0.5 rounded-lg border text-xs ${
+                      isLight ? 'bg-slate-100 border-slate-200' : 'bg-surface-panel border-border-subtle'
+                    }`}>
+                      <button
+                        type="button"
+                        onClick={() => setTrendChartType('area')}
+                        className={`px-2 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
+                          trendChartType === 'area'
+                            ? isLight ? 'bg-white text-sky-700 shadow-xs' : 'bg-cyan-500/20 text-cyan-300 shadow-xs'
+                            : isLight ? 'text-slate-600' : 'text-slate-400'
+                        }`}
+                        title="Area Spline Curve"
+                      >
+                        Spline
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setTrendChartType('bar')}
+                        className={`px-2 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
+                          trendChartType === 'bar'
+                            ? isLight ? 'bg-white text-sky-700 shadow-xs' : 'bg-cyan-500/20 text-cyan-300 shadow-xs'
+                            : isLight ? 'text-slate-600' : 'text-slate-400'
+                        }`}
+                        title="Bar Columns"
+                      >
+                        Bars
+                      </button>
+                    </div>
+
+                    {/* Metric Select */}
                     <select
                       value={selectedTrendMetric}
                       onChange={(e) => setSelectedTrendMetric(e.target.value)}
-                      className="glass-input h-8 px-2.5 bg-surface-panel text-slate-900 dark:text-slate-100 font-label-sm text-label-sm rounded-lg border border-border-subtle focus:outline-none cursor-pointer"
+                      className={`glass-input h-7 px-2 text-xs font-mono rounded-lg border focus:outline-none cursor-pointer ${
+                        isLight 
+                          ? 'bg-white text-slate-900 border-slate-300' 
+                          : 'bg-surface-panel text-slate-100 border-border-subtle'
+                      }`}
+                      title="Select metric column"
                     >
                       {numericCols.map(c => (
                         <option key={c.name} value={c.name}>{c.name}</option>
@@ -1432,166 +1549,589 @@ export const ExecutiveDashboard: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Legend and Indicators */}
-                <div className="flex flex-wrap items-center justify-between gap-3 my-3">
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-1.5">
-                      <span className="w-3 h-1 rounded-full shadow-xs" style={{ backgroundColor: activeThemeConfig.trendActual }} />
-                      <span className="font-label-sm text-label-sm text-slate-700 dark:text-slate-300 font-medium">Actual ({selectedTrendMetric || 'Series'})</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="w-3 h-1 rounded-full shadow-xs" style={{ backgroundColor: activeThemeConfig.trendSma }} />
-                      <span className="font-label-sm text-label-sm font-semibold" style={{ color: activeThemeConfig.trendSma }}>3-Period SMA</span>
-                    </div>
-                  </div>
-
-                  {/* Clean Non-overlapping Baseline Mean Pill */}
-                  {(() => {
-                    const dataPoints = currentTrend?.dataPoints || [];
-                    if (dataPoints.length === 0) return null;
-                    const meanVal = dataPoints.reduce((a, b) => a + b.value, 0) / dataPoints.length;
+                {/* Main Dynamic Chart Engine with Intelligent Aggregation */}
+                {(() => {
+                  const rawPoints = currentTrend?.dataPoints || [];
+                  if (rawPoints.length < 2) {
                     return (
-                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-surface-panel/80 border border-slate-200 dark:border-border-subtle text-xs font-mono shadow-2xs">
-                        <span className="w-3 h-0.5 border-t border-dashed border-slate-400 dark:border-slate-500" />
-                        <span className="text-slate-600 dark:text-slate-400 text-[11px]">Baseline Mean:</span>
-                        <span className="font-bold text-slate-900 dark:text-slate-100 text-[11px]">
-                          {meanVal >= 1000 ? `${(meanVal / 1000).toFixed(1)}k` : meanVal.toFixed(1)}
-                        </span>
+                      <div className="h-64 flex flex-col items-center justify-center text-slate-500 font-label-sm text-label-sm gap-2">
+                        <Activity className="w-8 h-8 opacity-40 text-slate-400" />
+                        <span>Insufficient observation records to render time series trend.</span>
                       </div>
                     );
-                  })()}
-                </div>
+                  }
 
-                {/* Telemetry SVG Chart - Strictly Bounded & Clamped (No Overflow) */}
-                <div className="w-full h-72 relative mt-2 bg-slate-50/80 dark:bg-surface-panel/30 rounded-xl p-3 flex flex-col justify-between border border-slate-200 dark:border-border-subtle overflow-hidden">
-                  {/* Dynamic SVG with safe viewBox bounds */}
-                  {(() => {
-                    const rawPoints = currentTrend?.dataPoints || [];
-                    if (rawPoints.length < 2) {
-                      return (
-                        <div className="h-48 flex items-center justify-center text-slate-500 font-label-sm text-label-sm">
-                          Insufficient data points to render time series trend.
-                        </div>
-                      );
+                  const isCurrency = /revenue|sales|profit|margin|cost|amount|price|mrr|cac|val/i.test(selectedTrendMetric || '');
+                  const formatNum = (v: number) => {
+                    const abs = Math.abs(v);
+                    let str = '';
+                    if (abs >= 1000000) str = `${(v / 1000000).toFixed(1)}M`;
+                    else if (abs >= 1000) str = `${(v / 1000).toFixed(1)}k`;
+                    else str = Math.round(v).toLocaleString();
+                    return isCurrency ? `$${str}` : str;
+                  };
+
+                  // Robust date parsing helper for diverse dataset date formats
+                  const parseDatePeriod = (p: string) => {
+                    if (!p) return null;
+                    const parsed = Date.parse(p);
+                    if (!isNaN(parsed)) {
+                      const d = new Date(parsed);
+                      if (d.getFullYear() >= 1990 && d.getFullYear() <= 2100) return d;
                     }
+                    const m = String(p).match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/);
+                    if (m) {
+                      return new Date(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10));
+                    }
+                    const m2 = String(p).match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})/);
+                    if (m2) {
+                      const yr = parseInt(m2[3], 10) < 100 ? 2000 + parseInt(m2[3], 10) : parseInt(m2[3], 10);
+                      return new Date(yr, parseInt(m2[1], 10) - 1, parseInt(m2[2], 10));
+                    }
+                    return null;
+                  };
 
-                    // Downsample to max 300 points for smooth 60fps rendering without stack/memory strain
-                    const dataPoints = safeDownsample(rawPoints, 300);
-                    const rawVals = dataPoints.map(p => p.value);
-                    const minVal = safeMin(rawVals, 0);
-                    const maxVal = safeMax(rawVals, 0);
-                    const range = maxVal === minVal ? (maxVal === 0 ? 1 : Math.abs(maxVal) * 0.2) : maxVal - minVal;
-                    const meanVal = rawVals.reduce((a, b) => a + b, 0) / rawVals.length;
+                  const firstDate = parseDatePeriod(rawPoints[0]?.period || '');
+                  const isDateStr = firstDate !== null;
 
-                    // Coordinate system bounds: X in [30, 570], Y in [20, 150]
-                    const xMin = 30, xMax = 570;
-                    const yMin = 20, yMax = 150;
+                  // Effective resolution
+                  let effGran = trendGranularity;
+                  if (effGran === 'auto') {
+                    if (isDateStr && rawPoints.length > 15) {
+                      const mSet = new Set<string>();
+                      rawPoints.forEach(p => {
+                        const d = parseDatePeriod(p.period);
+                        if (d) mSet.add(`${d.getFullYear()}-${d.getMonth()}`);
+                      });
+                      effGran = mSet.size >= 4 ? 'monthly' : 'smooth';
+                    } else {
+                      effGran = rawPoints.length > 20 ? 'smooth' : 'raw';
+                    }
+                  }
 
-                    const scaleX = (i: number) => xMin + (i / (dataPoints.length - 1)) * (xMax - xMin);
-                    const scaleY = (v: number) => Math.max(yMin, Math.min(yMax, yMax - ((v - minVal) / range) * (yMax - yMin)));
-
-                    const actualCoords = dataPoints.map((p, i) => ({ x: scaleX(i), y: scaleY(p.value) }));
-
-                    // Compute 3-period simple moving average
-                    const smaCoords = dataPoints.map((p, i) => {
-                      const window = dataPoints.slice(Math.max(0, i - 2), i + 1);
-                      const avg = window.reduce((acc, curr) => acc + curr.value, 0) / window.length;
-                      return { x: scaleX(i), y: scaleY(avg) };
+                  // Build smooth aggregated points
+                  let activePoints: { period: string; value: number }[] = [];
+                  if (effGran === 'monthly' && isDateStr) {
+                    const mMap = new Map<string, { sum: number; count: number; date: Date }>();
+                    rawPoints.forEach(p => {
+                      const d = parseDatePeriod(p.period);
+                      if (d) {
+                        const mKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                        const cur = mMap.get(mKey) || { sum: 0, count: 0, date: d };
+                        cur.sum += p.value;
+                        cur.count += 1;
+                        mMap.set(mKey, cur);
+                      }
                     });
-
-                    // Build path strings
-                    const dActual = actualCoords.map((c, i) => `${i === 0 ? 'M' : 'L'} ${c.x.toFixed(1)} ${c.y.toFixed(1)}`).join(' ');
-                    const dSma = smaCoords.map((c, i) => `${i === 0 ? 'M' : 'L'} ${c.x.toFixed(1)} ${c.y.toFixed(1)}`).join(' ');
-                    const dArea = `${dSma} L ${smaCoords[smaCoords.length - 1].x.toFixed(1)} 165 L ${smaCoords[0].x.toFixed(1)} 165 Z`;
-                    const yMean = scaleY(meanVal);
-                    const lastPt = actualCoords[actualCoords.length - 1];
-
-                    // Date tick marks (up to 6 evenly distributed)
-                    const tickStep = Math.max(1, Math.floor((dataPoints.length - 1) / 5));
-                    const labelIndices: number[] = [];
-                    for (let i = 0; i < dataPoints.length; i += tickStep) {
-                      labelIndices.push(i);
+                    const mEntries = Array.from(mMap.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+                    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                    activePoints = mEntries.map(([k, v]) => {
+                      const [yr, mo] = k.split('-');
+                      const mIdx = parseInt(mo, 10) - 1;
+                      const label = mIdx >= 0 && mIdx < 12 ? `${monthNames[mIdx]} '${yr.slice(2)}` : k;
+                      return { period: label, value: Math.round(v.sum * 10) / 10 };
+                    });
+                    // Fallback to smooth if monthly produced too few points (<3)
+                    if (activePoints.length < 3 && rawPoints.length > 5) {
+                      effGran = 'smooth';
+                      activePoints = [];
                     }
-                    if (labelIndices[labelIndices.length - 1] !== dataPoints.length - 1) {
-                      labelIndices.push(dataPoints.length - 1);
+                  }
+                  
+                  if (effGran === 'smooth' || activePoints.length === 0 && effGran !== 'raw') {
+                    // Downsample and apply exponential smoothing to eliminate spiky sawteeth
+                    const targetCount = Math.min(28, Math.max(12, Math.floor(rawPoints.length / 5)));
+                    const step = Math.max(1, Math.floor(rawPoints.length / targetCount));
+                    let ema = rawPoints[0].value;
+                    const alpha = rawPoints.length > 60 ? 0.22 : 0.35;
+                    for (let i = 0; i < rawPoints.length; i++) {
+                      ema = alpha * rawPoints[i].value + (1 - alpha) * ema;
+                      if (i % step === 0 || i === rawPoints.length - 1) {
+                        activePoints.push({
+                          period: rawPoints[i].period,
+                          value: Math.round(ema * 10) / 10
+                        });
+                      }
                     }
+                  } else if (effGran === 'weekly' && isDateStr) {
+                    const chunkSize = Math.max(7, Math.floor(rawPoints.length / 14));
+                    for (let i = 0; i < rawPoints.length; i += chunkSize) {
+                      const slice = rawPoints.slice(i, i + chunkSize);
+                      const sum = slice.reduce((acc, c) => acc + c.value, 0);
+                      activePoints.push({
+                        period: slice[0].period,
+                        value: Math.round(sum * 10) / 10
+                      });
+                    }
+                  } else if (activePoints.length === 0) {
+                    activePoints = safeDownsample(rawPoints, 100);
+                  }
 
-                    return (
-                      <>
+                  if (activePoints.length < 2) {
+                    activePoints = rawPoints.slice(0, 16);
+                  }
+
+                  const values = activePoints.map(p => p.value);
+                  const minVal = safeMin(values, 0);
+                  const maxVal = safeMax(values, 0);
+                  const range = maxVal === minVal ? (maxVal === 0 ? 1 : Math.abs(maxVal) * 0.2) : maxVal - minVal;
+                  const meanVal = values.reduce((a, b) => a + b, 0) / values.length;
+                  const latestVal = values[values.length - 1];
+                  const firstVal = values[0];
+                  const netChangePct = firstVal !== 0 ? Math.round(((latestVal - firstVal) / Math.abs(firstVal)) * 1000) / 10 : 0;
+
+                  // Find Peak & Trough indices
+                  let peakIdx = 0, troughIdx = 0;
+                  for (let i = 1; i < values.length; i++) {
+                    if (values[i] > values[peakIdx]) peakIdx = i;
+                    if (values[i] < values[troughIdx]) troughIdx = i;
+                  }
+
+                  // Coordinate system setup
+                  const xMin = 35;
+                  const xMax = 615;
+                  const yMin = 22;
+                  const yMax = 145;
+
+                  const scaleX = (i: number) => xMin + (i / Math.max(1, activePoints.length - 1)) * (xMax - xMin);
+                  const scaleY = (v: number) => Math.max(yMin, Math.min(yMax, yMax - ((v - minVal) / range) * (yMax - yMin)));
+
+                  const coords = activePoints.map((p, i) => ({
+                    x: scaleX(i),
+                    y: scaleY(p.value),
+                    period: p.period,
+                    value: p.value
+                  }));
+
+                  // 3-Period Simple Moving Average
+                  const smaCoords = activePoints.map((p, i) => {
+                    const window = activePoints.slice(Math.max(0, i - 2), i + 1);
+                    const avg = window.reduce((acc, curr) => acc + curr.value, 0) / window.length;
+                    return { x: scaleX(i), y: scaleY(avg), avg };
+                  });
+
+                  // Cubic Spline Curve Construction
+                  let splinePath = `M ${coords[0].x.toFixed(1)},${coords[0].y.toFixed(1)}`;
+                  for (let i = 0; i < coords.length - 1; i++) {
+                    const p0 = coords[i];
+                    const p1 = coords[i + 1];
+                    const cpx1 = p0.x + (p1.x - p0.x) * 0.42;
+                    const cpy1 = p0.y;
+                    const cpx2 = p1.x - (p1.x - p0.x) * 0.42;
+                    const cpy2 = p1.y;
+                    splinePath += ` C ${cpx1.toFixed(1)},${cpy1.toFixed(1)} ${cpx2.toFixed(1)},${cpy2.toFixed(1)} ${p1.x.toFixed(1)},${p1.y.toFixed(1)}`;
+                  }
+                  const areaPath = `${splinePath} L ${coords[coords.length - 1].x.toFixed(1)},160 L ${coords[0].x.toFixed(1)},160 Z`;
+                  const yMean = scaleY(meanVal);
+
+                  // Date label indices (non-overlapping)
+                  const tickCount = Math.min(6, activePoints.length);
+                  const tickStep = Math.max(1, Math.floor((activePoints.length - 1) / (tickCount - 1)));
+                  const labelIndices: number[] = [];
+                  for (let i = 0; i < activePoints.length; i += tickStep) {
+                    labelIndices.push(i);
+                  }
+                  if (labelIndices[labelIndices.length - 1] !== activePoints.length - 1) {
+                    labelIndices.push(activePoints.length - 1);
+                  }
+
+                  const peakPt = coords[peakIdx];
+                  const troughPt = coords[troughIdx];
+
+                  return (
+                    <>
+                      {/* Executive Insight Strip: Latest, Peak, Trough, Mean */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 my-3">
+                        <div className={`p-2.5 rounded-xl border flex flex-col justify-between ${
+                          isLight ? 'bg-slate-50 border-slate-200' : 'bg-surface-panel/80 border-white/10'
+                        }`}>
+                          <span className={`text-[10px] font-mono uppercase tracking-wider font-semibold ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                            Latest Run-Rate
+                          </span>
+                          <div className="flex items-baseline gap-1.5 mt-0.5">
+                            <span className={`font-mono text-sm sm:text-base font-extrabold ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                              {formatNum(latestVal)}
+                            </span>
+                            <span className={`text-[10px] font-mono font-bold ${
+                              netChangePct >= 0 ? (isLight ? 'text-emerald-700' : 'text-emerald-400') : (isLight ? 'text-rose-700' : 'text-rose-400')
+                            }`}>
+                              {netChangePct >= 0 ? '+' : ''}{netChangePct}%
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className={`p-2.5 rounded-xl border flex flex-col justify-between ${
+                          isLight ? 'bg-slate-50 border-slate-200' : 'bg-surface-panel/80 border-white/10'
+                        }`}>
+                          <span className={`text-[10px] font-mono uppercase tracking-wider font-semibold ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                            Series Peak
+                          </span>
+                          <div className="flex items-baseline gap-1.5 mt-0.5">
+                            <span className={`font-mono text-sm sm:text-base font-extrabold ${isLight ? 'text-sky-700' : 'text-cyan-400'}`}>
+                              {formatNum(values[peakIdx])}
+                            </span>
+                            <span className={`text-[10px] font-mono truncate max-w-[65px] ${isLight ? 'text-slate-500' : 'text-slate-400'}`} title={activePoints[peakIdx]?.period}>
+                              {activePoints[peakIdx]?.period}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className={`p-2.5 rounded-xl border flex flex-col justify-between ${
+                          isLight ? 'bg-slate-50 border-slate-200' : 'bg-surface-panel/80 border-white/10'
+                        }`}>
+                          <span className={`text-[10px] font-mono uppercase tracking-wider font-semibold ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                            Series Trough
+                          </span>
+                          <div className="flex items-baseline gap-1.5 mt-0.5">
+                            <span className={`font-mono text-sm sm:text-base font-extrabold ${isLight ? 'text-amber-700' : 'text-amber-400'}`}>
+                              {formatNum(values[troughIdx])}
+                            </span>
+                            <span className={`text-[10px] font-mono truncate max-w-[65px] ${isLight ? 'text-slate-500' : 'text-slate-400'}`} title={activePoints[troughIdx]?.period}>
+                              {activePoints[troughIdx]?.period}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className={`p-2.5 rounded-xl border flex flex-col justify-between ${
+                          isLight ? 'bg-slate-50 border-slate-200' : 'bg-surface-panel/80 border-white/10'
+                        }`}>
+                          <span className={`text-[10px] font-mono uppercase tracking-wider font-semibold ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                            Baseline Mean
+                          </span>
+                          <div className="flex items-baseline gap-1.5 mt-0.5">
+                            <span className={`font-mono text-sm sm:text-base font-extrabold ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>
+                              {formatNum(meanVal)}
+                            </span>
+                            <span className={`text-[10px] font-mono ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                              avg
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Micro-Legend & Scrubbing Prompt */}
+                      <div className="flex flex-wrap items-center justify-between gap-2 px-1 mb-2 text-[11px] font-mono">
+                        <div className="flex flex-wrap items-center gap-3">
+                          <span className="flex items-center gap-1.5 font-semibold text-cyan-600 dark:text-cyan-400">
+                            <span className="w-3.5 h-1 rounded-full bg-cyan-500 shadow-[0_0_6px_rgba(34,211,238,0.5)]" />
+                            <span>Actual ({selectedTrendMetric})</span>
+                          </span>
+                          {trendChartType === 'area' && (
+                            <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+                              <span className="w-3.5 h-0.5 border-t-2 border-dashed border-emerald-400" />
+                              <span>3-Period SMA</span>
+                            </span>
+                          )}
+                          <span className={`flex items-center gap-1.5 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                            <span className="w-3.5 h-0.5 border-t-2 border-dotted border-slate-400" />
+                            <span>Baseline Mean ({formatNum(meanVal)})</span>
+                          </span>
+                        </div>
+                        <span className={`text-[10px] hidden sm:inline-flex items-center gap-1 ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>
+                          <span>• Hover curve to scrub observations</span>
+                        </span>
+                      </div>
+
+                      {/* Main Telemetry SVG Chart with 3D Depth & Hover Scrubbing */}
+                      <div className={`w-full h-72 relative rounded-xl p-3 flex flex-col justify-between border overflow-hidden ${
+                        isLight 
+                          ? 'bg-slate-50/90 border-slate-200 shadow-inner' 
+                          : 'bg-surface-panel/40 border-border-subtle track-3d-recessed'
+                      }`}>
                         <div className="w-full flex-1 relative overflow-hidden">
-                          <svg className="w-full h-full overflow-hidden" viewBox="0 0 600 170" preserveAspectRatio="none">
+                          <svg 
+                            className="w-full h-full overflow-hidden select-none cursor-crosshair" 
+                            viewBox="0 0 650 175" 
+                            preserveAspectRatio="none"
+                            onMouseMove={(e) => {
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              const relX = ((e.clientX - rect.left) / rect.width) * 650;
+                              // Find closest point
+                              let closestIdx = 0;
+                              let minDiff = Infinity;
+                              coords.forEach((c, idx) => {
+                                const diff = Math.abs(c.x - relX);
+                                if (diff < minDiff) {
+                                  minDiff = diff;
+                                  closestIdx = idx;
+                                }
+                              });
+                              const pt = coords[closestIdx];
+                              const smaPt = smaCoords[closestIdx];
+                              const deltaVsMean = meanVal !== 0 ? Math.round(((pt.value - meanVal) / meanVal) * 1000) / 10 : 0;
+                              setHoveredTrendPt({
+                                idx: closestIdx,
+                                x: pt.x,
+                                y: pt.y,
+                                period: pt.period,
+                                value: pt.value,
+                                sma: smaPt?.avg,
+                                deltaVsMean
+                              });
+                            }}
+                            onMouseLeave={() => setHoveredTrendPt(null)}
+                          >
                             <defs>
+                              <filter id="trendLine3dShadow" x="-10%" y="-10%" width="130%" height="150%">
+                                <feDropShadow dx="0" dy="4" stdDeviation="3.5" floodColor="#000000" floodOpacity="0.55" />
+                              </filter>
+                              <linearGradient id="trendLuminousArea" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor={activeThemeConfig.trendActual} stopOpacity="0.35" />
+                                <stop offset="60%" stopColor={activeThemeConfig.trendActual} stopOpacity="0.10" />
+                                <stop offset="100%" stopColor={activeThemeConfig.trendActual} stopOpacity="0.0" />
+                              </linearGradient>
                               <pattern id="telemetryGrid" width="40" height="28" patternUnits="userSpaceOnUse">
                                 <path d="M 40 0 L 0 0 0 28" fill="none" stroke="currentColor" className="text-border-subtle" strokeWidth="0.8" strokeDasharray="2 2" opacity="0.4" />
                               </pattern>
-                              <linearGradient id="smaFillGrad" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stopColor={activeThemeConfig.trendAreaGrad} stopOpacity="0.22" />
-                                <stop offset="100%" stopColor={activeThemeConfig.trendAreaGrad} stopOpacity="0.0" />
-                              </linearGradient>
                             </defs>
+
                             <rect width="100%" height="100%" fill="url(#telemetryGrid)" />
 
-                            {/* Shaded Area for SMA */}
-                            <path d={dArea} fill="url(#smaFillGrad)" />
-
-                            {/* Baseline Mean Grid Reference Line */}
-                            <line x1={xMin - 5} y1={yMean} x2={xMax + 5} y2={yMean} stroke="#64748b" strokeWidth="1" strokeDasharray="3 3" opacity="0.4" />
-
-                            {/* Line: Actual telemetry */}
-                            <path
-                              d={dActual}
-                              fill="none"
-                              stroke={activeThemeConfig.trendActual}
-                              strokeWidth="2.2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              className="opacity-95"
+                            {/* Baseline Mean Horizontal Reference */}
+                            <line 
+                              x1={xMin - 5} 
+                              y1={yMean} 
+                              x2={xMax + 5} 
+                              y2={yMean} 
+                              stroke={isLight ? '#94a3b8' : '#64748b'} 
+                              strokeWidth="1.2" 
+                              strokeDasharray="3 3" 
+                              opacity="0.65" 
                             />
+                            <text 
+                              x={xMax + 4} 
+                              y={yMean - 4} 
+                              textAnchor="end" 
+                              fill={isLight ? '#475569' : '#94a3b8'} 
+                              fontSize="8.5" 
+                              fontFamily="monospace"
+                              fontWeight="bold"
+                            >
+                              Mean: {formatNum(meanVal)}
+                            </text>
 
-                            {/* Line: 3-Period SMA */}
-                            <path
-                              d={dSma}
-                              fill="none"
-                              stroke={activeThemeConfig.trendSma}
-                              strokeWidth="2.5"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
+                            {trendChartType === 'bar' ? (
+                              /* 3D Vertical Columns */
+                              coords.map((c, idx) => {
+                                const bW = Math.max(6, Math.min(22, (xMax - xMin) / coords.length * 0.65));
+                                const bH = Math.max(3, yMax - c.y);
+                                const isHovered = hoveredTrendPt?.idx === idx;
+                                return (
+                                  <g key={idx} className="cursor-pointer transition-all">
+                                    <rect
+                                      x={c.x - bW / 2}
+                                      y={c.y}
+                                      width={bW}
+                                      height={bH}
+                                      rx="3"
+                                      fill={isHovered ? activeThemeConfig.trendActual : activeThemeConfig.trendActual}
+                                      fillOpacity={isHovered ? 1 : 0.85}
+                                      filter="url(#trendLine3dShadow)"
+                                      className="transition-all"
+                                    />
+                                    {/* Cylindrical cap specular shine */}
+                                    <rect
+                                      x={c.x - bW / 2}
+                                      y={c.y}
+                                      width={bW}
+                                      height={Math.min(bH, 6)}
+                                      rx="2"
+                                      fill="#ffffff"
+                                      fillOpacity={0.35}
+                                    />
+                                  </g>
+                                );
+                              })
+                            ) : (
+                              /* Luminous Spline Area and Paths */
+                              <>
+                                {/* Shaded Area under Curve */}
+                                <path d={areaPath} fill="url(#trendLuminousArea)" />
 
-                            {/* Indicator Pulse Point on the latest observation */}
-                            {lastPt && (
-                              <g>
-                                <circle cx={lastPt.x} cy={lastPt.y} r="4" fill={activeThemeConfig.trendActual} />
-                                <circle cx={lastPt.x} cy={lastPt.y} r="8" fill={activeThemeConfig.trendActual} opacity="0.35" className="animate-pulse" />
+                                {/* 3-Period SMA Smooth Trend Line */}
+                                <path
+                                  d={smaCoords.map((c, i) => `${i === 0 ? 'M' : 'L'} ${c.x.toFixed(1)} ${c.y.toFixed(1)}`).join(' ')}
+                                  fill="none"
+                                  stroke={activeThemeConfig.trendSma}
+                                  strokeWidth="2.2"
+                                  strokeDasharray="4 2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  opacity="0.85"
+                                />
+
+                                {/* Primary Actual Spline Path with 3D Drop Shadow */}
+                                <path
+                                  d={splinePath}
+                                  fill="none"
+                                  stroke={activeThemeConfig.trendActual}
+                                  strokeWidth="2.8"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  filter="url(#trendLine3dShadow)"
+                                  className="transition-all"
+                                />
+
+                                {/* Peak Marker */}
+                                {peakPt && (
+                                  <g className="select-none pointer-events-none">
+                                    <circle cx={peakPt.x} cy={peakPt.y} r="6" fill={activeThemeConfig.trendActual} fillOpacity="0.25" className="animate-pulse" />
+                                    <circle cx={peakPt.x} cy={peakPt.y} r="3.5" fill="#38BDF8" stroke="#ffffff" strokeWidth="1.5" />
+                                    <text 
+                                      x={peakPt.x} 
+                                      y={Math.max(12, peakPt.y - 8)} 
+                                      textAnchor="middle" 
+                                      fill={isLight ? '#0284c7' : '#38bdf8'} 
+                                      fontSize="9" 
+                                      fontFamily="monospace"
+                                      fontWeight="bold"
+                                    >
+                                      ▲ PEAK {formatNum(peakPt.value)}
+                                    </text>
+                                  </g>
+                                )}
+
+                                {/* Trough Marker */}
+                                {troughPt && troughIdx !== peakIdx && (
+                                  <g className="select-none pointer-events-none">
+                                    <circle cx={troughPt.x} cy={troughPt.y} r="3" fill="#F59E0B" stroke="#ffffff" strokeWidth="1.2" />
+                                    <text 
+                                      x={troughPt.x} 
+                                      y={Math.min(160, troughPt.y + 12)} 
+                                      textAnchor="middle" 
+                                      fill={isLight ? '#b45309' : '#fbbf24'} 
+                                      fontSize="8.5" 
+                                      fontFamily="monospace"
+                                      fontWeight="bold"
+                                    >
+                                      ▼ {formatNum(troughPt.value)}
+                                    </text>
+                                  </g>
+                                )}
+                              </>
+                            )}
+
+                            {/* Active Hover Cursor Hairline & Spherical Bead */}
+                            {hoveredTrendPt && (
+                              <g className="pointer-events-none">
+                                <line
+                                  x1={hoveredTrendPt.x}
+                                  y1={yMin}
+                                  x2={hoveredTrendPt.x}
+                                  y2={yMax + 8}
+                                  stroke={activeThemeConfig.trendActual}
+                                  strokeWidth="1.2"
+                                  strokeDasharray="3 3"
+                                  opacity="0.8"
+                                />
+                                <circle
+                                  cx={hoveredTrendPt.x}
+                                  cy={hoveredTrendPt.y}
+                                  r="9"
+                                  fill={activeThemeConfig.trendActual}
+                                  fillOpacity="0.25"
+                                  className="animate-pulse"
+                                />
+                                <circle
+                                  cx={hoveredTrendPt.x}
+                                  cy={hoveredTrendPt.y}
+                                  r="5"
+                                  fill={activeThemeConfig.trendActual}
+                                  stroke="#ffffff"
+                                  strokeWidth="2"
+                                  filter="url(#trendLine3dShadow)"
+                                />
+                                <circle
+                                  cx={hoveredTrendPt.x - 1.2}
+                                  cy={hoveredTrendPt.y - 1.2}
+                                  r="1.4"
+                                  fill="#ffffff"
+                                />
                               </g>
                             )}
                           </svg>
+
+                          {/* Floating Interactive Glass Tooltip Card */}
+                          {hoveredTrendPt && (
+                            <div 
+                              className={`absolute z-30 pointer-events-none transition-all duration-75 px-3 py-2 rounded-xl border shadow-xl ${
+                                isLight 
+                                  ? 'bg-white/95 text-slate-900 border-slate-200 backdrop-blur-md' 
+                                  : 'bg-[#0B1120]/95 text-white border-white/15 backdrop-blur-md shadow-[0_8px_24px_rgba(0,0,0,0.6)]'
+                              }`}
+                              style={{
+                                left: `${Math.min(78, Math.max(12, (hoveredTrendPt.x / 650) * 100))}%`,
+                                top: '8px',
+                                transform: 'translateX(-50%)'
+                              }}
+                            >
+                              <div className="flex items-center justify-between gap-3 font-mono text-[11px] pb-1 border-b border-border-subtle">
+                                <span className={`font-bold ${isLight ? 'text-slate-800' : 'text-slate-200'}`}>{hoveredTrendPt.period}</span>
+                                <span className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${
+                                  hoveredTrendPt.deltaVsMean >= 0 
+                                    ? isLight ? 'bg-emerald-50 text-emerald-700' : 'bg-emerald-500/20 text-emerald-400'
+                                    : isLight ? 'bg-rose-50 text-rose-700' : 'bg-rose-500/20 text-rose-400'
+                                }`}>
+                                  {hoveredTrendPt.deltaVsMean >= 0 ? '+' : ''}{hoveredTrendPt.deltaVsMean}% vs avg
+                                </span>
+                              </div>
+                              <div className="flex items-baseline gap-2 mt-1">
+                                <span className={`font-mono text-sm font-extrabold ${isLight ? 'text-sky-700' : 'text-cyan-400'}`}>
+                                  {formatNum(hoveredTrendPt.value)}
+                                </span>
+                                {hoveredTrendPt.sma !== undefined && (
+                                  <span className={`text-[10px] font-mono ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                                    SMA: {formatNum(hoveredTrendPt.sma)}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          )}
                         </div>
 
                         {/* Horizontal Date Labels - Clean, non-overlapping */}
                         <div className="flex justify-between items-center font-mono text-[11px] text-slate-500 dark:text-slate-400 pt-2 border-t border-border-subtle select-none px-1">
                           {labelIndices.map(idx => (
-                            <span key={idx} className={idx === 0 ? 'text-left' : idx === dataPoints.length - 1 ? 'text-right' : 'text-center'}>
-                              {dataPoints[idx]?.period}
+                            <span 
+                              key={idx} 
+                              className={`transition-colors ${
+                                idx === 0 ? 'text-left' : idx === activePoints.length - 1 ? 'text-right' : 'text-center'
+                              } ${
+                                hoveredTrendPt?.idx === idx ? (isLight ? 'text-sky-600 font-bold' : 'text-cyan-400 font-bold') : ''
+                              }`}
+                            >
+                              {activePoints[idx]?.period}
                             </span>
                           ))}
                         </div>
-                      </>
-                    );
-                  })()}
-                </div>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
 
-              <div className="mt-3 pt-2.5 border-t border-border-subtle flex items-center justify-between text-label-sm font-label-sm text-slate-600 dark:text-slate-400">
-                <span>Direction: <strong className="text-slate-900 dark:text-slate-100 capitalize">{currentTrend?.direction || 'stable'}</strong> ({currentTrend?.changePercent !== undefined ? `${currentTrend.changePercent >= 0 ? '+' : ''}${currentTrend.changePercent}%` : 'N/A'})</span>
-                <span className="text-cyan-600 dark:text-cyan-400 flex items-center gap-1.5 font-semibold">
-                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_#22D3EE]" /> Verified Telemetry Rate: 100%
+              {/* Card Footer: Direction, Trajectory and Telemetry Rate */}
+              <div className={`mt-3 pt-2.5 border-t border-border-subtle flex flex-wrap items-center justify-between gap-2 text-label-sm font-label-sm ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                <div className="flex items-center gap-2">
+                  <span>Direction: <strong className={`capitalize ${isLight ? 'text-slate-900 font-bold' : 'text-slate-100'}`}>{currentTrend?.direction || 'stable'}</strong> ({currentTrend?.changePercent !== undefined ? `${currentTrend.changePercent >= 0 ? '+' : ''}${currentTrend.changePercent}%` : 'N/A'})</span>
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-semibold ${
+                    isLight ? 'bg-sky-50 text-sky-700 border border-sky-200' : 'bg-cyan-500/10 text-cyan-300 border border-cyan-500/30'
+                  }`}>
+                    {trendGranularity === 'auto' ? 'Auto Dynamic' : trendGranularity === 'monthly' ? 'Monthly Rollup' : trendGranularity === 'smooth' ? 'Exponential Smoothing' : trendGranularity === 'weekly' ? 'Weekly Interval' : 'Raw Granular'}
+                  </span>
+                </div>
+                <span className={`${isLight ? 'text-sky-700' : 'text-cyan-400'} flex items-center gap-1.5 font-semibold`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${isLight ? 'bg-sky-600 shadow-[0_0_6px_#0284c7]' : 'bg-cyan-400 shadow-[0_0_6px_#22D3EE]'}`} /> Verified Telemetry Rate: 100%
                 </span>
               </div>
             </div>
 
             {/* RIGHT: Segment Share Donut & Decomposition (5 cols) */}
-            <div className="lg:col-span-5 bg-white dark:bg-surface-card rounded-2xl p-5 sm:p-6 shadow-sm dark:shadow-xl border border-slate-200 dark:border-white/10 flex flex-col justify-between">
+            <div className={`lg:col-span-5 rounded-2xl p-5 sm:p-6 border flex flex-col justify-between card-3d ${
+              isLight
+                ? 'bg-white border-slate-200 shadow-sm'
+                : 'bg-surface-card border-white/10 shadow-xl'
+            }`}>
               <div>
                 <div className="flex items-center justify-between pb-3 border-b border-border-subtle">
                   <Tooltip
@@ -1613,7 +2153,11 @@ export const ExecutiveDashboard: React.FC = () => {
                     <select
                       value={selectedDimension}
                       onChange={(e) => setSelectedDimension(e.target.value)}
-                      className="glass-input h-8 px-2.5 bg-surface-panel text-slate-900 dark:text-slate-100 font-label-sm text-label-sm rounded-lg border border-border-subtle focus:outline-none cursor-pointer"
+                      className={`glass-input h-8 px-2.5 font-label-sm text-label-sm rounded-lg border focus:outline-none cursor-pointer ${
+                        isLight 
+                          ? 'bg-white text-slate-900 border-slate-300' 
+                          : 'bg-surface-panel text-slate-100 border-border-subtle'
+                      }`}
                     >
                       {stringCols.map(c => (
                         <option key={c.name} value={c.name}>{c.name}</option>
@@ -1633,11 +2177,24 @@ export const ExecutiveDashboard: React.FC = () => {
 
                   return (
                     <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center my-4">
-                      {/* Donut Graphic */}
+                      {/* Donut Graphic with 3D Depth */}
                       <div className="sm:col-span-5 flex items-center justify-center relative">
                         <div className="w-40 h-40 relative flex items-center justify-center">
-                          <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                            <circle cx="50" cy="50" r="38" fill="transparent" stroke="currentColor" className="text-slate-200 dark:text-slate-800" strokeWidth="12" />
+                          <svg className="w-full h-full transform -rotate-90 overflow-visible" viewBox="0 0 100 100">
+                            <defs>
+                              <filter id="donut3dDepth" x="-20%" y="-20%" width="140%" height="150%">
+                                <feDropShadow dx="0" dy="4" stdDeviation="3.5" floodColor="#000000" floodOpacity="0.55" />
+                              </filter>
+                            </defs>
+                            <circle 
+                              cx="50" 
+                              cy="50" 
+                              r="38" 
+                              fill="transparent" 
+                              stroke={isLight ? '#e2e8f0' : '#1e293b'} 
+                              strokeWidth="12" 
+                              filter="url(#donut3dDepth)"
+                            />
                             {totalCatValue > 0 && segments.map((seg, idx) => {
                               const shareRatio = seg.value / totalCatValue;
                               const dash = shareRatio * circumference;
@@ -1654,18 +2211,25 @@ export const ExecutiveDashboard: React.FC = () => {
                                   strokeWidth="12"
                                   strokeDasharray={`${dash.toFixed(2)} ${(circumference - dash).toFixed(2)}`}
                                   strokeDashoffset={-offset}
+                                  filter="url(#donut3dDepth)"
                                   className="transition-all duration-300"
                                 />
                               );
                             })}
                           </svg>
-                          {/* Donut Center Aggregate with clean non-clipping typography */}
-                          <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none px-1">
+                          {/* Donut Center Aggregate with 3D Embossed Medallion */}
+                          <div className={`w-22 h-22 rounded-full flex flex-col items-center justify-center text-center pointer-events-none px-1 border transition-all ${
+                            isLight 
+                              ? 'bg-white border-slate-200 shadow-md' 
+                              : 'medallion-3d border-white/15'
+                          }`}>
                             <span className="font-label-caps text-label-caps uppercase text-slate-500 dark:text-slate-400 font-bold tracking-wider text-[10px]">TOTAL</span>
-                            <span className="font-headline-lg text-headline-lg text-slate-900 dark:text-white font-extrabold leading-tight my-0.5">
+                            <span className={`font-headline-lg text-headline-lg font-extrabold leading-tight my-0.5 ${
+                              isLight ? 'text-slate-900' : 'text-white'
+                            }`}>
                               {totalCatValue >= 1000000 ? `${(totalCatValue / 1000000).toFixed(1)}M` : totalCatValue >= 1000 ? `${(totalCatValue / 1000).toFixed(1)}k` : Math.round(totalCatValue).toLocaleString()}
                             </span>
-                            <span className="text-[10px] font-mono text-cyan-600 dark:text-cyan-400 font-medium truncate max-w-[85px]" title={selectedDimension}>
+                            <span className="text-[10px] font-mono text-cyan-600 dark:text-cyan-400 font-medium truncate max-w-[80px]" title={selectedDimension}>
                               {selectedDimension || 'Volume'}
                             </span>
                           </div>
@@ -1679,16 +2243,20 @@ export const ExecutiveDashboard: React.FC = () => {
                             <div 
                               key={idx} 
                               onClick={() => handleDrilldown(seg.category)}
-                              className="flex items-center justify-between p-2 rounded-lg bg-slate-50/90 dark:bg-surface-panel/80 hover:bg-sky-50 dark:hover:bg-cyan-500/15 transition-all border border-slate-200 dark:border-border-subtle cursor-pointer"
+                              className={`flex items-center justify-between p-2 rounded-lg transition-all border cursor-pointer ${
+                                isLight 
+                                  ? 'bg-slate-50/90 hover:bg-sky-50 border-slate-200' 
+                                  : 'bg-surface-panel/80 hover:bg-surface-elevated border-white/10 shadow-2xs hover:border-cyan-400/30'
+                              }`}
                               title={`Click to filter granular rows by ${seg.category}`}
                             >
                               <div className="flex items-center gap-2 min-w-0">
                                 <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${colors[idx % colors.length].dot}`} />
-                                <span className="text-slate-800 dark:text-slate-200 font-medium truncate max-w-[130px]">{seg.category}</span>
+                                <span className={`font-medium truncate max-w-[130px] ${isLight ? 'text-slate-800' : 'text-slate-200'}`}>{seg.category}</span>
                               </div>
                               <div className="flex items-center gap-2.5 font-mono flex-shrink-0">
-                                <span className="text-slate-900 dark:text-slate-100 font-bold">{seg.share ? `${seg.share.toFixed(1)}%` : '0%'}</span>
-                                <span className="text-slate-500 dark:text-slate-400 text-[10px]">{seg.value >= 1000 ? `${(seg.value / 1000).toFixed(1)}k` : seg.value.toLocaleString()}</span>
+                                <span className={`font-bold ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>{seg.share ? `${seg.share.toFixed(1)}%` : '0%'}</span>
+                                <span className={`text-[10px] ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>{seg.value >= 1000 ? `${(seg.value / 1000).toFixed(1)}k` : seg.value.toLocaleString()}</span>
                               </div>
                             </div>
                           ))
@@ -1703,11 +2271,11 @@ export const ExecutiveDashboard: React.FC = () => {
                 })()}
               </div>
 
-              <div className="pt-2.5 border-t border-border-subtle flex items-center justify-between text-label-sm font-label-sm text-slate-600 dark:text-slate-400">
-                <span>Active Segments: <strong className="text-slate-900 dark:text-slate-100">{currentCategoryData?.length || 0}</strong></span>
+              <div className={`pt-2.5 border-t border-border-subtle flex items-center justify-between text-label-sm font-label-sm ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                <span>Active Segments: <strong className={isLight ? 'text-slate-900 font-bold' : 'text-slate-100 font-bold'}>{currentCategoryData?.length || 0}</strong></span>
                 <span 
                   onClick={() => setActiveTab('pareto')}
-                  className="text-cyan-600 dark:text-cyan-400 hover:underline flex items-center gap-1 cursor-pointer font-medium"
+                  className={`${isLight ? 'text-sky-700 hover:text-sky-900' : 'text-cyan-400 hover:text-cyan-300'} hover:underline flex items-center gap-1 cursor-pointer font-semibold`}
                 >
                   <span>Inspect Pareto Tail</span>
                   <ExternalLink className="w-3 h-3" />
@@ -1719,46 +2287,82 @@ export const ExecutiveDashboard: React.FC = () => {
           {/* ACTIONABLE NOTIFICATION CALLOUTS */}
           <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Outlier Alert Callout */}
-            <div className="bg-white dark:bg-surface-card rounded-2xl p-4 shadow-sm dark:shadow-md border border-rose-200 dark:border-rose-500/25 flex items-start gap-3 relative overflow-hidden group hover:border-rose-400/50 transition-all">
-              <div className="w-9 h-9 rounded-xl bg-rose-500/10 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 border border-rose-400/30 shadow-[0_0_12px_rgba(244,63,94,0.15)]">
-                <AlertTriangle className="w-5 h-5 text-rose-600 dark:text-rose-400" />
+            <div className={`rounded-2xl p-4 shadow-sm border flex items-start gap-3 relative overflow-hidden transition-all card-3d ${
+              isLight 
+                ? 'bg-white border-rose-200 hover:border-rose-300 shadow-rose-100/50' 
+                : 'bg-surface-card border-rose-500/25 hover:border-rose-400/50 shadow-md'
+            }`}>
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${
+                isLight
+                  ? 'bg-rose-50 text-rose-700 border-rose-200 shadow-xs'
+                  : 'bg-rose-500/20 text-rose-400 border-rose-400/30 shadow-[0_0_12px_rgba(244,63,94,0.15)]'
+              }`}>
+                <AlertTriangle className={`w-5 h-5 ${isLight ? 'text-rose-700' : 'text-rose-400'}`} />
               </div>
               <div className="flex-1 flex flex-col gap-0.5">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-headline-sm text-headline-sm text-slate-900 dark:text-slate-100 font-bold">
+                  <span className={`font-headline-sm text-headline-sm font-bold ${
+                    isLight ? 'text-slate-900' : 'text-slate-100'
+                  }`}>
                     {primaryAnomaly ? primaryAnomaly.title : 'Statistical Dispersion Audit'}
                   </span>
-                  <span className="px-2 py-0.5 rounded font-label-caps text-label-caps uppercase font-bold tracking-wider bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-400/30">
+                  <span className={`px-2 py-0.5 rounded font-label-caps text-label-caps uppercase font-bold tracking-wider border ${
+                    isLight
+                      ? 'bg-rose-50 text-rose-800 border-rose-300 font-extrabold'
+                      : 'bg-rose-500/10 text-rose-300 border-rose-400/30'
+                  }`}>
                     {primaryAnomaly?.severity ? primaryAnomaly.severity.toUpperCase() : 'AUDITED'}
                   </span>
                 </div>
-                <p className="font-body-sm text-body-sm text-slate-600 dark:text-slate-300 mt-0.5">
+                <p className={`font-body-sm text-body-sm mt-0.5 ${
+                  isLight ? 'text-slate-700 font-medium' : 'text-slate-300'
+                }`}>
                   {primaryAnomaly ? primaryAnomaly.reason : 'All numerical distributions conform to standard statistical limits.'}
                 </p>
-                <p className="font-body-sm text-body-sm text-rose-600 dark:text-rose-400 font-medium mt-1">
+                <p className={`font-body-sm text-body-sm font-semibold mt-1 ${
+                  isLight ? 'text-rose-700' : 'text-rose-400'
+                }`}>
                   Action: {primaryAnomaly ? primaryAnomaly.recommendedAction : 'Continue periodic data hygiene and schema validation checks.'}
                 </p>
               </div>
             </div>
 
             {/* Growth Segment Callout */}
-            <div className="bg-white dark:bg-surface-card rounded-2xl p-4 shadow-sm dark:shadow-md border border-slate-200 dark:border-white/10 flex items-start gap-3 relative overflow-hidden group hover:border-sky-400/40 transition-all">
-              <div className="w-9 h-9 rounded-xl bg-sky-500/15 text-sky-600 dark:text-cyan-400 flex items-center justify-center shrink-0 border border-sky-400/30 shadow-[0_0_12px_rgba(2,132,199,0.2)]">
-                <TrendingUp className="w-5 h-5 text-sky-600 dark:text-cyan-400" />
+            <div className={`rounded-2xl p-4 shadow-sm border flex items-start gap-3 relative overflow-hidden transition-all card-3d ${
+              isLight
+                ? 'bg-white border-slate-200 hover:border-sky-300 shadow-slate-100'
+                : 'bg-surface-card border-white/10 hover:border-sky-400/40 shadow-md'
+            }`}>
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${
+                isLight
+                  ? 'bg-sky-50 text-sky-700 border-sky-200 shadow-xs'
+                  : 'bg-sky-500/15 text-cyan-400 border-sky-400/30 shadow-[0_0_12px_rgba(2,132,199,0.2)]'
+              }`}>
+                <TrendingUp className={`w-5 h-5 ${isLight ? 'text-sky-700' : 'text-cyan-400'}`} />
               </div>
               <div className="flex-1 flex flex-col gap-0.5">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-headline-sm text-headline-sm text-slate-900 dark:text-slate-100 font-bold">
+                  <span className={`font-headline-sm text-headline-sm font-bold ${
+                    isLight ? 'text-slate-900' : 'text-slate-100'
+                  }`}>
                     {primaryOpportunity ? primaryOpportunity.title : 'Segment Optimization Directive'}
                   </span>
-                  <span className="px-2 py-0.5 rounded font-label-caps text-label-caps uppercase font-bold tracking-wider bg-sky-500/15 text-sky-700 dark:text-cyan-300 border border-sky-500/30">
+                  <span className={`px-2 py-0.5 rounded font-label-caps text-label-caps uppercase font-bold tracking-wider border ${
+                    isLight
+                      ? 'bg-sky-50 text-sky-800 border-sky-300 font-extrabold'
+                      : 'bg-sky-500/15 text-cyan-300 border-sky-500/30'
+                  }`}>
                     {primaryOpportunity?.priority ? `PRIORITY: ${primaryOpportunity.priority.toUpperCase()}` : 'OPTIMAL'}
                   </span>
                 </div>
-                <p className="font-body-sm text-body-sm text-slate-600 dark:text-slate-300 mt-0.5">
+                <p className={`font-body-sm text-body-sm mt-0.5 ${
+                  isLight ? 'text-slate-700 font-medium' : 'text-slate-300'
+                }`}>
                   {primaryOpportunity ? primaryOpportunity.potentialImpact : 'Active data segments demonstrate balanced proportional distribution.'}
                 </p>
-                <p className="font-body-sm text-body-sm text-sky-600 dark:text-cyan-400 font-medium mt-1">
+                <p className={`font-body-sm text-body-sm font-semibold mt-1 ${
+                  isLight ? 'text-sky-700' : 'text-cyan-400'
+                }`}>
                   Next Step: {primaryOpportunity ? primaryOpportunity.action : 'Inspect categorical distributions in Pareto analysis.'}
                 </p>
               </div>
@@ -1769,11 +2373,13 @@ export const ExecutiveDashboard: React.FC = () => {
           <div className="space-y-4 pt-2">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border-subtle pb-3">
               <div>
-                <h3 className="font-heading text-lg font-bold text-slate-900 dark:text-white tracking-wide uppercase flex items-center gap-2">
-                  <Layers className="w-4 h-4 text-sky-600 dark:text-cyan-400" />
+                <h3 className={`font-heading text-lg font-bold tracking-wide uppercase flex items-center gap-2 ${
+                  isLight ? 'text-slate-900' : 'text-white'
+                }`}>
+                  <Layers className={`w-4 h-4 ${isLight ? 'text-sky-600' : 'text-cyan-400'}`} />
                   ATTACHED DASHBOARD VISUALIZATIONS & CUSTOM CHARTS
                 </h3>
-                <p className="text-xs text-slate-600 dark:text-gray-400">
+                <p className={`text-xs ${isLight ? 'text-slate-600 font-medium' : 'text-gray-400'}`}>
                   Attached visual widgets synchronized with active filters, drill-through, and export engines.
                 </p>
               </div>
@@ -1796,14 +2402,22 @@ export const ExecutiveDashboard: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleAutoSyncVisuals}
-                  className="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-surface-panel hover:bg-slate-200 dark:hover:bg-surface-elevated text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-border-subtle text-xs font-semibold flex items-center gap-1 shadow-2xs cursor-pointer"
+                  className={`px-2.5 py-1.5 rounded-lg border text-xs font-semibold flex items-center gap-1 shadow-2xs cursor-pointer ${
+                    isLight
+                      ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
+                      : 'bg-surface-panel hover:bg-surface-elevated text-slate-200 border-border-subtle'
+                  }`}
                   title="Auto-adapt all visual cards to match current dataset schema"
                 >
                   <RefreshCw className="w-3.5 h-3.5 text-sky-600 dark:text-cyan-400" />
                   <span>Auto-Adapt to Dataset</span>
                 </button>
 
-                <span className="px-3 py-1.5 rounded-lg bg-sky-50 dark:bg-surface-panel text-sky-700 dark:text-cyan-300 border border-sky-200 dark:border-border-subtle text-xs font-mono font-semibold shadow-2xs">
+                <span className={`px-3 py-1.5 rounded-lg text-xs font-mono font-semibold shadow-2xs ${
+                  isLight
+                    ? 'bg-sky-50 text-sky-700 border border-sky-200'
+                    : 'bg-surface-panel text-cyan-300 border border-border-subtle'
+                }`}>
                   {customVisuals.length} Visuals
                 </span>
 
@@ -1860,7 +2474,11 @@ export const ExecutiveDashboard: React.FC = () => {
                   return (
                     <div 
                       key={visKey} 
-                      className="bg-white dark:bg-surface-card border border-slate-200 dark:border-white/10 rounded-2xl p-5 space-y-4 hover:border-sky-400/40 transition-all flex flex-col justify-between shadow-sm dark:shadow-lg"
+                      className={`rounded-2xl p-5 space-y-4 transition-all flex flex-col justify-between shadow-sm border card-3d ${
+                        isLight
+                          ? 'bg-white border-slate-200 hover:border-sky-300 shadow-slate-100'
+                          : 'bg-surface-card border-white/10 hover:border-sky-400/40 shadow-lg'
+                      }`}
                     >
                       {/* Widget Header */}
                       <div className="flex items-start justify-between gap-2">
@@ -1876,16 +2494,23 @@ export const ExecutiveDashboard: React.FC = () => {
                                   if (e.key === 'Escape') setEditingVisId(null);
                                 }}
                                 autoFocus
-                                className="px-2.5 py-1 text-xs bg-slate-50 dark:bg-surface-panel border border-sky-500 rounded font-bold text-slate-900 dark:text-slate-100 uppercase focus:outline-none w-full max-w-xs"
+                                className={`px-2.5 py-1 text-xs border rounded font-bold uppercase focus:outline-none w-full max-w-xs ${
+                                  isLight 
+                                    ? 'bg-slate-50 border-sky-500 text-slate-900' 
+                                    : 'bg-surface-panel border-sky-500 text-slate-100'
+                                }`}
                               />
                               <button onClick={() => handleSaveVisTitle(vis.id)} className="p-1 rounded bg-sky-600 text-white cursor-pointer" title="Save title"><Check className="w-3.5 h-3.5" /></button>
                               <button onClick={() => setEditingVisId(null)} className="p-1 rounded bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 cursor-pointer" title="Cancel"><X className="w-3.5 h-3.5" /></button>
                             </div>
                           ) : (
-                            <div className="flex items-center gap-2 group/visTitle">
-                              <h4 className={`font-heading text-base font-bold uppercase truncate ${
-                                isLight ? 'text-slate-900' : 'text-white'
-                              }`}>
+                            <div className="flex items-center gap-2 group/visTitle min-w-0 flex-1">
+                              <h4 
+                                className={`font-heading text-sm sm:text-base font-bold uppercase tracking-tight truncate min-w-0 flex-1 ${
+                                  isLight ? 'text-slate-900 font-extrabold' : 'text-slate-100 font-bold'
+                                }`}
+                                title={displayTitle}
+                              >
                                 {displayTitle}
                               </h4>
                               <button
@@ -1893,7 +2518,7 @@ export const ExecutiveDashboard: React.FC = () => {
                                   setEditingVisId(visKey);
                                   setEditingVisTitle(displayTitle);
                                 }}
-                                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-all shadow-2xs shrink-0 cursor-pointer border ${
+                                className={`flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-medium transition-all shadow-2xs shrink-0 cursor-pointer border ${
                                   isLight
                                     ? 'bg-sky-50 hover:bg-sky-100 text-sky-800 border-sky-300'
                                     : 'bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 border-sky-500/30'
@@ -1903,19 +2528,27 @@ export const ExecutiveDashboard: React.FC = () => {
                                 <Pencil className="w-3 h-3 text-sky-500 shrink-0" />
                                 <span className="font-semibold text-[11px]">Rename</span>
                               </button>
-                              <span className="px-2 py-0.5 rounded bg-sky-500/10 text-sky-700 dark:text-cyan-300 border border-sky-500/20 text-label-caps font-label-caps uppercase font-bold shrink-0">
+                              <span className={`px-2 py-0.5 rounded text-label-caps font-label-caps uppercase font-bold shrink-0 border ${
+                                isLight
+                                  ? 'bg-sky-50 text-sky-800 border-sky-300'
+                                  : 'bg-sky-500/10 text-cyan-300 border-sky-500/20'
+                              }`}>
                                 {visType}
                               </span>
                             </div>
                           )}
-                          <div className="font-body-sm text-body-sm text-slate-600 dark:text-slate-400 pt-0.5">
-                            {agg.toUpperCase()}({val}) by {cat} • Total: <strong className="text-slate-900 dark:text-slate-100 font-semibold">{formatVal(total)}</strong>
+                          <div className={`font-body-sm text-body-sm pt-0.5 ${isLight ? 'text-slate-600 font-medium' : 'text-slate-400'}`}>
+                            {agg.toUpperCase()}({val}) by {cat} • Total: <strong className={`font-semibold ${isLight ? 'text-slate-900 font-bold' : 'text-slate-100'}`}>{formatVal(total)}</strong>
                           </div>
                         </div>
 
                         <button
                           onClick={() => handleDrilldown(items[0]?.category || '')}
-                          className="font-label-sm text-label-sm text-slate-500 dark:text-slate-400 hover:text-sky-600 dark:hover:text-cyan-400 flex items-center gap-1 transition-colors cursor-pointer shrink-0"
+                          className={`font-label-sm text-label-sm flex items-center gap-1 transition-colors cursor-pointer shrink-0 ${
+                            isLight
+                              ? 'text-sky-700 hover:text-sky-900 font-semibold'
+                              : 'text-slate-400 hover:text-cyan-400'
+                          }`}
                           title="Drill-through to records"
                         >
                           <span>Drilldown</span>
@@ -1924,16 +2557,16 @@ export const ExecutiveDashboard: React.FC = () => {
                       </div>
 
                       {/* Widget Visual Content */}
-                      <div className="py-2 min-h-[160px] flex items-center justify-center">
+                      <div className="py-2 min-h-[170px] flex items-center justify-center">
                         {visType === 'donut' || visType === 'pie' ? (
-                          <div className="w-full flex items-center justify-around gap-4">
+                          <div className="w-full flex flex-col sm:flex-row items-center justify-around gap-4">
                             <div className="relative w-36 h-36 shrink-0">
                               <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
                                 {(() => {
                                   let cumulativePct = 0;
                                   const colors = activeThemeConfig.donutColors.map(c => c.stroke);
                                   return items.slice(0, 6).map((item, idx) => {
-                                    const strokeDasharray = `${item.share * 2.512} 251.2`;
+                                    const strokeDasharray = `${Math.max(0.5, item.share * 2.512 - 0.8)} 251.2`;
                                     const strokeDashoffset = -cumulativePct * 2.512;
                                     cumulativePct += item.share;
                                     return (
@@ -1944,26 +2577,42 @@ export const ExecutiveDashboard: React.FC = () => {
                                         r="38"
                                         fill="transparent"
                                         stroke={colors[idx % colors.length]}
-                                        strokeWidth="12"
+                                        strokeWidth="11"
                                         strokeDasharray={strokeDasharray}
                                         strokeDashoffset={strokeDashoffset}
+                                        className="transition-all duration-300 hover:opacity-80 cursor-pointer"
+                                        onClick={() => handleDrilldown(item.category)}
                                       />
                                     );
                                   });
                                 })()}
                               </svg>
-                              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
-                                <span className="font-label-caps text-label-caps uppercase text-slate-500 dark:text-slate-400 font-bold">TOTAL</span>
-                                <span className="font-headline-sm text-headline-sm font-bold text-slate-900 dark:text-slate-100">{formatVal(total)}</span>
+                              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center px-1">
+                                <span className={`font-mono uppercase font-bold text-[9px] tracking-wider ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>TOTAL</span>
+                                <span className={`font-mono text-sm sm:text-base font-extrabold tabular-nums tracking-tight ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>{formatVal(total)}</span>
                               </div>
                             </div>
-                            <div className="space-y-1.5 text-xs w-full max-w-[200px]">
-                              {items.slice(0, 4).map((it, i) => (
-                                <div key={i} className="flex justify-between items-center text-label-sm font-label-sm">
-                                  <span className="text-slate-800 dark:text-slate-200 truncate max-w-[110px]">{it.category}</span>
-                                  <span className="text-slate-900 dark:text-slate-100 font-semibold">{it.share}%</span>
-                                </div>
-                              ))}
+                            <div className="space-y-1.5 text-xs w-full max-w-[210px]">
+                              {items.slice(0, 5).map((it, i) => {
+                                const dotColor = activeThemeConfig.donutColors[i % activeThemeConfig.donutColors.length]?.stroke || '#0284C7';
+                                return (
+                                  <div 
+                                    key={i} 
+                                    onClick={() => handleDrilldown(it.category)}
+                                    className="flex justify-between items-center text-xs p-1 rounded-md hover:bg-slate-100 dark:hover:bg-white/5 transition-colors cursor-pointer group"
+                                  >
+                                    <div className="flex items-center gap-1.5 min-w-0">
+                                      <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: dotColor }} />
+                                      <span className={`truncate max-w-[110px] font-medium group-hover:text-sky-500 transition-colors ${isLight ? 'text-slate-800' : 'text-slate-200'}`} title={it.category}>
+                                        {it.category}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-1 font-mono shrink-0 tabular-nums">
+                                      <span className={`font-semibold ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>{it.share}%</span>
+                                    </div>
+                                  </div>
+                                );
+                              })}
                             </div>
                           </div>
                         ) : visType === 'boxplot' ? (
@@ -1986,7 +2635,7 @@ export const ExecutiveDashboard: React.FC = () => {
                                 <svg viewBox="0 0 390 145" className="w-full h-36 overflow-visible select-none">
                                   {[0, 0.5, 1].map((pct, idx) => {
                                     const y = 10 + pH * (1 - pct);
-                                    return <line key={idx} x1="25" y1={y} x2="385" y2={y} stroke={isLight ? '#e2e8f0' : '#282828'} strokeDasharray="3,3" />;
+                                    return <line key={idx} x1="25" y1={y} x2="385" y2={y} stroke={isLight ? '#e2e8f0' : 'rgba(255,255,255,0.08)'} strokeDasharray="3,3" />;
                                   })}
                                   {bData.map((st, idx) => {
                                     const cX = padX + idx * gW + gW / 2;
@@ -2002,7 +2651,7 @@ export const ExecutiveDashboard: React.FC = () => {
                                         <line x1={cX} y1={yMin} x2={cX} y2={yMax} stroke="#0284C7" strokeWidth="1.5" strokeDasharray="2,2" />
                                         <line x1={cX - bW * 0.35} y1={yMin} x2={cX + bW * 0.35} y2={yMin} stroke="#0284C7" strokeWidth="2" />
                                         <line x1={cX - bW * 0.35} y1={yMax} x2={cX + bW * 0.35} y2={yMax} stroke="#0284C7" strokeWidth="2" />
-                                        <rect x={cX - bW / 2} y={Math.min(yQ1, yQ3)} width={bW} height={Math.max(4, Math.abs(yQ3 - yQ1))} fill="#0284C7" fillOpacity={isLight ? 0.25 : 0.4} stroke="#0284C7" strokeWidth="1.5" rx="2" />
+                                        <rect x={cX - bW / 2} y={Math.min(yQ1, yQ3)} width={bW} height={Math.max(4, Math.abs(yQ3 - yQ1))} fill="#0284C7" fillOpacity={isLight ? 0.25 : 0.4} stroke="#0284C7" strokeWidth="1.5" rx="3" />
                                         <line x1={cX - bW / 2} y1={yMed} x2={cX + bW / 2} y2={yMed} stroke={isLight ? '#0369a1' : '#38bdf8'} strokeWidth="2.5" />
                                         {st.outliers.map((oVal, oIdx) => (
                                           <circle key={oIdx} cx={cX} cy={scY(oVal)} r="3" fill="#ef4444" stroke="#fff" strokeWidth="0.8" />
@@ -2016,27 +2665,34 @@ export const ExecutiveDashboard: React.FC = () => {
                                 </svg>
                                 <div className="flex justify-between items-center text-[10px] font-mono text-slate-500 pt-1 border-t border-border-subtle">
                                   <span>Median: {bData[0]?.median ? formatVal(bData[0].median) : 'N/A'}</span>
-                                  <span className="text-sky-600 dark:text-cyan-400 font-semibold">Tukey 5-Number Boxplot</span>
+                                  <span className="text-sky-600 dark:text-cyan-400 font-semibold">Tukey 5-Number Dispersion</span>
                                 </div>
                               </div>
                             );
                           })()
                         ) : visType === 'heatmap' ? (
-                          /* Heatmap Matrix in Executive Dashboard */
-                          <div className="w-full space-y-1.5">
+                          /* Heatmap Matrix with 3D Beveled Tiles */
+                          <div className="w-full space-y-2">
                             <div className="grid grid-cols-4 sm:grid-cols-6 gap-1.5 font-mono text-center">
                               {items.slice(0, 12).map((it, idx) => {
-                                const intensity = Math.min(1, Math.max(0.18, it.value / maxVal));
+                                const intensity = Math.min(1, Math.max(0.2, it.value / maxVal));
                                 return (
                                   <div
                                     key={idx}
                                     onClick={() => handleDrilldown(it.category)}
-                                    className="p-1.5 rounded-lg border border-slate-200 dark:border-white/10 cursor-pointer hover:border-sky-500 transition-all flex flex-col justify-between"
-                                    style={{ backgroundColor: `rgba(2, 132, 199, ${intensity})` }}
+                                    className="p-2 rounded-xl border cursor-pointer hover:scale-105 hover:-translate-y-0.5 transition-all flex flex-col justify-between shadow-md relative overflow-hidden"
+                                    style={{ 
+                                      backgroundColor: `rgba(2, 132, 199, ${intensity})`,
+                                      borderColor: isLight ? 'rgba(2, 132, 199, 0.4)' : 'rgba(255, 255, 255, 0.16)',
+                                      boxShadow: isLight
+                                        ? 'inset 0 1px 1px rgba(255,255,255,0.6), 0 2px 6px rgba(0,0,0,0.1)'
+                                        : 'inset 0 1px 1px rgba(255,255,255,0.35), inset 0 -1px 1px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.4)'
+                                    }}
                                     title={`${it.category}: ${formatVal(it.value)}`}
                                   >
-                                    <span className="text-[10px] text-white font-extrabold truncate">{it.category}</span>
-                                    <span className="text-[9px] text-white font-bold font-mono">
+                                    <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent pointer-events-none" />
+                                    <span className="text-[10px] text-white font-extrabold truncate relative z-10 drop-shadow-xs">{it.category}</span>
+                                    <span className="text-[9px] text-white/95 font-bold font-mono relative z-10">
                                       {it.value >= 1000 ? `${(it.value / 1000).toFixed(1)}k` : it.value}
                                     </span>
                                   </div>
@@ -2044,50 +2700,85 @@ export const ExecutiveDashboard: React.FC = () => {
                               })}
                             </div>
                             <div className="flex justify-between text-[10px] text-slate-500 dark:text-slate-400 font-mono pt-1">
-                              <span>Max Density: {formatVal(maxVal)}</span>
-                              <span className="text-sky-600 dark:text-cyan-400 font-semibold">Temporal Heat Density</span>
+                              <span>Max: {formatVal(maxVal)}</span>
+                              <span className="text-sky-600 dark:text-cyan-400 font-semibold">Temporal Matrix</span>
                             </div>
                           </div>
                         ) : visType === 'line' ? (
-                          /* Line / Spline Trend in Executive Dashboard */
+                          /* Smooth Spline Trend with 3D Depth & Spherical Nodes */
                           <div className="w-full">
                             {items.length >= 2 ? (
                               <div className="relative w-full">
-                                <svg viewBox="0 0 400 130" className="w-full h-32 overflow-visible select-none">
+                                <svg viewBox="0 0 400 135" className="w-full h-34 overflow-visible select-none">
+                                  <defs>
+                                    <filter id={`shadow-spline-${visKey}`} x="-10%" y="-10%" width="120%" height="150%">
+                                      <feDropShadow dx="0" dy="4" stdDeviation="3" floodColor="#000000" floodOpacity="0.55" />
+                                    </filter>
+                                    <linearGradient id={`grad-spline-${visKey}`} x1="0" y1="0" x2="0" y2="1">
+                                      <stop offset="0%" stopColor={activeThemeConfig.trendActual} stopOpacity="0.32" />
+                                      <stop offset="100%" stopColor={activeThemeConfig.trendActual} stopOpacity="0.0" />
+                                    </linearGradient>
+                                  </defs>
+
+                                  {/* Grid lines */}
                                   {[0, 0.5, 1].map((pct, i) => (
-                                    <line key={i} x1="25" y1={10 + 100 * (1 - pct)} x2="385" y2={10 + 100 * (1 - pct)} stroke={isLight ? '#e2e8f0' : '#282828'} strokeDasharray="3,3" />
+                                    <line key={i} x1="20" y1={10 + 95 * (1 - pct)} x2="385" y2={10 + 95 * (1 - pct)} stroke={isLight ? '#e2e8f0' : 'rgba(255,255,255,0.08)'} strokeDasharray="3,3" />
                                   ))}
+
                                   {(() => {
                                     const coords = items.map((it, i) => ({
-                                      x: 25 + (i / Math.max(1, items.length - 1)) * 360,
-                                      y: 10 + 100 - (it.value / maxVal) * 100
+                                      x: 20 + (i / Math.max(1, items.length - 1)) * 365,
+                                      y: 10 + 95 - (it.value / maxVal) * 95,
+                                      category: it.category,
+                                      value: it.value
                                     }));
-                                    const pD = coords.reduce((acc, c, i) => i === 0 ? `M ${c.x},${c.y}` : `${acc} L ${c.x},${c.y}`, '');
-                                    const aD = `${pD} L ${coords[coords.length - 1].x},110 L ${coords[0].x},110 Z`;
+
+                                    // Cubic Bezier Spline Path Generator
+                                    let splinePath = `M ${coords[0].x},${coords[0].y}`;
+                                    for (let i = 0; i < coords.length - 1; i++) {
+                                      const p0 = coords[i];
+                                      const p1 = coords[i + 1];
+                                      const cpx1 = p0.x + (p1.x - p0.x) * 0.45;
+                                      const cpy1 = p0.y;
+                                      const cpx2 = p1.x - (p1.x - p0.x) * 0.45;
+                                      const cpy2 = p1.y;
+                                      splinePath += ` C ${cpx1},${cpy1} ${cpx2},${cpy2} ${p1.x},${p1.y}`;
+                                    }
+                                    const areaPath = `${splinePath} L ${coords[coords.length - 1].x},105 L ${coords[0].x},105 Z`;
+
                                     return (
                                       <>
-                                        <path d={aD} fill="rgba(2, 132, 199, 0.18)" />
-                                        <path d={pD} fill="none" stroke="#0284C7" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                                        <path d={areaPath} fill={`url(#grad-spline-${visKey})`} />
+                                        <path d={splinePath} fill="none" stroke={activeThemeConfig.trendActual} strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" filter={`url(#shadow-spline-${visKey})`} />
                                         {coords.map((c, i) => (
-                                          <circle key={i} cx={c.x} cy={c.y} r="3.5" fill={isLight ? '#ffffff' : '#0f172a'} stroke="#0284C7" strokeWidth="2" />
+                                          <g key={i} className="cursor-pointer group" onClick={() => handleDrilldown(c.category)}>
+                                            <circle cx={c.x} cy={c.y} r="6" fill={activeThemeConfig.trendActual} fillOpacity="0.25" className="group-hover:r-8 transition-all" />
+                                            <circle cx={c.x} cy={c.y} r="3.5" fill={isLight ? activeThemeConfig.trendActual : '#0F172A'} stroke={activeThemeConfig.trendActual} strokeWidth="2" filter={`url(#shadow-spline-${visKey})`} />
+                                            <circle cx={c.x - 1} cy={c.y - 1} r="1.2" fill="#ffffff" fillOpacity="0.9" />
+                                          </g>
                                         ))}
                                       </>
                                     );
                                   })()}
                                 </svg>
-                                <div className="flex justify-between text-[10px] text-slate-500 font-mono pt-1">
-                                  <span className="truncate max-w-[100px]">{items[0]?.category}</span>
-                                  <span className="truncate max-w-[100px]">{items[items.length - 1]?.category}</span>
+                                <div className="flex justify-between text-[11px] text-slate-500 font-mono pt-1">
+                                  <span className="truncate max-w-[120px] font-medium">{items[0]?.category}</span>
+                                  <span className="text-[10px] text-sky-600 dark:text-cyan-400 font-semibold">Cubic Spline Series</span>
+                                  <span className="truncate max-w-[120px] text-right font-medium">{items[items.length - 1]?.category}</span>
                                 </div>
                               </div>
                             ) : (
-                              <div className="p-4 text-center text-xs text-slate-500">Need at least 2 points for line chart.</div>
+                              <div className="p-4 text-center text-xs text-slate-500 font-mono">Need at least 2 observations for time-series spline.</div>
                             )}
                           </div>
                         ) : visType === 'table' ? (
                           <div className="w-full overflow-x-auto">
                             <table className="w-full text-left font-body-sm text-body-sm">
-                              <thead className="bg-slate-100 dark:bg-surface-panel text-slate-700 dark:text-slate-400 border-b border-slate-200 dark:border-border-subtle font-label-caps text-label-caps uppercase">
+                              <thead className={`border-b font-mono text-[10px] uppercase font-bold tracking-wider ${
+                                isLight 
+                                  ? 'bg-slate-100 text-slate-800 border-slate-200' 
+                                  : 'bg-surface-panel text-slate-400 border-border-subtle'
+                              }`}>
                                 <tr>
                                   <th className="p-2">Rank</th>
                                   <th className="p-2">{cat}</th>
@@ -2095,37 +2786,70 @@ export const ExecutiveDashboard: React.FC = () => {
                                   <th className="p-2 text-right">Share</th>
                                 </tr>
                               </thead>
-                              <tbody className="divide-y divide-border-subtle">
+                              <tbody className="divide-y divide-border-subtle font-mono text-xs">
                                 {items.slice(0, 5).map((it, idx) => (
-                                  <tr key={idx} className="hover:bg-slate-100 dark:hover:bg-surface-elevated/70 transition-colors">
-                                    <td className="p-2 text-slate-500 font-mono">#{idx + 1}</td>
-                                    <td className="p-2 text-slate-800 dark:text-slate-200 font-medium truncate max-w-[130px]">{it.category}</td>
-                                    <td className="p-2 text-right text-sky-600 dark:text-cyan-400 font-bold font-mono">{formatVal(it.value)}</td>
-                                    <td className="p-2 text-right text-slate-900 dark:text-slate-100 font-mono">{it.share}%</td>
+                                  <tr 
+                                    key={idx} 
+                                    onClick={() => handleDrilldown(it.category)}
+                                    className={`transition-colors cursor-pointer ${
+                                      isLight ? 'hover:bg-slate-50' : 'hover:bg-surface-elevated/70'
+                                    }`}
+                                  >
+                                    <td className="p-2 text-slate-400 font-bold">#{idx + 1}</td>
+                                    <td className={`p-2 font-medium truncate max-w-[130px] font-sans ${isLight ? 'text-slate-800' : 'text-slate-200'}`}>{it.category}</td>
+                                    <td className={`p-2 text-right font-bold tabular-nums ${isLight ? 'text-sky-700' : 'text-cyan-400'}`}>{formatVal(it.value)}</td>
+                                    <td className={`p-2 text-right font-semibold tabular-nums ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>{it.share}%</td>
                                   </tr>
                                 ))}
                               </tbody>
                             </table>
                           </div>
                         ) : (
-                          /* Ranked Horizontal/Vertical Bars */
-                          <div className="w-full space-y-2.5">
+                          /* Modern 3D Ranked Cylindrical Bars with Recessed Track & Specular Reflection */
+                          <div className="w-full space-y-3">
                             {items.slice(0, 5).map((it, idx) => {
-                              const pct = Math.min(100, Math.max(5, (it.value / maxVal) * 100));
+                              const pct = Math.min(100, Math.max(6, (it.value / maxVal) * 100));
+                              const barColor = activeThemeConfig.barColors[idx % activeThemeConfig.barColors.length] || '#0284C7';
                               return (
-                                <div key={idx} className="space-y-1">
-                                  <div className="flex justify-between font-label-sm text-label-sm">
-                                    <span className="text-slate-800 dark:text-slate-200 font-medium truncate max-w-[180px]">{it.category}</span>
-                                    <span className="text-slate-900 dark:text-slate-100 font-bold">{formatVal(it.value)} <span className="text-slate-500 dark:text-slate-400 font-normal">({it.share}%)</span></span>
+                                <div 
+                                  key={idx} 
+                                  onClick={() => handleDrilldown(it.category)}
+                                  className="space-y-1.5 p-1 -mx-1 rounded-xl hover:bg-slate-50 dark:hover:bg-white/[0.04] transition-all cursor-pointer group"
+                                >
+                                  <div className="flex justify-between items-center text-xs">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <span className="font-mono text-[10px] text-slate-400 font-bold shrink-0">#{idx + 1}</span>
+                                      <span className={`font-semibold truncate max-w-[190px] group-hover:text-sky-600 dark:group-hover:text-cyan-400 transition-colors ${
+                                        isLight ? 'text-slate-800' : 'text-slate-200'
+                                      }`} title={it.category}>
+                                        {it.category}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-baseline gap-1.5 font-mono shrink-0 tabular-nums">
+                                      <span className={`font-extrabold ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>
+                                        {formatVal(it.value)}
+                                      </span>
+                                      <span className={`text-[10px] font-medium ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                                        ({it.share}%)
+                                      </span>
+                                    </div>
                                   </div>
-                                  <div className="w-full bg-slate-100 dark:bg-surface-elevated h-2.5 rounded-full overflow-hidden border border-slate-200/60 dark:border-transparent">
+
+                                  <div className={`w-full h-3.5 rounded-lg overflow-hidden p-0.5 border transition-all ${
+                                    isLight 
+                                      ? 'bg-slate-200/70 border-slate-300 shadow-inner' 
+                                      : 'bg-[#0a0f1d] border-white/10 track-3d-recessed'
+                                  }`}>
                                     <div 
-                                      className="h-full rounded-full transition-all duration-500 shadow-xs"
+                                      className="h-full rounded-md transition-all duration-500 relative overflow-hidden group-hover:brightness-110 shadow-md bar-3d-cylinder"
                                       style={{
                                         width: `${pct}%`,
-                                        backgroundColor: activeThemeConfig.barColors[idx % activeThemeConfig.barColors.length]
+                                        background: `linear-gradient(180deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.1) 40%, ${barColor} 65%, ${barColor} 100%)`,
+                                        boxShadow: `0 2px 8px ${barColor}66`
                                       }}
-                                    />
+                                    >
+                                      <div className="absolute inset-0 bg-gradient-to-b from-white/30 via-transparent to-black/25 pointer-events-none rounded-md" />
+                                    </div>
                                   </div>
                                 </div>
                               );
@@ -2135,9 +2859,12 @@ export const ExecutiveDashboard: React.FC = () => {
                       </div>
 
                       {/* Widget Footer */}
-                      <div className="pt-2 border-t border-border-subtle flex items-center justify-between font-label-sm text-label-sm text-slate-500 dark:text-slate-400">
-                        <span>Audited from {effectiveVisualRows.length.toLocaleString()} rows</span>
-                        <span className="text-sky-600 dark:text-cyan-400 font-medium">Verified Telemetry</span>
+                      <div className={`pt-2.5 border-t border-border-subtle flex items-center justify-between text-xs ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                        <span className="font-mono text-[11px]">{effectiveVisualRows.length.toLocaleString()} rows filtered</span>
+                        <span className={`font-semibold flex items-center gap-1.5 text-[11px] ${isLight ? 'text-sky-700' : 'text-cyan-400'}`}>
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                          <span>Synchronized</span>
+                        </span>
                       </div>
                     </div>
                   );
@@ -2355,20 +3082,28 @@ export const ExecutiveDashboard: React.FC = () => {
       {/* Add Custom Visual Modal */}
       {isAddVisModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
-          <div className="w-full max-w-lg bg-white dark:bg-surface-card border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl p-6 space-y-5 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-slate-200 dark:border-border-subtle pb-3">
+          <div className={`w-full max-w-lg border rounded-2xl shadow-2xl p-6 space-y-5 max-h-[90vh] overflow-y-auto card-3d ${
+            isLight
+              ? 'bg-white border-slate-200 text-slate-900 shadow-xl'
+              : 'bg-surface-card border-white/15 text-slate-100 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.85)]'
+          }`}>
+            <div className={`flex items-center justify-between border-b pb-3 ${
+              isLight ? 'border-slate-200' : 'border-border-subtle'
+            }`}>
               <div className="flex items-center gap-2">
                 <div className="p-2 rounded-lg bg-sky-500/15 text-sky-600 dark:text-cyan-400">
                   <BarChart3 className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-base text-slate-900 dark:text-slate-100">Add Custom Visual</h3>
-                  <p className="text-xs text-slate-600 dark:text-slate-400">Map metrics & dimensions from {project.name}</p>
+                  <h3 className={`font-bold text-base ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>Add Custom Visual</h3>
+                  <p className={`text-xs ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>Map metrics & dimensions from {project.name}</p>
                 </div>
               </div>
               <button 
                 onClick={() => setIsAddVisModalOpen(false)} 
-                className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-surface-panel text-slate-500 dark:text-slate-400 cursor-pointer"
+                className={`p-1.5 rounded-lg cursor-pointer ${
+                  isLight ? 'hover:bg-slate-100 text-slate-500' : 'hover:bg-surface-panel text-slate-400'
+                }`}
               >
                 <X className="w-5 h-5" />
               </button>
@@ -2376,24 +3111,32 @@ export const ExecutiveDashboard: React.FC = () => {
 
             <form onSubmit={handleAddCustomVisual} className="space-y-4 text-xs">
               <div className="space-y-1">
-                <label className="font-bold uppercase text-slate-700 dark:text-slate-300">Visual Title</label>
+                <label className={`font-bold uppercase ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>Visual Title</label>
                 <input
                   type="text"
                   required
                   placeholder="e.g. MRR by Plan Tier, Revenue by Channel..."
                   value={newVisTitle}
                   onChange={(e) => setNewVisTitle(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-surface-panel border border-slate-300 dark:border-border-subtle rounded-xl text-slate-900 dark:text-slate-100 font-medium focus:border-sky-500 focus:outline-none"
+                  className={`w-full px-3 py-2 border rounded-xl font-medium focus:outline-none ${
+                    isLight 
+                      ? 'bg-slate-50 border-slate-300 text-slate-900 focus:border-sky-500' 
+                      : 'bg-surface-panel border-white/10 text-slate-100 focus:border-cyan-400'
+                  }`}
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="font-bold uppercase text-slate-700 dark:text-slate-300">Chart Type</label>
+                  <label className={`font-bold uppercase ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>Chart Type</label>
                   <select
                     value={newVisType}
                     onChange={(e) => setNewVisType(e.target.value as any)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-surface-panel border border-slate-300 dark:border-border-subtle rounded-xl text-slate-900 dark:text-slate-100 font-medium focus:outline-none cursor-pointer"
+                    className={`w-full px-3 py-2 border rounded-xl font-medium focus:outline-none cursor-pointer ${
+                      isLight 
+                        ? 'bg-slate-50 border-slate-300 text-slate-900 focus:border-sky-500' 
+                        : 'bg-surface-panel border-white/10 text-slate-100 focus:border-cyan-400'
+                    }`}
                   >
                     <option value="bar">Bar Chart</option>
                     <option value="line">Line / Trend</option>
@@ -2403,11 +3146,15 @@ export const ExecutiveDashboard: React.FC = () => {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-bold uppercase text-slate-700 dark:text-slate-300">Aggregation</label>
+                  <label className={`font-bold uppercase ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>Aggregation</label>
                   <select
                     value={newVisAgg}
                     onChange={(e) => setNewVisAgg(e.target.value as any)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-surface-panel border border-slate-300 dark:border-border-subtle rounded-xl text-slate-900 dark:text-slate-100 font-medium focus:outline-none cursor-pointer"
+                    className={`w-full px-3 py-2 border rounded-xl font-medium focus:outline-none cursor-pointer ${
+                      isLight 
+                        ? 'bg-slate-50 border-slate-300 text-slate-900 focus:border-sky-500' 
+                        : 'bg-surface-panel border-white/10 text-slate-100 focus:border-cyan-400'
+                    }`}
                   >
                     <option value="sum">SUM</option>
                     <option value="avg">AVERAGE</option>
@@ -2420,11 +3167,15 @@ export const ExecutiveDashboard: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="font-bold uppercase text-slate-700 dark:text-slate-300">Dimension / Axis</label>
+                  <label className={`font-bold uppercase ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>Dimension / Axis</label>
                   <select
                     value={newVisCat || stringCols[0]?.name || ''}
                     onChange={(e) => setNewVisCat(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-surface-panel border border-slate-300 dark:border-border-subtle rounded-xl text-slate-900 dark:text-slate-100 font-medium focus:outline-none cursor-pointer"
+                    className={`w-full px-3 py-2 border rounded-xl font-medium focus:outline-none cursor-pointer ${
+                      isLight 
+                        ? 'bg-slate-50 border-slate-300 text-slate-900 focus:border-sky-500' 
+                        : 'bg-surface-panel border-white/10 text-slate-100 focus:border-cyan-400'
+                    }`}
                   >
                     {stringCols.map(c => (
                       <option key={c.name} value={c.name}>{c.name}</option>
@@ -2433,11 +3184,15 @@ export const ExecutiveDashboard: React.FC = () => {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-bold uppercase text-slate-700 dark:text-slate-300">Metric Column</label>
+                  <label className={`font-bold uppercase ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>Metric Column</label>
                   <select
                     value={newVisVal || numericCols[0]?.name || ''}
                     onChange={(e) => setNewVisVal(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-surface-panel border border-slate-300 dark:border-border-subtle rounded-xl text-slate-900 dark:text-slate-100 font-medium focus:outline-none cursor-pointer"
+                    className={`w-full px-3 py-2 border rounded-xl font-medium focus:outline-none cursor-pointer ${
+                      isLight 
+                        ? 'bg-slate-50 border-slate-300 text-slate-900 focus:border-sky-500' 
+                        : 'bg-surface-panel border-white/10 text-slate-100 focus:border-cyan-400'
+                    }`}
                   >
                     {numericCols.map(c => (
                       <option key={c.name} value={c.name}>{c.name}</option>
@@ -2450,7 +3205,11 @@ export const ExecutiveDashboard: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsAddVisModalOpen(false)}
-                  className="px-4 py-2 bg-slate-100 dark:bg-surface-panel hover:bg-slate-200 dark:hover:bg-surface-elevated text-slate-700 dark:text-slate-300 rounded-xl font-medium cursor-pointer"
+                  className={`px-4 py-2 rounded-xl font-medium cursor-pointer ${
+                    isLight 
+                      ? 'bg-slate-100 hover:bg-slate-200 text-slate-700' 
+                      : 'bg-surface-panel hover:bg-surface-elevated text-slate-300'
+                  }`}
                 >
                   Cancel
                 </button>

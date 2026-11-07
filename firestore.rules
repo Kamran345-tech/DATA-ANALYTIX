@@ -70,6 +70,15 @@ service cloud.firestore {
         allow update: if isOwner(userId) && isValidId(userId) && isValidId(dashboardId) && isValidDashboard(incoming()) && incoming().ownerId == existing().ownerId;
         allow delete: if isOwner(userId) && isValidId(userId) && isValidId(dashboardId);
       }
+
+      // Additive Saved Dashboards V2 Collection
+      match /saved_dashboards_v2/{dashboardId} {
+        allow get: if isOwner(userId) && isValidId(userId) && isValidId(dashboardId);
+        allow list: if isOwner(userId) && isValidId(userId);
+        allow create: if isOwner(userId) && isValidId(userId) && isValidId(dashboardId);
+        allow update: if isOwner(userId) && isValidId(userId) && isValidId(dashboardId);
+        allow delete: if isOwner(userId) && isValidId(userId) && isValidId(dashboardId);
+      }
     }
   }
 }

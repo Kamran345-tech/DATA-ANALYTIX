@@ -3,339 +3,78 @@ import { createServer as createViteServer } from 'vite';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { GoogleGenAI } from '@google/genai';
+
+import { securityHeadersMiddleware } from './server-lib/securityHeaders.js';
+import { handleHealth, handleTestConnection, handleFetch, handleInterpret } from './server-lib/handlers.js';
+import { checkRateLimit } from './server-lib/rateLimiter.js';
 
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// In-memory sliding window rate limiter for public AI endpoints
-const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
-function checkRateLimit(ip: string, limit: number = 30, windowMs: number = 60000): boolean {
-  const now = Date.now();
-  const record = rateLimitMap.get(ip);
-  if (!record || now > record.resetTime) {
-    rateLimitMap.set(ip, { count: 1, resetTime: now + windowMs });
-    return true;
-  }
-  if (record.count >= limit) {
-    return false;
-  }
-  record.count++;
-  return true;
-}
-
-// SSRF Protection: Blocks private RFC 1918, loopback, link-local and cloud metadata addresses
-function validateExternalUrl(rawUrl: string): { valid: boolean; error?: string } {
-  try {
-    const parsed = new URL(rawUrl);
-    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-      return { valid: false, error: 'Only HTTP and HTTPS protocols are permitted.' };
-    }
-
-    const hostname = parsed.hostname.toLowerCase();
-
-    // Block loopback and local domain names
-    if (
-      hostname === 'localhost' ||
-      hostname === '127.0.0.1' ||
-      hostname === '0.0.0.0' ||
-      hostname === '::1' ||
-      hostname.endsWith('.local') ||
-      hostname.endsWith('.internal') ||
-      hostname === 'metadata.google.internal' ||
-      hostname === '169.254.169.254'
-    ) {
-      return { valid: false, error: 'Access to loopback, internal hosts, and cloud metadata is prohibited.' };
-    }
-
-    // Block private IPv4 ranges (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 127.0.0.0/8, 169.254.0.0/16)
-    const ipv4Regex = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
-    const ipMatch = hostname.match(ipv4Regex);
-    if (ipMatch) {
-      const p1 = parseInt(ipMatch[1], 10);
-      const p2 = parseInt(ipMatch[2], 10);
-
-      if (p1 === 10) return { valid: false, error: 'Access to private 10.x.x.x addresses is prohibited.' };
-      if (p1 === 127) return { valid: false, error: 'Access to loopback 127.x.x.x addresses is prohibited.' };
-      if (p1 === 169 && p2 === 254) return { valid: false, error: 'Access to link-local 169.254.x.x addresses is prohibited.' };
-      if (p1 === 192 && p2 === 168) return { valid: false, error: 'Access to private 192.168.x.x addresses is prohibited.' };
-      if (p1 === 172 && p2 >= 16 && p2 <= 31) return { valid: false, error: 'Access to private 172.16-31.x.x addresses is prohibited.' };
-    }
-
-    return { valid: true };
-  } catch (err: any) {
-    return { valid: false, error: `Invalid URL format: ${err?.message || 'Malformed URL'}` };
-  }
-}
-
 async function startServer() {
   const app = express();
   const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
-  // Enforce reasonable JSON body limit (10MB) to prevent memory exhaustion
-  app.use(express.json({ limit: '10mb' }));
-  app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+  // Phase 2 Security: Set trust proxy for correct client IP detection in container/proxy environments
+  app.set('trust proxy', 1);
 
-  // Initialize Gemini if API key is provided
-  const geminiApiKey = process.env.GEMINI_API_KEY || process.env.API_KEY || '';
-  let ai: GoogleGenAI | null = null;
-  if (geminiApiKey) {
-    try {
-      ai = new GoogleGenAI({ apiKey: geminiApiKey });
-    } catch (err) {
-      console.warn('Gemini initialization warning:', err);
+  // Security headers middleware (CSP report-only, nosniff, referrer-policy, frame-ancestors)
+  app.use(securityHeadersMiddleware);
+
+  // Global rate limiter middleware for /api/* with automatic periodic pruning of expired entries
+  app.use('/api', (req, res, next) => {
+    const clientIp = (req.ip || req.socket.remoteAddress || 'unknown').toString();
+    // Allow up to 120 requests per minute across general API
+    if (!checkRateLimit(`global_${clientIp}`, 120, 60000)) {
+      return res.status(429).json({ error: 'Global API rate limit exceeded. Please try again shortly.' });
     }
-  }
-
-  // Health check endpoint
-  app.get('/api/health', (req, res) => {
-    res.json({
-      status: 'healthy',
-      timestamp: new Date().toISOString(),
-      capabilities: {
-        geminiConfigured: !!ai,
-        inMemoryAnalytics: true,
-        exportEngines: ['xlsx', 'pbip', 'json', 'csv', 'dax', 'sql', 'python'],
-        liveDataConnector: true
-      }
-    });
+    next();
   });
 
-  // Test Live Database / Server Connection Endpoint
-  app.post('/api/live-data/test-connection', async (req, res) => {
+  // Health check endpoint (lightweight, no body parser needed)
+  app.get('/api/health', (_req, res) => {
+    res.json(handleHealth());
+  });
+
+  // Test Live Database / Server Connection Endpoint (capped at 1MB)
+  app.post('/api/live-data/test-connection', express.json({ limit: '1mb' }), async (req, res) => {
     try {
-      const { serverType, host, port, database, username, connectionString, restEndpoint } = req.body;
-      const startTime = Date.now();
-
-      // If REST API endpoint is specified, test HTTP connectivity with SSRF guard
-      if (serverType === 'rest_api' || restEndpoint) {
-        const targetUrl = restEndpoint || host;
-        if (!targetUrl) {
-          return res.status(400).json({ success: false, error: 'REST endpoint URL is required.' });
-        }
-
-        const ssrfCheck = validateExternalUrl(targetUrl);
-        if (!ssrfCheck.valid) {
-          return res.status(400).json({ success: false, error: ssrfCheck.error });
-        }
-
-        try {
-          const fetchRes = await fetch(targetUrl, {
-            method: 'GET',
-            headers: req.body.headers || { 'Accept': 'application/json' },
-            signal: AbortSignal.timeout(6000)
-          });
-
-          const latencyMs = Date.now() - startTime;
-          return res.json({
-            success: fetchRes.ok,
-            status: fetchRes.status,
-            statusText: fetchRes.statusText,
-            latencyMs,
-            isSimulation: false,
-            message: fetchRes.ok 
-              ? `Connected to REST API (${fetchRes.status} ${fetchRes.statusText}) in ${latencyMs}ms` 
-              : `HTTP ${fetchRes.status}: ${fetchRes.statusText}`
-          });
-        } catch (fetchErr: any) {
-          return res.status(502).json({
-            success: false,
-            latencyMs: Date.now() - startTime,
-            error: `Failed to reach endpoint: ${fetchErr?.message || 'Connection timed out'}`
-          });
-        }
-      }
-
-      // Honest labeling for browser sandbox direct database simulation
-      const latencyMs = Math.floor(Math.random() * 30) + 25;
-      const detectedTables = getSuggestedTablesForDb(serverType, database);
-
-      return res.json({
-        success: true,
-        isSimulation: true,
-        latencyMs,
-        serverType: serverType || 'postgres',
-        host: host || 'demo-warehouse.sandbox',
-        database: database || 'production_db',
-        ssl: req.body.ssl !== false,
-        message: `Verified demo sandbox profile for ${serverType?.toUpperCase() || 'DATABASE'} (Database: "${database || 'main'}"). Native TCP wire protocols run in demo mode; connect via REST API for live production endpoints.`,
-        availableTables: detectedTables
-      });
+      const result = await handleTestConnection(req.body);
+      res.status(result.status).json(result.data);
     } catch (err: any) {
       res.status(500).json({ success: false, error: err.message || 'Connection test failed' });
     }
   });
 
-  // Live Data Ingestion & Fetch Endpoint
-  app.post('/api/live-data/fetch', async (req, res) => {
+  // Live Data Ingestion & Fetch Endpoint (capped at 2MB)
+  app.post('/api/live-data/fetch', express.json({ limit: '2mb' }), async (req, res) => {
     try {
-      const { 
-        serverType = 'postgres', 
-        host, 
-        port, 
-        database, 
-        tableName = 'orders', 
-        query, 
-        restEndpoint, 
-        limit = 100 
-      } = req.body;
-
-      // Real REST API Fetch with SSRF validation
-      if (serverType === 'rest_api' && restEndpoint) {
-        const ssrfCheck = validateExternalUrl(restEndpoint);
-        if (!ssrfCheck.valid) {
-          return res.status(400).json({ success: false, error: ssrfCheck.error });
-        }
-
-        try {
-          const fetchRes = await fetch(restEndpoint, {
-            headers: req.body.headers || { 'Accept': 'application/json' },
-            signal: AbortSignal.timeout(8000)
-          });
-
-          if (!fetchRes.ok) {
-            return res.status(fetchRes.status).json({
-              success: false,
-              error: `REST API responded with HTTP ${fetchRes.status}: ${fetchRes.statusText}`
-            });
-          }
-
-          const json = await fetchRes.json();
-          let rows: any[] = [];
-          if (Array.isArray(json)) {
-            rows = json;
-          } else if (json && typeof json === 'object') {
-            const arrayProp = Object.values(json).find(v => Array.isArray(v)) as any[] | undefined;
-            if (arrayProp) {
-              rows = arrayProp;
-            } else {
-              rows = [json];
-            }
-          }
-
-          const flattened = rows.slice(0, Number(limit) || 200).map((r) => {
-            const flatRow: Record<string, any> = {};
-            for (const [k, v] of Object.entries(r)) {
-              if (v !== null && typeof v === 'object' && !Array.isArray(v)) {
-                for (const [subK, subV] of Object.entries(v)) {
-                  flatRow[`${k}_${subK}`] = subV;
-                }
-              } else {
-                flatRow[k] = v;
-              }
-            }
-            return flatRow;
-          });
-
-          return res.json({
-            success: true,
-            isSimulation: false,
-            source: 'rest_api',
-            tableName: 'Live_REST_Data',
-            rowCount: flattened.length,
-            rows: flattened,
-            timestamp: new Date().toISOString()
-          });
-        } catch (apiErr: any) {
-          // Never silently fall back to random data on REST fetch failure!
-          return res.status(502).json({
-            success: false,
-            error: `Failed to fetch from REST endpoint: ${apiErr?.message || 'Network error'}`
-          });
-        }
-      }
-
-      // Honest labeling for simulated database demo stream
-      const liveData = generateLiveDatabaseStream(serverType, tableName, query, Number(limit) || 120);
-
-      return res.json({
-        success: true,
-        isSimulation: true,
-        source: `${serverType} (Simulated Demo Stream)`,
-        host: host || 'demo-warehouse.sandbox',
-        database: database || 'production_warehouse',
-        tableName: tableName || 'Fact_LiveStream',
-        rowCount: liveData.length,
-        rows: liveData,
-        timestamp: new Date().toISOString(),
-        queryExecuted: query || `SELECT * FROM ${tableName} ORDER BY timestamp DESC LIMIT ${limit};`,
-        disclaimer: 'Browser sandbox demo data: native TCP database protocols utilize simulated transactional records.'
-      });
+      const result = await handleFetch(req.body);
+      res.status(result.status).json(result.data);
     } catch (err: any) {
       console.error('Live fetch error:', err);
       res.status(500).json({ success: false, error: err.message || 'Failed to fetch live data' });
     }
   });
 
-  // AI Interpretation API grounded in calculated data
-  app.post('/api/ai/interpret', async (req, res) => {
+  // AI Interpretation API grounded in calculated data (capped at 2.5MB)
+  app.post('/api/ai/interpret', express.json({ limit: '2.5mb' }), async (req, res) => {
     try {
-      const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
-      if (!checkRateLimit(clientIp, 30, 60000)) {
-        return res.status(429).json({ error: 'Rate limit exceeded. Maximum 30 requests per minute.' });
-      }
-
-      const { prompt, analyticalContext, mode } = req.body;
-      if (!prompt || !analyticalContext) {
-        return res.status(400).json({ error: 'Missing prompt or analytical context.' });
-      }
-
-      // Check request size
-      if (JSON.stringify(analyticalContext).length > 2 * 1024 * 1024) {
-        return res.status(413).json({ error: 'Analytical context payload exceeds 2MB limit.' });
-      }
-
-      if (ai) {
-        try {
-          const systemInstruction = `You are a Principal Data Analyst and Business Intelligence Architect at NexusBI.
-CRITICAL MANDATES:
-1. NEVER invent, hallucinate, or alter any numbers, KPIs, or percentages.
-2. Rely EXCLUSIVELY on the provided verified calculation engine results in the analytical context.
-3. Every insight, risk, and recommendation MUST cite the exact metric, value, and segment from the context.
-4. Structure your response into: WHAT happened, WHY it happened, WHO/WHAT contributed, HOW significant it is, and ACTIONABLE RECOMMENDATIONS for management.
-5. If data is insufficient for a claim, state: "Insufficient data to calculate this metric."`;
-
-          const fullContent = `Context Data Summary:
-${JSON.stringify(analyticalContext, null, 2)}
-
-User Question / Analysis Request:
-${prompt}`;
-
-          const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: [{ text: fullContent }],
-            config: {
-              systemInstruction,
-              temperature: 0.2, // deterministic, strictly grounded
-            }
-          });
-
-          return res.json({
-            text: response.text || '',
-            model: 'gemini-2.5-flash',
-            grounded: true,
-            sourceMetrics: Object.keys(analyticalContext.kpis || {})
-          });
-        } catch (apiError: any) {
-          console.error('Gemini API call failed, falling back to local analytical engine:', apiError?.message);
-        }
-      }
-
-      // Rule-based deterministic fallback when AI is unavailable
-      return res.json({
-        text: generateLocalAnalysis(prompt, analyticalContext, mode),
-        model: 'nexusbi-local-deterministic-engine',
-        grounded: false, // Honestly distinguish rule-based template from AI model
-        isRuleBased: true,
-        sourceMetrics: Object.keys(analyticalContext.kpis || {})
-      });
+      const clientIp = (req.ip || req.socket.remoteAddress || 'unknown').toString();
+      const authHeader = req.headers.authorization;
+      const result = await handleInterpret(req.body, clientIp, authHeader);
+      res.status(result.status).json(result.data);
     } catch (error: any) {
       console.error('AI interpret endpoint error:', error);
       res.status(500).json({ error: error.message || 'Failed to interpret data' });
     }
   });
+
+  // General fallback JSON parser for other potential routes (5MB)
+  app.use(express.json({ limit: '5mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 
   // Setup Vite in middleware mode for development
   if (process.env.NODE_ENV !== 'production') {
@@ -347,7 +86,7 @@ ${prompt}`;
   } else {
     // Serve static files in production
     app.use(express.static(path.resolve(__dirname, 'dist')));
-    app.get('*', (req, res) => {
+    app.get('*', (_req, res) => {
       res.sendFile(path.resolve(__dirname, 'dist', 'index.html'));
     });
   }
@@ -355,114 +94,6 @@ ${prompt}`;
   app.listen(port, '0.0.0.0', () => {
     console.log(`NexusBI Data Analyst Server running on http://0.0.0.0:${port}`);
   });
-}
-
-function generateLocalAnalysis(query: string, context: any, mode?: string): string {
-  const kpis = context.kpis || [];
-  const topCategories = context.topCategories || [];
-  const anomalies = context.anomalies || [];
-  const recSummary = (context.recommendations || []).slice(0, 3).map((r: any) => `• **${r.title}** (Priority: ${r.priority}): ${r.action}`).join('\n');
-
-  let kpiSummary = kpis.map((k: any) => `• **${k.name}**: ${k.formattedValue || k.value} (${k.change >= 0 ? '+' : ''}${k.changePercent ? k.changePercent.toFixed(1) + '%' : 'N/A'} vs prior period - ${k.status})`).join('\n');
-  let topSummary = topCategories.slice(0, 3).map((c: any) => `• **${c.name}**: ${c.formattedValue || c.value} (${c.percentage ? c.percentage.toFixed(1) + '%' : ''} share)`).join('\n');
-  let anomalySummary = anomalies.slice(0, 3).map((a: any) => `• [${a.severity.toUpperCase()}] **${a.title}**: ${a.description}`).join('\n');
-
-  return `### Deterministic Dataset Analysis (Offline Rule-Based Summary)
-
-*Query Analyzed*: "${query}"
-
-#### 1. Dataset Overview & Metric Baselines
-Based on ${context.rowCount || 0} audited records across ${context.columnCount || 0} columns:
-${kpiSummary || '• Primary metrics computed across verified numeric fields.'}
-
-#### 2. Segment Performance & Distribution
-${topSummary || '• Distributed across observed categorical dimensions.'}
-
-#### 3. Detected Risks & Anomalies
-${anomalySummary || '• No critical statistical outliers or threshold breaches detected in current filter scope.'}
-
-#### 4. Actionable Management Directives
-${recSummary || '• Sustain current operational pacing and monitor variance thresholds.'}
-
-*Note: Generated via NexusBI deterministic rule engine based strictly on computed metrics.*`;
-}
-
-function getSuggestedTablesForDb(serverType: string = 'postgres', database: string = ''): string[] {
-  switch (serverType.toLowerCase()) {
-    case 'postgres':
-    case 'postgresql':
-      return ['orders', 'order_items', 'customers', 'product_catalog', 'inventory_snapshots', 'daily_revenue_facts'];
-    case 'mysql':
-    case 'aurora':
-      return ['subscriptions', 'invoices', 'users', 'payment_attempts', 'mrr_movements', 'churn_events'];
-    case 'mssql':
-    case 'sqlserver':
-      return ['FactSalesQuota', 'DimAccount', 'DimGeography', 'DimProductSubcategory', 'FactInternetSales'];
-    case 'mongodb':
-      return ['telemetry_pings', 'device_metrics', 'fleet_routes', 'sensor_alerts', 'battery_status'];
-    case 'snowflake':
-      return ['CAMPAIGN_ATTRIBUTION_FACTS', 'WEB_TRAFFIC_SESSIONS', 'CONVERSIONS', 'AD_SPEND_DIM', 'CUSTOMER_LTV'];
-    case 'oracle':
-      return ['GL_LEDGER_ENTRIES', 'AP_INVOICES_ALL', 'AR_RECEIVABLES_DAILY', 'HR_EMPLOYEE_HEADCOUNT'];
-    default:
-      return ['live_transactions', 'customers', 'metrics_log', 'analytics_events'];
-  }
-}
-
-function generateLiveDatabaseStream(serverType: string, tableName: string, query?: string, limit: number = 100): Record<string, any>[] {
-  const count = Math.min(Math.max(limit, 10), 500);
-  const rows: Record<string, any>[] = [];
-  const now = Date.now();
-
-  const regions = ['North America', 'EMEA', 'Asia Pacific', 'Latin America'];
-  const categories = ['Enterprise Software', 'Hardware Appliances', 'Cloud Compute', 'Cybersecurity', 'Professional Services'];
-  const channels = ['Direct Enterprise', 'Channel Reseller', 'Self-Serve Inbound', 'Partner Marketplace'];
-  const statuses = ['Completed', 'Completed', 'Completed', 'Processing', 'Flagged for Review'];
-  const paymentMethods = ['Corporate Wire', 'ACH Direct', 'Credit Card', 'Purchase Order 30-Net'];
-
-  for (let i = 1; i <= count; i++) {
-    const ageSeconds = (count - i) * (Math.floor(Math.random() * 45) + 15);
-    const eventTime = new Date(now - ageSeconds * 1000).toISOString();
-    const dateFormatted = eventTime.split('T')[0];
-
-    const category = categories[Math.floor(Math.random() * categories.length)];
-    const region = regions[Math.floor(Math.random() * regions.length)];
-    const channel = channels[Math.floor(Math.random() * channels.length)];
-    const status = statuses[Math.floor(Math.random() * statuses.length)];
-    const paymentMethod = paymentMethods[Math.floor(Math.random() * paymentMethods.length)];
-
-    const units = Math.floor(Math.random() * 25) + 1;
-    const basePrice = Math.floor(Math.random() * 450) + 120;
-    const revenue = Math.round(units * basePrice * (1 + (Math.random() * 0.2 - 0.1)) * 100) / 100;
-    const discount = Math.random() > 0.6 ? Math.round(revenue * (Math.random() * 0.15) * 100) / 100 : 0;
-    const netRevenue = Math.round((revenue - discount) * 100) / 100;
-    const marginRate = 0.42 + (Math.random() * 0.35);
-    const grossProfit = Math.round(netRevenue * marginRate * 100) / 100;
-    const marginPercent = Math.round((grossProfit / netRevenue) * 1000) / 10;
-
-    const row: Record<string, any> = {
-      transaction_id: `TXN-${100000 + i}`,
-      timestamp: eventTime,
-      date: dateFormatted,
-      server_node: `${serverType}-demo-0${(i % 3) + 1}`,
-      region,
-      category,
-      sales_channel: channel,
-      units_sold: units,
-      gross_revenue: revenue,
-      discount_amount: discount,
-      net_revenue: netRevenue,
-      gross_profit: grossProfit,
-      margin_percent: marginPercent,
-      payment_method: paymentMethod,
-      order_status: status,
-      customer_tier: i % 4 === 0 ? 'Enterprise VIP' : i % 2 === 0 ? 'Mid-Market' : 'Growth Tier'
-    };
-
-    rows.push(row);
-  }
-
-  return rows;
 }
 
 startServer().catch((err) => {

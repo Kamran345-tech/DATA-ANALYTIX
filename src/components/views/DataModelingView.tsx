@@ -32,6 +32,7 @@ import {
 import { usePlatform } from '../../store/usePlatformStore';
 import { Relationship, TableSchema } from '../../types';
 import { toast } from '../../store/useToast';
+import { D3SchemaGraph } from '../modeling/D3SchemaGraph';
 
 export const DataModelingView: React.FC = () => {
   const { 
@@ -51,6 +52,7 @@ export const DataModelingView: React.FC = () => {
 
   // Navigation sub-tabs: 'designer' (ERD + Connections) | 'engineer' (DDL & Schema Drift) | 'analyst' (Filter Simulator & DAX)
   const [subTab, setSubTab] = useState<'designer' | 'engineer' | 'analyst'>('designer');
+  const [designerViewMode, setDesignerViewMode] = useState<'d3-graph' | 'card-grid'>('d3-graph');
   const [zoom, setZoom] = useState(1);
   const [focusedTable, setFocusedTable] = useState<string | null>(null);
 
@@ -564,13 +566,57 @@ export const DataModelingView: React.FC = () => {
             </div>
           </div>
 
-          {/* Interactive ERD Canvas */}
-          <div className={`rounded-3xl border p-6 relative overflow-hidden min-h-[580px] ${
-            isLight 
-              ? 'bg-slate-50/70 border-slate-200' 
-              : 'bg-[#0f141f] border-slate-800'
-          }`}>
-            {/* Canvas Zoom Controls */}
+          {/* View Mode Switcher: D3 Interactive Relationship Graph vs Table Column Cards */}
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div className={`p-1 rounded-2xl border flex items-center gap-1 ${
+              isLight ? 'bg-white border-slate-200 shadow-xs' : 'bg-[#151c2a] border-slate-800'
+            }`}>
+              <button
+                onClick={() => setDesignerViewMode('d3-graph')}
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-mono font-bold transition-all cursor-pointer ${
+                  designerViewMode === 'd3-graph'
+                    ? isLight ? 'bg-emerald-600 text-white shadow-xs' : 'bg-emerald-500 text-slate-950 font-extrabold shadow-md shadow-emerald-500/20'
+                    : isLight ? 'text-slate-600 hover:text-slate-900' : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <Network className="w-3.5 h-3.5" />
+                <span>D3 VISUAL RELATIONSHIP GRAPH</span>
+              </button>
+
+              <button
+                onClick={() => setDesignerViewMode('card-grid')}
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-mono font-bold transition-all cursor-pointer ${
+                  designerViewMode === 'card-grid'
+                    ? isLight ? 'bg-emerald-600 text-white shadow-xs' : 'bg-emerald-500 text-slate-950 font-extrabold shadow-md shadow-emerald-500/20'
+                    : isLight ? 'text-slate-600 hover:text-slate-900' : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5" />
+                <span>TABLE COLUMN CARDS</span>
+              </button>
+            </div>
+
+            <div className="text-xs font-mono text-slate-500 dark:text-slate-400 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>D3 Schema Engine: Radial Star & Snowflake Connections Auto-Rendered</span>
+            </div>
+          </div>
+
+          {designerViewMode === 'd3-graph' ? (
+            <D3SchemaGraph
+              dataModel={dataModel}
+              isLight={isLight}
+              onTableSelect={(tableName) => setFocusedTable(tableName)}
+              onAddRelationshipRequest={openNewRelationshipModal}
+            />
+          ) : (
+            /* Interactive ERD Canvas (Classic Column Cards) */
+            <div className={`rounded-3xl border p-6 relative overflow-hidden min-h-[580px] ${
+              isLight 
+                ? 'bg-slate-50/70 border-slate-200' 
+                : 'bg-[#0f141f] border-slate-800'
+            }`}>
+              {/* Canvas Zoom Controls */}
             <div className={`absolute top-4 right-4 flex items-center gap-1.5 p-1 rounded-xl border z-20 backdrop-blur-md ${
               isLight ? 'bg-white/90 border-slate-300 shadow-xs' : 'bg-slate-900/90 border-slate-700'
             }`}>
@@ -842,6 +888,7 @@ export const DataModelingView: React.FC = () => {
               )}
             </div>
           </div>
+          )}
         </div>
       )}
 

@@ -50,7 +50,9 @@ export type NavigationTab =
   | 'export_center'
   | 'how_to_modify'
   | 'settings'
-  | 'blog';
+  | 'blog'
+  | 'pricing'
+  | 'workspaces';
 
 export type TaskMode = 
   | 'excel_cleaning'
@@ -114,6 +116,10 @@ export interface PlatformContextType {
   themeMode: 'dark' | 'light';
   setThemeMode: (mode: 'dark' | 'light') => void;
   toggleThemeMode: () => void;
+
+  // Modern UI/UX Mode ('classic' | 'modern', key: "dataanalytix_ui", default: 'classic')
+  uiMode: 'classic' | 'modern';
+  setUiMode: (mode: 'classic' | 'modern') => void;
 
   // Project & Brand state
   project: ProjectMetadata;
@@ -265,6 +271,40 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   );
   const [isPresentationMode, setIsPresentationMode] = useState(false);
 
+  useEffect(() => {
+    const handleSetTab = (e: any) => {
+      if (e.detail) setCurrentTab(e.detail);
+    };
+    window.addEventListener('dataanalytix:set-tab', handleSetTab);
+    return () => window.removeEventListener('dataanalytix:set-tab', handleSetTab);
+  }, []);
+
+  const [uiMode, setUiModeState] = useState<'classic' | 'modern'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('dataanalytix_ui');
+      if (saved === 'modern' || saved === 'classic') return saved;
+    }
+    return 'classic';
+  });
+
+  useEffect(() => {
+    const handleUiUpdate = (e: any) => {
+      if (e.detail === 'modern' || e.detail === 'classic') {
+        setUiModeState(e.detail);
+      }
+    };
+    window.addEventListener('dataanalytix:ui-updated', handleUiUpdate);
+    return () => window.removeEventListener('dataanalytix:ui-updated', handleUiUpdate);
+  }, []);
+
+  const setUiMode = (mode: 'classic' | 'modern') => {
+    setUiModeState(mode);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('dataanalytix_ui', mode);
+      window.dispatchEvent(new CustomEvent('dataanalytix:ui-updated', { detail: mode }));
+    }
+  };
+
   // Theme mode: 'dark' or 'light'
   const [themeMode, setThemeModeState] = useState<'dark' | 'light'>(() => {
     if (typeof window !== 'undefined') {
@@ -281,9 +321,17 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (mode === 'light') {
         document.documentElement.classList.add('theme-light');
         document.documentElement.classList.remove('theme-dark', 'dark');
+        if (document.body) {
+          document.body.classList.add('theme-light');
+          document.body.classList.remove('theme-dark', 'dark', 'bg-[#0B1120]', 'text-[#F8FAFC]');
+        }
       } else {
         document.documentElement.classList.remove('theme-light');
         document.documentElement.classList.add('theme-dark', 'dark');
+        if (document.body) {
+          document.body.classList.remove('theme-light');
+          document.body.classList.add('theme-dark', 'dark');
+        }
       }
     }
   };
@@ -297,9 +345,17 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (themeMode === 'light') {
         document.documentElement.classList.add('theme-light');
         document.documentElement.classList.remove('theme-dark', 'dark');
+        if (document.body) {
+          document.body.classList.add('theme-light');
+          document.body.classList.remove('theme-dark', 'dark', 'bg-[#0B1120]', 'text-[#F8FAFC]');
+        }
       } else {
         document.documentElement.classList.remove('theme-light');
         document.documentElement.classList.add('theme-dark', 'dark');
+        if (document.body) {
+          document.body.classList.remove('theme-light');
+          document.body.classList.add('theme-dark', 'dark');
+        }
       }
     }
   }, [themeMode]);
@@ -1351,6 +1407,8 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         themeMode,
         setThemeMode,
         toggleThemeMode,
+        uiMode,
+        setUiMode,
         project,
         brand,
         setBrand,

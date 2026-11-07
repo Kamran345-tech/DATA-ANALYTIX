@@ -6,7 +6,14 @@
     <script>
       (function() {
         // Intercept and cleanly handle harmless Vite HMR WebSocket reconnection logs in containerized sandbox
+        // If showAllErrors flag is enabled in localStorage, suppression is bypassed for strict diagnostic routing
         window.addEventListener('unhandledrejection', function(event) {
+          try {
+            var rawFeatures = localStorage.getItem('dataanalytix_features');
+            if (rawFeatures && JSON.parse(rawFeatures).showAllErrors === true) {
+              return; // Strict mode: do not suppress
+            }
+          } catch(e) {}
           var msg = (event && event.reason && (event.reason.message || event.reason.stack || String(event.reason))) || '';
           if (msg.indexOf('WebSocket') !== -1 || msg.indexOf('websocket') !== -1) {
             event.preventDefault();
@@ -14,6 +21,12 @@
           }
         }, true);
         window.addEventListener('error', function(event) {
+          try {
+            var rawFeatures = localStorage.getItem('dataanalytix_features');
+            if (rawFeatures && JSON.parse(rawFeatures).showAllErrors === true) {
+              return; // Strict mode: do not suppress
+            }
+          } catch(e) {}
           var msg = (event && (event.message || String(event))) || '';
           if (msg.indexOf('WebSocket') !== -1 || msg.indexOf('websocket') !== -1) {
             event.preventDefault();

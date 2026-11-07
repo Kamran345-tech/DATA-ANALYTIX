@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@custom-variant dark (&:where(.dark, .dark *, .theme-dark, .theme-dark *));
+@variant dark (&:where(.dark, .dark *, .theme-dark, .theme-dark *));
 
 @layer base {
   :root {
@@ -23,6 +23,31 @@
     --color-neon: #34D399;
     --color-neon-dim: rgba(34, 211, 238, 0.12);
     --color-neon-border: rgba(34, 211, 238, 0.3);
+  }
+
+  :root[data-theme="modern"], .theme-modern {
+    --color-bg-deep: #0B1120;
+    --color-bg-main: #111A2E;
+    --color-bg-slate: #1E293B;
+    --color-bg-card: rgba(30, 41, 59, 0.85);
+    --color-bg-panel: rgba(23, 32, 51, 0.82);
+    --color-bg-elevated: rgba(51, 65, 85, 0.85);
+    --color-bg-hover: rgba(51, 65, 85, 0.95);
+    --color-glass-surface: rgba(255, 255, 255, 0.08);
+    --color-glass-border: rgba(255, 255, 255, 0.15);
+    --color-accent-cyan: #06B6D4;
+    --color-accent-blue: #2563EB;
+    --color-text-primary: #F8FAFC;
+    --color-text-secondary: #94A3B8;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, ::before, ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 
   html, body, #root {
@@ -88,31 +113,42 @@
   background-color: #070D1B;
 }
 
-/* Translucent Glass Card (Standard elevated surface across views) */
+/* Translucent Glass Card (Standard elevated surface across views with 3D depth) */
 .bg-surface-card {
-  background: linear-gradient(145deg, rgba(23, 35, 56, 0.78) 0%, rgba(15, 23, 42, 0.85) 100%);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.12), 0 12px 36px -4px rgba(0, 0, 0, 0.38);
+  background: linear-gradient(155deg, rgba(23, 35, 56, 0.88) 0%, rgba(13, 20, 36, 0.95) 100%);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.18),
+    inset 0 -1px 1px 0 rgba(0, 0, 0, 0.45),
+    0 4px 14px 0 rgba(0, 0, 0, 0.4),
+    0 16px 36px -4px rgba(0, 0, 0, 0.6);
 }
 
 /* Translucent Sub-Panel / Inset Well */
 .bg-surface-panel {
-  background: linear-gradient(145deg, rgba(18, 28, 47, 0.72) 0%, rgba(11, 17, 32, 0.82) 100%);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.10), 0 8px 24px -2px rgba(0, 0, 0, 0.28);
+  background: linear-gradient(155deg, rgba(18, 28, 47, 0.85) 0%, rgba(11, 17, 32, 0.94) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow: 
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 -1px 1px 0 rgba(0, 0, 0, 0.35),
+    0 4px 12px -1px rgba(0, 0, 0, 0.35);
 }
 
 /* Translucent Elevated / Featured Panel */
 .bg-surface-elevated {
-  background: linear-gradient(145deg, rgba(30, 45, 74, 0.76) 0%, rgba(18, 28, 47, 0.85) 100%);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(34, 211, 238, 0.22);
-  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.18), 0 16px 44px -4px rgba(0, 0, 0, 0.45), 0 0 24px -2px rgba(34, 211, 238, 0.12);
+  background: linear-gradient(155deg, rgba(30, 45, 74, 0.88) 0%, rgba(18, 28, 47, 0.95) 100%);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(34, 211, 238, 0.25);
+  box-shadow: 
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -1px 1px 0 rgba(0, 0, 0, 0.45),
+    0 8px 24px -2px rgba(0, 0, 0, 0.5),
+    0 0 20px -2px rgba(34, 211, 238, 0.14);
 }
 
 .border-border-subtle {
@@ -120,7 +156,62 @@
 }
 
 .border-border-prominent {
-  border-color: rgba(34, 211, 238, 0.22);
+  border-color: rgba(34, 211, 238, 0.25);
+}
+
+/* 3D Tactile Card with Lift & Specular Edge */
+.card-3d {
+  position: relative;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease;
+}
+
+.theme-dark .card-3d:hover,
+.dark .card-3d:hover {
+  transform: translateY(-3px);
+  border-color: rgba(34, 211, 238, 0.35) !important;
+  box-shadow: 
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.25),
+    inset 0 -1px 1px 0 rgba(0, 0, 0, 0.5),
+    0 8px 24px -2px rgba(0, 0, 0, 0.5),
+    0 24px 48px -6px rgba(0, 0, 0, 0.7),
+    0 0 24px -2px rgba(34, 211, 238, 0.18) !important;
+}
+
+/* 3D Cylindrical Bar Utility */
+.bar-3d-cylinder {
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
+}
+
+/* 3D Recessed Track Utility */
+.track-3d-recessed {
+  box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.55), inset 0 1px 2px 0 rgba(0, 0, 0, 0.35);
+}
+
+/* 3D Embossed Center Medallion for Donut Charts */
+.medallion-3d {
+  background: radial-gradient(circle at 35% 35%, rgba(30, 45, 74, 0.95) 0%, rgba(11, 17, 32, 0.98) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 
+    inset 0 2px 4px 0 rgba(255, 255, 255, 0.18),
+    inset 0 -3px 6px 0 rgba(0, 0, 0, 0.75),
+    0 6px 18px -2px rgba(0, 0, 0, 0.6);
+}
+
+/* Strict Dark Mode Enforcements (Guarantees Dark Mode Cards Are Never Inadvertently White) */
+.theme-dark .bg-surface-card,
+.dark .bg-surface-card {
+  background: linear-gradient(155deg, rgba(23, 35, 56, 0.88) 0%, rgba(13, 20, 36, 0.95) 100%) !important;
+  color: #F8FAFC !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+.theme-dark .bg-surface-panel,
+.dark .bg-surface-panel {
+  background: linear-gradient(155deg, rgba(18, 28, 47, 0.85) 0%, rgba(11, 17, 32, 0.94) 100%) !important;
+  color: #F8FAFC !important;
+  border-color: rgba(255, 255, 255, 0.09) !important;
 }
 
 /* ========================================================================== */
@@ -589,7 +680,33 @@ html.theme-light body,
 
 .theme-light strong,
 .theme-light b {
-  color: #0f172a;
+  color: #0f172a !important;
+}
+
+/* Guard against dark utility classes rendering pale text in light mode */
+.theme-light [class*="dark:text-slate-100"]:not(.keep-white):not(.glass-btn-primary):not(.glass-btn-primary *),
+.theme-light [class*="dark:text-white"]:not(.keep-white):not(.glass-btn-primary):not(.glass-btn-primary *) {
+  color: #0f172a !important;
+}
+
+.theme-light [class*="dark:text-slate-200"]:not(.keep-white) {
+  color: #1e293b !important;
+}
+
+.theme-light [class*="dark:text-slate-300"]:not(.keep-white) {
+  color: #334155 !important;
+}
+
+.theme-light [class*="dark:text-slate-400"]:not(.keep-white) {
+  color: #475569 !important;
+}
+
+.theme-light [class*="dark:text-cyan-100"]:not(.keep-white) {
+  color: #0c4a6e !important;
+}
+
+.theme-light [class*="dark:text-cyan-300"]:not(.keep-white) {
+  color: #0369a1 !important;
 }
 
 /* Ensure buttons with primary/colored backgrounds have pure white text */

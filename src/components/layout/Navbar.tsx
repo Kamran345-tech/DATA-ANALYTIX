@@ -30,6 +30,8 @@ export const Navbar: React.FC = () => {
     setIsPresentationMode,
     themeMode,
     setThemeMode,
+    uiMode,
+    setUiMode,
     filters,
     setFilters
   } = usePlatform();
@@ -147,6 +149,18 @@ export const Navbar: React.FC = () => {
             <span className="text-[11px] sm:text-xs">Dark</span>
           </button>
         </div>
+
+        {/* Small Classic / Modern Switcher Toggle */}
+        <button
+          type="button"
+          onClick={() => setUiMode(uiMode === 'modern' ? 'classic' : 'modern')}
+          className="glass-btn-secondary flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold cursor-pointer"
+          title={`Switch interface to ${uiMode === 'modern' ? 'Classic' : 'Modern'} mode`}
+          aria-label="Toggle Classic or Modern interface mode"
+        >
+          <span className={`w-2 h-2 rounded-full ${uiMode === 'modern' ? 'bg-sky-400' : 'bg-slate-400'}`} />
+          <span className="hidden sm:inline">{uiMode === 'modern' ? 'Modern' : 'Classic'}</span>
+        </button>
 
         {/* How to Use Platform Guide Button */}
         <Tooltip
