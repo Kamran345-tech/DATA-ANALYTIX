@@ -1,0 +1,554 @@
+{
+  "src/App.tsx": {
+    "textWhite": 2,
+    "textGray": 1,
+    "textSlate": 5,
+    "bgSlate": 0,
+    "inlineHex": 11,
+    "inlineRgb": 0
+  },
+  "src/components/auth/DataCanvasAnimation.tsx": {
+    "textWhite": 0,
+    "textGray": 0,
+    "textSlate": 0,
+    "bgSlate": 0,
+    "inlineHex": 5,
+    "inlineRgb": 11
+  },
+  "src/components/charts/InteractiveCharts.tsx": {
+    "textWhite": 43,
+    "textGray": 87,
+    "textSlate": 17,
+    "bgSlate": 2,
+    "inlineHex": 302,
+    "inlineRgb": 6
+  },
+  "src/components/common/AuthModal.tsx": {
+    "textWhite": 11,
+    "textGray": 0,
+    "textSlate": 31,
+    "bgSlate": 4,
+    "inlineHex": 23,
+    "inlineRgb": 0
+  },
+  "src/components/common/BrandLogo.tsx": {
+    "textWhite": 2,
+    "textGray": 0,
+    "textSlate": 6,
+    "bgSlate": 0,
+    "inlineHex": 17,
+    "inlineRgb": 0
+  },
+  "src/components/common/ColabNotebookModal.tsx": {
+    "textWhite": 5,
+    "textGray": 9,
+    "textSlate": 0,
+    "bgSlate": 0,
+    "inlineHex": 29,
+    "inlineRgb": 0
+  },
+  "src/components/common/ColumnMappingModal.tsx": {
+    "textWhite": 4,
+    "textGray": 0,
+    "textSlate": 6,
+    "bgSlate": 2,
+    "inlineHex": 7,
+    "inlineRgb": 0
+  },
+  "src/components/common/CookieBanner.tsx": {
+    "textWhite": 0,
+    "textGray": 0,
+    "textSlate": 0,
+    "bgSlate": 0,
+    "inlineHex": 0,
+    "inlineRgb": 0
+  },
+  "src/components/common/DrillThroughModal.tsx": {
+    "textWhite": 33,
+    "textGray": 50,
+    "textSlate": 0,
+    "bgSlate": 0,
+    "inlineHex": 91,
+    "inlineRgb": 0
+  },
+  "src/components/common/EditableAnalystName.tsx": {
+    "textWhite": 2,
+    "textGray": 2,
+    "textSlate": 4,
+    "bgSlate": 3,
+    "inlineHex": 5,
+    "inlineRgb": 0
+  },
+  "src/components/common/EditableDashboardTitle.tsx": {
+    "textWhite": 4,
+    "textGray": 7,
+    "textSlate": 9,
+    "bgSlate": 5,
+    "inlineHex": 10,
+    "inlineRgb": 0
+  },
+  "src/components/common/ErrorBoundary.tsx": {
+    "textWhite": 2,
+    "textGray": 0,
+    "textSlate": 3,
+    "bgSlate": 0,
+    "inlineHex": 16,
+    "inlineRgb": 0
+  },
+  "src/components/common/ExecutivePresentationDeck.tsx": {
+    "textWhite": 4,
+    "textGray": 21,
+    "textSlate": 14,
+    "bgSlate": 18,
+    "inlineHex": 64,
+    "inlineRgb": 0
+  },
+  "src/components/common/GlobalFilterBar.tsx": {
+    "textWhite": 5,
+    "textGray": 10,
+    "textSlate": 15,
+    "bgSlate": 3,
+    "inlineHex": 17,
+    "inlineRgb": 0
+  },
+  "src/components/common/InteractiveSlicersBar.tsx": {
+    "textWhite": 11,
+    "textGray": 33,
+    "textSlate": 48,
+    "bgSlate": 17,
+    "inlineHex": 44,
+    "inlineRgb": 0
+  },
+  "src/components/common/KpiCardEditorModal.tsx": {
+    "textWhite": 5,
+    "textGray": 6,
+    "textSlate": 0,
+    "bgSlate": 0,
+    "inlineHex": 28,
+    "inlineRgb": 0
+  },
+  "src/components/common/SkeletonCard.tsx": {
+    "textWhite": 0,
+    "textGray": 0,
+    "textSlate": 0,
+    "bgSlate": 3,
+    "inlineHex": 1,
+    "inlineRgb": 0
+  },
+  "src/components/common/TaskModeSelector.tsx": {
+    "textWhite": 6,
+    "textGray": 0,
+    "textSlate": 8,
+    "bgSlate": 0,
+    "inlineHex": 0,
+    "inlineRgb": 0
+  },
+  "src/components/common/ToastContainer.tsx": {
+    "textWhite": 2,
+    "textGray": 0,
+    "textSlate": 10,
+    "bgSlate": 7,
+    "inlineHex": 11,
+    "inlineRgb": 0
+  },
+  "src/components/common/Tooltip.tsx": {
+    "textWhite": 1,
+    "textGray": 2,
+    "textSlate": 3,
+    "bgSlate": 0,
+    "inlineHex": 7,
+    "inlineRgb": 0
+  },
+  "src/components/common/VerifiedAiCard.tsx": {
+    "textWhite": 0,
+    "textGray": 0,
+    "textSlate": 5,
+    "bgSlate": 1,
+    "inlineHex": 1,
+    "inlineRgb": 0
+  },
+  "src/components/layout/GroupedSidebar.tsx": {
+    "textWhite": 1,
+    "textGray": 0,
+    "textSlate": 0,
+    "bgSlate": 0,
+    "inlineHex": 0,
+    "inlineRgb": 0
+  },
+  "src/components/layout/Navbar.tsx": {
+    "textWhite": 3,
+    "textGray": 8,
+    "textSlate": 12,
+    "bgSlate": 3,
+    "inlineHex": 1,
+    "inlineRgb": 0
+  },
+  "src/components/layout/Sidebar.tsx": {
+    "textWhite": 5,
+    "textGray": 1,
+    "textSlate": 28,
+    "bgSlate": 6,
+    "inlineHex": 4,
+    "inlineRgb": 0
+  },
+  "src/components/modeling/D3SchemaGraph.tsx": {
+    "textWhite": 4,
+    "textGray": 0,
+    "textSlate": 63,
+    "bgSlate": 46,
+    "inlineHex": 61,
+    "inlineRgb": 14
+  },
+  "src/components/modern/Hero3DScene.tsx": {
+    "textWhite": 0,
+    "textGray": 0,
+    "textSlate": 0,
+    "bgSlate": 0,
+    "inlineHex": 24,
+    "inlineRgb": 4
+  },
+  "src/components/modern/ModernCommandPalette.tsx": {
+    "textWhite": 1,
+    "textGray": 0,
+    "textSlate": 0,
+    "bgSlate": 0,
+    "inlineHex": 0,
+    "inlineRgb": 0
+  },
+  "src/components/modern/ModernEmptyState.tsx": {
+    "textWhite": 0,
+    "textGray": 0,
+    "textSlate": 0,
+    "bgSlate": 0,
+    "inlineHex": 0,
+    "inlineRgb": 0
+  },
+  "src/components/modern/ModernFilterBar.tsx": {
+    "textWhite": 0,
+    "textGray": 0,
+    "textSlate": 0,
+    "bgSlate": 0,
+    "inlineHex": 0,
+    "inlineRgb": 0
+  },
+  "src/components/modern/ModernKpiCard.tsx": {
+    "textWhite": 0,
+    "textGray": 0,
+    "textSlate": 0,
+    "bgSlate": 0,
+    "inlineHex": 0,
+    "inlineRgb": 0
+  },
+  "src/components/modern/ModernMobileBottomNav.tsx": {
+    "textWhite": 0,
+    "textGray": 0,
+    "textSlate": 0,
+    "bgSlate": 0,
+    "inlineHex": 0,
+    "inlineRgb": 0
+  },
+  "src/components/modern/ModernNavbar.tsx": {
+    "textWhite": 1,
+    "textGray": 0,
+    "textSlate": 0,
+    "bgSlate": 0,
+    "inlineHex": 0,
+    "inlineRgb": 0
+  },
+  "src/components/modern/ModernOnboardingChecklist.tsx": {
+    "textWhite": 0,
+    "textGray": 0,
+    "textSlate": 0,
+    "bgSlate": 0,
+    "inlineHex": 0,
+    "inlineRgb": 0
+  },
+  "src/components/modern/ModernPageHeader.tsx": {
+    "textWhite": 0,
+    "textGray": 0,
+    "textSlate": 0,
+    "bgSlate": 0,
+    "inlineHex": 0,
+    "inlineRgb": 0
+  },
+  "src/components/modern/ModernSidebar.tsx": {
+    "textWhite": 0,
+    "textGray": 0,
+    "textSlate": 0,
+    "bgSlate": 0,
+    "inlineHex": 0,
+    "inlineRgb": 0
+  },
+  "src/components/modern/ModernTable.tsx": {
+    "textWhite": 0,
+    "textGray": 0,
+    "textSlate": 0,
+    "bgSlate": 0,
+    "inlineHex": 0,
+    "inlineRgb": 0
+  },
+  "src/components/modern/ModernWelcome.tsx": {
+    "textWhite": 0,
+    "textGray": 0,
+    "textSlate": 0,
+    "bgSlate": 0,
+    "inlineHex": 0,
+    "inlineRgb": 0
+  },
+  "src/components/views/AnalysisView.tsx": {
+    "textWhite": 0,
+    "textGray": 0,
+    "textSlate": 0,
+    "bgSlate": 0,
+    "inlineHex": 0,
+    "inlineRgb": 0
+  },
+  "src/components/views/AskDataAIView.tsx": {
+    "textWhite": 2,
+    "textGray": 6,
+    "textSlate": 0,
+    "bgSlate": 0,
+    "inlineHex": 27,
+    "inlineRgb": 0
+  },
+  "src/components/views/BlogView.tsx": {
+    "textWhite": 0,
+    "textGray": 0,
+    "textSlate": 0,
+    "bgSlate": 0,
+    "inlineHex": 0,
+    "inlineRgb": 0
+  },
+  "src/components/views/DAXLabView.tsx": {
+    "textWhite": 3,
+    "textGray": 0,
+    "textSlate": 0,
+    "bgSlate": 0,
+    "inlineHex": 0,
+    "inlineRgb": 0
+  },
+  "src/components/views/DashboardBuilderView.tsx": {
+    "textWhite": 52,
+    "textGray": 41,
+    "textSlate": 96,
+    "bgSlate": 34,
+    "inlineHex": 246,
+    "inlineRgb": 1
+  },
+  "src/components/views/DataCleaningLabView.tsx": {
+    "textWhite": 12,
+    "textGray": 3,
+    "textSlate": 5,
+    "bgSlate": 0,
+    "inlineHex": 5,
+    "inlineRgb": 0
+  },
+  "src/components/views/DataDictionaryLineageView.tsx": {
+    "textWhite": 10,
+    "textGray": 11,
+    "textSlate": 0,
+    "bgSlate": 0,
+    "inlineHex": 19,
+    "inlineRgb": 0
+  },
+  "src/components/views/DataEngineeringSuite.tsx": {
+    "textWhite": 4,
+    "textGray": 9,
+    "textSlate": 14,
+    "bgSlate": 11,
+    "inlineHex": 36,
+    "inlineRgb": 0
+  },
+  "src/components/views/DataModelingView.tsx": {
+    "textWhite": 0,
+    "textGray": 0,
+    "textSlate": 0,
+    "bgSlate": 0,
+    "inlineHex": 0,
+    "inlineRgb": 0
+  },
+  "src/components/views/DataPreviewView.tsx": {
+    "textWhite": 13,
+    "textGray": 0,
+    "textSlate": 97,
+    "bgSlate": 20,
+    "inlineHex": 0,
+    "inlineRgb": 0
+  },
+  "src/components/views/DataQualityView.tsx": {
+    "textWhite": 0,
+    "textGray": 0,
+    "textSlate": 0,
+    "bgSlate": 0,
+    "inlineHex": 0,
+    "inlineRgb": 0
+  },
+  "src/components/views/ExcelAutomationView.tsx": {
+    "textWhite": 11,
+    "textGray": 0,
+    "textSlate": 46,
+    "bgSlate": 11,
+    "inlineHex": 0,
+    "inlineRgb": 0
+  },
+  "src/components/views/ExecutiveDashboard.tsx": {
+    "textWhite": 17,
+    "textGray": 5,
+    "textSlate": 214,
+    "bgSlate": 39,
+    "inlineHex": 110,
+    "inlineRgb": 12
+  },
+  "src/components/views/ExportCenterView.tsx": {
+    "textWhite": 0,
+    "textGray": 0,
+    "textSlate": 1,
+    "bgSlate": 0,
+    "inlineHex": 0,
+    "inlineRgb": 0
+  },
+  "src/components/views/HowToModifyView.tsx": {
+    "textWhite": 2,
+    "textGray": 2,
+    "textSlate": 0,
+    "bgSlate": 0,
+    "inlineHex": 12,
+    "inlineRgb": 0
+  },
+  "src/components/views/HowToUseView.tsx": {
+    "textWhite": 16,
+    "textGray": 22,
+    "textSlate": 39,
+    "bgSlate": 11,
+    "inlineHex": 36,
+    "inlineRgb": 0
+  },
+  "src/components/views/LandingPage.tsx": {
+    "textWhite": 6,
+    "textGray": 0,
+    "textSlate": 60,
+    "bgSlate": 11,
+    "inlineHex": 63,
+    "inlineRgb": 1
+  },
+  "src/components/views/LiveServerConnectorView.tsx": {
+    "textWhite": 20,
+    "textGray": 33,
+    "textSlate": 0,
+    "bgSlate": 0,
+    "inlineHex": 98,
+    "inlineRgb": 0
+  },
+  "src/components/views/LoginPage.tsx": {
+    "textWhite": 1,
+    "textGray": 0,
+    "textSlate": 9,
+    "bgSlate": 2,
+    "inlineHex": 6,
+    "inlineRgb": 0
+  },
+  "src/components/views/NotFoundView.tsx": {
+    "textWhite": 0,
+    "textGray": 0,
+    "textSlate": 0,
+    "bgSlate": 0,
+    "inlineHex": 0,
+    "inlineRgb": 0
+  },
+  "src/components/views/PricingView.tsx": {
+    "textWhite": 0,
+    "textGray": 0,
+    "textSlate": 0,
+    "bgSlate": 0,
+    "inlineHex": 0,
+    "inlineRgb": 0
+  },
+  "src/components/views/PublicLandingView.tsx": {
+    "textWhite": 11,
+    "textGray": 0,
+    "textSlate": 8,
+    "bgSlate": 5,
+    "inlineHex": 2,
+    "inlineRgb": 3
+  },
+  "src/components/views/PythonLabView.tsx": {
+    "textWhite": 0,
+    "textGray": 0,
+    "textSlate": 0,
+    "bgSlate": 0,
+    "inlineHex": 0,
+    "inlineRgb": 0
+  },
+  "src/components/views/ReportsView.tsx": {
+    "textWhite": 0,
+    "textGray": 18,
+    "textSlate": 0,
+    "bgSlate": 0,
+    "inlineHex": 5,
+    "inlineRgb": 0
+  },
+  "src/components/views/SQLLabView.tsx": {
+    "textWhite": 0,
+    "textGray": 0,
+    "textSlate": 0,
+    "bgSlate": 0,
+    "inlineHex": 0,
+    "inlineRgb": 0
+  },
+  "src/components/views/SettingsView.tsx": {
+    "textWhite": 0,
+    "textGray": 0,
+    "textSlate": 0,
+    "bgSlate": 2,
+    "inlineHex": 1,
+    "inlineRgb": 0
+  },
+  "src/components/views/UploadIngestionView.tsx": {
+    "textWhite": 9,
+    "textGray": 0,
+    "textSlate": 37,
+    "bgSlate": 19,
+    "inlineHex": 0,
+    "inlineRgb": 0
+  },
+  "src/components/views/WorkspacesView.tsx": {
+    "textWhite": 0,
+    "textGray": 0,
+    "textSlate": 0,
+    "bgSlate": 0,
+    "inlineHex": 0,
+    "inlineRgb": 0
+  },
+  "src/main.tsx": {
+    "textWhite": 0,
+    "textGray": 0,
+    "textSlate": 0,
+    "bgSlate": 0,
+    "inlineHex": 0,
+    "inlineRgb": 0
+  },
+  "src/store/useFirebaseAuth.tsx": {
+    "textWhite": 0,
+    "textGray": 0,
+    "textSlate": 0,
+    "bgSlate": 0,
+    "inlineHex": 0,
+    "inlineRgb": 0
+  },
+  "src/store/usePlatformStore.tsx": {
+    "textWhite": 0,
+    "textGray": 0,
+    "textSlate": 0,
+    "bgSlate": 0,
+    "inlineHex": 3,
+    "inlineRgb": 0
+  },
+  "src/store/useToast.tsx": {
+    "textWhite": 0,
+    "textGray": 0,
+    "textSlate": 0,
+    "bgSlate": 0,
+    "inlineHex": 0,
+    "inlineRgb": 0
+  }
+}

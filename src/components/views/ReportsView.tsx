@@ -386,17 +386,17 @@ export const ReportsView: React.FC = () => {
     <div className="space-y-6 pb-16 animate-fadeIn max-w-4xl mx-auto">
       {/* Toast Notification */}
       {downloadSuccess && (
-        <div className="fixed top-20 right-6 z-50 bg-[#0f2130] border border-cyan-400 text-cyan-300 px-4 py-2.5 rounded-xl text-xs font-semibold shadow-xl flex items-center gap-2 animate-bounce">
-          <Check className="w-4 h-4 text-cyan-400" />
+        <div className="fixed top-20 right-6 z-50 bg-elevated border border-strong text-accent px-4 py-2.5 rounded-xl text-xs font-semibold shadow-xl flex items-center gap-2 animate-bounce">
+          <Check className="w-4 h-4 text-accent" />
           <span>{downloadSuccess}</span>
         </div>
       )}
 
       {/* Action Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 glass-card border border-white/10 dark:border-white/10 rounded-2xl p-4 print:hidden">
-        <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-gray-400">
-          <FileSpreadsheet className="w-4 h-4 text-sky-600 dark:text-cyan-400" />
-          <span className="font-medium text-slate-700 dark:text-slate-300">Presentation-Ready Executive Report Layout</span>
+      <div className="flex flex-wrap items-center justify-between gap-3 glass-card border border-subtle rounded-2xl p-4 print:hidden">
+        <div className="flex items-center gap-2 text-xs text-secondary">
+          <FileSpreadsheet className="w-4 h-4 text-accent" />
+          <span className="font-medium text-primary">Presentation-Ready Executive Report Layout</span>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -406,7 +406,7 @@ export const ReportsView: React.FC = () => {
             className="glass-btn-secondary flex items-center gap-1.5 px-3 py-2 rounded-xl font-medium text-xs transition-all cursor-pointer"
             title="Customize report document heading and all section titles"
           >
-            <Pencil className="w-3.5 h-3.5 text-sky-600 dark:text-cyan-400" />
+            <Pencil className="w-3.5 h-3.5 text-accent" />
             <span>Customize Headings</span>
           </button>
 
@@ -418,7 +418,7 @@ export const ReportsView: React.FC = () => {
             title="Download both the created dashboard and executive report in a single ZIP package"
           >
             {isBundleGenerating ? (
-              <Loader2 className="w-4 h-4 animate-spin text-white shrink-0" />
+              <Loader2 className="w-4 h-4 animate-spin text-on-accent shrink-0" />
             ) : (
               <Package className="w-4 h-4 stroke-[2.5] shrink-0" />
             )}
@@ -433,9 +433,9 @@ export const ReportsView: React.FC = () => {
             title="Download Executive PDF Report"
           >
             {isPdfGenerating ? (
-              <Loader2 className="w-4 h-4 animate-spin text-rose-400" />
+              <Loader2 className="w-4 h-4 animate-spin text-danger" />
             ) : (
-              <Download className="w-4 h-4 text-sky-600 dark:text-cyan-400" />
+              <Download className="w-4 h-4 text-accent" />
             )}
             <span>Executive Report (PDF)</span>
           </button>
@@ -453,7 +453,7 @@ export const ReportsView: React.FC = () => {
             onClick={handlePrint}
             className="glass-btn-secondary flex items-center gap-1.5 px-3.5 py-2 rounded-xl font-medium text-xs transition-all cursor-pointer"
           >
-            <Printer className="w-4 h-4 text-slate-500" /> Print Preview
+            <Printer className="w-4 h-4 text-muted" /> Print Preview
           </button>
         </div>
       </div>
@@ -464,15 +464,15 @@ export const ReportsView: React.FC = () => {
       </div>
 
       {/* Printable Report Document */}
-      <div className={`${isLight ? 'bg-white border-slate-200 text-slate-900 shadow-xl' : 'bg-[#171717] border-[#333] text-white shadow-2xl'} rounded-3xl p-8 sm:p-12 space-y-10 print:bg-white print:text-black print:border-none print:shadow-none print:p-0`}>
+      <div className="bg-card border border-subtle text-primary shadow-xl rounded-3xl p-8 sm:p-12 space-y-10 print:bg-white print:text-black print:border-none print:shadow-none print:p-0">
         {/* Document Header */}
-        <div className={`border-b ${isLight ? 'border-slate-200' : 'border-[#333]'} pb-8 flex flex-wrap items-start justify-between gap-6 print:border-gray-300`}>
+        <div className="border-b border-subtle pb-8 flex flex-wrap items-start justify-between gap-6 print:border-gray-300">
           <div className="space-y-2 flex-1 min-w-[280px]">
             <div className="flex items-center gap-2">
-              <span className={`font-heading text-xl font-bold tracking-wider ${isLight ? 'text-slate-900' : 'text-white'} print:text-black`}>
+              <span className="font-heading text-xl font-bold tracking-wider text-primary print:text-black">
                 {brand.companyName}
               </span>
-              <span className={`text-xs ${isLight ? 'text-sky-700 font-bold' : 'text-cyan-400'} print:text-sky-700 font-mono`}>
+              <span className="text-xs text-accent font-bold print:text-sky-700 font-mono">
                 • {brand.department}
               </span>
             </div>
@@ -490,18 +490,18 @@ export const ReportsView: React.FC = () => {
                       if (e.key === 'Escape') handleCancelInlineEdit();
                     }}
                     autoFocus
-                    className={`flex-1 px-3 py-1.5 ${isLight ? 'bg-white border-sky-500 text-slate-900' : 'bg-[#121212] border-cyan-400 text-white'} border rounded-lg text-2xl font-extrabold uppercase focus:outline-none focus:ring-2 focus:ring-sky-500`}
+                    className="flex-1 px-3 py-1.5 bg-input border border-strong text-primary rounded-lg text-2xl font-extrabold uppercase focus:outline-none focus:ring-2 focus:ring-teal-500"
                   />
                   <button
                     onClick={handleSaveInlineEdit}
-                    className="p-2 bg-sky-600 hover:bg-sky-500 text-white rounded-lg shadow-xs"
+                    className="p-2 bg-accent hover:opacity-90 text-on-accent rounded-lg shadow-xs"
                     title="Save title"
                   >
                     <Check className="w-4 h-4 stroke-[3]" />
                   </button>
                   <button
                     onClick={handleCancelInlineEdit}
-                    className={`p-2 ${isLight ? 'bg-slate-200 text-slate-700 hover:bg-slate-300' : 'bg-[#2a2a2a] text-gray-300 hover:bg-[#333]'} rounded-lg`}
+                    className="p-2 bg-input text-secondary hover:bg-card-hover rounded-lg"
                     title="Cancel"
                   >
                     <X className="w-4 h-4" />
@@ -509,12 +509,12 @@ export const ReportsView: React.FC = () => {
                 </div>
               ) : (
                 <div className="flex items-center gap-2.5 flex-wrap">
-                  <h1 className={`font-heading text-3xl sm:text-4xl lg:text-5xl font-extrabold ${isLight ? 'text-slate-900' : 'text-white'} print:text-black tracking-wide uppercase`}>
+                  <h1 className="font-heading text-3xl sm:text-4xl lg:text-5xl font-extrabold text-primary print:text-black tracking-wide uppercase">
                     {reportHeadings.mainTitle || 'EXECUTIVE INTELLIGENCE BRIEF'}
                   </h1>
                   <button
                     onClick={() => handleStartInlineEdit('mainTitle')}
-                    className={`p-1.5 rounded-lg ${isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-600' : 'bg-[#242424] hover:bg-[#333] text-gray-400'} hover:text-sky-600 transition-colors print:hidden opacity-70 group-hover:opacity-100`}
+                    className="p-1.5 rounded-lg bg-input hover:bg-card-hover text-secondary hover:text-accent transition-colors print:hidden opacity-70 group-hover:opacity-100"
                     title="Change main report title"
                   >
                     <Pencil className="w-4 h-4" />
@@ -526,16 +526,16 @@ export const ReportsView: React.FC = () => {
             <div className="print:hidden py-1">
               <EditableDashboardTitle className="text-base font-semibold" showLabelPrefix={true} />
             </div>
-            <p className={`text-xs ${isLight ? 'text-slate-600' : 'text-gray-400'} print:text-gray-600`}>
-              Project: <span className={`${isLight ? 'text-slate-900' : 'text-gray-200'} print:text-black font-medium`}>{project.name}</span> • Dataset: <span className={`font-mono ${isLight ? 'text-slate-700' : 'text-gray-300'} print:text-black`}>{project.sourceFileName}</span>
+            <p className="text-xs text-secondary print:text-gray-600">
+              Project: <span className="text-primary print:text-black font-medium">{project.name}</span> • Dataset: <span className="font-mono text-secondary print:text-black">{project.sourceFileName}</span>
             </p>
           </div>
 
-          <div className={`text-right text-xs ${isLight ? 'text-slate-600' : 'text-gray-400'} print:text-gray-600 space-y-1`}>
-            <div>Date: <strong className={`${isLight ? 'text-slate-900' : 'text-white'} print:text-black font-mono`}>{new Date().toLocaleDateString()}</strong></div>
-            <div>Author: <strong className={`${isLight ? 'text-slate-900' : 'text-white'} print:text-black`}>{brand.author}</strong></div>
+          <div className="text-right text-xs text-secondary print:text-gray-600 space-y-1">
+            <div>Date: <strong className="text-primary print:text-black font-mono">{new Date().toLocaleDateString()}</strong></div>
+            <div>Author: <strong className="text-primary print:text-black">{brand.author}</strong></div>
             <div>Version: <span className="font-mono">{project.version}</span></div>
-            <div className={`${isLight ? 'text-sky-700 font-bold' : 'text-cyan-400 font-semibold'} print:text-sky-700`}>
+            <div className="text-accent font-bold print:text-sky-700">
               Quality Audit: {qualityReport.overallScore}%
             </div>
           </div>
@@ -555,19 +555,19 @@ export const ReportsView: React.FC = () => {
                     if (e.key === 'Escape') handleCancelInlineEdit();
                   }}
                   autoFocus
-                  className={`px-3 py-1 ${isLight ? 'bg-white border-sky-500 text-slate-900' : 'bg-[#121212] border-cyan-400 text-cyan-300'} border rounded-lg text-lg font-bold uppercase focus:outline-none`}
+                  className="px-3 py-1 bg-input border border-strong text-primary rounded-lg text-lg font-bold uppercase focus:outline-none"
                 />
-                <button onClick={handleSaveInlineEdit} className="p-1.5 bg-sky-600 text-white rounded"><Check className="w-3.5 h-3.5" /></button>
-                <button onClick={handleCancelInlineEdit} className={`p-1.5 ${isLight ? 'bg-slate-200 text-slate-700' : 'bg-[#2a2a2a] text-gray-300'} rounded`}><X className="w-3.5 h-3.5" /></button>
+                <button onClick={handleSaveInlineEdit} className="p-1.5 bg-accent text-on-accent rounded"><Check className="w-3.5 h-3.5" /></button>
+                <button onClick={handleCancelInlineEdit} className="p-1.5 bg-input text-secondary rounded"><X className="w-3.5 h-3.5" /></button>
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <h2 className={`font-heading text-xl sm:text-2xl font-bold ${isLight ? 'text-sky-900' : 'text-cyan-400'} print:text-sky-800 uppercase tracking-wide`}>
+                <h2 className="font-heading text-xl sm:text-2xl font-bold text-accent print:text-sky-800 uppercase tracking-wide">
                   {reportHeadings.section1 || '1. EXECUTIVE SUMMARY & BUSINESS HEALTH'}
                 </h2>
                 <button
                   onClick={() => handleStartInlineEdit('section1')}
-                  className={`p-1 ${isLight ? 'text-slate-400 hover:text-sky-600' : 'text-gray-500 hover:text-cyan-400'} opacity-60 group-hover:opacity-100 transition-opacity print:hidden`}
+                  className="p-1 text-muted hover:text-accent opacity-60 group-hover:opacity-100 transition-opacity print:hidden"
                   title="Change Section 1 Heading"
                 >
                   <Pencil className="w-3.5 h-3.5" />
@@ -576,14 +576,14 @@ export const ReportsView: React.FC = () => {
             )}
           </div>
 
-          <div className={`p-5 rounded-2xl ${isLight ? 'bg-slate-50 border-slate-200 text-slate-800' : 'bg-[#1c1c1c] border-[#2a2a2a] text-gray-300'} print:bg-gray-50 border print:border-gray-200 text-xs print:text-gray-800 leading-relaxed space-y-2`}>
+          <div className="p-5 rounded-2xl bg-input border border-subtle text-secondary print:bg-gray-50 print:border-gray-200 text-xs print:text-gray-800 leading-relaxed space-y-2">
             <p>
-              This report provides a verified assessment based on <strong>{effectiveRows.length.toLocaleString()}</strong>
-              {isFiltered && ` (filtered from ${cleanRows.length.toLocaleString()} total)`} audited transaction records. Overall data health scored <strong>{qualityReport.overallScore}%</strong> on completeness, validity, and uniqueness.
+              This report provides a verified assessment based on <strong className="text-primary">{effectiveRows.length.toLocaleString()}</strong>
+              {isFiltered && ` (filtered from ${cleanRows.length.toLocaleString()} total)`} audited transaction records. Overall data health scored <strong className="text-primary">{qualityReport.overallScore}%</strong> on completeness, validity, and uniqueness.
             </p>
             {analytics.businessHealthScore && (
               <p>
-                Business Health Index is rated <strong>{analytics.businessHealthScore.rating} ({analytics.businessHealthScore.score}/100)</strong> based on metric pacing and anomaly thresholds.
+                Business Health Index is rated <strong className="text-primary">{analytics.businessHealthScore.rating} ({analytics.businessHealthScore.score}/100)</strong> based on metric pacing and anomaly thresholds.
               </p>
             )}
           </div>
@@ -603,19 +603,19 @@ export const ReportsView: React.FC = () => {
                     if (e.key === 'Escape') handleCancelInlineEdit();
                   }}
                   autoFocus
-                  className="px-3 py-1 bg-[#121212] border border-cyan-400 text-cyan-300 rounded-lg text-lg font-bold uppercase focus:outline-none"
+                  className="px-3 py-1 bg-input border border-strong text-primary rounded-lg text-lg font-bold uppercase focus:outline-none"
                 />
-                <button onClick={handleSaveInlineEdit} className="p-1.5 bg-sky-600 text-white rounded"><Check className="w-3.5 h-3.5" /></button>
-                <button onClick={handleCancelInlineEdit} className="p-1.5 bg-[#2a2a2a] text-gray-300 rounded"><X className="w-3.5 h-3.5" /></button>
+                <button onClick={handleSaveInlineEdit} className="p-1.5 bg-accent text-on-accent rounded"><Check className="w-3.5 h-3.5" /></button>
+                <button onClick={handleCancelInlineEdit} className="p-1.5 bg-input text-secondary rounded"><X className="w-3.5 h-3.5" /></button>
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <h2 className="font-heading text-xl sm:text-2xl font-bold text-cyan-400 print:text-sky-800 uppercase tracking-wide">
+                <h2 className="font-heading text-xl sm:text-2xl font-bold text-accent print:text-sky-800 uppercase tracking-wide">
                   {reportHeadings.section2 || '2. KEY PERFORMANCE INDICATORS'}
                 </h2>
                 <button
                   onClick={() => handleStartInlineEdit('section2')}
-                  className="p-1 text-gray-500 hover:text-cyan-400 opacity-60 group-hover:opacity-100 transition-opacity print:hidden"
+                  className="p-1 text-muted hover:text-accent opacity-60 group-hover:opacity-100 transition-opacity print:hidden"
                   title="Change Section 2 Heading"
                 >
                   <Pencil className="w-3.5 h-3.5" />
@@ -625,25 +625,25 @@ export const ReportsView: React.FC = () => {
 
             {/* Quick KPI Customizer Trigger */}
             <div className="flex items-center gap-2 print:hidden">
-              <span className="text-[11px] text-gray-400 font-mono">
+              <span className="text-[11px] text-secondary font-mono">
                 {reportKpis.length} Metrics Analyzed
                 {isFiltered && ` (${effectiveRows.length.toLocaleString()} rows)`}
               </span>
               <button
                 type="button"
                 onClick={() => setEditingKpi(analytics.kpis[0] || null)}
-                className="px-2.5 py-1 rounded-lg bg-[#242424] hover:bg-[#333] text-gray-200 hover:text-cyan-400 text-xs font-medium border border-[#333] hover:border-cyan-500/40 flex items-center gap-1.5 transition-all shadow-xs"
+                className="px-2.5 py-1 rounded-lg bg-input hover:bg-card-hover text-primary hover:text-accent text-xs font-medium border border-subtle hover:border-strong flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
                 title="Change metric headings, columns, and aggregation formulas"
               >
-                <Sliders className="w-3 h-3 text-cyan-400" />
+                <Sliders className="w-3 h-3 text-accent" />
                 <span>Customize Metrics & Formulas</span>
               </button>
             </div>
           </div>
 
-          <div className={`overflow-x-auto rounded-xl border ${isLight ? 'border-slate-200 bg-white' : 'border-[#2a2a2a] bg-[#141414]'} print:border-gray-200`}>
+          <div className="overflow-x-auto rounded-xl border border-subtle bg-card print:border-gray-200">
             <table className="w-full text-left text-xs">
-              <thead className={`${isLight ? 'bg-slate-100 text-slate-700 border-slate-200' : 'bg-[#141414] text-gray-400 border-[#2a2a2a]'} uppercase font-mono border-b print:bg-gray-100 print:border-gray-300`}>
+              <thead className="bg-input text-secondary border-subtle uppercase font-mono border-b print:bg-gray-100 print:border-gray-300">
                 <tr>
                   <th className="p-3">Metric Heading</th>
                   <th className="p-3">Current Value</th>
@@ -654,41 +654,41 @@ export const ReportsView: React.FC = () => {
                   <th className="p-3 text-right print:hidden">Edit</th>
                 </tr>
               </thead>
-              <tbody className={`divide-y ${isLight ? 'divide-slate-200' : 'divide-[#222]'} print:divide-gray-200 font-mono`}>
+              <tbody className="divide-y divide-[var(--border-subtle)] print:divide-gray-200 font-mono">
                 {reportKpis.map(k => (
-                  <tr key={k.id} className={`${isLight ? 'text-slate-800 hover:bg-slate-50' : 'text-gray-300 hover:bg-[#1f1f1f]/60'} print:text-black print:hover:bg-transparent`}>
+                  <tr key={k.id} className="text-secondary hover:bg-card-hover print:text-black print:hover:bg-transparent">
                     <td className="p-3 font-bold font-sans flex items-center gap-2">
-                      <span className={isLight ? 'text-slate-900 font-bold' : 'text-white'}>{k.name}</span>
-                      <span className={`text-[10px] ${isLight ? 'text-slate-500' : 'text-gray-500'} font-mono uppercase`}>[{k.aggregation}]</span>
+                      <span className="text-primary font-bold">{k.name}</span>
+                      <span className="text-[10px] text-muted font-mono uppercase">[{k.aggregation}]</span>
                     </td>
-                    <td className={`p-3 ${isLight ? 'text-slate-900 font-extrabold' : 'text-white font-bold'} print:text-black flex items-center gap-1.5`}>
+                    <td className="p-3 text-primary font-extrabold print:text-black flex items-center gap-1.5">
                       <span>{k.formattedValue}</span>
                       {k.isFiltered && (
-                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-600 dark:text-sky-400 font-mono font-normal">
+                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-accent-soft text-accent font-mono font-normal">
                           Filtered
                         </span>
                       )}
                     </td>
-                    <td className={`p-3 ${isLight ? 'text-slate-600' : 'text-gray-400'} print:text-gray-600`}>{k.formattedPreviousValue || 'N/A'}</td>
+                    <td className="p-3 text-secondary print:text-gray-600">{k.formattedPreviousValue || 'N/A'}</td>
                     <td className="p-3">
                       {k.changePercent !== undefined ? (
-                        <span className={k.changePercent >= 0 ? (isLight ? 'text-sky-700 font-bold' : 'text-cyan-400 font-bold') : 'text-rose-600 font-bold'}>
+                        <span className={k.changePercent >= 0 ? 'text-accent font-bold' : 'text-danger font-bold'}>
                           {k.changePercent >= 0 ? '+' : ''}{k.changePercent}%
                         </span>
                       ) : '—'}
                     </td>
                     <td className="p-3">
-                      <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold ${isLight ? 'bg-slate-200 text-slate-800' : 'bg-[#262626] text-gray-200'} print:bg-gray-200`}>
+                      <span className="px-2 py-0.5 rounded text-[10px] uppercase font-bold bg-input text-primary border border-subtle print:bg-gray-200">
                         {k.status}
                       </span>
                     </td>
-                    <td className={`p-3 ${isLight ? 'text-slate-600' : 'text-gray-400'} text-[11px] truncate max-w-[180px]`} title={k.calculation}>
+                    <td className="p-3 text-secondary text-[11px] truncate max-w-[180px]" title={k.calculation}>
                       {k.calculation}
                     </td>
                     <td className="p-3 text-right print:hidden">
                       <button
                         onClick={() => setEditingKpi(k)}
-                        className={`px-2 py-1 rounded ${isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300' : 'bg-[#252525] hover:bg-[#333] text-gray-300 hover:text-cyan-400 border-[#333]'} text-[11px] font-sans font-medium border transition-colors cursor-pointer`}
+                        className="px-2 py-1 rounded bg-input hover:bg-card-hover text-primary hover:text-accent border-subtle text-[11px] font-sans font-medium border transition-colors cursor-pointer"
                         title={`Customize ${k.name}`}
                       >
                         <Pencil className="w-3 h-3 inline mr-1" />
@@ -716,19 +716,19 @@ export const ReportsView: React.FC = () => {
                     if (e.key === 'Escape') handleCancelInlineEdit();
                   }}
                   autoFocus
-                  className={`px-3 py-1 ${isLight ? 'bg-white border-sky-500 text-slate-900' : 'bg-[#121212] border-cyan-400 text-cyan-300'} border rounded-lg text-lg font-bold uppercase focus:outline-none`}
+                  className="px-3 py-1 bg-input border border-strong text-primary rounded-lg text-lg font-bold uppercase focus:outline-none"
                 />
-                <button onClick={handleSaveInlineEdit} className="p-1.5 bg-sky-600 text-white rounded"><Check className="w-3.5 h-3.5" /></button>
-                <button onClick={handleCancelInlineEdit} className={`p-1.5 ${isLight ? 'bg-slate-200 text-slate-700' : 'bg-[#2a2a2a] text-gray-300'} rounded`}><X className="w-3.5 h-3.5" /></button>
+                <button onClick={handleSaveInlineEdit} className="p-1.5 bg-accent text-on-accent rounded"><Check className="w-3.5 h-3.5" /></button>
+                <button onClick={handleCancelInlineEdit} className="p-1.5 bg-input text-secondary rounded"><X className="w-3.5 h-3.5" /></button>
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <h2 className={`font-heading text-xl sm:text-2xl font-bold ${isLight ? 'text-sky-900' : 'text-cyan-400'} print:text-sky-800 uppercase tracking-wide`}>
+                <h2 className="font-heading text-xl sm:text-2xl font-bold text-accent print:text-sky-800 uppercase tracking-wide">
                   {reportHeadings.section3 || '3. AI INSIGHTS & MANAGEMENT DIRECTIVES'}
                 </h2>
                 <button
                   onClick={() => handleStartInlineEdit('section3')}
-                  className={`p-1 ${isLight ? 'text-slate-400 hover:text-sky-600' : 'text-gray-500 hover:text-cyan-400'} opacity-60 group-hover:opacity-100 transition-opacity print:hidden`}
+                  className="p-1 text-muted hover:text-accent opacity-60 group-hover:opacity-100 transition-opacity print:hidden"
                   title="Change Section 3 Heading"
                 >
                   <Pencil className="w-3.5 h-3.5" />
@@ -741,17 +741,17 @@ export const ReportsView: React.FC = () => {
             {analytics.insights.map(ins => (
               <div 
                 key={ins.id}
-                className={`p-5 rounded-2xl ${isLight ? 'bg-slate-50 border-slate-200 text-slate-800' : 'bg-[#1c1c1c] border-[#2a2a2a] text-gray-300'} print:bg-gray-50 border print:border-gray-200 space-y-2 text-xs`}
+                className="p-5 rounded-2xl bg-input border border-subtle text-secondary print:bg-gray-50 print:border-gray-200 space-y-2 text-xs"
               >
                 <div className="flex justify-between items-center">
-                  <h4 className={`font-bold ${isLight ? 'text-slate-900' : 'text-white'} print:text-black text-sm`}>{ins.title}</h4>
-                  <span className={`font-mono text-[10px] uppercase ${isLight ? 'text-sky-700 font-bold' : 'text-cyan-400 font-bold'} print:text-sky-700`}>
+                  <h4 className="font-bold text-primary print:text-black text-sm">{ins.title}</h4>
+                  <span className="font-mono text-[10px] uppercase text-accent font-bold print:text-sky-700">
                     [{ins.category}]
                   </span>
                 </div>
-                <p><strong>Observed Impact:</strong> {ins.what}</p>
-                <p><strong>Root Driver:</strong> {ins.why}</p>
-                <div className={`p-3 rounded-xl ${isLight ? 'bg-sky-50 border-sky-200 text-sky-900' : 'bg-[#132238] border-cyan-500/30 text-white'} print:bg-sky-50 border print:border-sky-300`}>
+                <p><strong className="text-primary">Observed Impact:</strong> {ins.what}</p>
+                <p><strong className="text-primary">Root Driver:</strong> {ins.why}</p>
+                <div className="p-3 rounded-xl bg-accent-soft border border-subtle text-primary print:bg-sky-50 print:border-sky-300">
                   <strong>Recommended Management Action:</strong> {ins.action}
                 </div>
               </div>
@@ -762,7 +762,7 @@ export const ReportsView: React.FC = () => {
         {/* 4. Attached Dashboard Visualizations & Detailed Segment Breakdowns */}
         {attachedVisuals.length > 0 && (
           <section className="space-y-6">
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b ${isLight ? 'border-slate-200' : 'border-[#333]'} print:border-gray-300 pb-3 group">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-subtle print:border-gray-300 pb-3 group">
               {inlineEditingKey === 'section4' ? (
                 <div className="flex items-center gap-2 max-w-xl animate-fadeIn">
                   <input
@@ -774,19 +774,19 @@ export const ReportsView: React.FC = () => {
                       if (e.key === 'Escape') handleCancelInlineEdit();
                     }}
                     autoFocus
-                    className={`px-3 py-1 ${isLight ? 'bg-white border-sky-500 text-slate-900' : 'bg-[#121212] border-cyan-400 text-cyan-300'} border rounded-lg text-lg font-bold uppercase focus:outline-none`}
+                    className="px-3 py-1 bg-input border border-strong text-primary rounded-lg text-lg font-bold uppercase focus:outline-none"
                   />
-                  <button onClick={handleSaveInlineEdit} className="p-1.5 bg-sky-600 text-white rounded"><Check className="w-3.5 h-3.5" /></button>
-                  <button onClick={handleCancelInlineEdit} className={`p-1.5 ${isLight ? 'bg-slate-200 text-slate-700' : 'bg-[#2a2a2a] text-gray-300'} rounded`}><X className="w-3.5 h-3.5" /></button>
+                  <button onClick={handleSaveInlineEdit} className="p-1.5 bg-accent text-on-accent rounded"><Check className="w-3.5 h-3.5" /></button>
+                  <button onClick={handleCancelInlineEdit} className="p-1.5 bg-input text-secondary rounded"><X className="w-3.5 h-3.5" /></button>
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
-                  <h2 className={`font-heading text-xl sm:text-2xl font-bold ${isLight ? 'text-sky-900' : 'text-cyan-400'} print:text-sky-800 uppercase tracking-wide`}>
+                  <h2 className="font-heading text-xl sm:text-2xl font-bold text-accent print:text-sky-800 uppercase tracking-wide">
                     {reportHeadings.section4 || '4. ATTACHED DASHBOARDS & SEGMENT BREAKDOWNS'}
                   </h2>
                   <button
                     onClick={() => handleStartInlineEdit('section4')}
-                    className={`p-1 ${isLight ? 'text-slate-400 hover:text-sky-600' : 'text-gray-500 hover:text-cyan-400'} opacity-60 group-hover:opacity-100 transition-opacity print:hidden`}
+                    className="p-1 text-muted hover:text-accent opacity-60 group-hover:opacity-100 transition-opacity print:hidden"
                     title="Change Section 4 Heading"
                   >
                     <Pencil className="w-3.5 h-3.5" />
@@ -802,7 +802,7 @@ export const ReportsView: React.FC = () => {
                     setNewChartVal(numericCols[0]?.name || '');
                     setIsAddChartModalOpen(true);
                   }}
-                  className="px-2.5 py-1 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold flex items-center gap-1 shadow-xs cursor-pointer"
+                  className="px-2.5 py-1 rounded-lg bg-accent hover:opacity-90 text-on-accent text-xs font-bold flex items-center gap-1 shadow-xs cursor-pointer"
                   title="Add custom chart directly to this report"
                 >
                   <Plus className="w-3.5 h-3.5" />
@@ -812,14 +812,14 @@ export const ReportsView: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleAutoSyncCharts}
-                  className={`px-2.5 py-1 rounded-lg ${isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300' : 'bg-[#242424] hover:bg-[#333] text-gray-200 border-[#333]'} text-xs font-semibold flex items-center gap-1 border shadow-xs cursor-pointer`}
+                  className="px-2.5 py-1 rounded-lg bg-input hover:bg-card-hover text-primary border-subtle text-xs font-semibold flex items-center gap-1 border shadow-xs cursor-pointer"
                   title="Auto-adapt charts to match the current dataset schema"
                 >
-                  <RefreshCw className="w-3.5 h-3.5 text-sky-600 dark:text-cyan-400" />
+                  <RefreshCw className="w-3.5 h-3.5 text-accent" />
                   <span>Auto-Adapt to Dataset</span>
                 </button>
 
-                <span className={`text-xs font-mono ${isLight ? 'text-slate-600' : 'text-gray-400'} print:text-gray-600 pl-1`}>
+                <span className="text-xs font-mono text-secondary print:text-gray-600 pl-1">
                   ({attachedVisuals.length} Visuals)
                 </span>
               </div>
@@ -859,15 +859,15 @@ export const ReportsView: React.FC = () => {
                 return (
                   <div 
                     key={visKey} 
-                    className={`p-5 sm:p-6 rounded-2xl ${isLight ? 'bg-slate-50 border-slate-200 text-slate-900 shadow-md' : 'bg-[#1c1c1c] border-[#2a2a2a] text-white shadow-lg'} print:bg-white border print:border-gray-200 space-y-4 break-inside-avoid`}
+                    className="p-5 sm:p-6 rounded-2xl bg-input border border-subtle text-primary shadow-sm print:bg-white print:border-gray-200 space-y-4 break-inside-avoid"
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                          <span className={`text-xs font-mono font-bold ${isLight ? 'text-sky-700' : 'text-cyan-400'} print:text-sky-700 uppercase`}>
+                          <span className="text-xs font-mono font-bold text-accent print:text-sky-700 uppercase">
                             Widget 4.{vIdx + 1}
                           </span>
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-mono uppercase ${isLight ? 'bg-slate-200 text-slate-800' : 'bg-[#262626] text-gray-300'} print:bg-gray-200 print:text-gray-800`}>
+                          <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-card text-secondary border border-subtle print:bg-gray-200 print:text-gray-800">
                             {vis.type || 'bar'}
                           </span>
                         </div>
@@ -884,18 +884,18 @@ export const ReportsView: React.FC = () => {
                                 if (e.key === 'Escape') handleCancelVisEdit();
                               }}
                               autoFocus
-                              className={`px-2.5 py-1 text-sm ${isLight ? 'bg-white border-sky-500 text-slate-900' : 'bg-[#121212] border-cyan-400 text-cyan-300'} border rounded-lg font-bold uppercase focus:outline-none`}
+                              className="px-2.5 py-1 text-sm bg-card border border-strong text-primary rounded-lg font-bold uppercase focus:outline-none"
                             />
                             <button
                               onClick={() => handleSaveVisTitle(visKey)}
-                              className="p-1.5 bg-sky-600 hover:bg-sky-500 text-white rounded-lg shadow-xs cursor-pointer"
+                              className="p-1.5 bg-accent hover:opacity-90 text-on-accent rounded-lg shadow-xs cursor-pointer"
                               title="Save chart title"
                             >
                               <Check className="w-3.5 h-3.5 stroke-[3]" />
                             </button>
                             <button
                               onClick={handleCancelVisEdit}
-                              className={`p-1.5 ${isLight ? 'bg-slate-200 text-slate-700 hover:bg-slate-300' : 'bg-[#2a2a2a] text-gray-300 hover:bg-[#333]'} rounded-lg cursor-pointer`}
+                              className="p-1.5 bg-card text-secondary hover:bg-card-hover rounded-lg cursor-pointer"
                               title="Cancel"
                             >
                               <X className="w-3.5 h-3.5" />
@@ -903,12 +903,12 @@ export const ReportsView: React.FC = () => {
                           </div>
                         ) : (
                           <div className="flex items-center gap-2 group/visTitle">
-                            <h4 className={`font-bold ${isLight ? 'text-slate-900' : 'text-white'} print:text-black text-base uppercase`}>
+                            <h4 className="font-bold text-primary print:text-black text-base uppercase">
                               {displayTitle}
                             </h4>
                             <button
                               onClick={() => handleStartVisEdit(visKey, displayTitle)}
-                              className={`p-1 ${isLight ? 'text-slate-400 hover:text-sky-600' : 'text-gray-500 hover:text-cyan-400'} opacity-60 group-hover/visTitle:opacity-100 transition-opacity print:hidden cursor-pointer`}
+                              className="p-1 text-muted hover:text-accent opacity-60 group-hover/visTitle:opacity-100 transition-opacity print:hidden cursor-pointer"
                               title="Rename chart title"
                             >
                               <Pencil className="w-3 h-3" />
@@ -916,24 +916,24 @@ export const ReportsView: React.FC = () => {
                           </div>
                         )}
 
-                        <p className={`text-[11px] ${isLight ? 'text-slate-600' : 'text-gray-400'} print:text-gray-600`}>
-                          Metric: <span className={`font-mono ${isLight ? 'text-slate-800 font-bold' : 'text-gray-300'} print:text-black`}>{agg.toUpperCase()}({validVal})</span> grouped by <span className={`font-mono ${isLight ? 'text-slate-800 font-bold' : 'text-gray-300'} print:text-black`}>{validCat}</span>
+                        <p className="text-[11px] text-secondary print:text-gray-600">
+                          Metric: <span className="font-mono text-primary font-bold print:text-black">{agg.toUpperCase()}({validVal})</span> grouped by <span className="font-mono text-primary font-bold print:text-black">{validCat}</span>
                         </p>
                       </div>
                       <div className="text-right">
-                        <span className={`text-[10px] uppercase font-mono ${isLight ? 'text-slate-500' : 'text-gray-400'} print:text-gray-600`}>
+                        <span className="text-[10px] uppercase font-mono text-muted print:text-gray-600">
                           {agg === 'avg' ? 'Overall Average' : 'Grand Total'}
                         </span>
-                        <div className={`text-lg font-bold ${isLight ? 'text-sky-800' : 'text-cyan-400'} print:text-sky-800 font-mono`}>
+                        <div className="text-lg font-bold text-accent print:text-sky-800 font-mono">
                           {formatVal(total)}
                         </div>
                       </div>
                     </div>
 
                     {/* Breakdown Table */}
-                    <div className={`overflow-x-auto rounded-xl border ${isLight ? 'border-slate-200 bg-white' : 'border-[#2a2a2a] bg-[#141414]'} print:border-gray-200`}>
+                    <div className="overflow-x-auto rounded-xl border border-subtle bg-card print:border-gray-200">
                       <table className="w-full text-left text-xs font-mono">
-                        <thead className={`${isLight ? 'bg-slate-100 text-slate-700 border-slate-200' : 'bg-[#141414] text-gray-400 border-[#2a2a2a]'} uppercase text-[10px] border-b print:bg-gray-100 print:border-gray-300`}>
+                        <thead className="bg-input text-secondary border-subtle uppercase text-[10px] border-b print:bg-gray-100 print:border-gray-300">
                           <tr>
                             <th className="p-2.5 text-center w-12">#</th>
                             <th className="p-2.5">Category / Segment</th>
@@ -942,34 +942,34 @@ export const ReportsView: React.FC = () => {
                             <th className="p-2.5 text-right w-24">Rows</th>
                           </tr>
                         </thead>
-                        <tbody className={`divide-y ${isLight ? 'divide-slate-200' : 'divide-[#222]'} print:divide-gray-200`}>
+                        <tbody className="divide-y divide-[var(--border-subtle)] print:divide-gray-200">
                           {items.map((it, idx) => (
-                            <tr key={idx} className={`${isLight ? 'hover:bg-slate-50 text-slate-800' : 'hover:bg-[#222]/40 text-gray-300'} print:hover:bg-transparent`}>
-                              <td className={`p-2.5 text-center ${isLight ? 'text-slate-400' : 'text-gray-500'}`}>#{idx + 1}</td>
-                              <td className={`p-2.5 ${isLight ? 'text-slate-900 font-bold' : 'text-white'} print:text-black font-sans font-medium`}>{it.category}</td>
-                              <td className={`p-2.5 text-right font-bold ${isLight ? 'text-sky-800' : 'text-cyan-400'} print:text-sky-800`}>{formatVal(it.val)}</td>
+                            <tr key={idx} className="hover:bg-card-hover text-secondary print:hover:bg-transparent">
+                              <td className="p-2.5 text-center text-muted">#{idx + 1}</td>
+                              <td className="p-2.5 text-primary font-bold print:text-black font-sans">{it.category}</td>
+                              <td className="p-2.5 text-right font-bold text-accent print:text-sky-800">{formatVal(it.val)}</td>
                               <td className="p-2.5">
                                 <div className="flex items-center gap-2">
-                                  <div className={`w-full ${isLight ? 'bg-slate-200' : 'bg-[#111]'} print:bg-gray-200 h-2 rounded-full overflow-hidden`}>
+                                  <div className="w-full bg-input print:bg-gray-200 h-2 rounded-full overflow-hidden">
                                     <div 
-                                      className={`${isLight ? 'bg-sky-600' : 'bg-cyan-500'} print:bg-sky-700 h-full rounded-full`} 
+                                      className="bg-accent print:bg-sky-700 h-full rounded-full" 
                                       style={{ width: `${Math.min(100, Math.max(4, it.share))}%` }} 
                                     />
                                   </div>
-                                  <span className={`text-[10px] ${isLight ? 'text-slate-600' : 'text-gray-400'} print:text-gray-600 shrink-0 w-10 text-right`}>
+                                  <span className="text-[10px] text-secondary print:text-gray-600 shrink-0 w-10 text-right">
                                     {it.share.toFixed(1)}%
                                   </span>
                                 </div>
                               </td>
-                              <td className={`p-2.5 text-right ${isLight ? 'text-slate-600' : 'text-gray-400'} print:text-gray-600`}>{it.count.toLocaleString()}</td>
+                              <td className="p-2.5 text-right text-secondary print:text-gray-600">{it.count.toLocaleString()}</td>
                             </tr>
                           ))}
-                          <tr className={`${isLight ? 'bg-slate-100 font-bold text-slate-900' : 'bg-[#141414] font-bold text-white'} print:bg-gray-100 print:text-black`}>
-                            <td className={`p-2.5 text-center ${isLight ? 'text-sky-700' : 'text-cyan-400'} print:text-sky-700`}>∑</td>
+                          <tr className="bg-input font-bold text-primary print:bg-gray-100 print:text-black">
+                            <td className="p-2.5 text-center text-accent print:text-sky-700">∑</td>
                             <td className="p-2.5 font-sans">
                               {agg === 'avg' ? `Overall Mean across ${items.length} segments` : `Top ${items.length} segments (${totalSegments} total)`}
                             </td>
-                            <td className={`p-2.5 text-right ${isLight ? 'text-sky-800' : 'text-cyan-400'} print:text-sky-800`}>{formatVal(total)}</td>
+                            <td className="p-2.5 text-right text-accent print:text-sky-800">{formatVal(total)}</td>
                             <td className="p-2.5 text-center text-xs">100.0%</td>
                             <td className="p-2.5 text-right">{cleanRows.length.toLocaleString()}</td>
                           </tr>
@@ -997,19 +997,19 @@ export const ReportsView: React.FC = () => {
                     if (e.key === 'Escape') handleCancelInlineEdit();
                   }}
                   autoFocus
-                  className={`px-3 py-1 ${isLight ? 'bg-white border-sky-500 text-slate-900' : 'bg-[#121212] border-cyan-400 text-cyan-300'} border rounded-lg text-lg font-bold uppercase focus:outline-none`}
+                  className="px-3 py-1 bg-input border border-strong text-primary rounded-lg text-lg font-bold uppercase focus:outline-none"
                 />
-                <button onClick={handleSaveInlineEdit} className="p-1.5 bg-sky-600 text-white rounded"><Check className="w-3.5 h-3.5" /></button>
-                <button onClick={handleCancelInlineEdit} className={`p-1.5 ${isLight ? 'bg-slate-200 text-slate-700' : 'bg-[#2a2a2a] text-gray-300'} rounded`}><X className="w-3.5 h-3.5" /></button>
+                <button onClick={handleSaveInlineEdit} className="p-1.5 bg-accent text-on-accent rounded"><Check className="w-3.5 h-3.5" /></button>
+                <button onClick={handleCancelInlineEdit} className="p-1.5 bg-input text-secondary rounded"><X className="w-3.5 h-3.5" /></button>
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <h2 className={`font-heading text-xl sm:text-2xl font-bold ${isLight ? 'text-sky-900' : 'text-cyan-400'} print:text-sky-800 uppercase tracking-wide`}>
+                <h2 className="font-heading text-xl sm:text-2xl font-bold text-accent print:text-sky-800 uppercase tracking-wide">
                   {reportHeadings.section5 || '5. DATA QUALITY AUDIT & GOVERNANCE'}
                 </h2>
                 <button
                   onClick={() => handleStartInlineEdit('section5')}
-                  className={`p-1 ${isLight ? 'text-slate-400 hover:text-sky-600' : 'text-gray-500 hover:text-cyan-400'} opacity-60 group-hover:opacity-100 transition-opacity print:hidden`}
+                  className="p-1 text-muted hover:text-accent opacity-60 group-hover:opacity-100 transition-opacity print:hidden"
                   title="Change Section 5 Heading"
                 >
                   <Pencil className="w-3.5 h-3.5" />
@@ -1018,9 +1018,9 @@ export const ReportsView: React.FC = () => {
             )}
           </div>
 
-          <div className={`overflow-x-auto rounded-xl border ${isLight ? 'border-slate-200 bg-white' : 'border-[#2a2a2a]'} print:border-gray-200`}>
+          <div className="overflow-x-auto rounded-xl border border-subtle bg-card print:border-gray-200">
             <table className="w-full text-left text-xs font-mono">
-              <thead className={`${isLight ? 'bg-slate-100 text-slate-700 border-slate-200' : 'bg-[#141414] text-gray-400 border-[#2a2a2a]'} uppercase text-[10px] border-b print:bg-gray-100 print:border-gray-300`}>
+              <thead className="bg-input text-secondary border-subtle uppercase text-[10px] border-b print:bg-gray-100 print:border-gray-300">
                 <tr>
                   <th className="p-2.5">Audit Dimension</th>
                   <th className="p-2.5">Score / Status</th>
@@ -1028,30 +1028,30 @@ export const ReportsView: React.FC = () => {
                   <th className="p-2.5">Certification Recommendation</th>
                 </tr>
               </thead>
-              <tbody className={`divide-y ${isLight ? 'divide-slate-200' : 'divide-[#222]'} print:divide-gray-200`}>
+              <tbody className="divide-y divide-[var(--border-subtle)] print:divide-gray-200">
                 <tr>
-                  <td className={`p-2.5 ${isLight ? 'text-slate-900 font-bold' : 'text-white'} print:text-black font-sans font-medium`}>Completeness</td>
-                  <td className={`p-2.5 ${isLight ? 'text-sky-700' : 'text-cyan-400'} print:text-sky-700 font-bold`}>{qualityReport.completenessScore}%</td>
-                  <td className={`p-2.5 ${isLight ? 'text-slate-600' : 'text-gray-400'} print:text-gray-600`}>{qualityReport.issues.filter(i => i.type === 'missing_values').length} missing indicators</td>
-                  <td className={`p-2.5 ${isLight ? 'text-slate-600' : 'text-gray-400'} print:text-gray-600 font-sans`}>Verify source data entry validation</td>
+                  <td className="p-2.5 text-primary font-bold print:text-black font-sans">Completeness</td>
+                  <td className="p-2.5 text-accent print:text-sky-700 font-bold">{qualityReport.completenessScore}%</td>
+                  <td className="p-2.5 text-secondary print:text-gray-600">{qualityReport.issues.filter(i => i.type === 'missing_values').length} missing indicators</td>
+                  <td className="p-2.5 text-secondary print:text-gray-600 font-sans">Verify source data entry validation</td>
                 </tr>
                 <tr>
-                  <td className={`p-2.5 ${isLight ? 'text-slate-900 font-bold' : 'text-white'} print:text-black font-sans font-medium`}>Uniqueness</td>
-                  <td className={`p-2.5 ${isLight ? 'text-sky-700' : 'text-cyan-400'} print:text-sky-700 font-bold`}>{qualityReport.uniquenessScore}%</td>
-                  <td className={`p-2.5 ${isLight ? 'text-slate-600' : 'text-gray-400'} print:text-gray-600`}>{qualityReport.issues.filter(i => i.type === 'duplicates').length} duplicate flags</td>
-                  <td className={`p-2.5 ${isLight ? 'text-slate-600' : 'text-gray-400'} print:text-gray-600 font-sans`}>Auto-deduplicated in clean data layer</td>
+                  <td className="p-2.5 text-primary font-bold print:text-black font-sans">Uniqueness</td>
+                  <td className="p-2.5 text-accent print:text-sky-700 font-bold">{qualityReport.uniquenessScore}%</td>
+                  <td className="p-2.5 text-secondary print:text-gray-600">{qualityReport.issues.filter(i => i.type === 'duplicates').length} duplicate flags</td>
+                  <td className="p-2.5 text-secondary print:text-gray-600 font-sans">Auto-deduplicated in clean data layer</td>
                 </tr>
                 <tr>
-                  <td className={`p-2.5 ${isLight ? 'text-slate-900 font-bold' : 'text-white'} print:text-black font-sans font-medium`}>Validity & Consistency</td>
-                  <td className={`p-2.5 ${isLight ? 'text-sky-700' : 'text-cyan-400'} print:text-sky-700 font-bold`}>{qualityReport.validityScore}%</td>
-                  <td className={`p-2.5 ${isLight ? 'text-slate-600' : 'text-gray-400'} print:text-gray-600`}>{qualityReport.issues.filter(i => i.type === 'type_mismatch' || i.type === 'formatting').length} format warnings</td>
-                  <td className={`p-2.5 ${isLight ? 'text-slate-600' : 'text-gray-400'} print:text-gray-600 font-sans`}>Schema data types enforced</td>
+                  <td className="p-2.5 text-primary font-bold print:text-black font-sans">Validity & Consistency</td>
+                  <td className="p-2.5 text-accent print:text-sky-700 font-bold">{qualityReport.validityScore}%</td>
+                  <td className="p-2.5 text-secondary print:text-gray-600">{qualityReport.issues.filter(i => i.type === 'type_mismatch' || i.type === 'formatting').length} format warnings</td>
+                  <td className="p-2.5 text-secondary print:text-gray-600 font-sans">Schema data types enforced</td>
                 </tr>
-                <tr className={`${isLight ? 'bg-slate-100 font-bold text-slate-900' : 'bg-[#141414] font-bold text-white'} print:bg-gray-100 print:text-black`}>
+                <tr className="bg-input font-bold text-primary print:bg-gray-100 print:text-black">
                   <td className="p-2.5 font-sans">Overall Quality Score</td>
-                  <td className={`p-2.5 ${isLight ? 'text-sky-800' : 'text-cyan-400'} print:text-sky-800 text-sm`}>{qualityReport.overallScore}%</td>
-                  <td className={`p-2.5 ${isLight ? 'text-slate-700' : 'text-gray-300'}`}>{qualityReport.totalIssuesCount} total flags tracked</td>
-                  <td className={`p-2.5 ${isLight ? 'text-sky-700' : 'text-cyan-400'} print:text-sky-700 font-sans`}>Certified Boardroom Grade</td>
+                  <td className="p-2.5 text-accent print:text-sky-800 text-sm">{qualityReport.overallScore}%</td>
+                  <td className="p-2.5 text-secondary">{qualityReport.totalIssuesCount} total flags tracked</td>
+                  <td className="p-2.5 text-accent print:text-sky-700 font-sans">Certified Boardroom Grade</td>
                 </tr>
               </tbody>
             </table>
@@ -1059,8 +1059,8 @@ export const ReportsView: React.FC = () => {
         </section>
 
         {/* 6. Methodology & Lineage */}
-        <section className="border-t border-[#333] print:border-gray-300 pt-6 text-[11px] text-gray-500 print:text-gray-600 space-y-1">
-          <div className="font-bold text-gray-400 print:text-gray-800 uppercase font-mono">Governed Methodology:</div>
+        <section className="border-t border-subtle print:border-gray-300 pt-6 text-[11px] text-muted print:text-gray-600 space-y-1">
+          <div className="font-bold text-secondary print:text-gray-800 uppercase font-mono">Governed Methodology:</div>
           <p>
             All metrics calculated via Data Analytix in-memory deterministic engine. No generative AI hallucination of numbers. Power BI semantic model compatible.
           </p>
@@ -1079,125 +1079,125 @@ export const ReportsView: React.FC = () => {
       {/* Full Headings Customization Modal */}
       {isHeadingsModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
-          <div className="w-full max-w-xl bg-[#181818] border border-[#333] rounded-2xl shadow-2xl p-6 space-y-5 text-gray-100 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-[#2c2c2c] pb-3">
+          <div className="w-full max-w-xl bg-elevated border border-subtle rounded-2xl shadow-2xl p-6 space-y-5 text-primary max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-subtle pb-3">
               <div className="flex items-center gap-2">
-                <div className="p-2 rounded-lg bg-cyan-500/15 text-cyan-400">
+                <div className="p-2 rounded-lg bg-accent-soft text-accent">
                   <Pencil className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-base text-white">Customize Report Headings</h3>
-                  <p className="text-xs text-gray-400">Change any report title or section header</p>
+                  <h3 className="font-bold text-base text-primary">Customize Report Headings</h3>
+                  <p className="text-xs text-secondary">Change any report title or section header</p>
                 </div>
               </div>
-              <button onClick={() => setIsHeadingsModalOpen(false)} className="p-1 hover:bg-[#282828] rounded text-gray-400 hover:text-white">
+              <button onClick={() => setIsHeadingsModalOpen(false)} className="p-1 hover:bg-input rounded text-secondary hover:text-primary cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="space-y-4 text-xs">
               <div className="space-y-1">
-                <label className="font-bold uppercase text-gray-400">Document Main Title</label>
+                <label className="font-bold uppercase text-secondary">Document Main Title</label>
                 <input
                   type="text"
                   value={reportHeadings.mainTitle}
                   onChange={(e) => updateReportHeading('mainTitle', e.target.value)}
-                  className="w-full px-3 py-2 bg-[#121212] border border-[#333] rounded-xl text-white font-medium focus:border-cyan-400 focus:outline-none"
+                  className="w-full px-3 py-2 bg-input border border-subtle rounded-xl text-primary font-medium focus:border-strong focus:outline-none"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="font-bold uppercase text-gray-400">Section 1 Header</label>
+                <label className="font-bold uppercase text-secondary">Section 1 Header</label>
                 <input
                   type="text"
                   value={reportHeadings.section1}
                   onChange={(e) => updateReportHeading('section1', e.target.value)}
-                  className="w-full px-3 py-2 bg-[#121212] border border-[#333] rounded-xl text-white font-medium focus:border-cyan-400 focus:outline-none"
+                  className="w-full px-3 py-2 bg-input border border-subtle rounded-xl text-primary font-medium focus:border-strong focus:outline-none"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="font-bold uppercase text-gray-400">Section 2 Header (KPIs)</label>
+                <label className="font-bold uppercase text-secondary">Section 2 Header (KPIs)</label>
                 <input
                   type="text"
                   value={reportHeadings.section2}
                   onChange={(e) => updateReportHeading('section2', e.target.value)}
-                  className="w-full px-3 py-2 bg-[#121212] border border-[#333] rounded-xl text-white font-medium focus:border-cyan-400 focus:outline-none"
+                  className="w-full px-3 py-2 bg-input border border-subtle rounded-xl text-primary font-medium focus:border-strong focus:outline-none"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="font-bold uppercase text-gray-400">Section 3 Header (AI Insights)</label>
+                <label className="font-bold uppercase text-secondary">Section 3 Header (AI Insights)</label>
                 <input
                   type="text"
                   value={reportHeadings.section3}
                   onChange={(e) => updateReportHeading('section3', e.target.value)}
-                  className="w-full px-3 py-2 bg-[#121212] border border-[#333] rounded-xl text-white font-medium focus:border-cyan-400 focus:outline-none"
+                  className="w-full px-3 py-2 bg-input border border-subtle rounded-xl text-primary font-medium focus:border-strong focus:outline-none"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="font-bold uppercase text-gray-400">Section 4 Header (Dashboards & Segments)</label>
+                <label className="font-bold uppercase text-secondary">Section 4 Header (Dashboards & Segments)</label>
                 <input
                   type="text"
                   value={reportHeadings.section4}
                   onChange={(e) => updateReportHeading('section4', e.target.value)}
-                  className="w-full px-3 py-2 bg-[#121212] border border-[#333] rounded-xl text-white font-medium focus:border-cyan-400 focus:outline-none"
+                  className="w-full px-3 py-2 bg-input border border-subtle rounded-xl text-primary font-medium focus:border-strong focus:outline-none"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="font-bold uppercase text-gray-400">Section 5 Header (Key Performance Indicators)</label>
+                <label className="font-bold uppercase text-secondary">Section 5 Header (Key Performance Indicators)</label>
                 <input
                   type="text"
                   value={reportHeadings.section5}
                   onChange={(e) => updateReportHeading('section5', e.target.value)}
-                  className="w-full px-3 py-2 bg-[#121212] border border-[#333] rounded-xl text-white font-medium focus:border-cyan-400 focus:outline-none"
+                  className="w-full px-3 py-2 bg-input border border-subtle rounded-xl text-primary font-medium focus:border-strong focus:outline-none"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="font-bold uppercase text-gray-400">Section 6 Header (Analytical &amp; Statistical Findings)</label>
+                <label className="font-bold uppercase text-secondary">Section 6 Header (Analytical &amp; Statistical Findings)</label>
                 <input
                   type="text"
                   value={reportHeadings.section6}
                   onChange={(e) => updateReportHeading('section6', e.target.value)}
-                  className="w-full px-3 py-2 bg-[#121212] border border-[#333] rounded-xl text-white font-medium focus:border-cyan-400 focus:outline-none"
+                  className="w-full px-3 py-2 bg-input border border-subtle rounded-xl text-primary font-medium focus:border-strong focus:outline-none"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="font-bold uppercase text-gray-400">Section 7 Header (Visualizations &amp; Segment Breakdown)</label>
+                <label className="font-bold uppercase text-secondary">Section 7 Header (Visualizations &amp; Segment Breakdown)</label>
                 <input
                   type="text"
                   value={reportHeadings.section7}
                   onChange={(e) => updateReportHeading('section7', e.target.value)}
-                  className="w-full px-3 py-2 bg-[#121212] border border-[#333] rounded-xl text-white font-medium focus:border-cyan-400 focus:outline-none"
+                  className="w-full px-3 py-2 bg-input border border-subtle rounded-xl text-primary font-medium focus:border-strong focus:outline-none"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="font-bold uppercase text-gray-400">Section 8 Header (Strategic Business Recommendations)</label>
+                <label className="font-bold uppercase text-secondary">Section 8 Header (Strategic Business Recommendations)</label>
                 <input
                   type="text"
                   value={reportHeadings.section8}
                   onChange={(e) => updateReportHeading('section8', e.target.value)}
-                  className="w-full px-3 py-2 bg-[#121212] border border-[#333] rounded-xl text-white font-medium focus:border-cyan-400 focus:outline-none"
+                  className="w-full px-3 py-2 bg-input border border-subtle rounded-xl text-primary font-medium focus:border-strong focus:outline-none"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="font-bold uppercase text-gray-400">Section 9 Header (Limitations, Assumptions &amp; Risk Factors)</label>
+                <label className="font-bold uppercase text-secondary">Section 9 Header (Limitations, Assumptions &amp; Risk Factors)</label>
                 <input
                   type="text"
                   value={reportHeadings.section9}
                   onChange={(e) => updateReportHeading('section9', e.target.value)}
-                  className="w-full px-3 py-2 bg-[#121212] border border-[#333] rounded-xl text-white font-medium focus:border-cyan-400 focus:outline-none"
+                  className="w-full px-3 py-2 bg-input border border-subtle rounded-xl text-primary font-medium focus:border-strong focus:outline-none"
                 />
               </div>
             </div>
 
-            <div className="flex items-center justify-between pt-3 border-t border-[#2c2c2c]">
+            <div className="flex items-center justify-between pt-3 border-t border-subtle">
               <button
                 type="button"
                 onClick={() => {
@@ -1212,14 +1212,14 @@ export const ReportsView: React.FC = () => {
                   updateReportHeading('section8', '8. STRATEGIC BUSINESS RECOMMENDATIONS');
                   updateReportHeading('section9', '9. LIMITATIONS, ASSUMPTIONS & RISK FACTORS');
                 }}
-                className="text-xs text-gray-400 hover:text-white flex items-center gap-1 cursor-pointer"
+                className="text-xs text-secondary hover:text-primary flex items-center gap-1 cursor-pointer"
               >
                 <RotateCcw className="w-3.5 h-3.5" /> Reset to Defaults
               </button>
               <button
                 type="button"
                 onClick={() => setIsHeadingsModalOpen(false)}
-                className="px-4 py-2 bg-sky-600 text-white hover:bg-sky-500 font-bold text-xs rounded-xl cursor-pointer"
+                className="px-4 py-2 bg-accent text-on-accent hover:opacity-90 font-bold text-xs rounded-xl cursor-pointer"
               >
                 Done
               </button>
@@ -1231,20 +1231,20 @@ export const ReportsView: React.FC = () => {
       {/* Add Custom Chart Modal */}
       {isAddChartModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
-          <div className={`w-full max-w-lg ${isLight ? 'bg-white border-slate-200 text-slate-900' : 'bg-[#181818] border-[#333] text-gray-100'} border rounded-2xl shadow-2xl p-6 space-y-5 max-h-[90vh] overflow-y-auto`}>
-            <div className={`flex items-center justify-between border-b ${isLight ? 'border-slate-200' : 'border-[#2c2c2c]'} pb-3`}>
+          <div className="w-full max-w-lg bg-elevated border border-subtle text-primary rounded-2xl shadow-2xl p-6 space-y-5 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-subtle pb-3">
               <div className="flex items-center gap-2">
-                <div className="p-2 rounded-lg bg-sky-500/15 text-sky-600 dark:text-cyan-400">
+                <div className="p-2 rounded-lg bg-accent-soft text-accent">
                   <BarChart2 className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className={`font-bold text-base ${isLight ? 'text-slate-900' : 'text-white'}`}>Add Custom Chart</h3>
-                  <p className={`text-xs ${isLight ? 'text-slate-600' : 'text-gray-400'}`}>Map fields from {project.name}</p>
+                  <h3 className="font-bold text-base text-primary">Add Custom Chart</h3>
+                  <p className="text-xs text-secondary">Map fields from {project.name}</p>
                 </div>
               </div>
               <button 
                 onClick={() => setIsAddChartModalOpen(false)} 
-                className={`p-1.5 rounded-lg ${isLight ? 'hover:bg-slate-100 text-slate-500' : 'hover:bg-[#282828] text-gray-400 hover:text-white'} cursor-pointer`}
+                className="p-1.5 rounded-lg hover:bg-input text-secondary hover:text-primary cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1252,24 +1252,24 @@ export const ReportsView: React.FC = () => {
 
             <form onSubmit={handleAddCustomChart} className="space-y-4 text-xs">
               <div className="space-y-1">
-                <label className={`font-bold uppercase ${isLight ? 'text-slate-700' : 'text-gray-400'}`}>Chart Title</label>
+                <label className="font-bold uppercase text-secondary">Chart Title</label>
                 <input
                   type="text"
                   required
                   placeholder="e.g. Revenue by Region, MRR by Tier..."
                   value={newChartTitle}
                   onChange={(e) => setNewChartTitle(e.target.value)}
-                  className={`w-full px-3 py-2 ${isLight ? 'bg-slate-50 border-slate-300 text-slate-900 focus:border-sky-500' : 'bg-[#121212] border-[#333] text-white focus:border-cyan-400'} border rounded-xl font-medium focus:outline-none`}
+                  className="w-full px-3 py-2 bg-input border border-subtle text-primary focus:border-strong rounded-xl font-medium focus:outline-none"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className={`font-bold uppercase ${isLight ? 'text-slate-700' : 'text-gray-400'}`}>Chart Type</label>
+                  <label className="font-bold uppercase text-secondary">Chart Type</label>
                   <select
                     value={newChartType}
                     onChange={(e) => setNewChartType(e.target.value as any)}
-                    className={`w-full px-3 py-2 ${isLight ? 'bg-slate-50 border-slate-300 text-slate-900' : 'bg-[#121212] border-[#333] text-white'} border rounded-xl font-medium focus:outline-none cursor-pointer`}
+                    className="w-full px-3 py-2 bg-input border border-subtle text-primary rounded-xl font-medium focus:outline-none cursor-pointer"
                   >
                     <option value="bar">Bar Chart</option>
                     <option value="line">Line / Trend</option>
@@ -1279,11 +1279,11 @@ export const ReportsView: React.FC = () => {
                 </div>
 
                 <div className="space-y-1">
-                  <label className={`font-bold uppercase ${isLight ? 'text-slate-700' : 'text-gray-400'}`}>Aggregation</label>
+                  <label className="font-bold uppercase text-secondary">Aggregation</label>
                   <select
                     value={newChartAgg}
                     onChange={(e) => setNewChartAgg(e.target.value as any)}
-                    className={`w-full px-3 py-2 ${isLight ? 'bg-slate-50 border-slate-300 text-slate-900' : 'bg-[#121212] border-[#333] text-white'} border rounded-xl font-medium focus:outline-none cursor-pointer`}
+                    className="w-full px-3 py-2 bg-input border border-subtle text-primary rounded-xl font-medium focus:outline-none cursor-pointer"
                   >
                     <option value="sum">SUM</option>
                     <option value="avg">AVERAGE</option>
@@ -1296,11 +1296,11 @@ export const ReportsView: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className={`font-bold uppercase ${isLight ? 'text-slate-700' : 'text-gray-400'}`}>Category / Dimension Axis</label>
+                  <label className="font-bold uppercase text-secondary">Category / Dimension Axis</label>
                   <select
                     value={newChartCat || stringCols[0]?.name || ''}
                     onChange={(e) => setNewChartCat(e.target.value)}
-                    className={`w-full px-3 py-2 ${isLight ? 'bg-slate-50 border-slate-300 text-slate-900' : 'bg-[#121212] border-[#333] text-white'} border rounded-xl font-medium focus:outline-none cursor-pointer`}
+                    className="w-full px-3 py-2 bg-input border border-subtle text-primary rounded-xl font-medium focus:outline-none cursor-pointer"
                   >
                     {stringCols.map(c => (
                       <option key={c.name} value={c.name}>{c.name}</option>
@@ -1309,11 +1309,11 @@ export const ReportsView: React.FC = () => {
                 </div>
 
                 <div className="space-y-1">
-                  <label className={`font-bold uppercase ${isLight ? 'text-slate-700' : 'text-gray-400'}`}>Metric / Value Column</label>
+                  <label className="font-bold uppercase text-secondary">Metric / Value Column</label>
                   <select
                     value={newChartVal || numericCols[0]?.name || ''}
                     onChange={(e) => setNewChartVal(e.target.value)}
-                    className={`w-full px-3 py-2 ${isLight ? 'bg-slate-50 border-slate-300 text-slate-900' : 'bg-[#121212] border-[#333] text-white'} border rounded-xl font-medium focus:outline-none cursor-pointer`}
+                    className="w-full px-3 py-2 bg-input border border-subtle text-primary rounded-xl font-medium focus:outline-none cursor-pointer"
                   >
                     {numericCols.map(c => (
                       <option key={c.name} value={c.name}>{c.name}</option>
@@ -1326,13 +1326,13 @@ export const ReportsView: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsAddChartModalOpen(false)}
-                  className={`px-4 py-2 ${isLight ? 'bg-slate-100 text-slate-700 hover:bg-slate-200' : 'bg-[#252525] text-gray-300 hover:bg-[#333]'} rounded-xl font-medium cursor-pointer`}
+                  className="px-4 py-2 bg-input text-secondary hover:bg-card-hover rounded-xl font-medium cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-sky-600 hover:bg-sky-500 text-white font-bold rounded-xl shadow-xs cursor-pointer"
+                  className="px-5 py-2 bg-accent hover:opacity-90 text-on-accent font-bold rounded-xl shadow-xs cursor-pointer"
                 >
                   Add Chart to Report
                 </button>

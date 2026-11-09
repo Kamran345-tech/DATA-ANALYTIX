@@ -477,11 +477,7 @@ export const DataPreviewView: React.FC = () => {
             <div className="overflow-x-auto max-h-[680px] custom-scrollbar">
               <table className="w-full text-left border-collapse">
                 {/* Sticky Header with Sort Indicators */}
-                <thead className={`sticky top-0 z-20 backdrop-blur-xl border-b select-none ${
-                  isLight 
-                    ? 'bg-slate-100/95 border-slate-200 text-slate-700 shadow-xs' 
-                    : 'bg-[#0F172A]/95 border-white/10 text-slate-300 shadow-md'
-                }`}>
+                <thead className="sticky top-0 z-20 backdrop-blur-xl border-b border-subtle bg-elevated text-secondary select-none shadow-xs">
                   <tr>
                     {/* Row Index Column */}
                     <th className={`w-12 text-center font-mono font-bold tracking-wider uppercase border-r ${
@@ -657,9 +653,7 @@ export const DataPreviewView: React.FC = () => {
             </div>
 
             {/* Pagination Controls Footer: glass-panel bottom bar */}
-            <div className={`p-4 border-t flex flex-col sm:flex-row items-center justify-between gap-4 font-mono text-xs ${
-              isLight ? 'bg-slate-50/90 border-slate-200 text-slate-700' : 'bg-[#0B1120]/90 border-white/10 text-slate-300'
-            }`}>
+            <div className="p-4 border-t border-subtle bg-elevated text-secondary flex flex-col sm:flex-row items-center justify-between gap-4 font-mono text-xs">
               <div className="flex items-center gap-2">
                 <span className={isLight ? 'text-slate-600' : 'text-slate-400'}>
                   Page <strong className={isLight ? 'text-slate-900' : 'text-white'}>{currentPage + 1}</strong> of <strong className={isLight ? 'text-slate-900' : 'text-white'}>{totalPages}</strong>

@@ -33,6 +33,27 @@
             event.stopImmediatePropagation();
           }
         }, true);
+
+        // Apply saved theme (Dark / Light / System) and unifiedTheme attribute before first paint
+        try {
+          var pref = localStorage.getItem('dataanalytix_theme_pref') || localStorage.getItem('acuitybi_theme') || 'dark';
+          var resolved = pref === 'system'
+            ? (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark')
+            : (pref === 'light' ? 'light' : 'dark');
+          var root = document.documentElement;
+          root.style.colorScheme = resolved;
+          if (resolved === 'light') {
+            root.classList.add('theme-light');
+            root.classList.remove('dark', 'theme-dark');
+          } else {
+            root.classList.add('dark', 'theme-dark');
+            root.classList.remove('theme-light');
+          }
+          var rawFlags = localStorage.getItem('dataanalytix_features');
+          if (rawFlags && JSON.parse(rawFlags).unifiedTheme === true) {
+            root.setAttribute('data-unified-theme', 'true');
+          }
+        } catch (e) {}
       })();
     </script>
     <title>Data Analytix | Data Analytics & Data Engineering</title>
@@ -107,10 +128,8 @@
       ]
     }
     </script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+    <link rel="preload" href="/fonts/space-grotesk-700.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/space-grotesk-500.woff2" as="font" type="font/woff2" crossorigin />
   </head>
   <body class="bg-[#0B1120] text-[#F8FAFC] font-sans antialiased selection:bg-[#22D3EE]/30 selection:text-[#22D3EE] h-full overflow-hidden">
     <div id="root"></div>

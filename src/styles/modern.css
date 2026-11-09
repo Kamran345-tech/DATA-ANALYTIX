@@ -9,35 +9,35 @@
    ========================================================================== */
 
 .ui-modern {
-  /* Dark Theme Tokens (Default) */
-  --modern-bg-deep: #0B1120;
-  --modern-bg-surface: #111A2E;
-  --modern-bg-surface-2: #16223A;
-  --modern-border: #1E293B;
-  --modern-border-subtle: rgba(255, 255, 255, 0.08);
+  /* Dark Theme Tokens (Default — references single source of truth) */
+  --modern-bg-deep: var(--bg-app, #0B1120);
+  --modern-bg-surface: var(--bg-card, #111A2E);
+  --modern-bg-surface-2: var(--bg-elevated, #17233D);
+  --modern-border: var(--border-subtle, #1E293B);
+  --modern-border-subtle: rgba(148, 163, 184, 0.16);
 
-  --modern-primary: #38BDF8;
-  --modern-primary-hover: #0EA5E9;
-  --modern-primary-muted: rgba(56, 189, 248, 0.14);
+  --modern-primary: var(--accent, #2DD4BF);
+  --modern-primary-hover: #14B8A6;
+  --modern-primary-muted: var(--accent-soft, rgba(45, 212, 191, 0.14));
 
-  --modern-secondary: #818CF8;
+  --modern-secondary: var(--accent-2, #818CF8);
   --modern-secondary-hover: #6366F1;
 
-  --modern-success: #22C55E;
-  --modern-success-muted: rgba(34, 197, 94, 0.14);
+  --modern-success: var(--success, #34D399);
+  --modern-success-muted: rgba(52, 211, 153, 0.14);
 
-  --modern-warning: #F59E0B;
+  --modern-warning: var(--warning, #F59E0B);
   --modern-warning-muted: rgba(245, 158, 11, 0.14);
 
-  --modern-danger: #EF4444;
-  --modern-danger-muted: rgba(239, 68, 68, 0.14);
+  --modern-danger: var(--danger, #F87171);
+  --modern-danger-muted: rgba(248, 113, 113, 0.14);
 
-  --modern-text: #E2E8F0;
-  --modern-text-muted: #94A3B8;
-  --modern-text-subtle: #64748B;
+  --modern-text: var(--text-primary, #E6ECF7);
+  --modern-text-muted: var(--text-secondary, #B4BFD3);
+  --modern-text-subtle: var(--text-muted, #9AA7BD);
 
   /* Typography */
-  --modern-font-heading: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --modern-font-heading: 'Space Grotesk', system-ui, -apple-system, sans-serif;
   --modern-font-body: 'Inter', system-ui, -apple-system, sans-serif;
   --modern-font-mono: 'JetBrains Mono', ui-monospace, monospace;
 
@@ -62,38 +62,38 @@
 /* Light Theme Tokens */
 .ui-modern.theme-light,
 .ui-modern .theme-light {
-  --modern-bg-deep: #F8FAFC;
-  --modern-bg-surface: #FFFFFF;
-  --modern-bg-surface-2: #F1F5F9;
-  --modern-border: #E2E8F0;
-  --modern-border-subtle: rgba(0, 0, 0, 0.06);
+  --modern-bg-deep: var(--bg-app, #F6F8FC);
+  --modern-bg-surface: var(--bg-card, #FFFFFF);
+  --modern-bg-surface-2: var(--bg-elevated, #F8FAFC);
+  --modern-border: var(--border-subtle, #D5DCE8);
+  --modern-border-subtle: rgba(15, 23, 42, 0.08);
 
-  --modern-primary: #0284C7;
-  --modern-primary-hover: #0369A1;
-  --modern-primary-muted: rgba(2, 132, 199, 0.10);
+  --modern-primary: var(--accent, #0F766E);
+  --modern-primary-hover: #0D9488;
+  --modern-primary-muted: var(--accent-soft, rgba(15, 118, 110, 0.10));
 
-  --modern-secondary: #6366F1;
-  --modern-secondary-hover: #4F46E5;
+  --modern-secondary: var(--accent-2, #4F46E5);
+  --modern-secondary-hover: #4338CA;
 
-  --modern-success: #16A34A;
-  --modern-success-muted: rgba(22, 163, 74, 0.10);
+  --modern-success: var(--success, #047857);
+  --modern-success-muted: rgba(4, 120, 87, 0.10);
 
-  --modern-warning: #D97706;
-  --modern-warning-muted: rgba(217, 119, 6, 0.10);
+  --modern-warning: var(--warning, #B45309);
+  --modern-warning-muted: rgba(180, 83, 9, 0.10);
 
-  --modern-danger: #DC2626;
-  --modern-danger-muted: rgba(220, 38, 38, 0.10);
+  --modern-danger: var(--danger, #B91C1C);
+  --modern-danger-muted: rgba(185, 28, 28, 0.10);
 
-  --modern-text: #0F172A;
-  --modern-text-muted: #475569;
-  --modern-text-subtle: #94A3B8;
+  --modern-text: var(--text-primary, #0F172A);
+  --modern-text-muted: var(--text-secondary, #334155);
+  --modern-text-subtle: var(--text-muted, #5B6B82);
 
   --modern-shadow-1: 0 1px 3px 0 rgba(0, 0, 0, 0.06), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
   --modern-shadow-2: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
   --modern-shadow-3: 0 10px 15px -3px rgba(0, 0, 0, 0.10), 0 4px 6px -4px rgba(0, 0, 0, 0.06);
 
-  background-color: #F8FAFC !important;
-  color: #0F172A !important;
+  background-color: var(--bg-app, #F6F8FC) !important;
+  color: var(--text-primary, #0F172A) !important;
 }
 
 .ui-modern.theme-light h1,
@@ -329,11 +329,62 @@
   }
 }
 
+/* Subtle cross-fade transition on the main app container when themeMode toggles */
+.ui-modern,
+.ui-modern #main-content,
+.theme-modern,
+.theme-modern #main-content {
+  transition: background-color 280ms cubic-bezier(0.22, 1, 0.36, 1),
+              color 280ms cubic-bezier(0.22, 1, 0.36, 1),
+              border-color 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.theme-crossfade-active {
+  animation: modernThemeCrossFade 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+#main-content.theme-crossfade-active {
+  position: relative;
+}
+
+#main-content.theme-crossfade-active::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 40;
+  background: radial-gradient(circle at 50% 20%, rgba(56, 189, 248, 0.05), transparent 70%);
+  animation: modernThemeVeilFade 280ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes modernThemeCrossFade {
+  0% {
+    opacity: 0.92;
+  }
+  45% {
+    opacity: 0.96;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes modernThemeVeilFade {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
 /* Respect prefers-reduced-motion: completely disable transitions & transforms */
 @media (prefers-reduced-motion: reduce) {
   .ui-modern *,
   .ui-modern *::before,
-  .ui-modern *::after {
+  .ui-modern *::after,
+  .theme-crossfade-active,
+  #main-content.theme-crossfade-active::after {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;

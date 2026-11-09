@@ -32,6 +32,10 @@ export interface FeatureFlags {
   xlsxSafe: boolean;
   showAllErrors: boolean;
   selfHostedFonts: boolean;
+  depthUI: boolean;
+  heroScene3D: boolean;
+  chartGuide: boolean;
+  unifiedTheme: boolean;
 }
 
 export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
@@ -50,6 +54,10 @@ export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
   xlsxSafe: false,
   showAllErrors: false,
   selfHostedFonts: false,
+  depthUI: false,
+  heroScene3D: false,
+  chartGuide: false,
+  unifiedTheme: false,
 };
 
 export const FEATURE_METADATA: FeatureFlagMeta[] = [
@@ -167,11 +175,43 @@ export const FEATURE_METADATA: FeatureFlagMeta[] = [
   },
   {
     key: 'selfHostedFonts',
-    label: 'Self-Hosted Font Fallback',
+    label: 'Self-Hosted Font Stack',
     category: 'ui',
-    description: 'Prefers local system font stacks when external Google Font CDNs are blocked or delayed.',
-    classicBehavior: 'Relies solely on Google Web Fonts link tags.',
-    newBehavior: 'Zero-latency system font cascade with Plus Jakarta / Inter fallback.'
+    description: 'Uses self-hosted WOFF2 fonts (Space Grotesk, Inter, JetBrains Mono) with zero external CDN requests.',
+    classicBehavior: 'Standard font stack.',
+    newBehavior: 'Self-hosted Space Grotesk for titles/KPIs, Inter for UI, and JetBrains Mono for tables/code.'
+  },
+  {
+    key: 'depthUI',
+    label: 'Depth UI Surface System',
+    category: 'ui',
+    description: 'Applies 20px card radius, rgba(148,163,184,.18) borders, inset top highlight, soft shadow, and 4px hover lift with teal border (never on charts, tables, or editors).',
+    classicBehavior: 'Standard flat/glass card elevation.',
+    newBehavior: 'Tactile 20px depth cards with top specular highlight and 4px hover lift.'
+  },
+  {
+    key: 'heroScene3D',
+    label: '3D Isometric Hero Scene',
+    category: 'ui',
+    description: 'Renders pure-CSS 3D isometric 5-pillar data platform with billboard tags (SQL / Python / Power BI) and "Raw data in. Clear decisions out." headline.',
+    classicBehavior: 'Standard centered hero banner.',
+    newBehavior: 'Pure-CSS 1400px perspective 380x380 isometric platform with 5 shaded data pillars.'
+  },
+  {
+    key: 'chartGuide',
+    label: '8-Chart Visual Guide & Rule Engine',
+    category: 'engine',
+    description: 'Enables the interactive "Which chart should I use?" 8-chart guide, Histogram & Stacked Bar renderers, strict data-fit guard rails, and "Why this chart" tooltips.',
+    classicBehavior: 'Standard heuristic chart suggestions.',
+    newBehavior: '8-chart rule engine with field compatibility filtering, Histogram/Stacked Bar support, and contextual rationale tooltips.'
+  },
+  {
+    key: 'unifiedTheme',
+    label: 'Unified Semantic Theme System',
+    category: 'ui',
+    description: 'Activates the WCAG AA unified semantic token palette (--bg-app, --bg-card, --text-primary, --chart-1..8) across Dark, Light, and System modes.',
+    classicBehavior: 'Classic per-view theme classes and override rules.',
+    newBehavior: 'Single semantic token set with verified >= 4.5:1 text contrast across all views in Dark and Light modes.'
   }
 ];
 
@@ -192,10 +232,15 @@ export function loadFeatureFlags(): FeatureFlags {
   if (typeof import.meta !== 'undefined' && import.meta.env) {
     const env = import.meta.env;
     Object.keys(DEFAULT_FEATURE_FLAGS).forEach(key => {
-      const envKey = `VITE_FEATURE_${key.replace(/([A-Z])/g, '_$1').toUpperCase()}`;
-      if (env[envKey] === 'true' || env[envKey] === '1') {
+      const legacyEnvKey = `VITE_FEATURE_${key.replace(/([A-Z])/g, '_$1').toUpperCase()}`;
+      const cleanEnvKey = `VITE_FEATURE_${key
+        .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
+        .replace(/([A-Z]+)([A-Z][a-z])/g, '$1_$2')
+        .toUpperCase()}`;
+      const val = env[cleanEnvKey] !== undefined ? env[cleanEnvKey] : env[legacyEnvKey];
+      if (val === 'true' || val === '1') {
         (flags as any)[key] = true;
-      } else if (env[envKey] === 'false' || env[envKey] === '0') {
+      } else if (val === 'false' || val === '0') {
         (flags as any)[key] = false;
       }
     });

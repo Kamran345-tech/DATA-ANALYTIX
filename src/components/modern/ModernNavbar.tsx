@@ -134,7 +134,7 @@ export const ModernNavbar: React.FC<ModernNavbarProps> = ({
         {/* Primary Action Button */}
         <button
           onClick={() => setCurrentTab('upload')}
-          className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[var(--modern-primary)] hover:bg-[var(--modern-primary-hover)] text-white shadow-xs transition-colors flex items-center gap-1.5"
+          className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[var(--modern-primary)] hover:bg-[var(--modern-primary-hover)] text-[var(--text-on-accent)] shadow-xs transition-colors flex items-center gap-1.5"
         >
           <UploadCloud className="w-3.5 h-3.5" />
           <span className="hidden sm:inline">Upload Data</span>

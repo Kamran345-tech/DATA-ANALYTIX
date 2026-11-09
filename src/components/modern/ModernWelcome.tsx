@@ -16,6 +16,7 @@ import {
 import { usePlatform } from '../../store/usePlatformStore';
 import { useFirebaseAuth } from '../../store/useFirebaseAuth';
 import { DEMO_DATASETS } from '../../data/demoDatasets';
+import { Hero3DScene } from './Hero3DScene';
 
 export const ModernWelcome: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
   const { setCurrentTab, loadDemoDataset } = usePlatform();
@@ -37,38 +38,47 @@ export const ModernWelcome: React.FC<{ onClose?: () => void }> = ({ onClose }) =
   };
 
   return (
-    <div className="max-w-5xl mx-auto py-8 px-4 sm:px-6 space-y-10 modern-fade-in">
-      {/* 1. Hero Zone: One headline, one sentence, primary actions */}
-      <div className="text-center space-y-4 max-w-3xl mx-auto">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-[var(--modern-primary-muted)] text-[var(--modern-primary)] border border-[var(--modern-primary)]/30">
-          <Sparkles className="w-3.5 h-3.5" />
-          Modern Business Intelligence & Modeling
+    <div className="max-w-5xl mx-auto py-6 px-4 sm:px-6 space-y-10 modern-fade-in">
+      {/* 1. Hero Zone: Split with 3D Isometric Scene */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+        <div className="lg:col-span-6 space-y-4 text-left">
+          <div className="flex items-center gap-2 text-xs font-mono font-semibold text-[var(--modern-primary)]">
+            <span>DATA ANALYTICS</span>
+            <span aria-hidden="true">·</span>
+            <span>STAR SCHEMA</span>
+            <span aria-hidden="true">·</span>
+            <span>POWER BI</span>
+          </div>
+
+          <h1 className="font-heading text-3xl sm:text-5xl font-bold tracking-tight text-[var(--modern-text)] leading-[1.08]">
+            Raw data in. Clear decisions out.
+          </h1>
+
+          <p className="text-sm sm:text-base text-[var(--modern-text-muted)] leading-relaxed max-w-xl">
+            Ingest messy spreadsheets, auto-generate normalized star schemas, and deliver board-level executive telemetry in seconds.
+          </p>
+
+          <div className="flex flex-wrap items-center gap-3 pt-2">
+            <button
+              onClick={handleLaunchDemo}
+              className="btn-primary text-xs sm:text-sm shadow-md cursor-pointer"
+            >
+              <Play className="w-4 h-4 fill-white" />
+              Try with sample data
+            </button>
+
+            <button
+              onClick={handleUploadFile}
+              className="btn-secondary text-xs sm:text-sm cursor-pointer"
+            >
+              <UploadCloud className="w-4 h-4 text-[var(--modern-primary)]" />
+              Upload Your File
+            </button>
+          </div>
         </div>
 
-        <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-[var(--modern-text)]">
-          Autonomous Data Analytics & Engineering
-        </h1>
-
-        <p className="text-sm sm:text-base text-[var(--modern-text-muted)] leading-relaxed max-w-2xl mx-auto">
-          Ingest messy spreadsheets, auto-generate normalized star schemas, and deliver board-level executive telemetry in seconds.
-        </p>
-
-        <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-          <button
-            onClick={handleLaunchDemo}
-            className="btn-primary text-xs sm:text-sm shadow-md"
-          >
-            <Play className="w-4 h-4 fill-white" />
-            Try with Sample Data
-          </button>
-
-          <button
-            onClick={handleUploadFile}
-            className="btn-secondary text-xs sm:text-sm"
-          >
-            <UploadCloud className="w-4 h-4 text-[var(--modern-primary)]" />
-            Upload Your File
-          </button>
+        <div className="lg:col-span-6 flex items-center justify-center">
+          <Hero3DScene />
         </div>
       </div>
 

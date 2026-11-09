@@ -119,20 +119,20 @@ export const GroupedSidebar: React.FC = () => {
   return (
     <aside 
       aria-label="Workflow Navigation"
-      className="w-64 shrink-0 bg-[#070D1B]/95 backdrop-blur-md border-r border-[#1E293B] flex flex-col h-full text-slate-300 select-none overflow-hidden"
+      className="w-64 shrink-0 bg-sidebar border-r border-subtle flex flex-col h-full text-secondary select-none overflow-hidden"
     >
       {/* Brand Header */}
-      <div className="p-4 border-b border-[#1E293B] flex items-center justify-between">
+      <div className="p-4 border-b border-subtle flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm shadow-md">
             DA
           </div>
           <div>
-            <div className="font-bold text-sm text-white tracking-tight leading-none">{brandName}</div>
-            <div className="text-[10px] text-cyan-400 font-mono mt-0.5">Workflow Studio</div>
+            <div className="font-bold text-sm text-primary tracking-tight leading-none">{brandName}</div>
+            <div className="text-[10px] text-accent font-mono mt-0.5">Workflow Studio</div>
           </div>
         </div>
-        <span className="text-[9px] font-semibold px-2 py-0.5 rounded bg-cyan-950/60 border border-cyan-800/40 text-cyan-400">
+        <span className="text-[9px] font-semibold px-2 py-0.5 rounded bg-accent-soft border border-subtle text-accent">
           5 STAGES
         </span>
       </div>
@@ -144,40 +144,40 @@ export const GroupedSidebar: React.FC = () => {
           const hasActiveChild = group.items.some(item => item.id === currentTab);
 
           return (
-            <div key={group.id} className="rounded-xl border border-[#1E293B]/70 bg-slate-900/40 overflow-hidden">
+            <div key={group.id} className="rounded-xl border border-subtle bg-card overflow-hidden">
               {/* Group Accordion Header */}
               <button
                 onClick={() => toggleGroup(group.id)}
                 aria-expanded={!isCollapsed}
                 className={`w-full px-3 py-2 flex items-center justify-between text-left transition-colors ${
-                  hasActiveChild ? 'bg-cyan-950/30 text-cyan-300' : 'hover:bg-slate-800/50 text-slate-400 hover:text-slate-200'
+                  hasActiveChild ? 'bg-accent-soft text-accent' : 'hover:bg-card-hover text-muted hover:text-primary'
                 }`}
               >
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">
+                  <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-elevated text-muted">
                     {group.stageNumber}
                   </span>
-                  <span className="text-xs font-bold tracking-tight text-slate-200">
+                  <span className="text-xs font-bold tracking-tight text-primary">
                     {group.title}
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   {group.badge && (
-                    <span className="text-[9px] font-medium px-1.5 py-0.2 rounded bg-slate-800/80 text-slate-400">
+                    <span className="text-[9px] font-medium px-1.5 py-0.2 rounded bg-elevated text-muted">
                       {group.badge}
                     </span>
                   )}
                   {isCollapsed ? (
-                    <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
+                    <ChevronRight className="w-3.5 h-3.5 text-muted" />
                   ) : (
-                    <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
+                    <ChevronDown className="w-3.5 h-3.5 text-muted" />
                   )}
                 </div>
               </button>
 
               {/* Group Items */}
               {!isCollapsed && (
-                <div className="p-1 space-y-0.5 border-t border-[#1E293B]/40">
+                <div className="p-1 space-y-0.5 border-t border-subtle">
                   {group.items.map((item) => {
                     const isActive = currentTab === item.id;
                     const Icon = item.icon;
@@ -190,11 +190,11 @@ export const GroupedSidebar: React.FC = () => {
                         aria-current={isActive ? 'page' : undefined}
                         className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-medium transition-all text-left ${
                           isActive
-                            ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-semibold shadow-xs'
-                            : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                            ? 'bg-accent text-on-accent font-semibold shadow-xs'
+                            : 'text-muted hover:text-primary hover:bg-card-hover'
                         }`}
                       >
-                        <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                        <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-on-accent' : 'text-muted'}`} />
                         <span className="truncate">{item.label}</span>
                       </button>
                     );
@@ -207,11 +207,11 @@ export const GroupedSidebar: React.FC = () => {
       </div>
 
       {/* Bottom User / Status Bar */}
-      <div className="p-3 border-t border-[#1E293B] bg-[#070D1B] text-[11px] text-slate-500 flex items-center justify-between">
+      <div className="p-3 border-t border-subtle bg-sidebar text-[11px] text-muted flex items-center justify-between">
         <span>v2.4 Enterprise</span>
         <button
           onClick={() => setCurrentTab('settings')}
-          className="hover:text-slate-300 transition-colors"
+          className="hover:text-primary transition-colors"
           title="Open Settings"
         >
           <Settings className="w-4 h-4" />

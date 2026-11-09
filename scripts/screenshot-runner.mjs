@@ -22,7 +22,13 @@ const views = [
 ];
 
 async function run() {
+  const fallbackExecutable = '/ms-playwright/chrome-headless-shell-linux64/chrome-headless-shell';
+  const executablePath =
+    process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ||
+    (fs.existsSync(fallbackExecutable) ? fallbackExecutable : undefined);
+
   const browser = await chromium.launch({
+    ...(executablePath ? { executablePath } : {}),
     args: ['--no-sandbox', '--disable-setuid-sandbox']
   });
 
@@ -36,6 +42,13 @@ async function run() {
       sessionStorage.setItem('acuitybi_guest_mode', 'true');
       if (pfx.startsWith('modern')) {
         localStorage.setItem('dataanalytix_ui', 'modern');
+        localStorage.setItem('dataanalytix_features', JSON.stringify({
+          modernTheme: true,
+          groupedSidebar: true,
+          depthUI: true,
+          heroScene3D: true,
+          selfHostedFonts: true
+        }));
         if (pfx.includes('light')) {
           localStorage.setItem('acuitybi_theme', 'light');
         } else {
@@ -43,6 +56,7 @@ async function run() {
         }
       } else {
         localStorage.setItem('dataanalytix_ui', 'classic');
+        localStorage.removeItem('dataanalytix_features');
       }
     }, { pfx: prefix });
 
@@ -56,6 +70,21 @@ async function run() {
         const mode = pfx.startsWith('modern') ? 'modern' : 'classic';
         localStorage.setItem('dataanalytix_ui', mode);
         window.dispatchEvent(new CustomEvent('dataanalytix:ui-updated', { detail: mode }));
+
+        if (pfx.startsWith('modern')) {
+          const flags = {
+            modernTheme: true,
+            groupedSidebar: true,
+            depthUI: true,
+            heroScene3D: true,
+            selfHostedFonts: true
+          };
+          localStorage.setItem('dataanalytix_features', JSON.stringify(flags));
+          window.dispatchEvent(new CustomEvent('dataanalytix:features-updated', { detail: flags }));
+        } else {
+          localStorage.removeItem('dataanalytix_features');
+          window.dispatchEvent(new CustomEvent('dataanalytix:features-updated', { detail: {} }));
+        }
 
         const theme = pfx.includes('light') ? 'light' : 'dark';
         localStorage.setItem('acuitybi_theme', theme);

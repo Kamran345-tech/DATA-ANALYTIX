@@ -26,6 +26,7 @@ import { registerTablesInSQL } from '../engine/sqlEngine';
 import { DEMO_DATASETS, DemoDatasetInfo } from '../data/demoDatasets';
 import { toast } from './useToast';
 import { safeMin, safeMax } from '../utils/mathUtils';
+import { applyDocumentTheme, subscribeSystemThemeChange } from '../utils/theme';
 
 export type NavigationTab = 
   | 'landing'
@@ -316,24 +317,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const setThemeMode = (mode: 'dark' | 'light') => {
     setThemeModeState(mode);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('acuitybi_theme', mode);
-      if (mode === 'light') {
-        document.documentElement.classList.add('theme-light');
-        document.documentElement.classList.remove('theme-dark', 'dark');
-        if (document.body) {
-          document.body.classList.add('theme-light');
-          document.body.classList.remove('theme-dark', 'dark', 'bg-[#0B1120]', 'text-[#F8FAFC]');
-        }
-      } else {
-        document.documentElement.classList.remove('theme-light');
-        document.documentElement.classList.add('theme-dark', 'dark');
-        if (document.body) {
-          document.body.classList.remove('theme-light');
-          document.body.classList.add('theme-dark', 'dark');
-        }
-      }
-    }
+    applyDocumentTheme(mode);
   };
 
   const toggleThemeMode = () => {
@@ -341,23 +325,10 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      if (themeMode === 'light') {
-        document.documentElement.classList.add('theme-light');
-        document.documentElement.classList.remove('theme-dark', 'dark');
-        if (document.body) {
-          document.body.classList.add('theme-light');
-          document.body.classList.remove('theme-dark', 'dark', 'bg-[#0B1120]', 'text-[#F8FAFC]');
-        }
-      } else {
-        document.documentElement.classList.remove('theme-light');
-        document.documentElement.classList.add('theme-dark', 'dark');
-        if (document.body) {
-          document.body.classList.remove('theme-light');
-          document.body.classList.add('theme-dark', 'dark');
-        }
-      }
-    }
+    applyDocumentTheme(themeMode);
+    return subscribeSystemThemeChange((resolved) => {
+      setThemeModeState(resolved);
+    });
   }, [themeMode]);
 
   const [project, setProject] = useState<ProjectMetadata>(defaultProject);

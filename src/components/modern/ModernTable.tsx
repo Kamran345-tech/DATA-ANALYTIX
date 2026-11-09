@@ -76,7 +76,7 @@ export function ModernTable<T extends Record<string, any>>({
           <button
             onClick={() => setDensity('comfortable')}
             className={`px-2 py-0.5 rounded-md font-medium transition-colors ${
-              density === 'comfortable' ? 'bg-[var(--modern-primary)] text-white shadow-xs' : 'text-[var(--modern-text-muted)] hover:text-[var(--modern-text)]'
+              density === 'comfortable' ? 'bg-[var(--modern-primary)] text-[var(--text-on-accent)] shadow-xs' : 'text-[var(--modern-text-muted)] hover:text-[var(--modern-text)]'
             }`}
           >
             Comfortable
@@ -84,7 +84,7 @@ export function ModernTable<T extends Record<string, any>>({
           <button
             onClick={() => setDensity('compact')}
             className={`px-2 py-0.5 rounded-md font-medium transition-colors ${
-              density === 'compact' ? 'bg-[var(--modern-primary)] text-white shadow-xs' : 'text-[var(--modern-text-muted)] hover:text-[var(--modern-text)]'
+              density === 'compact' ? 'bg-[var(--modern-primary)] text-[var(--text-on-accent)] shadow-xs' : 'text-[var(--modern-text-muted)] hover:text-[var(--modern-text)]'
             }`}
           >
             Compact

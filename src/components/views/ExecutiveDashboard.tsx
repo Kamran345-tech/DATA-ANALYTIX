@@ -72,6 +72,8 @@ import {
   recommendDatasetDashboard, 
   computeBoxplotSummary 
 } from '../../engine/chartRecommendationEngine';
+import { loadFeatureFlags, FeatureFlags } from '../../config/features';
+import { getChartGuideRule, formatChartGuideReason } from '../../config/chartGuide';
 
 type DashboardTab = 
   | 'overview' 
@@ -116,6 +118,14 @@ export const ExecutiveDashboard: React.FC = () => {
   } = usePlatform();
 
   const isLight = themeMode === 'light';
+
+  const [flags, setFlags] = useState<FeatureFlags>(() => loadFeatureFlags());
+
+  useEffect(() => {
+    const syncFlags = () => setFlags(loadFeatureFlags());
+    window.addEventListener('dataanalytix:features-updated', syncFlags);
+    return () => window.removeEventListener('dataanalytix:features-updated', syncFlags);
+  }, []);
 
   // Multiple visual styling themes with dedicated palette tokens
   const [visualTheme, setVisualTheme] = useState<DashboardVisualTheme>(() => {
@@ -228,6 +238,8 @@ export const ExecutiveDashboard: React.FC = () => {
   const [isPdfGenerating, setIsPdfGenerating] = useState(false);
   const [isBundleGenerating, setIsBundleGenerating] = useState(false);
   const [downloadSuccess, setDownloadSuccess] = useState<string | null>(null);
+  const [askDataQuery, setAskDataQuery] = useState('');
+
 
   // Compute filtered value for a KPI based on active slicers/filters
   const computeFilteredKpi = (kpi: KPI) => {
@@ -993,7 +1005,7 @@ export const ExecutiveDashboard: React.FC = () => {
                   className={`px-2 py-1 rounded-lg text-xs font-semibold transition-all border ${
                     visualTheme === thm.id
                       ? isLight ? 'bg-sky-600 text-white font-bold border-sky-700 shadow-xs' : 'bg-cyan-400 text-slate-950 font-bold border-cyan-400 shadow-xs'
-                      : isLight ? 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100 hover:text-slate-900' : 'bg-[#151921] text-gray-300 border-[#2D3748] hover:bg-[#1E2638]'
+                      : isLight ? 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100 hover:text-slate-900' : 'bg-elevated text-secondary border-subtle hover:bg-card-hover'
                   }`}
                   title={`Switch styling palette to ${thm.label}`}
                 >
@@ -1235,7 +1247,7 @@ export const ExecutiveDashboard: React.FC = () => {
                   onClick={() => {
                     openDrillThrough({ title: kpi.name, subtitle: kpi.definition, kpi, sourceContext: 'kpi_card' });
                   }}
-                  className="glass-card rounded-2xl p-4 sm:p-5 flex flex-col justify-between relative group cursor-pointer select-none card-3d h-full"
+                  className="depth-card glass-card rounded-[20px] p-4 sm:p-5 flex flex-col justify-between relative group cursor-pointer select-none card-3d h-full"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5 min-w-0">
@@ -1455,26 +1467,50 @@ export const ExecutiveDashboard: React.FC = () => {
               <div>
                 {/* Header: Title, Metric Selector, Granularity & View Controls */}
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-border-subtle">
-                  <Tooltip
-                    side="right"
-                    title="Executive Chronological Telemetry"
-                    tag="Macroeconomic Spline"
-                    content="Transforms granular transactions into executive trajectory curves. Switch between Monthly rollup, Exponential Smoothing, or Raw telemetry to analyze seasonal momentum."
-                  >
-                    <div className="flex items-center gap-2 cursor-help">
-                      <div className="w-8 h-8 rounded-xl bg-cyan-500/15 text-cyan-500 dark:text-cyan-400 border border-cyan-400/30 flex items-center justify-center shadow-xs">
-                        <Activity className="w-4 h-4 text-cyan-500 dark:text-cyan-400" />
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Tooltip
+                      side="right"
+                      title="Executive Chronological Telemetry"
+                      tag="Macroeconomic Spline"
+                      content="Transforms granular transactions into executive trajectory curves. Switch between Monthly rollup, Exponential Smoothing, or Raw telemetry to analyze seasonal momentum."
+                    >
+                      <div className="flex items-center gap-2 cursor-help">
+                        <div className="w-8 h-8 rounded-xl bg-cyan-500/15 text-cyan-500 dark:text-cyan-400 border border-cyan-400/30 flex items-center justify-center shadow-xs">
+                          <Activity className="w-4 h-4 text-cyan-500 dark:text-cyan-400" />
+                        </div>
+                        <div>
+                          <h3 className="font-headline-sm text-headline-sm text-slate-900 dark:text-slate-100 font-bold uppercase tracking-wide">
+                            CHRONOLOGICAL TREND PERFORMANCE
+                          </h3>
+                          <p className={`text-[11px] font-mono ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                            {trendGranularity === 'auto' ? 'Auto-Aggregated Trajectory' : trendGranularity === 'monthly' ? 'Monthly Calendar Rollup' : trendGranularity === 'smooth' ? 'Gaussian Trendline' : trendGranularity === 'weekly' ? 'Weekly Interval Rollup' : 'Raw Granular Telemetry'}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="font-headline-sm text-headline-sm text-slate-900 dark:text-slate-100 font-bold uppercase tracking-wide">
-                          CHRONOLOGICAL TREND PERFORMANCE
-                        </h3>
-                        <p className={`text-[11px] font-mono ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
-                          {trendGranularity === 'auto' ? 'Auto-Aggregated Trajectory' : trendGranularity === 'monthly' ? 'Monthly Calendar Rollup' : trendGranularity === 'smooth' ? 'Gaussian Trendline' : trendGranularity === 'weekly' ? 'Weekly Interval Rollup' : 'Raw Granular Telemetry'}
-                        </p>
-                      </div>
-                    </div>
-                  </Tooltip>
+                    </Tooltip>
+
+                    {flags.chartGuide && (() => {
+                      const rule = getChartGuideRule('line');
+                      if (!rule) return null;
+                      return (
+                        <Tooltip
+                          side="top"
+                          title={`Why this chart: ${rule.name}`}
+                          tag={rule.fits}
+                          content={`${formatChartGuideReason(rule.id)} Example: "${rule.question}"`}
+                        >
+                          <button
+                            type="button"
+                            aria-label={`Why this chart: ${rule.name}. ${formatChartGuideReason(rule.id)}`}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-mono font-semibold border border-accent/35 bg-accent-soft text-accent cursor-help focus-visible:outline-2 focus-visible:outline-accent"
+                          >
+                            <HelpCircle className="w-3 h-3 shrink-0" aria-hidden="true" />
+                            <span>Why this chart</span>
+                          </button>
+                        </Tooltip>
+                      );
+                    })()}
+                  </div>
 
                   {/* Controls: Metric Select & Granularity Toggles */}
                   <div className="flex flex-wrap items-center gap-2">
@@ -1893,7 +1929,7 @@ export const ExecutiveDashboard: React.FC = () => {
                               y1={yMean} 
                               x2={xMax + 5} 
                               y2={yMean} 
-                              stroke={isLight ? '#94a3b8' : '#64748b'} 
+                              stroke="var(--chart-axis)" 
                               strokeWidth="1.2" 
                               strokeDasharray="3 3" 
                               opacity="0.65" 
@@ -1902,7 +1938,7 @@ export const ExecutiveDashboard: React.FC = () => {
                               x={xMax + 4} 
                               y={yMean - 4} 
                               textAnchor="end" 
-                              fill={isLight ? '#475569' : '#94a3b8'} 
+                              fill="var(--chart-axis)" 
                               fontSize="8.5" 
                               fontFamily="monospace"
                               fontWeight="bold"
@@ -2054,11 +2090,7 @@ export const ExecutiveDashboard: React.FC = () => {
                           {/* Floating Interactive Glass Tooltip Card */}
                           {hoveredTrendPt && (
                             <div 
-                              className={`absolute z-30 pointer-events-none transition-all duration-75 px-3 py-2 rounded-xl border shadow-xl ${
-                                isLight 
-                                  ? 'bg-white/95 text-slate-900 border-slate-200 backdrop-blur-md' 
-                                  : 'bg-[#0B1120]/95 text-white border-white/15 backdrop-blur-md shadow-[0_8px_24px_rgba(0,0,0,0.6)]'
-                              }`}
+                              className="absolute z-30 pointer-events-none transition-all duration-75 px-3 py-2 rounded-xl border border-subtle shadow-xl bg-[var(--chart-tooltip-bg)] text-primary backdrop-blur-md"
                               style={{
                                 left: `${Math.min(78, Math.max(12, (hoveredTrendPt.x / 650) * 100))}%`,
                                 top: '8px',
@@ -2134,19 +2166,43 @@ export const ExecutiveDashboard: React.FC = () => {
             }`}>
               <div>
                 <div className="flex items-center justify-between pb-3 border-b border-border-subtle">
-                  <Tooltip
-                    side="left"
-                    title="Segment Share of Total"
-                    tag="Composition Donut"
-                    content="Decomposes total business volume across categorical segments with an interactive center rollup. Click on any segment row below to drill into filtered transaction rows."
-                  >
-                    <div className="flex items-center gap-2 cursor-help">
-                      <PieChart className="w-5 h-5 text-cyan-500 dark:text-cyan-400" />
-                      <h3 className="font-headline-sm text-headline-sm text-slate-900 dark:text-slate-100 font-bold uppercase tracking-wide">
-                        SEGMENT SHARE OF TOTAL
-                      </h3>
-                    </div>
-                  </Tooltip>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Tooltip
+                      side="left"
+                      title="Segment Share of Total"
+                      tag="Composition Donut"
+                      content="Decomposes total business volume across categorical segments with an interactive center rollup. Click on any segment row below to drill into filtered transaction rows."
+                    >
+                      <div className="flex items-center gap-2 cursor-help">
+                        <PieChart className="w-5 h-5 text-cyan-500 dark:text-cyan-400" />
+                        <h3 className="font-headline-sm text-headline-sm text-slate-900 dark:text-slate-100 font-bold uppercase tracking-wide">
+                          SEGMENT SHARE OF TOTAL
+                        </h3>
+                      </div>
+                    </Tooltip>
+
+                    {flags.chartGuide && (() => {
+                      const rule = getChartGuideRule('donut');
+                      if (!rule) return null;
+                      return (
+                        <Tooltip
+                          side="top"
+                          title={`Why this chart: ${rule.name}`}
+                          tag={rule.fits}
+                          content={`${formatChartGuideReason(rule.id)} Example: "${rule.question}"`}
+                        >
+                          <button
+                            type="button"
+                            aria-label={`Why this chart: ${rule.name}. ${formatChartGuideReason(rule.id)}`}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-mono font-semibold border border-accent/35 bg-accent-soft text-accent cursor-help focus-visible:outline-2 focus-visible:outline-accent"
+                          >
+                            <HelpCircle className="w-3 h-3 shrink-0" aria-hidden="true" />
+                            <span>Why this chart</span>
+                          </button>
+                        </Tooltip>
+                      );
+                    })()}
+                  </div>
 
                   <div className="flex items-center gap-2">
                     <span className="font-label-sm text-label-sm text-slate-700 dark:text-slate-300 uppercase font-bold">DIMENSION:</span>
@@ -2280,6 +2336,227 @@ export const ExecutiveDashboard: React.FC = () => {
                   <span>Inspect Pareto Tail</span>
                   <ExternalLink className="w-3 h-3" />
                 </span>
+              </div>
+            </div>
+          </section>
+
+          {/* TOP-PRODUCT BARS & ASK YOUR DATA CARDS */}
+          <section className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+            {/* Top-Product / Top-Performer Horizontal Bars (7 cols) */}
+            <div className={`lg:col-span-7 depth-card rounded-[20px] p-5 sm:p-6 border flex flex-col justify-between ${
+              isLight
+                ? 'bg-white border-slate-200 shadow-sm'
+                : 'bg-surface-card border-white/10 shadow-xl'
+            }`}>
+              <div>
+                <div className="flex items-center justify-between pb-3 border-b border-border-subtle">
+                  <div className="flex items-center gap-2">
+                    <BarChart3 className="w-5 h-5 text-teal-500 dark:text-teal-400" />
+                    <div>
+                      <h3 className="font-headline-sm text-headline-sm text-slate-900 dark:text-slate-100 font-bold uppercase tracking-wide">
+                        TOP PRODUCTS &amp; SEGMENTS
+                      </h3>
+                      <p className={`text-[11px] font-mono ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                        Ranked performance by {selectedTrendMetric || numericCols[0]?.name || 'Volume'} across {selectedDimension || stringCols[0]?.name || 'Category'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {flags.chartGuide && (() => {
+                      const rule = getChartGuideRule('bar');
+                      if (!rule) return null;
+                      return (
+                        <Tooltip
+                          side="top"
+                          title={`Why this chart: ${rule.name}`}
+                          tag={rule.fits}
+                          content={`${formatChartGuideReason(rule.id)} Example: "${rule.question}"`}
+                        >
+                          <button
+                            type="button"
+                            aria-label={`Why this chart: ${rule.name}. ${formatChartGuideReason(rule.id)}`}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-mono font-semibold border border-accent/35 bg-accent-soft text-accent cursor-help focus-visible:outline-2 focus-visible:outline-accent"
+                          >
+                            <HelpCircle className="w-3 h-3 shrink-0" aria-hidden="true" />
+                            <span>Why this chart</span>
+                          </button>
+                        </Tooltip>
+                      );
+                    })()}
+                    <span className="text-[11px] font-mono px-2.5 py-1 rounded-lg bg-teal-500/10 text-teal-600 dark:text-teal-300 border border-teal-500/25 font-semibold">
+                      Top {Math.min(5, (currentCategoryData || []).length)} Ranked
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-3 my-4 no-depth-3d chart-viewport">
+                  {(() => {
+                    const topBars = (currentCategoryData || []).slice(0, 5);
+                    const maxBarVal = Math.max(...topBars.map(b => b.value || 0), 1);
+                    const isCur = /revenue|sales|profit|margin|cost|amount|price/i.test(selectedTrendMetric || '');
+                    const fmtBar = (v: number) => {
+                      const str = v >= 1_000_000 ? `${(v / 1_000_000).toFixed(2)}M` : v >= 1_000 ? `${(v / 1_000).toFixed(1)}K` : Math.round(v).toLocaleString();
+                      return isCur ? `$${str}` : str;
+                    };
+
+                    if (topBars.length === 0) {
+                      return (
+                        <div className="text-xs text-slate-500 py-8 text-center font-mono">
+                          No ranked product or category segments available in current dataset.
+                        </div>
+                      );
+                    }
+
+                    return topBars.map((item, idx) => {
+                      const pct = Math.min(100, Math.max(8, ((item.value || 0) / maxBarVal) * 100));
+                      const barHex = idx === 0 ? 'var(--chart-1)' : idx === 1 ? 'var(--chart-3)' : idx === 2 ? 'var(--chart-2)' : 'var(--chart-7)';
+                      return (
+                        <div
+                          key={idx}
+                          onClick={() => handleDrilldown(item.category)}
+                          className="group cursor-pointer p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-white/[0.03] transition-colors"
+                        >
+                          <div className="flex items-center justify-between text-xs mb-1.5">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="font-mono text-[11px] font-bold text-slate-400 w-5">#{idx + 1}</span>
+                              <span className={`font-semibold truncate ${isLight ? 'text-slate-800' : 'text-slate-100'}`}>
+                                {item.category}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 font-mono tabular-nums shrink-0">
+                              <span className={`font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                                {fmtBar(item.value)}
+                              </span>
+                              <span className={`text-[11px] ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                                ({item.share ? `${item.share.toFixed(1)}%` : '0%'})
+                              </span>
+                            </div>
+                          </div>
+                          <div className={`w-full h-2.5 rounded-full overflow-hidden ${isLight ? 'bg-slate-100' : 'bg-slate-800/90'}`}>
+                            <div
+                              className="h-full rounded-full transition-all duration-500"
+                              style={{ width: `${pct}%`, backgroundColor: barHex }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+              </div>
+
+              <div className={`pt-2.5 border-t border-border-subtle flex items-center justify-between text-xs ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                <span className="font-mono text-[11px]">Click any bar to inspect underlying rows</span>
+                <button
+                  type="button"
+                  onClick={() => setCurrentTab('analysis')}
+                  className="text-teal-600 dark:text-teal-400 hover:underline font-semibold flex items-center gap-1 cursor-pointer"
+                >
+                  <span>Deep Dive Analysis</span>
+                  <ExternalLink className="w-3 h-3" />
+                </button>
+              </div>
+            </div>
+
+            {/* "Ask your data" Card (5 cols) */}
+            <div className={`lg:col-span-5 depth-card rounded-[20px] p-5 sm:p-6 border flex flex-col justify-between ${
+              isLight
+                ? 'bg-white border-slate-200 shadow-sm'
+                : 'bg-surface-card border-white/10 shadow-xl'
+            }`}>
+              <div>
+                <div className="flex items-center justify-between pb-3 border-b border-border-subtle">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-indigo-500/15 text-indigo-500 dark:text-indigo-400 border border-indigo-400/30 flex items-center justify-center">
+                      <Sparkles className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h3 className="font-headline-sm text-headline-sm text-slate-900 dark:text-slate-100 font-bold tracking-wide">
+                        Ask your data
+                      </h3>
+                      <p className={`text-[11px] font-mono ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                        Natural-language query grounded on {filteredRows.length.toLocaleString()} rows
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-600 dark:text-indigo-300 border border-indigo-500/20 font-bold">
+                    Verified AI
+                  </span>
+                </div>
+
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    setCurrentTab('ai_insights');
+                  }}
+                  className="my-4 space-y-3"
+                >
+                  <label htmlFor="exec-ask-data-input" className="sr-only">
+                    Ask a question about {project.name}
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="exec-ask-data-input"
+                      type="text"
+                      value={askDataQuery}
+                      onChange={(e) => setAskDataQuery(e.target.value)}
+                      placeholder={`Ask about ${selectedTrendMetric || 'revenue'}, ${selectedDimension || 'segments'}, or anomalies...`}
+                      className={`w-full rounded-xl pl-3.5 pr-24 py-3 text-xs border focus:outline-none transition-all ${
+                        isLight
+                          ? 'bg-slate-50 border-slate-300 text-slate-900 focus:border-teal-500'
+                          : 'bg-slate-900/90 border-slate-700/80 text-slate-100 focus:border-teal-400'
+                      }`}
+                    />
+                    <button
+                      type="submit"
+                      className="absolute right-1.5 top-1.5 bottom-1.5 px-3 rounded-lg bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs transition-colors cursor-pointer flex items-center gap-1"
+                    >
+                      <span>Ask AI</span>
+                      <ArrowUpRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <span className={`text-[10px] font-mono uppercase tracking-wider block ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                      Suggested questions:
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[
+                        `What drives ${selectedTrendMetric || 'top revenue'}?`,
+                        `Which ${selectedDimension || 'segment'} has highest growth?`,
+                        'Summarize anomalies & outliers'
+                      ].map((suggestion, sIdx) => (
+                        <button
+                          key={sIdx}
+                          type="button"
+                          onClick={() => {
+                            setAskDataQuery(suggestion);
+                            setCurrentTab('ai_insights');
+                          }}
+                          className={`text-[11px] px-2.5 py-1.5 rounded-lg border text-left transition-all cursor-pointer ${
+                            isLight
+                              ? 'bg-slate-50 hover:bg-teal-50 text-slate-700 border-slate-200 hover:border-teal-300'
+                              : 'bg-slate-900/60 hover:bg-slate-800 text-slate-300 border-slate-800 hover:border-teal-500/40'
+                          }`}
+                        >
+                          {suggestion}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </form>
+              </div>
+
+              <div className={`pt-2.5 border-t border-border-subtle flex items-center justify-between text-xs ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                <span className="font-mono text-[11px]">Zero-hallucination schema grounding</span>
+                <button
+                  type="button"
+                  onClick={() => setCurrentTab('ai_insights')}
+                  className="text-indigo-600 dark:text-indigo-400 hover:underline font-semibold flex items-center gap-1 cursor-pointer"
+                >
+                  <span>Open Ask Data AI</span>
+                  <ExternalLink className="w-3 h-3" />
+                </button>
               </div>
             </div>
           </section>
@@ -2535,6 +2812,27 @@ export const ExecutiveDashboard: React.FC = () => {
                               }`}>
                                 {visType}
                               </span>
+                              {flags.chartGuide && (() => {
+                                const rule = getChartGuideRule(visType);
+                                if (!rule) return null;
+                                return (
+                                  <Tooltip
+                                    side="top"
+                                    title={`Why this chart: ${rule.name}`}
+                                    tag={rule.fits}
+                                    content={`${formatChartGuideReason(rule.id)} Example: "${rule.question}"`}
+                                  >
+                                    <button
+                                      type="button"
+                                      aria-label={`Why this chart: ${rule.name}. ${formatChartGuideReason(rule.id)}`}
+                                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-mono font-semibold border border-accent/35 bg-accent-soft text-accent cursor-help shrink-0 focus-visible:outline-2 focus-visible:outline-accent"
+                                    >
+                                      <HelpCircle className="w-3 h-3 shrink-0" aria-hidden="true" />
+                                      <span>Why this chart</span>
+                                    </button>
+                                  </Tooltip>
+                                );
+                              })()}
                             </div>
                           )}
                           <div className={`font-body-sm text-body-sm pt-0.5 ${isLight ? 'text-slate-600 font-medium' : 'text-slate-400'}`}>

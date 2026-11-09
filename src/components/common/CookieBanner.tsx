@@ -21,18 +21,18 @@ export const CookieBanner: React.FC = () => {
   if (!show) return null;
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:max-w-md z-50 bg-[#0F172A] border border-slate-700 p-4 rounded-xl shadow-2xl flex flex-col gap-3 text-xs text-slate-300 animate-fadeIn">
-      <div className="flex items-center gap-2 text-cyan-400 font-semibold">
+    <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:max-w-md z-50 bg-card border border-subtle p-4 rounded-xl shadow-card flex flex-col gap-3 text-xs text-secondary animate-fadeIn">
+      <div className="flex items-center gap-2 text-accent font-semibold">
         <Shield className="w-4 h-4" />
         Privacy & Telemetry Consent
       </div>
-      <p className="leading-relaxed text-slate-400">
+      <p className="leading-relaxed text-muted">
         Data Analytix processes your datasets purely in your local browser sandbox and does not transmit raw records to third parties.
       </p>
       <div className="flex items-center justify-end gap-2">
         <button
           onClick={accept}
-          className="px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-semibold transition-colors"
+          className="px-3 py-1.5 rounded-lg bg-accent text-on-accent font-semibold transition-colors"
         >
           Acknowledge & Continue
         </button>

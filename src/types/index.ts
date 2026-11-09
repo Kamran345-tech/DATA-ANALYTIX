@@ -260,6 +260,7 @@ export interface VisualConfig {
     | 'bar' 
     | 'horizontal_bar' 
     | 'stacked_bar' 
+    | 'histogram'
     | 'donut' 
     | 'pie'
     | 'scatter' 

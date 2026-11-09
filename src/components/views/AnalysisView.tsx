@@ -110,15 +110,15 @@ export const AnalysisView: React.FC = () => {
   return (
     <div className="space-y-6 pb-12 animate-fadeIn w-full max-w-7xl mx-auto">
       {/* 1. Header */}
-      <div className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-4 sm:p-6 flex flex-wrap items-center justify-between gap-4">
+      <div className="bg-card border border-subtle rounded-2xl p-4 sm:p-6 flex flex-wrap items-center justify-between gap-4">
         <div className="space-y-1">
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-sky-400 font-mono">
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-accent font-mono">
             <Activity className="w-4 h-4" /> Data Analyst Statistical Workbench
           </div>
-          <h1 className="font-heading text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-wide uppercase">
+          <h1 className="font-heading text-2xl sm:text-3xl lg:text-4xl font-bold text-primary tracking-wide uppercase">
             STATISTICAL ANALYSIS & EXPLORATORY DATA ANALYSIS (EDA)
           </h1>
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-secondary">
             Full-spectrum mathematical discovery. Parametric distributions, bivariate correlations, Tukey IQR anomalies, and time-series forecasting.
           </p>
         </div>
@@ -126,9 +126,9 @@ export const AnalysisView: React.FC = () => {
         <div className="flex items-center gap-2">
           <button
             onClick={exportStatsCSV}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#1f1f1f] border border-[#333] hover:border-sky-500 text-white text-xs font-medium transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-input border border-subtle hover:border-strong text-primary text-xs font-medium transition-colors cursor-pointer"
           >
-            <Download className="w-3.5 h-3.5 text-sky-400" />
+            <Download className="w-3.5 h-3.5 text-accent" />
             <span className="hidden sm:inline">Export EDA as CSV</span>
           </button>
         </div>
@@ -140,8 +140,8 @@ export const AnalysisView: React.FC = () => {
           onClick={() => setActiveTab('eda')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl whitespace-nowrap transition-all cursor-pointer ${
             activeTab === 'eda'
-              ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/20'
-              : 'bg-[#1c1c1c] text-gray-300 hover:bg-[#252525] hover:text-white border border-[#2e2e2e]'
+              ? 'bg-accent text-on-accent font-bold shadow-sm'
+              : 'bg-card text-secondary hover:bg-card-hover hover:text-primary border border-subtle'
           }`}
         >
           <Table2 className="w-3.5 h-3.5" /> Descriptive Statistics (EDA)
@@ -151,8 +151,8 @@ export const AnalysisView: React.FC = () => {
           onClick={() => setActiveTab('correlation')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl whitespace-nowrap transition-all cursor-pointer ${
             activeTab === 'correlation'
-              ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/20'
-              : 'bg-[#1c1c1c] text-gray-300 hover:bg-[#252525] hover:text-white border border-[#2e2e2e]'
+              ? 'bg-accent text-on-accent font-bold shadow-sm'
+              : 'bg-card text-secondary hover:bg-card-hover hover:text-primary border border-subtle'
           }`}
         >
           <BarChart2 className="w-3.5 h-3.5" /> Correlation Heatmap & Scatter
@@ -162,8 +162,8 @@ export const AnalysisView: React.FC = () => {
           onClick={() => setActiveTab('distribution')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl whitespace-nowrap transition-all cursor-pointer ${
             activeTab === 'distribution'
-              ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/20'
-              : 'bg-[#1c1c1c] text-gray-300 hover:bg-[#252525] hover:text-white border border-[#2e2e2e]'
+              ? 'bg-accent text-on-accent font-bold shadow-sm'
+              : 'bg-card text-secondary hover:bg-card-hover hover:text-primary border border-subtle'
           }`}
         >
           <Sigma className="w-3.5 h-3.5" /> Distribution & Histogram
@@ -173,8 +173,8 @@ export const AnalysisView: React.FC = () => {
           onClick={() => setActiveTab('outliers')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl whitespace-nowrap transition-all cursor-pointer ${
             activeTab === 'outliers'
-              ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/20'
-              : 'bg-[#1c1c1c] text-gray-300 hover:bg-[#252525] hover:text-white border border-[#2e2e2e]'
+              ? 'bg-accent text-on-accent font-bold shadow-sm'
+              : 'bg-card text-secondary hover:bg-card-hover hover:text-primary border border-subtle'
           }`}
         >
           <AlertTriangle className="w-3.5 h-3.5" /> Outlier & Risk Inspector ({analytics.anomalies.length})
@@ -184,8 +184,8 @@ export const AnalysisView: React.FC = () => {
           onClick={() => setActiveTab('forecast')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl whitespace-nowrap transition-all cursor-pointer ${
             activeTab === 'forecast'
-              ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/20'
-              : 'bg-[#1c1c1c] text-gray-300 hover:bg-[#252525] hover:text-white border border-[#2e2e2e]'
+              ? 'bg-accent text-on-accent font-bold shadow-sm'
+              : 'bg-card text-secondary hover:bg-card-hover hover:text-primary border border-subtle'
           }`}
         >
           <TrendingUp className="w-3.5 h-3.5" /> Time Series Forecast
@@ -194,33 +194,33 @@ export const AnalysisView: React.FC = () => {
 
       {/* 3. TAB 1: DESCRIPTIVE STATISTICS (EDA) */}
       {activeTab === 'eda' && (
-        <div className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-4 sm:p-6 space-y-4">
+        <div className="bg-card border border-subtle rounded-2xl p-4 sm:p-6 space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="font-heading text-lg sm:text-xl font-bold text-white uppercase flex items-center gap-2">
-                <Table2 className="w-5 h-5 text-sky-400" />
+              <h2 className="font-heading text-lg sm:text-xl font-bold text-primary uppercase flex items-center gap-2">
+                <Table2 className="w-5 h-5 text-accent" />
                 NUMERICAL ATTRIBUTES DESCRIPTIVE SUMMARY
               </h2>
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-secondary">
                 Mathematical moments, quartiles (Q1, Median, Q3), dispersion (Std Dev, IQR), and distribution shape (Skewness, Kurtosis).
               </p>
             </div>
 
             <div className="relative w-full sm:w-64">
-              <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-2.5" />
+              <Search className="w-3.5 h-3.5 text-muted absolute left-3 top-2.5" />
               <input
                 type="text"
                 placeholder="Search numeric columns..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-[#141414] text-xs text-white pl-8 pr-3 py-1.5 rounded-xl border border-[#333] focus:border-sky-500 focus:outline-none"
+                className="w-full bg-input text-xs text-primary pl-8 pr-3 py-1.5 rounded-xl border border-subtle focus:border-strong focus:outline-none"
               />
             </div>
           </div>
 
-          <div className="overflow-x-auto rounded-xl border border-[#2d2d2d]">
+          <div className="overflow-x-auto rounded-xl border border-subtle">
             <table className="w-full text-left text-xs font-mono">
-              <thead className="bg-[#141414] text-gray-400 border-b border-[#2d2d2d]">
+              <thead className="bg-input text-secondary border-b border-subtle">
                 <tr>
                   <th className="p-3">Attribute</th>
                   <th className="p-3 text-right">Count</th>
@@ -236,38 +236,38 @@ export const AnalysisView: React.FC = () => {
                   <th className="p-3 text-right">Missing</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#252525]">
+              <tbody className="divide-y divide-[var(--border-subtle)]">
                 {statsList.length === 0 ? (
                   <tr>
-                    <td colSpan={12} className="p-6 text-center text-gray-500">
+                    <td colSpan={12} className="p-6 text-center text-muted">
                       No numerical features found matching filter.
                     </td>
                   </tr>
                 ) : (
                   statsList.map((stat, i) => (
-                    <tr key={i} className="hover:bg-[#1f1f1f] transition-colors">
-                      <td className="p-3 font-sans font-semibold text-white truncate max-w-[160px]">
+                    <tr key={i} className="hover:bg-card-hover transition-colors">
+                      <td className="p-3 font-sans font-semibold text-primary truncate max-w-[160px]">
                         {stat.column}
                       </td>
-                      <td className="p-3 text-right text-gray-300">{stat.count.toLocaleString()}</td>
-                      <td className="p-3 text-right text-sky-400 font-bold">{stat.mean.toLocaleString()}</td>
-                      <td className="p-3 text-right text-white">{stat.median.toLocaleString()}</td>
-                      <td className="p-3 text-right text-gray-400">{stat.stdDev.toLocaleString()}</td>
-                      <td className="p-3 text-right text-gray-400">{stat.min.toLocaleString()}</td>
-                      <td className="p-3 text-right text-gray-400">{stat.q1.toLocaleString()}</td>
-                      <td className="p-3 text-right text-gray-400">{stat.q3.toLocaleString()}</td>
-                      <td className="p-3 text-right text-white font-semibold">{stat.max.toLocaleString()}</td>
-                      <td className="p-3 text-right text-amber-400">{stat.iqr.toLocaleString()}</td>
+                      <td className="p-3 text-right text-secondary">{stat.count.toLocaleString()}</td>
+                      <td className="p-3 text-right text-accent font-bold">{stat.mean.toLocaleString()}</td>
+                      <td className="p-3 text-right text-primary">{stat.median.toLocaleString()}</td>
+                      <td className="p-3 text-right text-secondary">{stat.stdDev.toLocaleString()}</td>
+                      <td className="p-3 text-right text-secondary">{stat.min.toLocaleString()}</td>
+                      <td className="p-3 text-right text-secondary">{stat.q1.toLocaleString()}</td>
+                      <td className="p-3 text-right text-secondary">{stat.q3.toLocaleString()}</td>
+                      <td className="p-3 text-right text-primary font-semibold">{stat.max.toLocaleString()}</td>
+                      <td className="p-3 text-right text-warning">{stat.iqr.toLocaleString()}</td>
                       <td className="p-3 text-right">
                         <span className={`px-1.5 py-0.5 rounded text-[10px] ${
-                          Math.abs(stat.skewness) < 0.5 ? 'bg-gray-800 text-gray-300' :
-                          stat.skewness > 0 ? 'bg-blue-500/20 text-blue-400' : 'bg-purple-500/20 text-purple-400'
+                          Math.abs(stat.skewness) < 0.5 ? 'bg-input text-secondary' :
+                          stat.skewness > 0 ? 'bg-accent-soft text-accent' : 'bg-purple-500/20 text-purple-600 dark:text-purple-400'
                         }`}>
                           {stat.skewness.toFixed(2)}
                         </span>
                       </td>
                       <td className="p-3 text-right">
-                        <span className={stat.nullCount > 0 ? 'text-amber-400' : 'text-gray-500'}>
+                        <span className={stat.nullCount > 0 ? 'text-warning' : 'text-muted'}>
                           {stat.nullCount} ({stat.nullPct}%)
                         </span>
                       </td>
@@ -283,22 +283,22 @@ export const AnalysisView: React.FC = () => {
       {/* 4. TAB 2: CORRELATION HEATMAP & BIVARIATE SCATTER */}
       {activeTab === 'correlation' && (
         <div className="space-y-6">
-          <div className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-4 sm:p-6 space-y-4">
+          <div className="bg-card border border-subtle rounded-2xl p-4 sm:p-6 space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h2 className="font-heading text-lg sm:text-xl font-bold text-white uppercase flex items-center gap-2">
-                  <BarChart2 className="w-5 h-5 text-sky-400" />
+                <h2 className="font-heading text-lg sm:text-xl font-bold text-primary uppercase flex items-center gap-2">
+                  <BarChart2 className="w-5 h-5 text-accent" />
                   PEARSON CORRELATION MATRIX
                 </h2>
-                <p className="text-xs text-gray-400">
+                <p className="text-xs text-secondary">
                   Measures linear correlation between numerical attributes ranging from -1.00 (inverse) to +1.00 (positive).
                 </p>
               </div>
-              <span className="text-xs text-gray-400 font-mono">r ∈ [-1.00, +1.00]</span>
+              <span className="text-xs text-secondary font-mono">r ∈ [-1.00, +1.00]</span>
             </div>
 
             {analytics.correlationMatrix.length === 0 ? (
-              <div className="p-8 text-center text-xs text-gray-500 bg-[#141414] rounded-xl border border-[#262626]">
+              <div className="p-8 text-center text-xs text-muted bg-input rounded-xl border border-subtle">
                 Minimum 2 numerical columns required to calculate Pearson correlation coefficients.
               </div>
             ) : (
@@ -310,20 +310,20 @@ export const AnalysisView: React.FC = () => {
                   const isModerate = Math.abs(r) >= 0.4 && Math.abs(r) < 0.7;
 
                   return (
-                    <div key={idx} className="p-4 rounded-xl bg-[#141414] border border-[#282828] space-y-2.5 hover:border-sky-500/40 transition-colors">
+                    <div key={idx} className="p-4 rounded-xl bg-input border border-subtle space-y-2.5 hover:border-strong transition-colors">
                       <div className="flex items-center justify-between text-xs">
-                        <span className="text-white font-medium truncate max-w-[170px]">{pair.x} ↔ {pair.y}</span>
+                        <span className="text-primary font-medium truncate max-w-[170px]">{pair.x} ↔ {pair.y}</span>
                         <span className={`font-mono font-bold px-2 py-0.5 rounded text-xs ${
                           isStrong
-                            ? (isPositive ? 'bg-sky-500/20 text-sky-400' : 'bg-red-500/20 text-red-400')
+                            ? (isPositive ? 'bg-accent-soft text-accent' : 'bg-rose-500/20 text-danger')
                             : isModerate
-                            ? 'bg-amber-500/20 text-amber-300'
-                            : 'bg-[#222] text-gray-400'
+                            ? 'bg-amber-500/20 text-warning'
+                            : 'bg-card text-secondary border border-subtle'
                         }`}>
                           r = {r > 0 ? '+' : ''}{r.toFixed(2)}
                         </span>
                       </div>
-                      <div className="text-[11px] text-gray-400 flex items-center justify-between">
+                      <div className="text-[11px] text-secondary flex items-center justify-between">
                         <span>
                           {isStrong 
                             ? (isPositive ? 'Strong Positive Co-movement' : 'Strong Inverse Relationship')
@@ -341,31 +341,31 @@ export const AnalysisView: React.FC = () => {
 
           {/* Bivariate Scatter Inspector */}
           {numericCols.length >= 2 && (
-            <div className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-4 sm:p-6 space-y-4">
+            <div className="bg-card border border-subtle rounded-2xl p-4 sm:p-6 space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <h3 className="font-heading text-lg font-bold text-white uppercase flex items-center gap-2">
-                  <Compass className="w-5 h-5 text-cyan-400" />
+                <h3 className="font-heading text-lg font-bold text-primary uppercase flex items-center gap-2">
+                  <Compass className="w-5 h-5 text-accent" />
                   BIVARIATE SCATTER PLOT EXPLORER
                 </h3>
 
                 <div className="flex flex-wrap items-center gap-3 text-xs">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-gray-400 font-mono">X-Axis:</span>
+                    <span className="text-secondary font-mono">X-Axis:</span>
                     <select
                       value={scatterColX}
                       onChange={(e) => setScatterColX(e.target.value)}
-                      className="bg-[#141414] text-sky-400 px-2.5 py-1 rounded-lg border border-[#333] focus:border-sky-500 focus:outline-none"
+                      className="bg-input text-accent px-2.5 py-1 rounded-lg border border-subtle focus:border-strong focus:outline-none"
                     >
                       {numericCols.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
                     </select>
                   </div>
 
                   <div className="flex items-center gap-1.5">
-                    <span className="text-gray-400 font-mono">Y-Axis:</span>
+                    <span className="text-secondary font-mono">Y-Axis:</span>
                     <select
                       value={scatterColY}
                       onChange={(e) => setScatterColY(e.target.value)}
-                      className="bg-[#141414] text-cyan-400 px-2.5 py-1 rounded-lg border border-[#333] focus:border-sky-500 focus:outline-none"
+                      className="bg-input text-accent px-2.5 py-1 rounded-lg border border-subtle focus:border-strong focus:outline-none"
                     >
                       {numericCols.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
                     </select>
@@ -374,7 +374,7 @@ export const AnalysisView: React.FC = () => {
               </div>
 
               {/* Scatter Canvas */}
-              <div className="p-4 bg-[#141414] rounded-xl border border-[#282828] relative">
+              <div className="p-4 bg-input rounded-xl border border-subtle relative">
                 {(() => {
                   const xVals = scatterPoints.map(p => p.x);
                   const yVals = scatterPoints.map(p => p.y);
@@ -390,8 +390,8 @@ export const AnalysisView: React.FC = () => {
                   return (
                     <svg viewBox="0 0 500 220" className="w-full h-52 overflow-visible">
                       {/* Gridlines */}
-                      <line x1="50" y1="180" x2="480" y2="180" stroke="#333" strokeWidth="1" />
-                      <line x1="50" y1="20" x2="50" y2="180" stroke="#333" strokeWidth="1" />
+                      <line x1="50" y1="180" x2="480" y2="180" stroke="var(--chart-grid)" strokeWidth="1" />
+                      <line x1="50" y1="20" x2="50" y2="180" stroke="var(--chart-grid)" strokeWidth="1" />
                       
                       {/* Points */}
                       {displayPoints.map((pt, i) => (
@@ -400,8 +400,8 @@ export const AnalysisView: React.FC = () => {
                           cx={getX(pt.x)}
                           cy={getY(pt.y)}
                           r="4"
-                          fill="#0284C7"
-                          opacity="0.75"
+                          fill="var(--chart-1)"
+                          opacity="0.85"
                           className="hover:scale-150 hover:opacity-100 transition-all cursor-pointer"
                         >
                           <title>{`${scatterColX}: ${pt.x}, ${scatterColY}: ${pt.y}`}</title>
@@ -409,10 +409,10 @@ export const AnalysisView: React.FC = () => {
                       ))}
 
                       {/* Axis Labels */}
-                      <text x="260" y="205" fill="#888" fontSize="10" textAnchor="middle" fontFamily="monospace">
+                      <text x="260" y="205" fill="var(--chart-axis)" fontSize="10" textAnchor="middle" fontFamily="monospace">
                         {scatterColX}
                       </text>
-                      <text x="20" y="100" fill="#888" fontSize="10" textAnchor="middle" fontFamily="monospace" transform="rotate(-90, 20, 100)">
+                      <text x="20" y="100" fill="var(--chart-axis)" fontSize="10" textAnchor="middle" fontFamily="monospace" transform="rotate(-90, 20, 100)">
                         {scatterColY}
                       </text>
                     </svg>
@@ -426,38 +426,38 @@ export const AnalysisView: React.FC = () => {
 
       {/* 5. TAB 3: DISTRIBUTION & HISTOGRAM */}
       {activeTab === 'distribution' && (
-        <div className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-4 sm:p-6 space-y-5">
+        <div className="bg-card border border-subtle rounded-2xl p-4 sm:p-6 space-y-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="font-heading text-lg sm:text-xl font-bold text-white uppercase flex items-center gap-2">
-                <Sigma className="w-5 h-5 text-sky-400" />
+              <h2 className="font-heading text-lg sm:text-xl font-bold text-primary uppercase flex items-center gap-2">
+                <Sigma className="w-5 h-5 text-accent" />
                 PARAMETRIC FREQUENCY HISTOGRAM
               </h2>
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-secondary">
                 Visualize skewness, kurtosis, modal density, and central tendency across numeric variables.
               </p>
             </div>
 
             <div className="flex flex-wrap items-center gap-3 text-xs">
               <div className="flex items-center gap-1.5">
-                <span className="text-gray-400 font-mono">Column:</span>
+                <span className="text-secondary font-mono">Column:</span>
                 <select
                   value={selectedHistCol}
                   onChange={(e) => setSelectedHistCol(e.target.value)}
-                  className="bg-[#141414] text-sky-400 font-mono px-3 py-1.5 rounded-lg border border-[#333] focus:border-sky-500 focus:outline-none"
+                  className="bg-input text-accent font-mono px-3 py-1.5 rounded-lg border border-subtle focus:border-strong focus:outline-none"
                 >
                   {numericCols.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
                 </select>
               </div>
 
               <div className="flex items-center gap-1.5">
-                <span className="text-gray-400 font-mono">Bins:</span>
+                <span className="text-secondary font-mono">Bins:</span>
                 {[5, 10, 15, 20].map(b => (
                   <button
                     key={b}
                     onClick={() => setNumBins(b)}
                     className={`px-2.5 py-1 rounded-lg font-mono text-xs transition-colors cursor-pointer ${
-                      numBins === b ? 'bg-sky-600 text-white font-bold' : 'bg-[#141414] text-gray-400 hover:text-white border border-[#333]'
+                      numBins === b ? 'bg-accent text-on-accent font-bold' : 'bg-input text-secondary hover:text-primary border border-subtle'
                     }`}
                   >
                     {b}
@@ -469,26 +469,26 @@ export const AnalysisView: React.FC = () => {
 
           {/* Central Tendency Metrics */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-            <div className="p-3 bg-[#141414] rounded-xl border border-[#282828]">
-              <span className="text-gray-500 font-mono">Sample Size</span>
-              <div className="text-base font-bold text-white font-mono">{histData.total}</div>
+            <div className="p-3 bg-input rounded-xl border border-subtle">
+              <span className="text-muted font-mono">Sample Size</span>
+              <div className="text-base font-bold text-primary font-mono">{histData.total}</div>
             </div>
-            <div className="p-3 bg-[#141414] rounded-xl border border-[#282828]">
-              <span className="text-gray-500 font-mono">Mean (μ)</span>
-              <div className="text-base font-bold text-sky-400 font-mono">{Math.round(histData.mean * 100) / 100}</div>
+            <div className="p-3 bg-input rounded-xl border border-subtle">
+              <span className="text-muted font-mono">Mean (μ)</span>
+              <div className="text-base font-bold text-accent font-mono">{Math.round(histData.mean * 100) / 100}</div>
             </div>
-            <div className="p-3 bg-[#141414] rounded-xl border border-[#282828]">
-              <span className="text-gray-500 font-mono">Median (M)</span>
-              <div className="text-base font-bold text-cyan-400 font-mono">{Math.round(histData.median * 100) / 100}</div>
+            <div className="p-3 bg-input rounded-xl border border-subtle">
+              <span className="text-muted font-mono">Median (M)</span>
+              <div className="text-base font-bold text-info font-mono">{Math.round(histData.median * 100) / 100}</div>
             </div>
-            <div className="p-3 bg-[#141414] rounded-xl border border-[#282828]">
-              <span className="text-gray-500 font-mono">Min / Max Range</span>
-              <div className="text-base font-bold text-gray-200 font-mono">{Math.round(histData.min)} - {Math.round(histData.max)}</div>
+            <div className="p-3 bg-input rounded-xl border border-subtle">
+              <span className="text-muted font-mono">Min / Max Range</span>
+              <div className="text-base font-bold text-primary font-mono">{Math.round(histData.min)} - {Math.round(histData.max)}</div>
             </div>
           </div>
 
           {/* SVG Histogram Rendering */}
-          <div className="p-4 bg-[#141414] rounded-2xl border border-[#282828]">
+          <div className="p-4 bg-input rounded-2xl border border-subtle">
             {(() => {
               const maxCount = Math.max(safeMax(histData.bins.map(b => b.count), 1), 1);
               const barWidth = 440 / (histData.bins.length || 1);
@@ -497,7 +497,7 @@ export const AnalysisView: React.FC = () => {
                 <svg viewBox="0 0 520 220" className="w-full h-56 overflow-visible">
                   {/* Grid */}
                   {[0, 0.5, 1].map((p, i) => (
-                    <line key={i} x1="40" y1={20 + 150 * (1 - p)} x2="490" y2={20 + 150 * (1 - p)} stroke="#262626" strokeDasharray="3,3" />
+                    <line key={i} x1="40" y1={20 + 150 * (1 - p)} x2="490" y2={20 + 150 * (1 - p)} stroke="var(--chart-grid)" strokeDasharray="3,3" />
                   ))}
 
                   {/* Histogram Bars */}
@@ -524,18 +524,18 @@ export const AnalysisView: React.FC = () => {
                           y={y}
                           width={Math.max(4, barWidth - 4)}
                           height={Math.max(2, h)}
-                          fill="#0284C7"
+                          fill="var(--chart-1)"
                           rx="3"
                           className="transition-all group-hover:brightness-125"
                         />
                         <text
                           x={x + barWidth / 2}
                           y={Math.max(15, y - 5)}
-                          fill="#fff"
+                          fill="var(--text-primary)"
                           fontSize="9"
                           fontFamily="monospace"
                           textAnchor="middle"
-                          opacity="0.8"
+                          opacity="0.85"
                         >
                           {bin.count > 0 ? bin.count : ''}
                         </text>
@@ -543,12 +543,12 @@ export const AnalysisView: React.FC = () => {
                     );
                   })}
 
-                  <line x1="40" y1="170" x2="490" y2="170" stroke="#444" strokeWidth="1" />
+                  <line x1="40" y1="170" x2="490" y2="170" stroke="var(--chart-grid)" strokeWidth="1" />
                 </svg>
               );
             })()}
 
-            <div className="flex justify-between text-[10px] text-gray-500 font-mono pt-2">
+            <div className="flex justify-between text-[10px] text-muted font-mono pt-2">
               <span>Min: {histData.min.toLocaleString()}</span>
               <span>Distribution across {numBins} intervals</span>
               <span>Max: {histData.max.toLocaleString()}</span>
@@ -559,23 +559,23 @@ export const AnalysisView: React.FC = () => {
 
       {/* 6. TAB 4: OUTLIER & RISK INSPECTOR */}
       {activeTab === 'outliers' && (
-        <div className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-4 sm:p-6 space-y-4">
+        <div className="bg-card border border-subtle rounded-2xl p-4 sm:p-6 space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="font-heading text-lg sm:text-xl font-bold text-white uppercase flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 text-amber-400" />
+              <h2 className="font-heading text-lg sm:text-xl font-bold text-primary uppercase flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-warning" />
                 STATISTICAL ANOMALY & OUTLIER AUDIT ({analytics.anomalies.length})
               </h2>
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-secondary">
                 Rigorous Tukey 1.5x Interquartile Range (IQR) fence inspection. Identifies extreme values and revenue concentration risks.
               </p>
             </div>
           </div>
 
           {analytics.anomalies.length === 0 ? (
-            <div className="p-8 text-center text-xs text-gray-400 bg-[#141414] rounded-xl border border-[#262626] space-y-2">
-              <CheckCircle2 className="w-8 h-8 text-sky-400 mx-auto" />
-              <div className="font-bold text-white text-sm">Clean Statistical Profile</div>
+            <div className="p-8 text-center text-xs text-secondary bg-input rounded-xl border border-subtle space-y-2">
+              <CheckCircle2 className="w-8 h-8 text-accent mx-auto" />
+              <div className="font-bold text-primary text-sm">Clean Statistical Profile</div>
               <p>No critical anomalies exceeding 1.5x IQR were discovered in the analyzed rows.</p>
             </div>
           ) : (
@@ -583,26 +583,26 @@ export const AnalysisView: React.FC = () => {
               {analytics.anomalies.map(anom => (
                 <div 
                   key={anom.id}
-                  className="p-4 sm:p-5 rounded-2xl bg-[#141414] border border-[#282828] space-y-3 text-xs flex flex-col justify-between"
+                  className="p-4 sm:p-5 rounded-2xl bg-input border border-subtle space-y-3 text-xs flex flex-col justify-between"
                 >
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-white text-sm">{anom.title}</span>
+                      <span className="font-bold text-primary text-sm">{anom.title}</span>
                       <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-mono font-bold ${
-                        anom.severity === 'critical' ? 'bg-red-500/20 text-red-400' : 'bg-amber-500/20 text-amber-300'
+                        anom.severity === 'critical' ? 'bg-rose-500/20 text-danger' : 'bg-amber-500/20 text-warning'
                       }`}>
                         {anom.severity}
                       </span>
                     </div>
-                    <p className="text-gray-300">{anom.reason}</p>
-                    <div className="text-[11px] text-gray-400 font-mono">
+                    <p className="text-secondary">{anom.reason}</p>
+                    <div className="text-[11px] text-muted font-mono">
                       <span>Observed: </span>
-                      <strong className="text-white">{anom.observedValue}</strong>
+                      <strong className="text-primary">{anom.observedValue}</strong>
                     </div>
                   </div>
 
-                  <div className="p-2.5 rounded-xl bg-sky-950/30 border border-sky-500/30 text-sky-300">
-                    <strong className="text-white block text-[10px] uppercase font-mono">Action Recommendation:</strong>
+                  <div className="p-2.5 rounded-xl bg-accent-soft border border-subtle text-accent">
+                    <strong className="text-primary block text-[10px] uppercase font-mono">Action Recommendation:</strong>
                     <span>{anom.recommendedAction}</span>
                   </div>
                 </div>
@@ -614,20 +614,20 @@ export const AnalysisView: React.FC = () => {
 
       {/* 7. TAB 5: TIME SERIES FORECAST */}
       {activeTab === 'forecast' && (
-        <div className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-4 sm:p-6 space-y-4">
+        <div className="bg-card border border-subtle rounded-2xl p-4 sm:p-6 space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="space-y-0.5">
-              <h2 className="font-heading text-lg sm:text-xl font-bold text-white uppercase flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-sky-400" />
+              <h2 className="font-heading text-lg sm:text-xl font-bold text-primary uppercase flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-accent" />
                 HOLT-WINTERS EXPONENTIAL TIME-SERIES FORECAST
               </h2>
-              <p className="text-xs text-gray-400 font-mono">
+              <p className="text-xs text-secondary font-mono">
                 Model: {forecast?.method || 'Exponential Smoothing'} • Horizon: {forecast?.horizon || 0} periods
               </p>
             </div>
 
             {forecast?.isAvailable && (
-              <span className="px-2.5 py-1 rounded-lg bg-sky-500/15 text-sky-300 font-mono text-xs font-semibold border border-sky-500/30">
+              <span className="px-2.5 py-1 rounded-lg bg-accent-soft text-accent font-mono text-xs font-semibold border border-subtle">
                 Verified Forecast Available
               </span>
             )}
@@ -635,9 +635,9 @@ export const AnalysisView: React.FC = () => {
 
           {forecast && forecast.isAvailable ? (
             <div className="space-y-4">
-              <div className="overflow-x-auto rounded-xl border border-[#282828]">
+              <div className="overflow-x-auto rounded-xl border border-subtle">
                 <table className="w-full text-left text-xs font-mono">
-                  <thead className="bg-[#141414] text-gray-400 border-b border-[#333]">
+                  <thead className="bg-input text-secondary border-b border-subtle">
                     <tr>
                       <th className="p-3">Period</th>
                       <th className="p-3 text-right">Historical Actual</th>
@@ -645,15 +645,15 @@ export const AnalysisView: React.FC = () => {
                       <th className="p-3 text-right">95% Confidence Interval [Lower - Upper]</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#222]">
+                  <tbody className="divide-y divide-[var(--border-subtle)]">
                     {forecast.data.map((pt, i) => (
-                      <tr key={i} className={pt.forecast ? 'bg-sky-500/10 text-sky-300' : 'text-gray-300'}>
-                        <td className="p-3 font-bold">{pt.period}</td>
+                      <tr key={i} className={pt.forecast ? 'bg-accent-soft text-accent' : 'text-secondary'}>
+                        <td className="p-3 font-bold text-primary">{pt.period}</td>
                         <td className="p-3 text-right">{pt.actual !== undefined ? pt.actual.toLocaleString() : '—'}</td>
-                        <td className="p-3 text-right font-bold text-sky-400">
+                        <td className="p-3 text-right font-bold text-accent">
                           {pt.forecast !== undefined ? pt.forecast.toLocaleString() : '—'}
                         </td>
-                        <td className="p-3 text-right text-cyan-400">
+                        <td className="p-3 text-right text-info">
                           {pt.confidenceLower !== undefined ? `[${pt.confidenceLower.toLocaleString()} - ${pt.confidenceUpper?.toLocaleString()}]` : '—'}
                         </td>
                       </tr>
@@ -663,10 +663,10 @@ export const AnalysisView: React.FC = () => {
               </div>
             </div>
           ) : (
-            <div className="p-8 text-center bg-[#141414] rounded-xl border border-gray-700 space-y-2">
-              <AlertTriangle className="w-8 h-8 text-amber-400 mx-auto" />
-              <h4 className="font-bold text-white text-sm">Forecast Requires Additional Sequential Periods</h4>
-              <p className="text-xs text-gray-400 max-w-md mx-auto">
+            <div className="p-8 text-center bg-input rounded-xl border border-subtle space-y-2">
+              <AlertTriangle className="w-8 h-8 text-warning mx-auto" />
+              <h4 className="font-bold text-primary text-sm">Forecast Requires Additional Sequential Periods</h4>
+              <p className="text-xs text-secondary max-w-md mx-auto">
                 Time-series forecasting models require minimum sequential chronological observations to project future bounds reliably.
               </p>
             </div>

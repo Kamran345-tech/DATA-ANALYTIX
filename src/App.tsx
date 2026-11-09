@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useEffect, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { PlatformProvider, usePlatform } from './store/usePlatformStore';
 import { AuthProvider, useFirebaseAuth } from './store/useFirebaseAuth';
 import { Navbar } from './components/layout/Navbar';
@@ -15,6 +15,8 @@ import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { CookieBanner } from './components/common/CookieBanner';
 import { loadFeatureFlags, FeatureFlags } from './config/features';
 import { updateHashForTab, getTabFromCurrentHash } from './utils/routing';
+import { applyDocumentTheme } from './utils/theme';
+import { useThemeTransition } from './hooks/useThemeTransition';
 import './styles/modern.css';
 import { ModernNavbar } from './components/modern/ModernNavbar';
 import { ModernSidebar } from './components/modern/ModernSidebar';
@@ -52,8 +54,8 @@ const WorkspacesView = lazy(() => import('./components/views/WorkspacesView').th
 const NotFoundView = lazy(() => import('./components/views/NotFoundView').then(m => ({ default: m.NotFoundView })));
 
 const SuspenseLoader: React.FC = () => (
-  <div className="h-64 flex flex-col items-center justify-center gap-3 text-slate-400">
-    <div className="w-8 h-8 rounded-full border-2 border-cyan-400 border-t-transparent animate-spin" />
+  <div className="h-64 flex flex-col items-center justify-center gap-3 text-muted">
+    <div className="w-8 h-8 rounded-full border-2 border-accent border-t-transparent animate-spin" />
     <span className="text-xs font-mono">Loading analytical module...</span>
   </div>
 );
@@ -65,6 +67,7 @@ const MainContent: React.FC = () => {
   const [flags, setFlags] = useState<FeatureFlags>(() => loadFeatureFlags());
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isWelcomeModalOpen, setIsWelcomeModalOpen] = useState(false);
+  const isThemeTransitioning = useThemeTransition(themeMode, 280);
 
   // Global Ctrl+K / Cmd+K keyboard shortcut for Command Palette in Modern UI
   useEffect(() => {
@@ -104,35 +107,10 @@ const MainContent: React.FC = () => {
     }
   }, [currentTab, flags.hashRouting, setCurrentTab]);
 
-  // Apply theme attributes to document
+  // Apply theme & feature attributes via single source of truth helper
   useEffect(() => {
-    if (typeof document !== 'undefined') {
-      const isLgt = themeMode === 'light';
-      if (isLgt) {
-        document.documentElement.classList.add('theme-light');
-        document.documentElement.classList.remove('dark', 'theme-dark');
-        document.body.classList.add('theme-light');
-        document.body.classList.remove('dark', 'theme-dark');
-      } else {
-        document.documentElement.classList.add('dark', 'theme-dark');
-        document.documentElement.classList.remove('theme-light');
-        document.body.classList.add('dark', 'theme-dark');
-        document.body.classList.remove('theme-light');
-      }
-
-      if (flags.modernTheme && !isLgt) {
-        document.documentElement.setAttribute('data-theme', 'modern');
-      } else {
-        document.documentElement.removeAttribute('data-theme');
-      }
-
-      if (flags.selfHostedFonts) {
-        document.documentElement.setAttribute('data-font-fallback', 'system');
-      } else {
-        document.documentElement.removeAttribute('data-font-fallback');
-      }
-    }
-  }, [flags.modernTheme, flags.selfHostedFonts, themeMode]);
+    applyDocumentTheme(themeMode, flags);
+  }, [flags, themeMode]);
 
   if (loading) {
     return (
@@ -236,7 +214,11 @@ const MainContent: React.FC = () => {
     : 'bg-surface-base text-on-surface theme-dark dark';
 
   return (
-    <div className={`h-screen max-h-screen overflow-hidden ${themeClasses} flex flex-col font-sans transition-colors duration-200`}>
+    <div
+      className={`h-screen max-h-screen overflow-hidden ${themeClasses} ${
+        isThemeTransitioning ? 'theme-crossfade-active' : ''
+      } flex flex-col font-sans transition-[background-color,color,border-color,opacity] duration-300 ease-out`}
+    >
       {!isPresentationMode && (
         isModern ? (
           <ModernNavbar 
@@ -259,7 +241,9 @@ const MainContent: React.FC = () => {
         <main
           role="main"
           id="main-content"
-          className={`flex-1 overflow-y-auto min-h-0 w-full min-w-0 ${
+          className={`flex-1 overflow-y-auto min-h-0 w-full min-w-0 transition-[background-color,color,border-color,opacity] duration-300 ease-out ${
+            isThemeTransitioning ? 'theme-crossfade-active' : ''
+          } ${
             isLight ? 'bg-[#f8fafc] text-slate-900' : 'bg-[#070D1B] text-slate-100'
           } ${
             isModern ? 'pb-16 md:pb-5 p-3 sm:p-5 lg:p-7' : isPresentationMode ? 'p-3 sm:p-6' : 'p-3 sm:p-5 lg:p-7'

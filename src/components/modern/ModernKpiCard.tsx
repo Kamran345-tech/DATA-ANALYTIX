@@ -70,10 +70,10 @@ export const ModernKpiCard: React.FC<ModernKpiCardProps> = ({
           <div
             className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold font-mono ${
               isNeutral
-                ? 'bg-slate-500/10 text-slate-400'
+                ? 'bg-[var(--bg-elevated)] text-[var(--text-muted)] border border-[var(--border-subtle)]'
                 : isPositive
-                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                ? 'bg-emerald-500/10 text-[var(--success)] border border-emerald-500/20'
+                : 'bg-rose-500/10 text-[var(--danger)] border border-rose-500/20'
             }`}
           >
             {isNeutral ? (

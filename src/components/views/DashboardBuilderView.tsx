@@ -31,19 +31,138 @@ import {
   Calendar,
   CheckCircle2,
   Zap,
-  Info
+  Info,
+  AlertTriangle,
+  HelpCircle
 } from 'lucide-react';
 import { usePlatform } from '../../store/usePlatformStore';
 import { VisualConfig } from '../../types';
 import { EditableDashboardTitle } from '../common/EditableDashboardTitle';
-import { generateEnterpriseReportPDF, downloadDashboardAndReportBundle } from '../../engine/exportEngine';
+import { GlobalFilterBar } from '../common/GlobalFilterBar';
+import { InteractiveSlicersBar } from '../common/InteractiveSlicersBar';
+import { ModernEmptyState } from '../modern/ModernEmptyState';
+import {
+  generateEnterpriseReportPDF,
+  downloadDashboardAndReportBundle,
+  downloadChartGuidePDF
+} from '../../engine/exportEngine';
 import { safeMax } from '../../utils/mathUtils';
 import { 
   recommendChartsForFields, 
   recommendDatasetDashboard, 
   computeBoxplotSummary,
+  capCategoriesWithOther,
+  evaluateChartRuleFit,
+  parseNumericValue,
+  sampleRowsForChart,
   ChartRecommendation 
 } from '../../engine/chartRecommendationEngine';
+import { loadFeatureFlags, FeatureFlags } from '../../config/features';
+import {
+  CHART_GUIDE_RULES,
+  ChartGuideId,
+  ChartGuideRule,
+  getChartGuideRule,
+  formatChartGuideReason
+} from '../../config/chartGuide';
+import { HistogramChart, StackedBarChart, GuideChartRenderer } from '../charts/InteractiveCharts';
+import { useToast } from '../../store/useToast';
+import {
+  buildGuideChartPlottedCSV,
+  exportChartPlottedDataCSV,
+  exportChartContainerPNG
+} from '../../utils/chartExport';
+
+const renderChartGuideIllustration = (id: ChartGuideId) => {
+  switch (id) {
+    case 'bar':
+      return (
+        <svg viewBox="0 0 64 40" className="w-16 h-10 shrink-0" aria-hidden="true">
+          <rect x="6" y="22" width="10" height="14" rx="2" fill="#2DD4BF" fillOpacity="0.45" />
+          <rect x="20" y="12" width="10" height="24" rx="2" fill="#2DD4BF" fillOpacity="0.75" />
+          <rect x="34" y="5" width="10" height="31" rx="2" fill="#2DD4BF" />
+          <rect x="48" y="16" width="10" height="20" rx="2" fill="#818CF8" fillOpacity="0.85" />
+          <line x1="4" y1="36" x2="60" y2="36" stroke="#64748B" strokeWidth="1.5" strokeLinecap="round" />
+        </svg>
+      );
+    case 'line':
+      return (
+        <svg viewBox="0 0 64 40" className="w-16 h-10 shrink-0" aria-hidden="true">
+          <path d="M 6 30 L 20 21 L 34 25 L 46 12 L 58 7 L 58 36 L 6 36 Z" fill="#2DD4BF" fillOpacity="0.16" />
+          <path d="M 6 30 L 20 21 L 34 25 L 46 12 L 58 7" fill="none" stroke="#2DD4BF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx="6" cy="30" r="2.5" fill="#2DD4BF" />
+          <circle cx="20" cy="21" r="2.5" fill="#2DD4BF" />
+          <circle cx="34" cy="25" r="2.5" fill="#2DD4BF" />
+          <circle cx="46" cy="12" r="2.5" fill="#818CF8" />
+          <circle cx="58" cy="7" r="3" fill="#2DD4BF" />
+        </svg>
+      );
+    case 'scatter':
+      return (
+        <svg viewBox="0 0 64 40" className="w-16 h-10 shrink-0" aria-hidden="true">
+          <line x1="8" y1="33" x2="56" y2="9" stroke="#818CF8" strokeWidth="1.2" strokeDasharray="3,3" />
+          <circle cx="12" cy="30" r="3" fill="#2DD4BF" />
+          <circle cx="21" cy="24" r="3" fill="#2DD4BF" fillOpacity="0.85" />
+          <circle cx="28" cy="27" r="2.5" fill="#818CF8" />
+          <circle cx="37" cy="18" r="3.2" fill="#2DD4BF" />
+          <circle cx="45" cy="15" r="2.8" fill="#818CF8" />
+          <circle cx="53" cy="10" r="3.2" fill="#2DD4BF" />
+        </svg>
+      );
+    case 'histogram':
+      return (
+        <svg viewBox="0 0 64 40" className="w-16 h-10 shrink-0" aria-hidden="true">
+          <rect x="6" y="27" width="9" height="9" rx="1" fill="#2DD4BF" fillOpacity="0.4" />
+          <rect x="16" y="17" width="9" height="19" rx="1" fill="#2DD4BF" fillOpacity="0.7" />
+          <rect x="26" y="7" width="9" height="29" rx="1" fill="#2DD4BF" />
+          <rect x="36" y="13" width="9" height="23" rx="1" fill="#818CF8" fillOpacity="0.85" />
+          <rect x="46" y="24" width="9" height="12" rx="1" fill="#818CF8" fillOpacity="0.5" />
+          <line x1="4" y1="36" x2="58" y2="36" stroke="#64748B" strokeWidth="1.5" />
+        </svg>
+      );
+    case 'stacked_bar':
+      return (
+        <svg viewBox="0 0 64 40" className="w-16 h-10 shrink-0" aria-hidden="true">
+          <rect x="8" y="22" width="11" height="14" rx="1.5" fill="#2DD4BF" />
+          <rect x="8" y="12" width="11" height="9" rx="1.5" fill="#818CF8" />
+          <rect x="26" y="18" width="11" height="18" rx="1.5" fill="#2DD4BF" />
+          <rect x="26" y="6" width="11" height="11" rx="1.5" fill="#818CF8" />
+          <rect x="44" y="25" width="11" height="11" rx="1.5" fill="#2DD4BF" />
+          <rect x="44" y="14" width="11" height="10" rx="1.5" fill="#818CF8" />
+        </svg>
+      );
+    case 'donut':
+      return (
+        <svg viewBox="0 0 64 40" className="w-16 h-10 shrink-0" aria-hidden="true">
+          <circle cx="32" cy="20" r="13" fill="none" stroke="#1E293B" strokeWidth="6" />
+          <circle cx="32" cy="20" r="13" fill="none" stroke="#2DD4BF" strokeWidth="6" strokeDasharray="48 82" strokeDashoffset="15" />
+          <circle cx="32" cy="20" r="13" fill="none" stroke="#818CF8" strokeWidth="6" strokeDasharray="24 82" strokeDashoffset="-33" />
+        </svg>
+      );
+    case 'heatmap':
+      return (
+        <svg viewBox="0 0 64 40" className="w-16 h-10 shrink-0" aria-hidden="true">
+          <rect x="8" y="6" width="13" height="12" rx="2" fill="#2DD4BF" fillOpacity="0.3" />
+          <rect x="24" y="6" width="13" height="12" rx="2" fill="#2DD4BF" fillOpacity="0.95" />
+          <rect x="40" y="6" width="13" height="12" rx="2" fill="#818CF8" fillOpacity="0.65" />
+          <rect x="8" y="21" width="13" height="12" rx="2" fill="#818CF8" fillOpacity="0.85" />
+          <rect x="24" y="21" width="13" height="12" rx="2" fill="#2DD4BF" fillOpacity="0.45" />
+          <rect x="40" y="21" width="13" height="12" rx="2" fill="#2DD4BF" />
+        </svg>
+      );
+    case 'boxplot':
+      return (
+        <svg viewBox="0 0 64 40" className="w-16 h-10 shrink-0" aria-hidden="true">
+          <line x1="20" y1="6" x2="20" y2="34" stroke="#2DD4BF" strokeWidth="1.5" strokeDasharray="2,2" />
+          <rect x="13" y="13" width="14" height="14" rx="2" fill="#2DD4BF" fillOpacity="0.3" stroke="#2DD4BF" strokeWidth="1.5" />
+          <line x1="13" y1="20" x2="27" y2="20" stroke="#2DD4BF" strokeWidth="2.2" />
+          <line x1="44" y1="8" x2="44" y2="32" stroke="#818CF8" strokeWidth="1.5" strokeDasharray="2,2" />
+          <rect x="37" y="14" width="14" height="11" rx="2" fill="#818CF8" fillOpacity="0.3" stroke="#818CF8" strokeWidth="1.5" />
+          <line x1="37" y1="19" x2="51" y2="19" stroke="#818CF8" strokeWidth="2.2" />
+        </svg>
+      );
+  }
+};
 
 export const DashboardBuilderView: React.FC = () => {
   const { 
@@ -52,6 +171,7 @@ export const DashboardBuilderView: React.FC = () => {
     qualityReport,
     rawRows,
     cleanRows,
+    filteredRows,
     columns,
     dataModel,
     analytics,
@@ -66,7 +186,16 @@ export const DashboardBuilderView: React.FC = () => {
     themeMode
   } = usePlatform();
 
+  const activeRows = filteredRows ?? cleanRows;
   const isLight = themeMode === 'light';
+
+  const [flags, setFlags] = useState<FeatureFlags>(() => loadFeatureFlags());
+
+  useEffect(() => {
+    const syncFlags = () => setFlags(loadFeatureFlags());
+    window.addEventListener('dataanalytix:features-updated', syncFlags);
+    return () => window.removeEventListener('dataanalytix:features-updated', syncFlags);
+  }, []);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isRecModalOpen, setIsRecModalOpen] = useState(false);
@@ -79,6 +208,43 @@ export const DashboardBuilderView: React.FC = () => {
   // Inline chart title rename state
   const [editingVisId, setEditingVisId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState<string>('');
+  const toastHook = useToast();
+
+  // Chart Guide interactive state (used when flags.chartGuide is true)
+  const [selectedGuideId, setSelectedGuideId] = useState<ChartGuideId>('bar');
+  const [guideCatField, setGuideCatField] = useState<string>('');
+  const [guideSecondCatField, setGuideSecondCatField] = useState<string>('');
+  const [guideValField, setGuideValField] = useState<string>('');
+  const [guideSecondValField, setGuideSecondValField] = useState<string>('');
+  const [showAllGuideFields, setShowAllGuideFields] = useState<boolean>(false);
+  const [isGuidePdfGenerating, setIsGuidePdfGenerating] = useState<boolean>(false);
+  const [includeDatasetRecsInPdf, setIncludeDatasetRecsInPdf] = useState<boolean>(true);
+
+  const handleDownloadCompleteGuidePDF = () => {
+    try {
+      setIsGuidePdfGenerating(true);
+      const { filename, pageCount } = downloadChartGuidePDF({
+        datasetName: project?.name || project?.sourceFileName || undefined,
+        columns,
+        rows: activeRows,
+        includeDatasetRecommendations: includeDatasetRecsInPdf,
+      });
+      toastHook.success(
+        'Chart Selection Guide Downloaded',
+        `Saved ${filename} (${pageCount} pages).`
+      );
+      setDownloadSuccess(`Downloaded ${filename} (${pageCount} pages)!`);
+      setTimeout(() => setDownloadSuccess(null), 3500);
+    } catch (err: any) {
+      console.error(err);
+      toastHook.error(
+        'Chart Guide PDF Failed',
+        err?.message || 'Unable to generate the Chart Selection Guide PDF.'
+      );
+    } finally {
+      setIsGuidePdfGenerating(false);
+    }
+  };
 
   const handleAutoSyncVisuals = () => {
     const recommendedSuite = recommendDatasetDashboard(columns, cleanRows);
@@ -110,8 +276,19 @@ export const DashboardBuilderView: React.FC = () => {
   const [aggregation, setAggregation] = useState<VisualConfig['aggregation']>('sum');
   const [colorTheme, setColorTheme] = useState('#0284C7');
 
-  // Local state to override chart types or metrics per card
-  const [visualOverrides, setVisualOverrides] = useState<Record<string, { type?: VisualConfig['type']; valueField?: string; categoryField?: string }>>({});
+  // Local state to override chart types or metrics per card without losing chosen fields
+  const [visualOverrides, setVisualOverrides] = useState<
+    Record<
+      string,
+      {
+        type?: VisualConfig['type'];
+        valueField?: string;
+        categoryField?: string;
+        secondaryCategoryField?: string;
+        secondaryValueField?: string;
+      }
+    >
+  >({});
 
   // Ensure default visuals are populated if empty
   useEffect(() => {
@@ -120,9 +297,68 @@ export const DashboardBuilderView: React.FC = () => {
     }
   }, [customVisuals.length, analytics.visuals, addCustomVisual]);
 
-  // Numeric and String columns
+  // Numeric, Date, and String columns
   const numericCols = useMemo(() => columns.filter(c => c.dataType === 'number'), [columns]);
+  const dateCols = useMemo(() => columns.filter(c => c.dataType === 'date' || /date|time|month|year|day|quarter|period/i.test(c.name)), [columns]);
   const stringCols = useMemo(() => columns.filter(c => c.dataType === 'string' || c.dataType === 'date'), [columns]);
+  const pureCategoryCols = useMemo(() => columns.filter(c => c.dataType === 'string'), [columns]);
+  const lowCardCategoryCols = useMemo(() => {
+    return pureCategoryCols.filter(c => {
+      const distinct = new Set(cleanRows.map(r => String(r[c.name] ?? '')).filter(Boolean)).size;
+      return distinct >= 1 && distinct <= 5;
+    });
+  }, [pureCategoryCols, cleanRows]);
+
+  // Initialize guide fields when columns change
+  useEffect(() => {
+    if (!guideCatField && (pureCategoryCols[0]?.name || stringCols[0]?.name || columns[0]?.name)) {
+      setGuideCatField(pureCategoryCols[0]?.name || stringCols[0]?.name || columns[0]?.name || '');
+    }
+    if (!guideSecondCatField && (pureCategoryCols[1]?.name || pureCategoryCols[0]?.name || stringCols[0]?.name)) {
+      setGuideSecondCatField(pureCategoryCols[1]?.name || pureCategoryCols[0]?.name || stringCols[0]?.name || '');
+    }
+    if (!guideValField && (numericCols[0]?.name || columns[0]?.name)) {
+      setGuideValField(numericCols[0]?.name || columns[0]?.name || '');
+    }
+    if (!guideSecondValField && (numericCols[1]?.name || numericCols[0]?.name)) {
+      setGuideSecondValField(numericCols[1]?.name || numericCols[0]?.name || '');
+    }
+  }, [columns, pureCategoryCols, stringCols, numericCols, guideCatField, guideSecondCatField, guideValField, guideSecondValField]);
+
+  // Compatible column filters when clicking a card in the Chart Guide
+  const handleSelectGuideCard = (rule: ChartGuideRule) => {
+    setSelectedGuideId(rule.id);
+    setShowAllGuideFields(false);
+
+    if (rule.id === 'line') {
+      if (dateCols.length > 0 && !dateCols.some(d => d.name === guideCatField)) {
+        setGuideCatField(dateCols[0].name);
+      }
+    } else if (rule.id === 'donut') {
+      if (lowCardCategoryCols.length > 0 && !lowCardCategoryCols.some(c => c.name === guideCatField)) {
+        setGuideCatField(lowCardCategoryCols[0].name);
+      }
+    } else if (rule.id === 'histogram') {
+      if (numericCols.length > 0) {
+        setGuideValField(numericCols[0].name);
+        setGuideCatField(numericCols[0].name);
+      }
+    } else if (rule.id === 'scatter') {
+      if (numericCols.length >= 2) {
+        setGuideValField(numericCols[0].name);
+        setGuideSecondValField(numericCols[1].name);
+      }
+    } else if (rule.id === 'stacked_bar' || rule.id === 'heatmap') {
+      const cat1 = pureCategoryCols[0]?.name || stringCols[0]?.name || '';
+      const cat2 = pureCategoryCols.find(c => c.name !== cat1)?.name || stringCols.find(c => c.name !== cat1)?.name || cat1;
+      if (cat1) setGuideCatField(cat1);
+      if (cat2) setGuideSecondCatField(cat2);
+    } else {
+      if (pureCategoryCols.length > 0 && !pureCategoryCols.some(c => c.name === guideCatField)) {
+        setGuideCatField(pureCategoryCols[0].name);
+      }
+    }
+  };
 
   // Handle creating visual from form
   const handleCreateVisual = (e: React.FormEvent) => {
@@ -133,11 +369,19 @@ export const DashboardBuilderView: React.FC = () => {
       id: `vis-${Date.now()}`,
       title: title.trim(),
       type,
-      categoryField: catField || stringCols[0]?.name || 'Category',
+      categoryField: type === 'histogram' ? (valField || numericCols[0]?.name || 'Value') : (catField || stringCols[0]?.name || 'Category'),
       valueField: valField || numericCols[0]?.name || 'Value',
-      aggregation,
+      secondaryCategoryField: (type === 'stacked_bar' || type === 'heatmap')
+        ? (pureCategoryCols.find(c => c.name !== catField)?.name || stringCols[0]?.name)
+        : undefined,
+      secondaryValueField: type === 'scatter'
+        ? (numericCols.find(c => c.name !== valField)?.name || numericCols[0]?.name)
+        : undefined,
+      aggregation: type === 'histogram' ? 'count' : aggregation,
       color: colorTheme,
-      description: `${aggregation.toUpperCase()}(${valField}) segmented by ${catField}`
+      description: flags.chartGuide && getChartGuideRule(type)
+        ? formatChartGuideReason(getChartGuideRule(type)!.id)
+        : `${aggregation.toUpperCase()}(${valField}) segmented by ${catField}`
     };
 
     addCustomVisual(newVisual);
@@ -379,23 +623,32 @@ export const DashboardBuilderView: React.FC = () => {
     }
   };
 
-  const ALL_CHART_TYPES: { type: VisualConfig['type']; label: string }[] = [
-    { type: 'bar', label: 'Bar' },
-    { type: 'horizontal_bar', label: 'H-Bar' },
-    { type: 'line', label: 'Line' },
-    { type: 'area', label: 'Area' },
-    { type: 'donut', label: 'Donut' },
-    { type: 'pie', label: 'Pie' },
-    { type: 'boxplot', label: 'Boxplot' },
-    { type: 'scatter', label: 'Scatter' },
-    { type: 'heatmap', label: 'Heatmap' },
-    { type: 'radar', label: 'Radar' },
-    { type: 'funnel', label: 'Funnel' },
-    { type: 'waterfall', label: 'Waterfall' },
-    { type: 'treemap', label: 'Treemap' },
-    { type: 'gauge', label: 'Gauge' },
-    { type: 'table', label: 'Table' }
-  ];
+  const ALL_CHART_TYPES: { type: VisualConfig['type']; label: string }[] = useMemo(() => {
+    const base: { type: VisualConfig['type']; label: string }[] = [
+      { type: 'bar', label: 'Bar' },
+      { type: 'horizontal_bar', label: 'H-Bar' },
+      { type: 'line', label: 'Line' },
+      { type: 'area', label: 'Area' },
+      { type: 'donut', label: 'Donut' },
+      { type: 'pie', label: 'Pie' },
+      { type: 'boxplot', label: 'Boxplot' },
+      { type: 'scatter', label: 'Scatter' },
+      { type: 'heatmap', label: 'Heatmap' },
+      ...(flags.chartGuide
+        ? ([
+            { type: 'histogram', label: 'Histogram' },
+            { type: 'stacked_bar', label: 'Stacked Bar' }
+          ] as { type: VisualConfig['type']; label: string }[])
+        : []),
+      { type: 'radar', label: 'Radar' },
+      { type: 'funnel', label: 'Funnel' },
+      { type: 'waterfall', label: 'Waterfall' },
+      { type: 'treemap', label: 'Treemap' },
+      { type: 'gauge', label: 'Gauge' },
+      { type: 'table', label: 'Table' }
+    ];
+    return base;
+  }, [flags.chartGuide]);
 
   // Helper to switch type on a card
   const toggleChartType = (visId: string, currentType: VisualConfig['type']) => {
@@ -407,18 +660,25 @@ export const DashboardBuilderView: React.FC = () => {
     }));
   };
 
-  // Helper to compute grouped data with proper aggregation
+  // Helper to compute grouped data with proper aggregation, null safety, and large-data sampling
   const computeGroupedData = (
     categoryField: string, 
     valueField: string, 
-    agg: VisualConfig['aggregation'] = 'sum'
+    agg: VisualConfig['aggregation'] = 'sum',
+    capWithOther: boolean = false
   ) => {
+    const sampleInfo = sampleRowsForChart(activeRows, 5000);
     const groupMap = new Map<string, { sum: number; count: number; min: number; max: number }>();
     let grandTotal = 0;
+    let totalAbs = 0;
 
-    cleanRows.forEach(r => {
-      const cat = String(r[categoryField] ?? 'Unassigned');
-      const val = Number(r[valueField]) || 0;
+    sampleInfo.rows.forEach(r => {
+      if (!r || typeof r !== 'object') return;
+      const rawCat = r[categoryField];
+      const cat = rawCat === null || rawCat === undefined || String(rawCat).trim() === '' ? 'Unassigned' : String(rawCat).trim();
+      const parsedVal = parseNumericValue(r[valueField]);
+      if (parsedVal === null && agg !== 'count') return;
+      const val = parsedVal ?? 0;
       
       const current = groupMap.get(cat) || { sum: 0, count: 0, min: val, max: val };
       current.sum += val;
@@ -428,6 +688,7 @@ export const DashboardBuilderView: React.FC = () => {
       groupMap.set(cat, current);
 
       grandTotal += val;
+      totalAbs += Math.abs(val);
     });
 
     const entries = Array.from(groupMap.entries()).map(([cat, stats]) => {
@@ -437,17 +698,33 @@ export const DashboardBuilderView: React.FC = () => {
       else if (agg === 'min') finalVal = stats.min;
       else if (agg === 'max') finalVal = stats.max;
 
+      const rounded = Math.round(finalVal * 100) / 100;
       return {
         category: cat,
-        value: Math.round(finalVal * 100) / 100,
+        value: rounded,
         count: stats.count,
-        share: grandTotal > 0 ? Math.round((stats.sum / grandTotal) * 1000) / 10 : 0
+        share: totalAbs > 0 ? Math.round((Math.abs(stats.sum) / totalAbs) * 1000) / 10 : 0
       };
     });
 
     // Sort descending by value
     entries.sort((a, b) => b.value - a.value);
-    return { items: entries.slice(0, 10), grandTotal, allCount: entries.length };
+    if (capWithOther && entries.length > 10) {
+      return {
+        items: capCategoriesWithOther(entries, 10).items,
+        grandTotal: Math.round(grandTotal * 100) / 100,
+        allCount: entries.length,
+        sampled: sampleInfo.sampled,
+        sampleNotice: sampleInfo.notice
+      };
+    }
+    return {
+      items: entries.slice(0, 10),
+      grandTotal: Math.round(grandTotal * 100) / 100,
+      allCount: entries.length,
+      sampled: sampleInfo.sampled,
+      sampleNotice: sampleInfo.notice
+    };
   };
 
   // 1. Download Created Dashboard (JSON Specification & Visual Data)
@@ -639,17 +916,66 @@ export const DashboardBuilderView: React.FC = () => {
     setTimeout(() => setDownloadSuccess(null), 3000);
   };
 
-  // Export current visual as CSV
-  const handleExportCSV = (visTitle: string, items: { category: string; value: number; share: number }[]) => {
-    const csvContent = 'data:text/csv;charset=utf-8,' + 
-      ['Category,Value,SharePct', ...items.map(i => `"${i.category}",${i.value},${i.share}%`)].join('\n');
-    const encoded = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encoded);
-    link.setAttribute('download', `${visTitle.replace(/[^a-zA-Z0-9]/g, '_')}_data.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  // Export current visual as CSV (plotted data)
+  const handleExportCSV = (
+    visTitle: string,
+    items: { category: string; value: number; share: number }[],
+    chartMeta?: {
+      chartType: string;
+      categoryField: string;
+      secondaryCategoryField?: string;
+      valueField: string;
+      secondaryValueField?: string;
+      aggregation?: 'sum' | 'avg' | 'count' | 'max' | 'min';
+    }
+  ) => {
+    const plotted = buildGuideChartPlottedCSV({
+      chartType: chartMeta?.chartType || 'bar',
+      rows: activeRows,
+      categoryField: chartMeta?.categoryField || 'Category',
+      secondaryCategoryField: chartMeta?.secondaryCategoryField,
+      valueField: chartMeta?.valueField || 'Value',
+      secondaryValueField: chartMeta?.secondaryValueField,
+      aggregation: chartMeta?.aggregation || 'sum',
+      fallbackItems: items,
+    });
+    const ok = exportChartPlottedDataCSV(`${visTitle}_plotted_data.csv`, plotted.headers, plotted.rows);
+    if (ok) {
+      toastHook.success('Plotted CSV Exported', `Exported ${plotted.rows.length} plotted rows for "${visTitle}".`);
+    }
+  };
+
+  // Export current visual as PNG
+  const handleExportPNG = async (
+    containerSelector: string,
+    visTitle: string,
+    items: { category: string; value: number; share: number }[],
+    chartMeta?: {
+      chartType: string;
+      categoryField: string;
+      secondaryCategoryField?: string;
+      valueField: string;
+      secondaryValueField?: string;
+      aggregation?: 'sum' | 'avg' | 'count' | 'max' | 'min';
+    }
+  ) => {
+    const el = typeof document !== 'undefined' ? (document.querySelector(containerSelector) as HTMLElement | null) : null;
+    const plotted = buildGuideChartPlottedCSV({
+      chartType: chartMeta?.chartType || 'bar',
+      rows: activeRows,
+      categoryField: chartMeta?.categoryField || 'Category',
+      secondaryCategoryField: chartMeta?.secondaryCategoryField,
+      valueField: chartMeta?.valueField || 'Value',
+      secondaryValueField: chartMeta?.secondaryValueField,
+      aggregation: chartMeta?.aggregation || 'sum',
+      fallbackItems: items,
+    });
+    const ok = await exportChartContainerPNG(el, `${visTitle}_chart.png`, visTitle, isLight, plotted);
+    if (ok) {
+      toastHook.success('Chart PNG Exported', `Saved high-resolution PNG for "${visTitle}".`);
+    } else {
+      toastHook.error('PNG Export Failed', `Could not render PNG for "${visTitle}".`);
+    }
   };
 
   // Download Both (Created Dashboard + Executive Report ZIP Bundle)
@@ -719,7 +1045,7 @@ export const DashboardBuilderView: React.FC = () => {
       )}
 
       {/* 1. Header & Actions */}
-      <div className={`${isLight ? 'bg-white border-slate-200 text-slate-900 shadow-sm' : 'bg-[#1c1c1c] border-[#2d2d2d] text-white'} border rounded-2xl p-4 sm:p-6 space-y-4`}>
+      <div className="bg-card border-subtle text-primary shadow-sm border rounded-2xl p-4 sm:p-6 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="space-y-1.5">
             <div className={`flex items-center gap-2 text-xs font-semibold uppercase tracking-wider font-mono ${isLight ? 'text-sky-700' : 'text-cyan-400'}`}>
@@ -863,12 +1189,16 @@ export const DashboardBuilderView: React.FC = () => {
         </div>
       </div>
 
+      {/* Global Filters & Interactive Slicers for Cross-Filtering */}
+      <GlobalFilterBar />
+      <InteractiveSlicersBar />
+
       {/* 2. Natural Language Visual Composer */}
-      <div className={`${isLight ? 'bg-white border-slate-200 text-slate-900 shadow-sm' : 'bg-[#1c1c1c] border-[#2d2d2d] text-white'} border rounded-2xl p-4 sm:p-5 space-y-2.5`}>
-        <div className={`flex items-center gap-2 text-xs font-semibold ${isLight ? 'text-slate-900' : 'text-white'}`}>
-          <Sparkles className={`w-4 h-4 ${isLight ? 'text-sky-700' : 'text-cyan-400'}`} />
+      <div className="bg-card border-subtle text-primary shadow-sm border rounded-2xl p-4 sm:p-5 space-y-2.5">
+        <div className="flex items-center gap-2 text-xs font-semibold text-primary">
+          <Sparkles className="w-4 h-4 text-accent" />
           <span>NATURAL LANGUAGE DASHBOARD SYNTHESIS</span>
-          <span className={`text-[10px] font-mono hidden sm:inline ${isLight ? 'text-slate-500' : 'text-gray-400'}`}>(Type what you want to chart and press Enter)</span>
+          <span className="text-[10px] font-mono hidden sm:inline text-muted">(Type what you want to chart and press Enter)</span>
         </div>
         <div className="flex flex-col sm:flex-row gap-2">
           <input
@@ -877,24 +1207,475 @@ export const DashboardBuilderView: React.FC = () => {
             value={nlPrompt}
             onChange={(e) => setNlPrompt(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleAIGenerate()}
-            className={`flex-1 text-xs px-3.5 py-2.5 rounded-xl border focus:outline-none ${
-              isLight
-                ? 'bg-slate-50 text-slate-900 border-slate-200 focus:border-sky-500 placeholder-slate-400'
-                : 'bg-[#141414] text-white border-[#333] focus:border-cyan-400 placeholder-gray-500'
-            }`}
+            className="flex-1 text-xs px-3.5 py-2.5 rounded-xl border bg-input text-primary border-subtle focus:border-accent focus:outline-none placeholder:text-muted"
           />
           <button
             onClick={handleAIGenerate}
-            className={`px-4 py-2.5 rounded-xl text-xs font-semibold border transition-colors shrink-0 cursor-pointer ${
-              isLight
-                ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300 hover:border-sky-400'
-                : 'bg-[#252525] hover:bg-[#2f2f2f] text-white border-[#3d3d3d] hover:border-cyan-400/50'
-            }`}
+            className="px-4 py-2.5 rounded-xl text-xs font-semibold border bg-elevated hover:bg-card-hover text-primary border-subtle hover:border-accent/50 transition-colors shrink-0 cursor-pointer"
           >
             Synthesize Visual
           </button>
         </div>
       </div>
+
+      {/* 2B. "Which chart should I use?" 8-Chart Guide Panel (behind chartGuide flag) */}
+      {flags.chartGuide && (() => {
+        const activeRule = getChartGuideRule(selectedGuideId) || CHART_GUIDE_RULES[0];
+        const effectiveCat = selectedGuideId === 'histogram' ? guideValField : guideCatField;
+        const effectiveVal = guideValField;
+        const effectiveSecCat = (selectedGuideId === 'stacked_bar' || selectedGuideId === 'heatmap') ? guideSecondCatField : undefined;
+        const effectiveSecVal = selectedGuideId === 'scatter' ? guideSecondValField : undefined;
+
+        const guideRecs = recommendChartsForFields(
+          effectiveCat,
+          effectiveVal,
+          columns,
+          cleanRows,
+          {
+            chartGuide: true,
+            secondaryCategoryColName: effectiveSecCat,
+            secondaryValueColName: effectiveSecVal
+          }
+        );
+        const bestRec = guideRecs[0];
+        const bestGuideRule = bestRec ? getChartGuideRule(bestRec.type) : undefined;
+
+        const fitCheck = evaluateChartRuleFit(activeRule.id, {
+          categoryCol: columns.find(c => c.name === effectiveCat),
+          secondaryCategoryCol: effectiveSecCat ? columns.find(c => c.name === effectiveSecCat) : undefined,
+          valueCol: columns.find(c => c.name === effectiveVal),
+          secondaryValueCol: effectiveSecVal ? columns.find(c => c.name === effectiveSecVal) : undefined,
+          columns,
+          rows: cleanRows
+        });
+
+        // Compatible columns for the active guide card
+        const compatibleCategoryCols = (() => {
+          if (showAllGuideFields) return columns;
+          if (activeRule.id === 'line') return dateCols.length > 0 ? dateCols : stringCols;
+          if (activeRule.id === 'donut') return lowCardCategoryCols.length > 0 ? lowCardCategoryCols : pureCategoryCols;
+          if (activeRule.id === 'histogram') return numericCols;
+          return pureCategoryCols.length > 0 ? pureCategoryCols : stringCols;
+        })();
+
+        const compatibleNumericCols = showAllGuideFields ? columns : numericCols;
+
+        const previewGrouped = computeGroupedData(
+          effectiveCat || stringCols[0]?.name || 'Category',
+          effectiveVal || numericCols[0]?.name || 'Value',
+          'sum',
+          activeRule.id === 'bar' || activeRule.id === 'stacked_bar'
+        );
+        const previewMax = Math.max(safeMax(previewGrouped.items.map(i => i.value), 1), 1);
+
+        return (
+          <section
+            aria-label="Which chart should I use? Interactive 8-chart guide"
+            className="rounded-[20px] p-4 sm:p-6 space-y-5 border border-subtle bg-card text-primary shadow-sm transition-colors"
+          >
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-accent">
+                  <Compass className="w-4 h-4 shrink-0" aria-hidden="true" />
+                  <span>Interactive Chart Selection Guide</span>
+                </div>
+                <h2 className="font-heading text-xl sm:text-2xl font-bold tracking-tight text-primary">
+                  Which chart should I use?
+                </h2>
+                <p className="text-xs text-secondary">
+                  Select a chart pattern below to filter compatible dataset columns, inspect guard rails, and preview with live data.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                {bestGuideRule && (
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-accent/35 bg-accent-soft text-xs font-mono">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-accent shrink-0" aria-hidden="true" />
+                    <span className="text-primary">
+                      Best match for picked fields: <strong className="text-accent">{bestGuideRule.name}</strong>
+                    </span>
+                  </div>
+                )}
+
+                {columns.length > 0 && (
+                  <label className="inline-flex items-center gap-1.5 text-xs font-mono cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={includeDatasetRecsInPdf}
+                      onChange={(e) => setIncludeDatasetRecsInPdf(e.target.checked)}
+                      aria-label='Include "Recommended for your data" page in PDF'
+                      className="rounded border-subtle text-accent focus:ring-accent"
+                    />
+                    <span className="text-secondary">
+                      Include &ldquo;Recommended for your data&rdquo; page
+                    </span>
+                  </label>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleDownloadCompleteGuidePDF}
+                  disabled={isGuidePdfGenerating}
+                  aria-label="Download complete guide (PDF)"
+                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl font-semibold text-xs border transition-all cursor-pointer disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent bg-accent text-on-accent border-accent hover:opacity-95 shadow-xs"
+                >
+                  {isGuidePdfGenerating ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" aria-hidden="true" />
+                      <span>Generating PDF...</span>
+                    </>
+                  ) : (
+                    <>
+                      <FileText className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                      <span>Download complete guide (PDF)</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* 2x4 Responsive Grid of 8 Chart Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" role="group" aria-label="8-chart rule cards">
+              {CHART_GUIDE_RULES.map((rule) => {
+                const isSelected = selectedGuideId === rule.id;
+                const isRecommended = bestGuideRule?.id === rule.id;
+
+                return (
+                  <button
+                    key={rule.id}
+                    type="button"
+                    onClick={() => handleSelectGuideCard(rule)}
+                    aria-pressed={isSelected}
+                    aria-label={`${rule.number} ${rule.name}. ${rule.purpose} Example question: ${rule.question}. Tip: ${rule.tip}.${isRecommended ? ' Recommended for current fields.' : ''}`}
+                    className={`group text-left rounded-[20px] p-4 flex flex-col justify-between gap-3 border transition-all motion-reduce:transition-none motion-reduce:transform-none cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+                      isSelected
+                        ? 'bg-accent-soft ring-2 ring-accent border-accent shadow-md'
+                        : 'bg-elevated hover:bg-card-hover border-subtle hover:shadow-sm'
+                    }`}
+                  >
+                    <div className="space-y-2.5 w-full">
+                      {/* Top row: Mono number 01-08 + Recommended Badge + SVG Illustration */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="space-y-1">
+                          <span className="inline-block font-mono text-xs font-bold tracking-wider px-2 py-0.5 rounded-md bg-accent-soft text-accent border border-accent/30">
+                            {rule.number}
+                          </span>
+                          {isRecommended && (
+                            <span className="inline-flex items-center gap-1 ml-1.5 px-2 py-0.5 rounded-md text-[10px] font-mono font-bold uppercase bg-[var(--accent-2)]/15 text-[var(--accent-2)] border border-[var(--accent-2)]/40">
+                              <Sparkles className="w-2.5 h-2.5 shrink-0" aria-hidden="true" />
+                              <span>Recommended</span>
+                            </span>
+                          )}
+                        </div>
+                        {renderChartGuideIllustration(rule.id)}
+                      </div>
+
+                      {/* Name & One-line purpose */}
+                      <div>
+                        <div className="font-heading text-base font-bold text-primary">
+                          {rule.name}
+                        </div>
+                        <p className="text-xs font-medium mt-0.5 text-secondary">
+                          {rule.purpose}
+                        </p>
+                      </div>
+
+                      {/* Example question */}
+                      <p className="text-xs italic text-muted">
+                        &ldquo;{rule.question}&rdquo;
+                      </p>
+                    </div>
+
+                    {/* Tip line at bottom */}
+                    <div className="pt-2.5 border-t border-subtle text-[11px] space-y-1 w-full">
+                      <div className="flex items-center justify-between text-[10px] font-mono text-[var(--accent-2)]">
+                        <span>Fits: {rule.fits}</span>
+                      </div>
+                      <p className="text-[11px] leading-snug text-secondary">
+                        <strong className="font-mono uppercase text-[10px] text-accent">Tip: </strong>
+                        {rule.tip}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Interactive Field Picker & Live Preview Workbench */}
+            <div
+              className="rounded-[20px] p-4 sm:p-5 border border-subtle bg-elevated space-y-4"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-mono text-xs font-bold uppercase px-2.5 py-1 rounded-lg bg-accent-soft text-accent border border-accent/30">
+                    {activeRule.number} • {activeRule.name} Preview
+                  </span>
+                  {bestGuideRule?.id === activeRule.id && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-accent-soft text-accent border border-accent/40">
+                      <CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" />
+                      <span>Recommended</span>
+                    </span>
+                  )}
+                  <span className="text-xs font-mono text-secondary">
+                    Required shape: <strong>{activeRule.fits}</strong>
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowAllGuideFields(prev => !prev)}
+                    className={`px-2.5 py-1 rounded-lg border text-[11px] font-mono cursor-pointer transition-colors ${
+                      showAllGuideFields
+                        ? 'bg-[var(--accent-2)]/15 text-[var(--accent-2)] border-[var(--accent-2)]/40'
+                        : 'bg-card text-secondary border-subtle hover:border-strong'
+                    }`}
+                  >
+                    {showAllGuideFields ? 'Showing all columns' : `Filtered to compatible columns (${compatibleCategoryCols.length})`}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newVis: VisualConfig = {
+                        id: `vis-guide-${Date.now()}`,
+                        title: `${activeRule.name}: ${effectiveVal} by ${effectiveCat}`,
+                        type: activeRule.visualType,
+                        categoryField: effectiveCat || stringCols[0]?.name || 'Category',
+                        valueField: effectiveVal || numericCols[0]?.name || 'Value',
+                        secondaryCategoryField: effectiveSecCat,
+                        secondaryValueField: effectiveSecVal,
+                        aggregation: activeRule.id === 'histogram' ? 'count' : 'sum',
+                        color: '#2DD4BF',
+                        description: formatChartGuideReason(activeRule.id)
+                      };
+                      addCustomVisual(newVis);
+                      setDownloadSuccess(`Added ${activeRule.name} to dashboard canvas!`);
+                      setTimeout(() => setDownloadSuccess(null), 2800);
+                    }}
+                    className="px-3.5 py-1.5 rounded-xl bg-accent hover:opacity-95 text-on-accent font-bold text-xs cursor-pointer transition-colors flex items-center gap-1.5"
+                  >
+                    <Plus className="w-3.5 h-3.5 stroke-[2.5]" aria-hidden="true" />
+                    <span>Mount {activeRule.name}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Field Pickers Filtered to Compatible Columns */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+                {activeRule.id !== 'histogram' && (
+                  <label className="space-y-1 block">
+                    <span className={`font-mono text-[11px] block ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                      {activeRule.id === 'line' ? 'Date / Time Column' : 'Category Column'}
+                    </span>
+                    <select
+                      aria-label="Guide primary category or date column"
+                      value={guideCatField}
+                      onChange={(e) => setGuideCatField(e.target.value)}
+                      className={`w-full p-2 rounded-xl border font-mono text-xs focus:outline-none ${
+                        isLight ? 'bg-white border-slate-200 text-slate-900' : 'bg-slate-900 border-slate-800 text-white'
+                      }`}
+                    >
+                      {(compatibleCategoryCols.length > 0 ? compatibleCategoryCols : columns).map(c => (
+                        <option key={c.name} value={c.name}>
+                          {c.name} ({c.dataType})
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+
+                {(activeRule.id === 'stacked_bar' || activeRule.id === 'heatmap') && (
+                  <label className="space-y-1 block">
+                    <span className={`font-mono text-[11px] block ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                      Second Category / Series Column
+                    </span>
+                    <select
+                      aria-label="Guide secondary category column"
+                      value={guideSecondCatField}
+                      onChange={(e) => setGuideSecondCatField(e.target.value)}
+                      className={`w-full p-2 rounded-xl border font-mono text-xs focus:outline-none ${
+                        isLight ? 'bg-white border-slate-200 text-slate-900' : 'bg-slate-900 border-slate-800 text-white'
+                      }`}
+                    >
+                      {(pureCategoryCols.length > 0 && !showAllGuideFields ? pureCategoryCols : columns).map(c => (
+                        <option key={c.name} value={c.name}>
+                          {c.name} ({c.dataType})
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+
+                <label className="space-y-1 block">
+                  <span className={`font-mono text-[11px] block ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                    {activeRule.id === 'histogram' ? 'Numeric Column (Binned)' : 'Primary Measure (Numeric)'}
+                  </span>
+                  <select
+                    aria-label="Guide primary numeric measure column"
+                    value={guideValField}
+                    onChange={(e) => setGuideValField(e.target.value)}
+                    className={`w-full p-2 rounded-xl border font-mono text-xs focus:outline-none ${
+                      isLight ? 'bg-white border-slate-200 text-slate-900' : 'bg-slate-900 border-slate-800 text-[#2DD4BF]'
+                    }`}
+                  >
+                    {(compatibleNumericCols.length > 0 ? compatibleNumericCols : columns).map(c => (
+                      <option key={c.name} value={c.name}>
+                        {c.name} ({c.dataType})
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                {activeRule.id === 'scatter' && (
+                  <label className="space-y-1 block">
+                    <span className={`font-mono text-[11px] block ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                      Second Measure (Numeric Y-Axis)
+                    </span>
+                    <select
+                      aria-label="Guide secondary numeric measure column"
+                      value={guideSecondValField}
+                      onChange={(e) => setGuideSecondValField(e.target.value)}
+                      className={`w-full p-2 rounded-xl border font-mono text-xs focus:outline-none ${
+                        isLight ? 'bg-white border-slate-200 text-slate-900' : 'bg-slate-900 border-slate-800 text-[#818CF8]'
+                      }`}
+                    >
+                      {(compatibleNumericCols.length > 0 ? compatibleNumericCols : columns).map(c => (
+                        <option key={c.name} value={c.name}>
+                          {c.name} ({c.dataType})
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+              </div>
+
+              {/* "Why this chart" line + Gentle Mismatch Warning */}
+              <div className="space-y-2">
+                <div className="p-3 rounded-xl border border-subtle bg-card text-secondary text-xs flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Info className="w-4 h-4 text-accent shrink-0" aria-hidden="true" />
+                    <span>
+                      <strong className="font-mono uppercase text-[11px] text-accent">Why this chart: </strong>
+                      {formatChartGuideReason(activeRule.id)}
+                    </span>
+                  </div>
+                  <span className="font-mono text-[11px] text-[var(--accent-2)]">
+                    Question: &ldquo;{activeRule.question}&rdquo;
+                  </span>
+                </div>
+
+                {!fitCheck.fits && fitCheck.mismatchWarning && (
+                  <div
+                    role="status"
+                    className={`p-3 rounded-xl border text-xs flex items-start gap-2.5 ${
+                      isLight
+                        ? 'bg-amber-50 border-amber-300 text-amber-900'
+                        : 'bg-amber-950/40 border-amber-500/40 text-amber-200'
+                    }`}
+                  >
+                    <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" aria-hidden="true" />
+                    <div className="space-y-1">
+                      <div className="font-semibold">
+                        Gentle field mismatch notice (preview still available):
+                      </div>
+                      <p className="text-[11px] leading-relaxed">{fitCheck.mismatchWarning}</p>
+                      {bestGuideRule && bestGuideRule.id !== activeRule.id && (
+                        <button
+                          type="button"
+                          onClick={() => handleSelectGuideCard(bestGuideRule)}
+                          className="mt-1 inline-flex items-center gap-1 text-[11px] font-mono font-bold underline text-accent cursor-pointer"
+                        >
+                          Switch to recommended {bestGuideRule.name}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Live Preview Chart Area (All 8 Guide Charts) */}
+              <div
+                role="region"
+                aria-label={`Live preview of ${activeRule.name} for ${effectiveVal} and ${effectiveCat}`}
+                data-guide-preview-container="true"
+                className="rounded-2xl p-4 border border-subtle bg-card space-y-3"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-subtle">
+                  <span className="font-mono text-[11px] uppercase tracking-wider text-accent">
+                    Live Plotted Preview — {activeRule.name}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      aria-label={`Export ${activeRule.name} preview as PNG`}
+                      onClick={() =>
+                        handleExportPNG(
+                          '[data-guide-preview-container="true"]',
+                          `${activeRule.name} Preview`,
+                          previewGrouped.items,
+                          {
+                            chartType: activeRule.id,
+                            categoryField: effectiveCat || stringCols[0]?.name || 'Category',
+                            secondaryCategoryField: effectiveSecCat,
+                            valueField: effectiveVal || numericCols[0]?.name || 'Value',
+                            secondaryValueField: effectiveSecVal,
+                            aggregation: activeRule.id === 'histogram' ? 'count' : 'sum',
+                          }
+                        )
+                      }
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-subtle bg-elevated hover:bg-card-hover text-secondary font-mono text-[11px] transition-colors cursor-pointer"
+                    >
+                      <Download className="w-3 h-3 text-accent" aria-hidden="true" />
+                      <span>PNG</span>
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={`Export ${activeRule.name} plotted data as CSV`}
+                      onClick={() =>
+                        handleExportCSV(
+                          `${activeRule.name}_Preview`,
+                          previewGrouped.items,
+                          {
+                            chartType: activeRule.id,
+                            categoryField: effectiveCat || stringCols[0]?.name || 'Category',
+                            secondaryCategoryField: effectiveSecCat,
+                            valueField: effectiveVal || numericCols[0]?.name || 'Value',
+                            secondaryValueField: effectiveSecVal,
+                            aggregation: activeRule.id === 'histogram' ? 'count' : 'sum',
+                          }
+                        )
+                      }
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-subtle bg-elevated hover:bg-card-hover text-secondary font-mono text-[11px] transition-colors cursor-pointer"
+                    >
+                      <FileSpreadsheet className="w-3 h-3 text-[var(--accent-2)]" aria-hidden="true" />
+                      <span>CSV</span>
+                    </button>
+                  </div>
+                </div>
+                <GuideChartRenderer
+                  chartType={activeRule.id}
+                  rows={activeRows}
+                  categoryField={effectiveCat || stringCols[0]?.name || columns[0]?.name || 'Category'}
+                  secondaryCategoryField={effectiveSecCat || stringCols[1]?.name || effectiveCat || ''}
+                  valueField={effectiveVal || numericCols[0]?.name || columns[0]?.name || 'Value'}
+                  secondaryValueField={effectiveSecVal || numericCols[1]?.name || effectiveVal || ''}
+                  aggregation={activeRule.id === 'histogram' ? 'count' : 'sum'}
+                  isLight={isLight}
+                  onDrillThrough={(filterCol, filterVal, label) =>
+                    openDrillThrough({
+                      title: `${activeRule.name} Preview — ${label || filterVal}`,
+                      subtitle: `Granular rows where ${filterCol} = "${filterVal}"`,
+                      filterColumn: filterCol,
+                      filterValue: filterVal,
+                      sourceContext: 'chart_bar'
+                    })
+                  }
+                />
+              </div>
+            </div>
+          </section>
+        );
+      })()}
 
       {/* 3. Visuals Canvas Grid */}
       {customVisuals.length === 0 ? (
@@ -931,22 +1712,38 @@ export const DashboardBuilderView: React.FC = () => {
             const activeType = override.type || vis.type;
             const rawVal = override.valueField || vis.valueField;
             const rawCat = override.categoryField || vis.categoryField;
+            const rawSecCat =
+              override.secondaryCategoryField ||
+              vis.secondaryCategoryField ||
+              pureCategoryCols.find(c => c.name !== rawCat)?.name ||
+              stringCols.find(c => c.name !== rawCat)?.name;
+            const rawSecVal =
+              override.secondaryValueField ||
+              vis.secondaryValueField ||
+              numericCols.find(c => c.name !== rawVal)?.name ||
+              numericCols[0]?.name;
 
             const hasCat = columns.some(c => c.name === rawCat);
             const hasVal = columns.some(c => c.name === rawVal);
             const resolvedCat = hasCat ? rawCat : (stringCols[0]?.name || columns[0]?.name || 'Category');
             const resolvedVal = hasVal ? rawVal : (numericCols[0]?.name || columns.find(c => c.dataType === 'number')?.name || resolvedCat);
+            const resolvedSecCat = rawSecCat && columns.some(c => c.name === rawSecCat) ? rawSecCat : resolvedCat;
+            const resolvedSecVal = rawSecVal && columns.some(c => c.name === rawSecVal) ? rawSecVal : resolvedVal;
             const activeCat = resolvedCat;
             const activeVal = resolvedVal;
 
-            const { items, grandTotal } = computeGroupedData(resolvedCat, resolvedVal, vis.aggregation);
-            const maxVal = Math.max(safeMax(items.map(i => i.value), 1), 1);
+            const shouldCapWithOther = Boolean(flags.chartGuide && (activeType === 'bar' || activeType === 'stacked_bar'));
+            const { items, grandTotal } = computeGroupedData(resolvedCat, resolvedVal, vis.aggregation, shouldCapWithOther);
+            const maxVal = Math.max(safeMax(items.map(i => Math.abs(i.value)), 1), 1);
             const primaryColor = vis.color && vis.color !== '#21F1A8' ? vis.color : '#0284C7';
+            const cardGuideRule = flags.chartGuide ? getChartGuideRule(activeType) : undefined;
 
             return (
               <div 
                 key={vis.id}
-                className={`${isLight ? 'bg-white border-slate-200 text-slate-900 shadow-sm hover:border-sky-400' : 'bg-[#1c1c1c] border-[#2d2d2d] text-white hover:border-cyan-500/40'} border rounded-2xl p-5 space-y-4 transition-all flex flex-col justify-between`}
+                role="region"
+                aria-label={`${vis.title} (${activeType} chart): ${vis.aggregation} of ${resolvedVal} by ${resolvedCat}`}
+                className="bg-card border-subtle text-primary shadow-sm hover:border-accent/50 border rounded-2xl p-5 space-y-4 transition-all flex flex-col justify-between"
               >
                 {/* Visual Header & Toolbar */}
                 <div className="space-y-2">
@@ -1023,12 +1820,19 @@ export const DashboardBuilderView: React.FC = () => {
                     </div>
 
                     <div className="flex items-center gap-1.5 shrink-0">
-                      {/* Chart Type Selector Dropdown */}
+                      {/* Chart Type Selector Dropdown (preserves chosen fields) */}
                       <select
                         value={activeType}
                         onChange={(e) => setVisualOverrides(prev => ({
                           ...prev,
-                          [vis.id]: { ...prev[vis.id], type: e.target.value as any }
+                          [vis.id]: {
+                            ...prev[vis.id],
+                            type: e.target.value as any,
+                            categoryField: resolvedCat,
+                            valueField: resolvedVal,
+                            secondaryCategoryField: resolvedSecCat,
+                            secondaryValueField: resolvedSecVal
+                          }
                         }))}
                         className={`px-2 py-1 rounded-lg border text-[11px] font-mono font-bold focus:outline-none uppercase cursor-pointer ${
                           isLight
@@ -1044,15 +1848,52 @@ export const DashboardBuilderView: React.FC = () => {
                         ))}
                       </select>
 
+                      {/* Export PNG */}
+                      <button
+                        type="button"
+                        aria-label={`Export ${vis.title} chart as PNG`}
+                        onClick={() =>
+                          handleExportPNG(`[data-chart-card-body="${vis.id}"]`, vis.title, items, {
+                            chartType: activeType,
+                            categoryField: resolvedCat,
+                            secondaryCategoryField: resolvedSecCat,
+                            valueField: resolvedVal,
+                            secondaryValueField: resolvedSecVal,
+                            aggregation: vis.aggregation,
+                          })
+                        }
+                        className={`px-2 py-1 rounded-lg border font-mono text-[10px] font-semibold transition-colors cursor-pointer ${
+                          isLight
+                            ? 'text-slate-700 border-slate-200 hover:bg-slate-100'
+                            : 'text-gray-300 border-[#333] hover:text-white hover:bg-[#252525]'
+                        }`}
+                        title="Export Chart as PNG"
+                      >
+                        PNG
+                      </button>
+
                       {/* Export CSV */}
                       <button
-                        onClick={() => handleExportCSV(vis.title, items)}
-                        className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                          isLight ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100' : 'text-gray-400 hover:text-white hover:bg-[#252525]'
+                        type="button"
+                        aria-label={`Export ${vis.title} plotted data as CSV`}
+                        onClick={() =>
+                          handleExportCSV(vis.title, items, {
+                            chartType: activeType,
+                            categoryField: resolvedCat,
+                            secondaryCategoryField: resolvedSecCat,
+                            valueField: resolvedVal,
+                            secondaryValueField: resolvedSecVal,
+                            aggregation: vis.aggregation,
+                          })
+                        }
+                        className={`px-2 py-1 rounded-lg border font-mono text-[10px] font-semibold transition-colors cursor-pointer ${
+                          isLight
+                            ? 'text-slate-700 border-slate-200 hover:bg-slate-100'
+                            : 'text-gray-300 border-[#333] hover:text-white hover:bg-[#252525]'
                         }`}
-                        title="Export Chart Data as CSV"
+                        title="Export Plotted Chart Data as CSV"
                       >
-                        <Download className="w-3.5 h-3.5" />
+                        CSV
                       </button>
 
                       {/* Remove Visual */}
@@ -1088,6 +1929,26 @@ export const DashboardBuilderView: React.FC = () => {
                       </select>
                     </div>
 
+                    {(activeType === 'stacked_bar' || activeType === 'heatmap') && (
+                      <div className="flex items-center gap-1 text-[11px]">
+                        <span className={`font-mono ${isLight ? 'text-slate-500' : 'text-gray-500'}`}>Split:</span>
+                        <select
+                          value={resolvedSecCat}
+                          onChange={(e) => setVisualOverrides(prev => ({
+                            ...prev,
+                            [vis.id]: { ...prev[vis.id], secondaryCategoryField: e.target.value }
+                          }))}
+                          className={`text-xs px-2 py-0.5 rounded border focus:outline-none ${
+                            isLight
+                              ? 'bg-slate-50 text-slate-800 border-slate-200 focus:border-sky-500'
+                              : 'bg-[#141414] text-gray-300 border-[#2e2e2e] focus:border-cyan-400'
+                          }`}
+                        >
+                          {columns.map(c => <option key={c.name} value={c.name} className={isLight ? 'bg-white text-slate-900' : 'bg-[#181818] text-white'}>{c.name}</option>)}
+                        </select>
+                      </div>
+                    )}
+
                     <div className="flex items-center gap-1 text-[11px]">
                       <span className={`font-mono ${isLight ? 'text-slate-500' : 'text-gray-500'}`}>Metric:</span>
                       <select
@@ -1105,56 +1966,159 @@ export const DashboardBuilderView: React.FC = () => {
                         {numericCols.map(c => <option key={c.name} value={c.name} className={isLight ? 'bg-white text-slate-900' : 'bg-[#181818] text-white'}>{c.name}</option>)}
                       </select>
                     </div>
+
+                    {activeType === 'scatter' && (
+                      <div className="flex items-center gap-1 text-[11px]">
+                        <span className={`font-mono ${isLight ? 'text-slate-500' : 'text-gray-500'}`}>Y-Metric:</span>
+                        <select
+                          value={resolvedSecVal}
+                          onChange={(e) => setVisualOverrides(prev => ({
+                            ...prev,
+                            [vis.id]: { ...prev[vis.id], secondaryValueField: e.target.value }
+                          }))}
+                          className={`text-xs font-mono px-2 py-0.5 rounded border focus:outline-none ${
+                            isLight
+                              ? 'bg-sky-50 text-sky-800 border-sky-200 focus:border-sky-500'
+                              : 'bg-[#141414] text-[#818CF8] border-[#2e2e2e] focus:border-[#818CF8]'
+                          }`}
+                        >
+                          {numericCols.map(c => <option key={c.name} value={c.name} className={isLight ? 'bg-white text-slate-900' : 'bg-[#181818] text-white'}>{c.name}</option>)}
+                        </select>
+                      </div>
+                    )}
                   </div>
 
                   {/* Intelligent Chart Recommendation Banner */}
                   {(() => {
-                    const cardRecs = recommendChartsForFields(resolvedCat, resolvedVal, columns, cleanRows);
+                    const secCatName = resolvedSecCat;
+                    const secValName = resolvedSecVal;
+                    const cardRecs = recommendChartsForFields(
+                      resolvedCat,
+                      resolvedVal,
+                      columns,
+                      activeRows,
+                      flags.chartGuide
+                        ? {
+                            chartGuide: true,
+                            secondaryCategoryColName: secCatName,
+                            secondaryValueColName: secValName
+                          }
+                        : undefined
+                    );
                     const topRec = cardRecs[0];
-                    if (!topRec || topRec.type === activeType) return null;
+
+                    // When chartGuide is active, also check if current chart type has a gentle mismatch warning
+                    const mismatchEval = flags.chartGuide && cardGuideRule
+                      ? evaluateChartRuleFit(cardGuideRule.id, {
+                          categoryCol: columns.find(c => c.name === resolvedCat),
+                          secondaryCategoryCol: secCatName ? columns.find(c => c.name === secCatName) : undefined,
+                          valueCol: columns.find(c => c.name === resolvedVal),
+                          secondaryValueCol: secValName ? columns.find(c => c.name === secValName) : undefined,
+                          columns,
+                          rows: activeRows
+                        })
+                      : { fits: true, mismatchWarning: undefined };
 
                     return (
-                      <div className={`mt-2 p-2 rounded-xl text-xs flex items-center justify-between gap-2 border transition-all ${
-                        isLight 
-                          ? 'bg-sky-50/90 border-sky-200 text-slate-800' 
-                          : 'bg-sky-950/40 border-sky-800/60 text-sky-200'
-                      }`}>
-                        <div className="flex items-center gap-1.5 min-w-0">
-                          <Lightbulb className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                          <span className="font-bold text-[11px] shrink-0 text-sky-700 dark:text-cyan-400">AI Suggestion:</span>
-                          <span className="truncate text-[11px] text-slate-600 dark:text-slate-300">
-                            {topRec.label} ({topRec.score}% fit) — {topRec.reason}
-                          </span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setVisualOverrides(prev => ({
-                              ...prev,
-                              [vis.id]: { 
-                                ...prev[vis.id], 
-                                type: topRec.type,
-                                categoryField: resolvedCat,
-                                valueField: resolvedVal
-                              }
-                            }));
-                            if (!vis.isCustomRenamed) {
-                              updateCustomVisual(vis.id, { title: topRec.suggestedTitle });
-                            }
-                          }}
-                          className="px-2.5 py-1 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold text-[11px] whitespace-nowrap shrink-0 transition-colors shadow-2xs cursor-pointer flex items-center gap-1"
-                          title={`Switch visualization to ${topRec.label}`}
-                        >
-                          <Sparkles className="w-3 h-3" />
-                          <span>Switch to {topRec.label}</span>
-                        </button>
+                      <div className="space-y-1.5 mt-2">
+                        {flags.chartGuide && cardGuideRule && (
+                          <div className="flex flex-wrap items-center gap-2 text-[11px]">
+                            {topRec && topRec.type === activeType && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-mono font-bold uppercase bg-accent-soft text-accent border border-accent/30">
+                                <CheckCircle2 className="w-3 h-3" aria-hidden="true" />
+                                <span>Recommended</span>
+                              </span>
+                            )}
+                            <span className="text-secondary">
+                              <strong className="font-mono text-accent">Why this chart:</strong> {formatChartGuideReason(cardGuideRule)}
+                            </span>
+                          </div>
+                        )}
+
+                        {flags.chartGuide && !mismatchEval.fits && mismatchEval.mismatchWarning && (
+                          <div
+                            role="status"
+                            className={`p-2 rounded-xl text-[11px] flex items-center gap-2 border ${
+                              isLight
+                                ? 'bg-amber-50 border-amber-200 text-amber-900'
+                                : 'bg-amber-950/35 border-amber-500/35 text-amber-200'
+                            }`}
+                          >
+                            <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" aria-hidden="true" />
+                            <span>{mismatchEval.mismatchWarning}</span>
+                          </div>
+                        )}
+
+                        {topRec && topRec.type !== activeType && (
+                          <div className={`p-2 rounded-xl text-xs flex items-center justify-between gap-2 border transition-all ${
+                            isLight 
+                              ? 'bg-sky-50/90 border-sky-200 text-slate-800' 
+                              : 'bg-sky-950/40 border-sky-800/60 text-sky-200'
+                          }`}>
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <Lightbulb className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                              <span className="font-bold text-[11px] shrink-0 text-sky-700 dark:text-cyan-400">
+                                {flags.chartGuide ? 'Recommended:' : 'AI Suggestion:'}
+                              </span>
+                              <span className="truncate text-[11px] text-slate-600 dark:text-slate-300">
+                                {topRec.label} ({topRec.score}% fit) — {topRec.reason}
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setVisualOverrides(prev => ({
+                                  ...prev,
+                                  [vis.id]: { 
+                                    ...prev[vis.id], 
+                                    type: topRec.type,
+                                    categoryField: resolvedCat,
+                                    valueField: resolvedVal
+                                  }
+                                }));
+                                if (!vis.isCustomRenamed) {
+                                  updateCustomVisual(vis.id, { title: topRec.suggestedTitle });
+                                }
+                              }}
+                              className="px-2.5 py-1 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold text-[11px] whitespace-nowrap shrink-0 transition-colors shadow-2xs cursor-pointer flex items-center gap-1"
+                              title={`Switch visualization to ${topRec.label}`}
+                            >
+                              <Sparkles className="w-3 h-3" />
+                              <span>Switch to {topRec.label}</span>
+                            </button>
+                          </div>
+                        )}
                       </div>
                     );
                   })()}
                 </div>
 
                 {/* REAL CHART RENDERING ENGINE */}
-                <div className="py-2 min-h-[200px] flex items-center justify-center">
+                <div className="py-2 min-h-[200px] flex items-center justify-center" data-chart-card-body={vis.id}>
+                  {flags.chartGuide && cardGuideRule ? (
+                    <div className="w-full">
+                      <GuideChartRenderer
+                        chartType={cardGuideRule.id}
+                        rows={activeRows}
+                        categoryField={resolvedCat}
+                        secondaryCategoryField={resolvedSecCat}
+                        valueField={resolvedVal}
+                        secondaryValueField={resolvedSecVal}
+                        aggregation={vis.aggregation}
+                        isLight={isLight}
+                        onDrillThrough={(filterCol, filterVal, subtitle) => {
+                          openDrillThrough({
+                            title: `${vis.title} - ${filterVal}`,
+                            subtitle,
+                            filterColumn: filterCol,
+                            filterValue: filterVal,
+                            sourceContext: 'chart_bar',
+                          });
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <>
                   {/* BAR CHART */}
                   {activeType === 'bar' && (
                     <div className="w-full space-y-2.5">
@@ -1510,7 +2474,7 @@ export const DashboardBuilderView: React.FC = () => {
 
                   {/* BOXPLOT (Tukey 5-Number Distribution & Outlier Detection) */}
                   {activeType === 'boxplot' && (() => {
-                    const boxplotData = computeBoxplotSummary(cleanRows, resolvedCat, resolvedVal);
+                    const boxplotData = computeBoxplotSummary(activeRows, resolvedCat, resolvedVal);
                     if (boxplotData.length === 0) {
                       return (
                         <div className="p-8 text-center text-xs text-slate-500">
@@ -1740,8 +2704,8 @@ export const DashboardBuilderView: React.FC = () => {
                             className="cursor-pointer group space-y-0.5"
                           >
                             <div className="flex justify-between text-[11px] font-mono">
-                              <span className="text-gray-300 group-hover:text-cyan-400">{idx + 1}. {it.category}</span>
-                              <span className="text-white font-bold">{it.value.toLocaleString()} ({it.share}%)</span>
+                              <span className="text-secondary group-hover:text-accent">{idx + 1}. {it.category}</span>
+                              <span className="text-primary font-bold">{it.value.toLocaleString()} ({it.share}%)</span>
                             </div>
                             <div className="flex justify-center w-full">
                               <div 
@@ -1760,7 +2724,7 @@ export const DashboardBuilderView: React.FC = () => {
                   {/* WATERFALL CHART */}
                   {activeType === 'waterfall' && (
                     <div className="w-full">
-                      <div className="flex items-end justify-between gap-1.5 h-44 pt-4 pb-4 border-b border-[#282828]">
+                      <div className="flex items-end justify-between gap-1.5 h-44 pt-4 pb-4 border-b border-subtle">
                         {items.slice(0, 6).map((it, idx) => {
                           const h = Math.max(6, (it.value / maxVal) * 110);
                           const isPos = idx % 2 === 0;
@@ -1776,12 +2740,12 @@ export const DashboardBuilderView: React.FC = () => {
                               })} 
                               className="flex-1 flex flex-col items-center h-full justify-end cursor-pointer group"
                             >
-                              <span className="text-[9px] font-mono text-white mb-1">{it.value.toLocaleString()}</span>
+                              <span className="text-[9px] font-mono text-primary mb-1">{it.value.toLocaleString()}</span>
                               <div 
                                 className={`w-full max-w-[36px] rounded transition-all group-hover:brightness-125 ${isPos ? 'bg-sky-500' : 'bg-rose-500'}`} 
                                 style={{ height: `${h}px` }} 
                               />
-                              <span className="text-[9px] text-gray-400 font-mono truncate max-w-[50px] mt-1.5">{it.category}</span>
+                              <span className="text-[9px] text-muted font-mono truncate max-w-[50px] mt-1.5">{it.category}</span>
                             </div>
                           );
                         })}
@@ -1793,7 +2757,7 @@ export const DashboardBuilderView: React.FC = () => {
                   {activeType === 'treemap' && (
                     <div className="w-full grid grid-cols-2 sm:grid-cols-4 gap-2 font-mono">
                       {items.slice(0, 6).map((it, idx) => {
-                        const colors = ['#0284C7', '#00d8f6', '#38bdf8', '#818cf8', '#f59e0b', '#ec4899'];
+                        const colors = ['#0284C7', '#0F766E', '#4F46E5', '#D97706', '#E11D48', '#7C3AED'];
                         const c = colors[idx % colors.length];
                         const isBig = idx === 0 || idx === 1;
                         return (
@@ -1806,14 +2770,14 @@ export const DashboardBuilderView: React.FC = () => {
                               filterValue: it.category,
                               sourceContext: 'chart_bar'
                             })} 
-                            className={`p-2.5 rounded-xl border border-[#2d2d2d] cursor-pointer hover:scale-[1.02] transition-all flex flex-col justify-between ${isBig ? 'sm:col-span-2' : ''}`} 
+                            className={`p-2.5 rounded-xl border border-subtle cursor-pointer hover:scale-[1.02] transition-all flex flex-col justify-between ${isBig ? 'sm:col-span-2' : ''}`} 
                             style={{ backgroundColor: `${c}18`, borderColor: `${c}44` }}
                           >
                             <div className="flex justify-between items-start">
-                              <span className="text-white text-xs font-bold truncate">{it.category}</span>
+                              <span className="text-primary text-xs font-bold truncate">{it.category}</span>
                               <span className="text-[10px] font-bold" style={{ color: c }}>{it.share}%</span>
                             </div>
-                            <span className="text-sm font-bold text-white mt-2">{it.value.toLocaleString()}</span>
+                            <span className="text-sm font-bold text-primary mt-2">{it.value.toLocaleString()}</span>
                           </div>
                         );
                       })}
@@ -1825,32 +2789,58 @@ export const DashboardBuilderView: React.FC = () => {
                     <div className="w-full flex flex-col items-center justify-center">
                       <div className="relative w-44 h-24">
                         <svg viewBox="0 0 200 110" className="w-full h-full overflow-visible select-none">
-                          <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="#262626" strokeWidth="16" strokeLinecap="round" />
+                          <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="var(--chart-grid)" strokeWidth="16" strokeLinecap="round" />
                           <path 
                             d="M 20 100 A 80 80 0 0 1 180 100" 
                             fill="none" 
-                            stroke="#0284C7" 
+                            stroke="var(--chart-1)" 
                             strokeWidth="16" 
                             strokeLinecap="round" 
                             strokeDasharray="251" 
                             strokeDashoffset={251 - (Math.min(100, (grandTotal / (maxVal * items.length || 1)) * 100) / 100) * 251} 
                           />
-                          <circle cx="100" cy="100" r="6" fill="#fff" />
-                          <line x1="100" y1="100" x2="100" y2="35" stroke="#fff" strokeWidth="3" strokeLinecap="round" />
+                          <circle cx="100" cy="100" r="6" fill="var(--text-primary)" />
+                          <line x1="100" y1="100" x2="100" y2="35" stroke="var(--text-primary)" strokeWidth="3" strokeLinecap="round" />
                         </svg>
                       </div>
                       <div className="text-center font-mono mt-1">
-                        <span className="text-lg font-extrabold text-white">{grandTotal.toLocaleString()}</span>
-                        <span className="text-[10px] text-cyan-400 block">Aggregate Total Target Attainment</span>
+                        <span className="text-lg font-extrabold text-primary">{grandTotal.toLocaleString()}</span>
+                        <span className="text-[10px] text-accent block">Aggregate Total Target Attainment</span>
                       </div>
                     </div>
+                  )}
+
+                  {/* HISTOGRAM CHART */}
+                  {activeType === 'histogram' && (
+                    <div className="w-full">
+                      <HistogramChart
+                        rows={activeRows}
+                        valueField={activeVal}
+                        isLight={isLight}
+                      />
+                    </div>
+                  )}
+
+                  {/* STACKED BAR CHART */}
+                  {activeType === 'stacked_bar' && (
+                    <div className="w-full">
+                      <StackedBarChart
+                        rows={activeRows}
+                        primaryCategoryField={activeCat}
+                        secondaryCategoryField={resolvedSecCat}
+                        valueField={activeVal}
+                        isLight={isLight}
+                      />
+                    </div>
+                  )}
+                    </>
                   )}
 
                   {/* DATA TABLE */}
                   {activeType === 'table' && (
                     <div className="w-full overflow-x-auto">
                       <table className="w-full text-left text-xs font-mono">
-                        <thead className="bg-[#141414] text-gray-400 border-b border-[#2d2d2d]">
+                        <thead className="bg-elevated text-secondary border-b border-subtle">
                           <tr>
                             <th className="p-2">Rank</th>
                             <th className="p-2">{activeCat}</th>
@@ -1858,7 +2848,7 @@ export const DashboardBuilderView: React.FC = () => {
                             <th className="p-2 text-right">Share</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-[#252525]">
+                        <tbody className="divide-y divide-subtle">
                           {items.map((it, idx) => (
                             <tr 
                               key={idx} 
@@ -1869,18 +2859,16 @@ export const DashboardBuilderView: React.FC = () => {
                                 filterValue: it.category,
                                 sourceContext: 'table_row'
                               })}
-                              className={`transition-colors cursor-pointer group ${isLight ? 'hover:bg-slate-50' : 'hover:bg-[#1f1f1f]'}`}
+                              className="transition-colors cursor-pointer group hover:bg-card-hover"
                               title="Click row to drill-through to granular records"
                             >
-                              <td className="p-2 text-gray-400 font-bold">#{idx + 1}</td>
-                              <td className={`p-2 font-sans transition-colors flex items-center gap-1 ${
-                                isLight ? 'text-slate-800 group-hover:text-sky-700' : 'text-white group-hover:text-cyan-400'
-                              }`}>
+                              <td className="p-2 text-muted font-bold">#{idx + 1}</td>
+                              <td className="p-2 font-sans transition-colors flex items-center gap-1 text-primary group-hover:text-accent">
                                 {it.category}
-                                <span className={`opacity-0 group-hover:opacity-100 text-[10px] ${isLight ? 'text-sky-600' : 'text-cyan-400'}`}>↗</span>
+                                <span className="opacity-0 group-hover:opacity-100 text-[10px] text-accent">↗</span>
                               </td>
-                              <td className={`p-2 text-right font-semibold ${isLight ? 'text-sky-800' : 'text-cyan-400'}`}>{it.value.toLocaleString()}</td>
-                              <td className={`p-2 text-right ${isLight ? 'text-slate-500' : 'text-gray-400'}`}>{it.share}%</td>
+                              <td className="p-2 text-right font-semibold text-accent">{it.value.toLocaleString()}</td>
+                              <td className="p-2 text-right text-muted">{it.share}%</td>
                             </tr>
                           ))}
                         </tbody>
@@ -1889,12 +2877,19 @@ export const DashboardBuilderView: React.FC = () => {
                   )}
                 </div>
 
-                {/* Footer Insight */}
-                <div className={`pt-2 border-t flex items-center justify-between text-[10px] font-mono ${
+                {/* Accessible Text Summary & Footer Insight */}
+                <div className={`pt-2 border-t space-y-1 text-[10px] font-mono ${
                   isLight ? 'border-slate-100 text-slate-500' : 'border-[#262626] text-gray-400'
                 }`}>
-                  <span>Aggregation: {vis.aggregation.toUpperCase()}</span>
-                  <span>Top {items.length} segments analyzed</span>
+                  {flags.chartGuide && items.length > 0 && activeType !== 'histogram' && activeType !== 'stacked_bar' && (
+                    <p className={isLight ? 'text-slate-600' : 'text-slate-400'}>
+                      Summary: {items[0]?.category} leads with {items[0]?.value.toLocaleString()} ({items[0]?.share}% share) across {items.length} displayed groups.
+                    </p>
+                  )}
+                  <div className="flex items-center justify-between">
+                    <span>Aggregation: {vis.aggregation.toUpperCase()}</span>
+                    <span>Top {items.length} segments analyzed</span>
+                  </div>
                 </div>
               </div>
             );
@@ -1957,6 +2952,12 @@ export const DashboardBuilderView: React.FC = () => {
                     <option value="boxplot">Quartile Boxplot (Variance & Outlier Discovery)</option>
                     <option value="scatter">Scatter Plot (Correlation & Bivariate)</option>
                     <option value="heatmap">2D Heat Map (Density & Co-occurrence)</option>
+                    {flags.chartGuide && (
+                      <>
+                        <option value="histogram">Histogram (Numeric Distribution Bins)</option>
+                        <option value="stacked_bar">Stacked Bar Chart (Totals & Parts)</option>
+                      </>
+                    )}
                     <option value="radar">Radar / Spider Chart (Multi-Axis Footprint)</option>
                     <option value="funnel">Funnel Conversion (Stage Drop-off & Retention)</option>
                     <option value="waterfall">Waterfall Chart (Variance Walk)</option>
@@ -2020,9 +3021,34 @@ export const DashboardBuilderView: React.FC = () => {
 
               {/* DYNAMIC AI SCHEMA RECOMMENDATIONS PANEL */}
               {(() => {
-                const modalRecs = recommendChartsForFields(catField, valField, columns, cleanRows);
+                const modalSecCat = pureCategoryCols.find(c => c.name !== catField)?.name;
+                const modalSecVal = numericCols.find(c => c.name !== valField)?.name;
+                const modalRecs = recommendChartsForFields(
+                  catField,
+                  valField,
+                  columns,
+                  cleanRows,
+                  flags.chartGuide
+                    ? {
+                        chartGuide: true,
+                        secondaryCategoryColName: modalSecCat,
+                        secondaryValueColName: modalSecVal
+                      }
+                    : undefined
+                );
                 if (modalRecs.length === 0) return null;
                 const topFit = modalRecs[0];
+                const modalRule = flags.chartGuide ? getChartGuideRule(type) : undefined;
+                const modalFitCheck = flags.chartGuide && modalRule
+                  ? evaluateChartRuleFit(modalRule.id, {
+                      categoryCol: columns.find(c => c.name === catField),
+                      secondaryCategoryCol: modalSecCat ? columns.find(c => c.name === modalSecCat) : undefined,
+                      valueCol: columns.find(c => c.name === valField),
+                      secondaryValueCol: modalSecVal ? columns.find(c => c.name === modalSecVal) : undefined,
+                      columns,
+                      rows: cleanRows
+                    })
+                  : { fits: true, mismatchWarning: undefined };
 
                 return (
                   <div className={`p-3.5 rounded-2xl border space-y-2.5 ${
@@ -2048,8 +3074,31 @@ export const DashboardBuilderView: React.FC = () => {
                       </button>
                     </div>
 
+                    {flags.chartGuide && modalRule && (
+                      <div className="text-[11px] flex items-center gap-1.5">
+                        <Info className="w-3.5 h-3.5 text-accent shrink-0" aria-hidden="true" />
+                        <span>
+                          <strong className="font-mono text-accent">Why this chart:</strong> {formatChartGuideReason(modalRule)}
+                        </span>
+                      </div>
+                    )}
+
+                    {flags.chartGuide && !modalFitCheck.fits && modalFitCheck.mismatchWarning && (
+                      <div
+                        role="status"
+                        className={`p-2 rounded-xl border text-[11px] flex items-start gap-2 ${
+                          isLight
+                            ? 'bg-amber-50 border-amber-300 text-amber-900'
+                            : 'bg-amber-950/40 border-amber-500/40 text-amber-200'
+                        }`}
+                      >
+                        <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" aria-hidden="true" />
+                        <span>{modalFitCheck.mismatchWarning}</span>
+                      </div>
+                    )}
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {modalRecs.slice(0, 4).map((rec) => {
+                      {modalRecs.slice(0, 4).map((rec, idx) => {
                         const isSelected = type === rec.type;
                         return (
                           <div
@@ -2073,11 +3122,11 @@ export const DashboardBuilderView: React.FC = () => {
                                 {rec.label}
                               </span>
                               <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold uppercase ${
-                                rec.badge === 'Best Fit'
+                                rec.badge === 'Best Fit' || idx === 0
                                   ? 'bg-sky-500/20 text-sky-600 dark:text-cyan-300 border border-sky-400/40'
                                   : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
                               }`}>
-                                {rec.score}% Match
+                                {flags.chartGuide && idx === 0 ? 'Recommended' : `${rec.score}% Match`}
                               </span>
                             </div>
                             <p className={`text-[11px] line-clamp-2 leading-relaxed ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>

@@ -62,61 +62,35 @@ const ToastCard: React.FC<ToastCardProps> = ({ toast, onDismiss, isLight }) => {
   const getIcon = () => {
     switch (toast.type) {
       case 'success':
-        return <CheckCircle2 className="w-5 h-5 text-[#21F1A8] shrink-0" />;
+        return <CheckCircle2 className="w-5 h-5 text-success shrink-0" />;
       case 'progress':
-        return <Loader2 className="w-5 h-5 text-[#00D2FF] animate-spin shrink-0" />;
+        return <Loader2 className="w-5 h-5 text-accent animate-spin shrink-0" />;
       case 'warning':
-        return <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />;
+        return <AlertTriangle className="w-5 h-5 text-warning shrink-0" />;
       case 'error':
-        return <AlertCircle className="w-5 h-5 text-rose-400 shrink-0" />;
+        return <AlertCircle className="w-5 h-5 text-danger shrink-0" />;
       case 'info':
       default:
-        return <Info className="w-5 h-5 text-sky-400 shrink-0" />;
+        return <Info className="w-5 h-5 text-info shrink-0" />;
     }
   };
 
   const getBorderAndBg = () => {
-    if (isLight) {
-      switch (toast.type) {
-        case 'success':
-          return 'bg-white border-emerald-300 shadow-emerald-500/10 text-slate-900';
-        case 'progress':
-          return 'bg-white border-cyan-300 shadow-cyan-500/10 text-slate-900';
-        case 'warning':
-          return 'bg-white border-amber-300 shadow-amber-500/10 text-slate-900';
-        case 'error':
-          return 'bg-white border-rose-300 shadow-rose-500/10 text-slate-900';
-        default:
-          return 'bg-white border-slate-300 shadow-slate-500/10 text-slate-900';
-      }
-    } else {
-      switch (toast.type) {
-        case 'success':
-          return 'bg-[#0f1b29]/95 border-[#21F1A8]/40 shadow-[0_10px_25px_-5px_rgba(0,0,0,0.6),0_0_20px_rgba(33,241,168,0.15)] text-slate-100';
-        case 'progress':
-          return 'bg-[#0f1b29]/95 border-[#00D2FF]/40 shadow-[0_10px_25px_-5px_rgba(0,0,0,0.6),0_0_20px_rgba(0,210,255,0.15)] text-slate-100';
-        case 'warning':
-          return 'bg-[#1b1710]/95 border-amber-500/40 shadow-[0_10px_25px_-5px_rgba(0,0,0,0.6),0_0_20px_rgba(245,158,11,0.12)] text-slate-100';
-        case 'error':
-          return 'bg-[#1c1214]/95 border-rose-500/40 shadow-[0_10px_25px_-5px_rgba(0,0,0,0.6),0_0_20px_rgba(244,63,94,0.15)] text-slate-100';
-        default:
-          return 'bg-[#101826]/95 border-slate-700/60 shadow-[0_10px_25px_-5px_rgba(0,0,0,0.6)] text-slate-100';
-      }
-    }
+    return 'bg-card border-subtle shadow-card text-primary';
   };
 
   const getProgressColor = () => {
     switch (toast.type) {
       case 'success':
-        return 'bg-[#21F1A8]';
+        return 'bg-[var(--success)]';
       case 'progress':
-        return 'bg-gradient-to-r from-[#21F1A8] to-[#00D2FF]';
+        return 'bg-[var(--accent)]';
       case 'warning':
-        return 'bg-amber-400';
+        return 'bg-[var(--warning)]';
       case 'error':
-        return 'bg-rose-500';
+        return 'bg-[var(--danger)]';
       default:
-        return 'bg-sky-400';
+        return 'bg-[var(--info)]';
     }
   };
 
@@ -135,22 +109,18 @@ const ToastCard: React.FC<ToastCardProps> = ({ toast, onDismiss, isLight }) => {
         {/* Content Area */}
         <div className="flex-1 min-w-0 pr-2">
           <div className="flex items-center justify-between gap-2">
-            <h4 className="text-sm font-bold tracking-tight truncate text-white">
+            <h4 className="text-sm font-bold tracking-tight truncate text-primary">
               {toast.title}
             </h4>
             {toast.stage && (
-              <span className={`text-[10px] font-mono font-medium px-2 py-0.5 rounded-full border shrink-0 ${
-                isLight 
-                  ? 'bg-slate-100 border-slate-200 text-slate-600' 
-                  : 'bg-[#16253c] border-[#253d62] text-[#21F1A8]'
-              }`}>
+              <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full border shrink-0 bg-elevated border-subtle text-accent">
                 {toast.stage}
               </span>
             )}
           </div>
 
           {toast.message && (
-            <p className={`text-xs mt-1 leading-relaxed ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>
+            <p className="text-xs mt-1 leading-relaxed text-secondary">
               {toast.message}
             </p>
           )}

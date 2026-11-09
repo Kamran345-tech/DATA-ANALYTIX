@@ -231,17 +231,15 @@ export const DataCleaningLabView: React.FC = () => {
   return (
     <div className="space-y-6 pb-12 animate-fadeIn w-full max-w-7xl mx-auto">
       {/* 1. Header & Quick Controls */}
-      <div className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-4 sm:p-6 flex flex-wrap items-center justify-between gap-4">
+      <div className="bg-card border border-subtle rounded-2xl p-4 sm:p-6 flex flex-wrap items-center justify-between gap-4 shadow-sm">
         <div className="space-y-1">
-          <div className={`flex items-center gap-2 text-xs font-semibold uppercase tracking-wider font-mono ${
-            isLight ? 'text-sky-700' : 'text-cyan-400'
-          }`}>
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider font-mono text-accent">
             <Wand2 className="w-4 h-4" /> Automated Messy Data Doctor & Transformation Core
           </div>
-          <h1 className="font-heading text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-wide uppercase">
+          <h1 className="font-heading text-2xl sm:text-3xl lg:text-4xl font-bold text-primary tracking-wide uppercase">
             MESSY DATA DIAGNOSTICS & CLEANING LAB
           </h1>
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-secondary">
             Detects untrimmed spaces, duplicate records, mixed casing, dirty currencies, nulls, and outliers with 1-click automated fixes.
           </p>
         </div>
@@ -250,19 +248,19 @@ export const DataCleaningLabView: React.FC = () => {
           {/* Load Messy Benchmark Button */}
           <button
             onClick={() => loadDemoDataset('messy-crm-raw')}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#242424] hover:bg-[#2d2d2d] text-amber-300 text-xs font-medium border border-amber-500/30 hover:border-amber-400 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-elevated hover:bg-card-hover text-[var(--warning)] text-xs font-medium border border-amber-500/30 hover:border-amber-400 transition-colors cursor-pointer"
             title="Load authentic raw dirty dataset to test all cleaning features"
           >
-            <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+            <AlertTriangle className="w-3.5 h-3.5 text-[var(--warning)]" />
             <span className="hidden sm:inline">Load Messy Benchmark</span>
           </button>
 
           {/* Export Cleaned CSV */}
           <button
             onClick={handleExportCleanCSV}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#1f1f1f] hover:bg-[#282828] text-white text-xs font-medium border border-[#333] hover:border-sky-500 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-elevated hover:bg-card-hover text-primary text-xs font-medium border border-subtle hover:border-accent transition-colors cursor-pointer"
           >
-            <Download className="w-3.5 h-3.5 text-sky-400" />
+            <Download className="w-3.5 h-3.5 text-accent" />
             <span className="hidden sm:inline">Export Clean CSV</span>
           </button>
 
@@ -270,17 +268,17 @@ export const DataCleaningLabView: React.FC = () => {
           <button
             onClick={undoTransformation}
             disabled={transformations.length === 0}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#242424] hover:bg-[#303030] text-gray-300 disabled:opacity-30 text-xs border border-[#383838] transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-elevated hover:bg-card-hover text-secondary disabled:opacity-30 text-xs border border-subtle transition-colors cursor-pointer"
             title="Undo Last Transformation"
           >
-            <RotateCcw className="w-3.5 h-3.5 text-sky-400" /> Undo
+            <RotateCcw className="w-3.5 h-3.5 text-accent" /> Undo
           </button>
 
           {/* Reset to Raw */}
           <button
             onClick={resetToRaw}
             disabled={transformations.length === 0}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-950/20 hover:bg-red-950/40 text-red-400 disabled:opacity-30 text-xs border border-red-500/30 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-[var(--danger)] disabled:opacity-30 text-xs border border-red-500/30 transition-colors cursor-pointer"
             title="Reset to Original Raw File"
           >
             <Trash2 className="w-3.5 h-3.5" /> Reset
@@ -355,10 +353,10 @@ export const DataCleaningLabView: React.FC = () => {
       <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar text-xs font-semibold">
         <button
           onClick={() => setActiveTab('doctor')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl whitespace-nowrap transition-all ${
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl whitespace-nowrap transition-all cursor-pointer ${
             activeTab === 'doctor'
               ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/30 font-bold'
-              : 'bg-[#1c1c1c] text-gray-300 hover:bg-[#252525] hover:text-white border border-[#2e2e2e]'
+              : 'bg-card text-secondary hover:bg-card-hover hover:text-primary border border-subtle'
           }`}
         >
           <Wand2 className="w-3.5 h-3.5" /> Messy Issues & Quick Fixes ({messyIssues.length})
@@ -366,10 +364,10 @@ export const DataCleaningLabView: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('checklist')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl whitespace-nowrap transition-all ${
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl whitespace-nowrap transition-all cursor-pointer ${
             activeTab === 'checklist'
               ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/30 font-bold'
-              : 'bg-[#1c1c1c] text-gray-300 hover:bg-[#252525] hover:text-white border border-[#2e2e2e]'
+              : 'bg-card text-secondary hover:bg-card-hover hover:text-primary border border-subtle'
           }`}
         >
           <HelpCircle className="w-3.5 h-3.5" /> What Else To Clean? (Analyst Guide)
@@ -377,10 +375,10 @@ export const DataCleaningLabView: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('diff')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl whitespace-nowrap transition-all ${
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl whitespace-nowrap transition-all cursor-pointer ${
             activeTab === 'diff'
               ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/30 font-bold'
-              : 'bg-[#1c1c1c] text-gray-300 hover:bg-[#252525] hover:text-white border border-[#2e2e2e]'
+              : 'bg-card text-secondary hover:bg-card-hover hover:text-primary border border-subtle'
           }`}
         >
           <Layers className="w-3.5 h-3.5" /> Before vs. After Diff ({cleanRows.length} Cleaned Rows)
@@ -388,10 +386,10 @@ export const DataCleaningLabView: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('manual')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl whitespace-nowrap transition-all ${
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl whitespace-nowrap transition-all cursor-pointer ${
             activeTab === 'manual'
               ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/30 font-bold'
-              : 'bg-[#1c1c1c] text-gray-300 hover:bg-[#252525] hover:text-white border border-[#2e2e2e]'
+              : 'bg-card text-secondary hover:bg-card-hover hover:text-primary border border-subtle'
           }`}
         >
           <Sliders className="w-3.5 h-3.5" /> Custom Transformation Studio
@@ -402,22 +400,22 @@ export const DataCleaningLabView: React.FC = () => {
       {activeTab === 'doctor' && (
         <div className="space-y-4">
           {messyIssues.length === 0 ? (
-            <div className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-12 text-center space-y-3">
-              <CheckCircle2 className="w-12 h-12 text-cyan-400 mx-auto" />
-              <h3 className="font-heading text-xl font-bold text-white uppercase">All Issues Cleaned!</h3>
-              <p className="text-xs text-gray-400 max-w-md mx-auto">
+            <div className="bg-card border border-subtle rounded-2xl p-12 text-center space-y-3">
+              <CheckCircle2 className="w-12 h-12 text-accent mx-auto" />
+              <h3 className="font-heading text-xl font-bold text-primary uppercase">All Issues Cleaned!</h3>
+              <p className="text-xs text-secondary max-w-md mx-auto">
                 No active messy entries discovered. All categorical dimensions, numeric columns, and row keys are validated.
               </p>
               <div className="pt-3 flex justify-center gap-3">
                 <button
                   onClick={() => loadDemoDataset('messy-crm-raw')}
-                  className="px-4 py-2 rounded-xl bg-[#242424] hover:bg-[#2f2f2f] text-amber-300 text-xs font-semibold border border-amber-500/30"
+                  className="px-4 py-2 rounded-xl bg-elevated hover:bg-card-hover text-[var(--warning)] text-xs font-semibold border border-amber-500/30 cursor-pointer"
                 >
                   Load Messy Benchmark to Test
                 </button>
                 <button
                   onClick={handleExportCleanCSV}
-                  className="px-4 py-2 rounded-xl bg-sky-600 text-white text-xs font-bold hover:bg-sky-500"
+                  className="px-4 py-2 rounded-xl bg-sky-600 text-white text-xs font-bold hover:bg-sky-500 cursor-pointer"
                 >
                   Download Cleaned CSV
                 </button>
@@ -428,7 +426,7 @@ export const DataCleaningLabView: React.FC = () => {
               {messyIssues.map((issue) => (
                 <div 
                   key={issue.id}
-                  className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-5 space-y-4 hover:border-cyan-500/40 transition-all flex flex-col justify-between"
+                  className="bg-card border border-subtle rounded-2xl p-5 space-y-4 hover:border-accent/50 transition-all flex flex-col justify-between shadow-xs"
                 >
                   <div className="space-y-2.5">
                     {/* Header badge & title */}
@@ -436,39 +434,39 @@ export const DataCleaningLabView: React.FC = () => {
                       <div className="flex items-center gap-2">
                         <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-mono font-bold ${
                           issue.severity === 'high' 
-                            ? 'bg-red-500/20 text-red-400 border border-red-500/30' 
+                            ? 'bg-red-500/15 text-[var(--danger)] border border-red-500/30' 
                             : issue.severity === 'medium'
-                            ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                            : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                            ? 'bg-amber-500/15 text-[var(--warning)] border border-amber-500/30'
+                            : 'bg-sky-500/15 text-[var(--info)] border border-sky-500/30'
                         }`}>
                           {issue.severity} Priority
                         </span>
-                        <span className="text-[10px] text-gray-400 font-mono">
-                          Target: <strong className="text-white">[{issue.column}]</strong>
+                        <span className="text-[10px] text-muted font-mono">
+                          Target: <strong className="text-primary">[{issue.column}]</strong>
                         </span>
                       </div>
-                      <span className="text-[10px] text-gray-400 font-mono">
+                      <span className="text-[10px] text-muted font-mono">
                         {issue.affectedCount} Affected
                       </span>
                     </div>
 
-                    <h3 className="font-heading text-lg font-bold text-white uppercase">
+                    <h3 className="font-heading text-lg font-bold text-primary uppercase">
                       {issue.title}
                     </h3>
 
-                    <p className="text-xs text-gray-300 leading-relaxed">
+                    <p className="text-xs text-secondary leading-relaxed">
                       {issue.description}
                     </p>
 
-                    <div className="p-2.5 rounded-xl bg-[#141414] border border-[#262626] text-xs space-y-1">
-                      <span className="text-[10px] text-gray-500 uppercase font-mono block">Why Fix This?</span>
-                      <p className="text-gray-300 text-[11px]">{issue.recommendedAction}</p>
+                    <div className="p-2.5 rounded-xl bg-elevated border border-subtle text-xs space-y-1">
+                      <span className="text-[10px] text-muted uppercase font-mono block">Why Fix This?</span>
+                      <p className="text-secondary text-[11px]">{issue.recommendedAction}</p>
                     </div>
                   </div>
 
                   {/* Fix Action Button */}
-                  <div className="pt-3 border-t border-[#262626] flex items-center justify-between">
-                    <span className="text-[10px] text-gray-500 font-mono uppercase">
+                  <div className="pt-3 border-t border-subtle flex items-center justify-between">
+                    <span className="text-[10px] text-muted font-mono uppercase">
                       Operation: {issue.suggestedActionType.replace(/_/g, ' ')}
                     </span>
                     <button
@@ -488,13 +486,13 @@ export const DataCleaningLabView: React.FC = () => {
 
       {/* 5. TAB 2: ANALYST CLEANING GUIDE ("Kya Kya Krna Chyie") */}
       {activeTab === 'checklist' && (
-        <div className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-4 sm:p-6 space-y-6">
+        <div className="bg-card border border-subtle rounded-2xl p-4 sm:p-6 space-y-6">
           <div className="space-y-1">
-            <h2 className="font-heading text-xl sm:text-2xl font-bold text-white uppercase flex items-center gap-2">
-              <HelpCircle className="w-5 h-5 text-cyan-400" />
+            <h2 className="font-heading text-xl sm:text-2xl font-bold text-primary uppercase flex items-center gap-2">
+              <HelpCircle className="w-5 h-5 text-accent" />
               DATA ANALYST DATA CLEANING PLAYBOOK & CHECKLIST
             </h2>
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-secondary">
               When encountering messy raw business data, here is the professional end-to-end cleaning checklist every data analyst must execute:
             </p>
           </div>
@@ -556,28 +554,28 @@ export const DataCleaningLabView: React.FC = () => {
               return (
                 <div 
                   key={idx}
-                  className="bg-[#141414] border border-[#282828] rounded-xl overflow-hidden transition-all"
+                  className="bg-elevated border border-subtle rounded-xl overflow-hidden transition-all"
                 >
                   <button
                     onClick={() => setExpandedChecklist(isExpanded ? null : idx)}
-                    className="w-full p-4 flex items-center justify-between text-left hover:bg-[#1a1a1a] transition-colors"
+                    className="w-full p-4 flex items-center justify-between text-left hover:bg-card-hover transition-colors cursor-pointer"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-sky-500/10 text-sky-600 dark:text-cyan-400 flex items-center justify-center shrink-0">
+                      <div className="w-8 h-8 rounded-lg bg-accent-soft text-accent flex items-center justify-center shrink-0">
                         <Icon className="w-4 h-4" />
                       </div>
                       <div>
-                        <h4 className="font-heading text-sm sm:text-base font-bold text-white uppercase">{guide.step}</h4>
-                        <p className="text-xs text-gray-400">{guide.summary}</p>
+                        <h4 className="font-heading text-sm sm:text-base font-bold text-primary uppercase">{guide.step}</h4>
+                        <p className="text-xs text-secondary">{guide.summary}</p>
                       </div>
                     </div>
-                    {isExpanded ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+                    {isExpanded ? <ChevronUp className="w-4 h-4 text-muted" /> : <ChevronDown className="w-4 h-4 text-muted" />}
                   </button>
 
                   {isExpanded && (
-                    <div className="p-4 pt-0 border-t border-[#222] space-y-2 text-xs text-gray-300">
+                    <div className="p-4 pt-0 border-t border-subtle space-y-2 text-xs text-secondary">
                       <p className="leading-relaxed">{guide.details}</p>
-                      <div className="p-2.5 rounded-lg bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-cyan-400 font-mono text-[11px] flex items-center gap-2 border border-sky-200 dark:border-sky-800/40">
+                      <div className="p-2.5 rounded-lg bg-accent-soft text-accent font-mono text-[11px] flex items-center gap-2 border border-accent/30">
                         <Check className="w-3.5 h-3.5 shrink-0" />
                         <span>How to do it here: <strong>{guide.action}</strong></span>
                       </div>
@@ -592,31 +590,31 @@ export const DataCleaningLabView: React.FC = () => {
 
       {/* 6. TAB 3: BEFORE VS AFTER DIFF PREVIEW */}
       {activeTab === 'diff' && (
-        <div className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-4 sm:p-6 space-y-4">
+        <div className="bg-card border border-subtle rounded-2xl p-4 sm:p-6 space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="font-heading text-lg sm:text-xl font-bold text-white uppercase flex items-center gap-2">
-                <Layers className="w-5 h-5 text-sky-400" />
+              <h2 className="font-heading text-lg sm:text-xl font-bold text-primary uppercase flex items-center gap-2">
+                <Layers className="w-5 h-5 text-accent" />
                 BEFORE VS AFTER DATA TRANSFORMATION DIFF
               </h2>
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-secondary">
                 Compare uncleaned raw ingestion records against your active cleaned dataset.
               </p>
             </div>
 
-            <div className="flex items-center bg-[#141414] p-1 rounded-xl border border-[#333] text-xs">
+            <div className="flex items-center bg-elevated p-1 rounded-xl border border-subtle text-xs">
               <button
                 onClick={() => setDiffViewMode('cleaned')}
-                className={`px-3 py-1.5 rounded-lg font-semibold transition-colors ${
-                  diffViewMode === 'cleaned' ? 'bg-sky-600 text-white' : 'text-gray-400 hover:text-white'
+                className={`px-3 py-1.5 rounded-lg font-semibold transition-colors cursor-pointer ${
+                  diffViewMode === 'cleaned' ? 'bg-sky-600 text-white' : 'text-secondary hover:text-primary'
                 }`}
               >
                 Cleaned Data ({cleanRows.length} rows)
               </button>
               <button
                 onClick={() => setDiffViewMode('raw')}
-                className={`px-3 py-1.5 rounded-lg font-semibold transition-colors ${
-                  diffViewMode === 'raw' ? 'bg-sky-600 text-white' : 'text-gray-400 hover:text-white'
+                className={`px-3 py-1.5 rounded-lg font-semibold transition-colors cursor-pointer ${
+                  diffViewMode === 'raw' ? 'bg-sky-600 text-white' : 'text-secondary hover:text-primary'
                 }`}
               >
                 Original Raw ({rawRows.length} rows)
@@ -624,9 +622,9 @@ export const DataCleaningLabView: React.FC = () => {
             </div>
           </div>
 
-          <div className="overflow-x-auto rounded-xl border border-[#282828] max-h-96">
+          <div className="overflow-x-auto rounded-xl border border-subtle max-h-96">
             <table className="w-full text-left text-xs font-mono">
-              <thead className="bg-[#141414] text-gray-400 border-b border-[#2d2d2d] sticky top-0 z-10">
+              <thead className="bg-elevated text-secondary border-b border-subtle sticky top-0 z-10">
                 <tr>
                   <th className="p-3">#</th>
                   {columns.map(c => (
@@ -634,21 +632,21 @@ export const DataCleaningLabView: React.FC = () => {
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#252525]">
+              <tbody className="divide-y divide-subtle">
                 {(diffViewMode === 'cleaned' ? cleanRows : rawRows).slice(0, 20).map((row, idx) => (
-                  <tr key={idx} className="hover:bg-[#1f1f1f] transition-colors">
-                    <td className="p-3 text-gray-500 font-bold">{idx + 1}</td>
+                  <tr key={idx} className="hover:bg-card-hover transition-colors">
+                    <td className="p-3 text-muted font-bold">{idx + 1}</td>
                     {columns.map(c => {
                       const val = row[c.name];
                       const isNull = val === null || val === undefined || val === '';
                       return (
                         <td key={c.name} className="p-3 whitespace-nowrap">
                           {isNull ? (
-                            <span className="px-1.5 py-0.5 rounded bg-red-950/40 text-red-400 text-[10px] font-bold">
+                            <span className="px-1.5 py-0.5 rounded bg-red-500/15 text-[var(--danger)] text-[10px] font-bold">
                               NULL
                             </span>
                           ) : (
-                            <span className="text-gray-200">{String(val)}</span>
+                            <span className="text-primary">{String(val)}</span>
                           )}
                         </td>
                       );
@@ -664,8 +662,8 @@ export const DataCleaningLabView: React.FC = () => {
       {/* 7. TAB 4: MANUAL TRANSFORMATION STUDIO */}
       {activeTab === 'manual' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-5 sm:p-6 space-y-5">
-            <h2 className="font-heading text-lg sm:text-xl font-bold text-white uppercase">
+          <div className="lg:col-span-2 bg-card border border-subtle rounded-2xl p-5 sm:p-6 space-y-5">
+            <h2 className="font-heading text-lg sm:text-xl font-bold text-primary uppercase">
               SELECT MANUAL CLEANING OPERATION
             </h2>
 
@@ -686,10 +684,10 @@ export const DataCleaningLabView: React.FC = () => {
                 <button
                   key={act.id}
                   onClick={() => setSelectedAction(act.id as any)}
-                  className={`p-2.5 rounded-xl border text-center transition-all ${
+                  className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer ${
                     selectedAction === act.id 
-                      ? 'bg-sky-500/15 border-sky-500 text-sky-400 font-bold' 
-                      : 'bg-[#141414] border-[#2c2c2c] text-gray-400 hover:text-white hover:bg-[#202020]'
+                      ? 'bg-accent-soft border-accent text-accent font-bold' 
+                      : 'bg-elevated border-subtle text-secondary hover:text-primary hover:bg-card-hover'
                   }`}
                 >
                   {act.label}
@@ -698,14 +696,14 @@ export const DataCleaningLabView: React.FC = () => {
             </div>
 
             {/* Form controls */}
-            <div className="p-4 sm:p-5 rounded-xl bg-[#141414] border border-[#2a2a2a] space-y-4 text-xs">
+            <div className="p-4 sm:p-5 rounded-xl bg-elevated border border-subtle space-y-4 text-xs">
               {selectedAction !== 'remove_duplicates' && selectedAction !== 'calculated_column' && (
                 <div className="space-y-1.5">
-                  <label className="text-gray-300 font-medium">Target Column</label>
+                  <label className="text-secondary font-medium">Target Column</label>
                   <select
                     value={targetColumn}
                     onChange={(e) => setTargetColumn(e.target.value)}
-                    className="w-full bg-[#1e1e1e] text-white p-2.5 rounded-lg border border-[#333] focus:border-sky-500 focus:outline-none"
+                    className="w-full bg-input text-primary p-2.5 rounded-lg border border-subtle focus:border-accent focus:outline-none"
                   >
                     {columns.map(c => (
                       <option key={c.name} value={c.name}>{c.name} ({c.dataType})</option>
@@ -716,24 +714,24 @@ export const DataCleaningLabView: React.FC = () => {
 
               {selectedAction === 'rename_column' && (
                 <div className="space-y-1.5">
-                  <label className="text-gray-300 font-medium">New Column Title</label>
+                  <label className="text-secondary font-medium">New Column Title</label>
                   <input
                     type="text"
                     placeholder="e.g. Clean_Revenue_USD"
                     value={paramNewName}
                     onChange={(e) => setParamNewName(e.target.value)}
-                    className="w-full bg-[#1e1e1e] text-white p-2.5 rounded-lg border border-[#333] focus:border-sky-500 focus:outline-none"
+                    className="w-full bg-input text-primary p-2.5 rounded-lg border border-subtle focus:border-accent focus:outline-none"
                   />
                 </div>
               )}
 
               {selectedAction === 'change_type' && (
                 <div className="space-y-1.5">
-                  <label className="text-gray-300 font-medium">Target Type</label>
+                  <label className="text-secondary font-medium">Target Type</label>
                   <select
                     value={paramType}
                     onChange={(e) => setParamType(e.target.value as DataType)}
-                    className="w-full bg-[#1e1e1e] text-white p-2.5 rounded-lg border border-[#333] focus:border-sky-500 focus:outline-none"
+                    className="w-full bg-input text-primary p-2.5 rounded-lg border border-subtle focus:border-accent focus:outline-none"
                   >
                     <option value="number">Number (Float / Integer)</option>
                     <option value="string">Text / String</option>
@@ -745,11 +743,11 @@ export const DataCleaningLabView: React.FC = () => {
 
               {selectedAction === 'fill_missing' && (
                 <div className="space-y-1.5">
-                  <label className="text-gray-300 font-medium">Missing Value Imputation Strategy</label>
+                  <label className="text-secondary font-medium">Missing Value Imputation Strategy</label>
                   <select
                     value={paramFillMethod}
                     onChange={(e) => setParamFillMethod(e.target.value as any)}
-                    className="w-full bg-[#1e1e1e] text-white p-2.5 rounded-lg border border-[#333] focus:border-sky-500 focus:outline-none"
+                    className="w-full bg-input text-primary p-2.5 rounded-lg border border-subtle focus:border-accent focus:outline-none"
                   >
                     <option value="mean">Arithmetic Mean (For Numerical Columns)</option>
                     <option value="median">Median (For Skewed Distributions)</option>
@@ -761,11 +759,11 @@ export const DataCleaningLabView: React.FC = () => {
 
               {selectedAction === 'standardize_text' && (
                 <div className="space-y-1.5">
-                  <label className="text-gray-300 font-medium">Casing Target</label>
+                  <label className="text-secondary font-medium">Casing Target</label>
                   <select
                     value={paramTextFormat}
                     onChange={(e) => setParamTextFormat(e.target.value as any)}
-                    className="w-full bg-[#1e1e1e] text-white p-2.5 rounded-lg border border-[#333] focus:border-sky-500 focus:outline-none"
+                    className="w-full bg-input text-primary p-2.5 rounded-lg border border-subtle focus:border-accent focus:outline-none"
                   >
                     <option value="titlecase">Title Case ("North America")</option>
                     <option value="uppercase">UPPERCASE ("NORTH AMERICA")</option>
@@ -777,25 +775,25 @@ export const DataCleaningLabView: React.FC = () => {
               {selectedAction === 'calculated_column' && (
                 <div className="space-y-3">
                   <div className="space-y-1.5">
-                    <label className="text-gray-300 font-medium">New Column Name</label>
+                    <label className="text-secondary font-medium">New Column Name</label>
                     <input
                       type="text"
                       placeholder="e.g. NetProfitMargin"
                       value={paramCalcName}
                       onChange={(e) => setParamCalcName(e.target.value)}
-                      className="w-full bg-[#1e1e1e] text-white p-2.5 rounded-lg border border-[#333] focus:border-sky-500 focus:outline-none"
+                      className="w-full bg-input text-primary p-2.5 rounded-lg border border-subtle focus:border-accent focus:outline-none"
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-gray-300 font-medium">Formula Expression</label>
+                    <label className="text-secondary font-medium">Formula Expression</label>
                     <input
                       type="text"
                       placeholder="e.g. [GrossRevenue] - [EstimatedCost]"
                       value={paramCalcExpr}
                       onChange={(e) => setParamCalcExpr(e.target.value)}
-                      className="w-full bg-[#1e1e1e] text-cyan-400 font-mono p-2.5 rounded-lg border border-[#333] focus:border-cyan-400 focus:outline-none"
+                      className="w-full bg-input text-accent font-mono p-2.5 rounded-lg border border-subtle focus:border-accent focus:outline-none"
                     />
-                    <span className="text-[10px] text-gray-500">Wrap column names in brackets like [Revenue] * 0.15</span>
+                    <span className="text-[10px] text-muted">Wrap column names in brackets like [Revenue] * 0.15</span>
                   </div>
                 </div>
               )}
@@ -810,14 +808,14 @@ export const DataCleaningLabView: React.FC = () => {
           </div>
 
           {/* Right: Audit Trail */}
-          <div className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-5 space-y-4">
-            <h3 className="font-heading text-lg font-bold text-white uppercase flex items-center gap-2">
-              <Clock className="w-4 h-4 text-cyan-400" />
+          <div className="bg-card border border-subtle rounded-2xl p-5 space-y-4">
+            <h3 className="font-heading text-lg font-bold text-primary uppercase flex items-center gap-2">
+              <Clock className="w-4 h-4 text-accent" />
               TRANSFORMATION AUDIT TRAIL ({transformations.length})
             </h3>
 
             {transformations.length === 0 ? (
-              <div className="p-6 text-center text-xs text-gray-500 bg-[#141414] rounded-xl border border-[#262626]">
+              <div className="p-6 text-center text-xs text-muted bg-elevated rounded-xl border border-subtle">
                 No transformations applied yet. Dataset matches original raw state.
               </div>
             ) : (
@@ -825,13 +823,13 @@ export const DataCleaningLabView: React.FC = () => {
                 {transformations.map((step, idx) => (
                   <div 
                     key={step.id} 
-                    className="p-3 rounded-xl bg-[#141414] border border-[#2a2a2a] space-y-1 text-xs"
+                    className="p-3 rounded-xl bg-elevated border border-subtle space-y-1 text-xs"
                   >
-                    <div className="flex items-center justify-between text-[10px] text-gray-400 font-mono">
+                    <div className="flex items-center justify-between text-[10px] text-muted font-mono">
                       <span>Step #{idx + 1}</span>
                       <span>{step.timestamp.split('T')[1]?.split('.')[0] || step.timestamp}</span>
                     </div>
-                    <div className="font-medium text-white">{step.description}</div>
+                    <div className="font-medium text-primary">{step.description}</div>
                   </div>
                 ))}
               </div>

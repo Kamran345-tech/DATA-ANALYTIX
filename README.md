@@ -58,7 +58,9 @@ All feature flags can be toggled through the **Settings -> "Experiments & Altern
 | `workerParsing` | Engine | Main-thread parsing | Off-main-thread Web Worker CSV parsing |
 | `xlsxSafe` | Security | Standard SheetJS | Hardened ExcelJS adapter with formula sanitization |
 | `showAllErrors` | Security | Suppresses harmless noise | Strict error boundary routing mode |
-| `selfHostedFonts` | UI | External Google Fonts | Zero-latency local system font stack cascade |
+| `selfHostedFonts` | UI | External Google Fonts | Self-hosted WOFF2 fonts (Space Grotesk, Inter, JetBrains Mono) |
+| `depthUI` | UI | Standard card borders | 20px depth cards, top specular highlight, 4px hover lift |
+| `heroScene3D` | UI | Classic hero layout | Pure-CSS 3D isometric 5-pillar hero scene |
 
 ---
 

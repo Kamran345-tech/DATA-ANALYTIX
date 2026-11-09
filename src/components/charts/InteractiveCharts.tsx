@@ -21,8 +21,22 @@ import {
   ArrowRight,
   Filter
 } from 'lucide-react';
-import { ColumnProfile, ForecastPoint } from '../../types';
+import { ColumnProfile, ForecastPoint, VisualConfig } from '../../types';
 import { safeMin, safeMax, safeExtremes, safeDownsample } from '../../utils/mathUtils';
+import {
+  computeHistogramBins,
+  computeStackedBarData,
+  computeBarChartData,
+  computeLineSeriesData,
+  computeScatterPlotData,
+  computeDonutChartData,
+  computeHeatmapMatrixData,
+  computeBoxplotSummary,
+  formatCompactNumber,
+  truncateChartLabel
+} from '../../engine/chartRecommendationEngine';
+import { ChartGuideId } from '../../config/chartGuide';
+import { ModernEmptyState } from '../modern/ModernEmptyState';
 
 // ============================================================================
 // 1. CHRONOLOGICAL TIME SERIES LINE & AREA CHART
@@ -2688,3 +2702,1271 @@ export const TreemapChart: React.FC<TreemapProps> = ({
     </div>
   );
 };
+
+// ============================================================================
+// 14. HISTOGRAM DISTRIBUTION CHART (AUTO BINNING: STURGES / FREEDMAN-DIACONIS)
+// ============================================================================
+export interface HistogramChartProps {
+  rows: Record<string, any>[];
+  valueField: string;
+  color?: string;
+  isLight?: boolean;
+  isLoading?: boolean;
+  error?: string | null;
+  onBinClick?: (binLabel: string, x0: number, x1: number) => void;
+}
+
+export const HistogramChart: React.FC<HistogramChartProps> = ({
+  rows,
+  valueField,
+  color = '#2DD4BF',
+  isLight = false,
+  isLoading = false,
+  error = null,
+  onBinClick
+}) => {
+  const [binningMode, setBinningMode] = useState<'auto' | 'freedman-diaconis' | 'sturges'>('auto');
+  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
+
+  const summary = useMemo(
+    () => computeHistogramBins(rows, valueField, binningMode),
+    [rows, valueField, binningMode]
+  );
+
+  if (isLoading) {
+    return (
+      <div role="status" aria-label={`Loading histogram for ${valueField}`} className="w-full space-y-3 py-4 animate-pulse">
+        <div className="h-4 w-48 rounded bg-slate-700/40" />
+        <div className="h-44 w-full rounded-xl bg-slate-700/25" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div role="alert" aria-label={`Histogram error: ${error}`} className="p-4 rounded-xl border border-rose-500/40 bg-rose-500/10 text-xs text-rose-300 font-mono">
+        Unable to render histogram: {error}
+      </div>
+    );
+  }
+
+  if (summary.bins.length === 0) {
+    return (
+      <div role="region" aria-label={`Histogram of ${valueField}: no numeric values available`}>
+        <ModernEmptyState
+          title="No numeric distribution data"
+          message={`Column "${valueField || 'selected'}" contains no valid numeric values to group into bins.`}
+        />
+      </div>
+    );
+  }
+
+  const maxCount = Math.max(...summary.bins.map(b => b.count), 1);
+  const topBin = [...summary.bins].sort((a, b) => b.count - a.count)[0];
+  const width = 520;
+  const height = 210;
+  const padL = 44;
+  const padR = 18;
+  const padT = 20;
+  const padB = 42;
+  const innerW = width - padL - padR;
+  const innerH = height - padT - padB;
+  const binSlotW = innerW / Math.max(1, summary.bins.length);
+  const barW = Math.max(8, binSlotW - 4);
+
+  const summaryText = `Histogram of ${valueField} across ${summary.binCount} bin${summary.binCount === 1 ? '' : 's'} (${summary.methodUsed} rule). Most common range: ${topBin.label} with ${topBin.count.toLocaleString()} records (${topBin.frequencyPct}%). Mean ${formatCompactNumber(summary.mean)}, median ${formatCompactNumber(summary.median)}.`;
+
+  return (
+    <div
+      role="region"
+      aria-label={`Histogram showing distribution of ${valueField}`}
+      className="w-full space-y-2.5 no-depth-3d chart-viewport relative"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className={isLight ? 'text-slate-600' : 'text-slate-400'}>
+            Bins: <strong className={isLight ? 'text-slate-900' : 'text-white'}>{summary.binCount}</strong> ({summary.methodUsed === 'freedman-diaconis' ? 'Freedman-Diaconis' : 'Sturges'})
+          </span>
+          <span aria-hidden="true" className="text-slate-500">·</span>
+          <span className={isLight ? 'text-slate-600' : 'text-slate-400'}>
+            Median: <strong className="text-[#2DD4BF] tabular-nums">{formatCompactNumber(summary.median)}</strong>
+          </span>
+          <span aria-hidden="true" className="text-slate-500">·</span>
+          <span className={isLight ? 'text-slate-600' : 'text-slate-400'}>
+            Mean: <strong className="text-[#818CF8] tabular-nums">{formatCompactNumber(summary.mean)}</strong>
+          </span>
+        </div>
+
+        <div className="inline-flex items-center rounded-lg p-0.5 border bg-elevated border-subtle">
+          {(['auto', 'freedman-diaconis', 'sturges'] as const).map(mode => (
+            <button
+              key={mode}
+              type="button"
+              onClick={() => setBinningMode(mode)}
+              className={`px-2 py-0.5 rounded-md text-[10px] font-mono transition-colors cursor-pointer whitespace-nowrap ${
+                binningMode === mode
+                  ? 'bg-accent-soft text-accent font-semibold'
+                  : 'text-muted hover:text-primary'
+              }`}
+            >
+              {mode === 'auto' ? 'Auto' : mode === 'freedman-diaconis' ? 'F-D' : 'Sturges'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {summary.largeDataNotice && (
+        <div className="px-2.5 py-1 rounded-lg text-[10px] font-mono flex items-center gap-1.5 bg-accent-soft text-accent border border-subtle">
+          <Info className="w-3 h-3 shrink-0" aria-hidden="true" />
+          <span>{summary.largeDataNotice}</span>
+        </div>
+      )}
+
+      <div className="relative">
+        <svg
+          viewBox={`0 0 ${width} ${height}`}
+          role="img"
+          aria-label={summaryText}
+          className="w-full h-48 overflow-visible select-none"
+        >
+          {[0, 0.5, 1].map((pct, i) => {
+            const y = padT + innerH * (1 - pct);
+            const countLabel = Math.round(maxCount * pct);
+            return (
+              <g key={i}>
+                <line
+                  x1={padL}
+                  y1={y}
+                  x2={width - padR}
+                  y2={y}
+                  stroke="var(--chart-grid)"
+                  strokeDasharray="3,3"
+                />
+                <text
+                  x={padL - 6}
+                  y={y + 3}
+                  textAnchor="end"
+                  fill="var(--chart-axis)"
+                  fontSize="9"
+                  fontFamily="JetBrains Mono, monospace"
+                >
+                  {formatCompactNumber(countLabel)}
+                </text>
+              </g>
+            );
+          })}
+
+          {summary.bins.map((bin, idx) => {
+            const x = padL + idx * binSlotW + (binSlotW - barW) / 2;
+            const barH = Math.max(bin.count > 0 ? 4 : 0, (bin.count / maxCount) * innerH);
+            const y = padT + innerH - barH;
+            const isHovered = hoverIdx === idx;
+            const isPeak = bin.binIndex === topBin.binIndex;
+
+            return (
+              <g
+                key={bin.binIndex}
+                tabIndex={0}
+                role="button"
+                aria-label={`Bin ${bin.label}: ${bin.count} records (${bin.frequencyPct}%)`}
+                onMouseEnter={() => setHoverIdx(idx)}
+                onMouseLeave={() => setHoverIdx(null)}
+                onFocus={() => setHoverIdx(idx)}
+                onBlur={() => setHoverIdx(null)}
+                onClick={() => onBinClick?.(bin.label, bin.x0, bin.x1)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onBinClick?.(bin.label, bin.x0, bin.x1);
+                  }
+                }}
+                className="cursor-pointer focus:outline-none"
+              >
+                <rect
+                  x={x}
+                  y={y}
+                  width={barW}
+                  height={barH}
+                  rx="3"
+                  fill={isPeak ? 'var(--chart-1)' : idx % 2 === 0 ? 'var(--chart-1)' : 'var(--chart-2)'}
+                  fillOpacity={isHovered ? 1 : isPeak ? 0.92 : 0.72}
+                  stroke={isHovered ? 'var(--chart-4)' : isPeak ? 'var(--chart-1)' : 'none'}
+                  strokeWidth={isHovered ? 2 : 1}
+                />
+                {(isHovered || isPeak) && bin.count > 0 && (
+                  <text
+                    x={x + barW / 2}
+                    y={Math.max(11, y - 4)}
+                    textAnchor="middle"
+                    fill="var(--text-primary)"
+                    fontSize="9"
+                    fontFamily="JetBrains Mono, monospace"
+                    fontWeight="bold"
+                  >
+                    {formatCompactNumber(bin.count)}
+                  </text>
+                )}
+                {(idx === 0 || idx === Math.floor(summary.bins.length / 2) || idx === summary.bins.length - 1) && (
+                  <text
+                    x={x + barW / 2}
+                    y={padT + innerH + 16}
+                    textAnchor="middle"
+                    fill="var(--chart-axis)"
+                    fontSize="9"
+                    fontFamily="JetBrains Mono, monospace"
+                  >
+                    {truncateChartLabel(bin.label, 14)}
+                  </text>
+                )}
+              </g>
+            );
+          })}
+        </svg>
+
+        {hoverIdx !== null && summary.bins[hoverIdx] && (
+          <div
+            role="tooltip"
+            className="mt-1 px-3 py-1.5 rounded-lg border text-[11px] font-mono flex items-center justify-between bg-[var(--chart-tooltip-bg)] text-primary border-subtle shadow-card"
+          >
+            <span>Range: <strong className="text-accent">{summary.bins[hoverIdx].label}</strong></span>
+            <span>Count: <strong>{summary.bins[hoverIdx].count.toLocaleString()}</strong> ({summary.bins[hoverIdx].frequencyPct}%)</span>
+          </div>
+        )}
+      </div>
+
+      <p className="text-[11px] font-mono leading-relaxed text-muted">
+        {summaryText}
+      </p>
+    </div>
+  );
+};
+
+// ============================================================================
+// 15. STACKED BAR CHART (WITH 100% PROPORTIONAL TOGGLE & TOP 10 + OTHER CAP)
+// ============================================================================
+export interface StackedBarChartProps {
+  rows: Record<string, any>[];
+  primaryCategoryField: string;
+  secondaryCategoryField: string;
+  valueField: string;
+  aggregation?: VisualConfig['aggregation'];
+  isLight?: boolean;
+  isLoading?: boolean;
+  error?: string | null;
+  defaultNormalized?: boolean;
+  onCategoryClick?: (category: string) => void;
+}
+
+const STACK_PALETTE = [
+  'var(--chart-1)',
+  'var(--chart-2)',
+  'var(--chart-4)',
+  'var(--chart-3)',
+  'var(--chart-5)',
+  'var(--chart-6)',
+  'var(--chart-7)',
+  'var(--chart-8)',
+];
+
+export const StackedBarChart: React.FC<StackedBarChartProps> = ({
+  rows,
+  primaryCategoryField,
+  secondaryCategoryField,
+  valueField,
+  aggregation = 'sum',
+  isLoading = false,
+  error = null,
+  defaultNormalized = false,
+  onCategoryClick
+}) => {
+  const [isNormalized, setIsNormalized] = useState(defaultNormalized);
+  const [hoveredSegment, setHoveredSegment] = useState<{ cat: string; key: string; val: number; pct: number } | null>(null);
+
+  const summary = useMemo(
+    () =>
+      computeStackedBarData(
+        rows,
+        primaryCategoryField,
+        secondaryCategoryField,
+        valueField,
+        aggregation,
+        10
+      ),
+    [rows, primaryCategoryField, secondaryCategoryField, valueField, aggregation]
+  );
+
+  if (isLoading) {
+    return (
+      <div role="status" aria-label="Loading stacked bar chart" className="w-full space-y-2.5 py-4 animate-pulse">
+        <div className="h-4 w-56 rounded bg-elevated" />
+        <div className="h-6 w-full rounded bg-elevated" />
+        <div className="h-6 w-5/6 rounded bg-elevated" />
+        <div className="h-6 w-4/6 rounded bg-elevated" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div role="alert" aria-label={`Stacked bar error: ${error}`} className="p-4 rounded-xl border border-subtle bg-elevated text-xs text-danger font-mono">
+        Unable to render stacked bar chart: {error}
+      </div>
+    );
+  }
+
+  if (summary.categories.length === 0) {
+    return (
+      <div
+        role="region"
+        aria-label={`Stacked bar chart of ${valueField} by ${primaryCategoryField} and ${secondaryCategoryField}: no data`}
+      >
+        <ModernEmptyState
+          title="No stacked bar segments available"
+          message={`Select two categorical columns and one numeric measure with valid records.`}
+        />
+      </div>
+    );
+  }
+
+  const maxTotal = Math.max(...summary.categories.map(c => Math.abs(c.total)), 1);
+  const topCat = summary.categories[0];
+  const summaryText = `Stacked bar chart of ${valueField} by ${primaryCategoryField} split by ${secondaryCategoryField} (${isNormalized ? '100% proportional share' : 'absolute totals'}). Leading category: ${topCat.category} (${formatCompactNumber(topCat.total)}).`;
+
+  return (
+    <div
+      role="region"
+      aria-label={summaryText}
+      className="w-full space-y-3 no-depth-3d chart-viewport"
+    >
+      {/* Header controls: Legend + 100% Stacked Toggle */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-2 text-[11px] font-mono">
+          {summary.seriesKeys.map((seriesKey, sIdx) => (
+            <span
+              key={seriesKey}
+              className="inline-flex items-center gap-1.5 text-secondary"
+              title={seriesKey}
+            >
+              <span
+                className="w-2.5 h-2.5 rounded-xs shrink-0"
+                style={{ backgroundColor: STACK_PALETTE[sIdx % STACK_PALETTE.length] }}
+              />
+              <span className="truncate max-w-[110px]">{truncateChartLabel(seriesKey, 16)}</span>
+            </span>
+          ))}
+        </div>
+
+        <div
+          role="group"
+          aria-label="Stacked bar display mode"
+          className="inline-flex items-center rounded-lg p-0.5 border bg-elevated border-subtle"
+        >
+          <button
+            type="button"
+            onClick={() => setIsNormalized(false)}
+            aria-pressed={!isNormalized}
+            className={`px-2.5 py-1 rounded-md text-[10px] font-mono transition-colors cursor-pointer whitespace-nowrap ${
+              !isNormalized
+                ? 'bg-accent-soft text-accent font-semibold'
+                : 'text-muted hover:text-primary'
+            }`}
+          >
+            Totals
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsNormalized(true)}
+            aria-pressed={isNormalized}
+            className={`px-2.5 py-1 rounded-md text-[10px] font-mono transition-colors cursor-pointer whitespace-nowrap ${
+              isNormalized
+                ? 'bg-accent-soft text-accent-2 font-semibold'
+                : 'text-muted hover:text-primary'
+            }`}
+          >
+            100% Stacked
+          </button>
+        </div>
+      </div>
+
+      {summary.largeDataNotice && (
+        <div className="px-2.5 py-1 rounded-lg text-[10px] font-mono flex items-center gap-1.5 bg-accent-soft text-accent border border-subtle">
+          <Info className="w-3 h-3 shrink-0" aria-hidden="true" />
+          <span>{summary.largeDataNotice}</span>
+        </div>
+      )}
+
+      {/* Stacked Bars */}
+      <div className="space-y-2">
+        {summary.categories.map(catRow => {
+          const absRowSum = catRow.segments.reduce((acc, s) => acc + Math.abs(s.value), 0) || 1;
+          const barTotalWidthPct = isNormalized
+            ? 100
+            : Math.min(100, Math.max(8, (Math.abs(catRow.total) / maxTotal) * 100));
+
+          return (
+            <div
+              key={catRow.category}
+              tabIndex={0}
+              role="button"
+              aria-label={`${catRow.category}: total ${catRow.total.toLocaleString()}`}
+              onClick={() => onCategoryClick?.(catRow.category)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  onCategoryClick?.(catRow.category);
+                }
+              }}
+              className="space-y-1 p-1.5 -mx-1.5 rounded-lg cursor-pointer transition-colors hover:bg-card-hover focus-visible:outline-2 focus-visible:outline-[var(--accent)]"
+            >
+              <div className="flex items-center justify-between text-xs gap-2">
+                <span
+                  className="font-medium truncate max-w-[200px] text-primary"
+                  title={catRow.category}
+                >
+                  {truncateChartLabel(catRow.category, 24)}
+                </span>
+                <span className="font-mono tabular-nums text-[11px] text-secondary">
+                  {isNormalized ? '100%' : formatCompactNumber(catRow.total)}
+                </span>
+              </div>
+
+              <div className="w-full h-3.5 rounded-md overflow-hidden flex bg-elevated border border-subtle">
+                <div className="h-full flex transition-all duration-300" style={{ width: `${barTotalWidthPct}%` }}>
+                  {catRow.segments.map((seg, sIdx) => {
+                    if (Math.abs(seg.value) <= 0) return null;
+                    const segWidthPct = (Math.abs(seg.value) / absRowSum) * 100;
+                    return (
+                      <div
+                        key={seg.key}
+                        onMouseEnter={() => setHoveredSegment({ cat: catRow.category, key: seg.key, val: seg.value, pct: seg.sharePct })}
+                        onMouseLeave={() => setHoveredSegment(null)}
+                        style={{
+                          width: `${segWidthPct}%`,
+                          backgroundColor: STACK_PALETTE[sIdx % STACK_PALETTE.length]
+                        }}
+                        className="h-full first:rounded-l-xs last:rounded-r-xs border-r border-black/20 last:border-r-0"
+                        title={`${catRow.category} · ${seg.key}: ${seg.value.toLocaleString()} (${seg.sharePct}%)`}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {hoveredSegment && (
+        <div
+          role="tooltip"
+          className="px-3 py-1.5 rounded-lg border text-[11px] font-mono flex items-center justify-between bg-[var(--chart-tooltip-bg)] text-primary border-subtle shadow-card"
+        >
+          <span>{truncateChartLabel(hoveredSegment.cat, 18)} · <strong className="text-accent">{truncateChartLabel(hoveredSegment.key, 18)}</strong></span>
+          <span>{hoveredSegment.val.toLocaleString()} ({hoveredSegment.pct}%)</span>
+        </div>
+      )}
+
+      <p className="text-[11px] font-mono leading-relaxed text-muted">
+        {summaryText}
+        {summary.cappedOtherCount > 0 ? ` (${summary.cappedOtherCount} smaller categories grouped into "Other".)` : ''}
+      </p>
+    </div>
+  );
+};
+
+// ============================================================================
+// 16. UNIFIED 8-CHART GUIDE RENDERER (BAR, LINE, SCATTER, HISTOGRAM,
+//     STACKED BAR, DONUT, HEATMAP, BOXPLOT) WITH FULL EDGE-CASE HARDENING
+// ============================================================================
+export interface GuideChartRendererProps {
+  chartType: ChartGuideId;
+  rows: Record<string, any>[];
+  categoryField: string;
+  secondaryCategoryField?: string;
+  valueField: string;
+  secondaryValueField?: string;
+  aggregation?: VisualConfig['aggregation'];
+  isLight?: boolean;
+  isLoading?: boolean;
+  error?: string | null;
+  onDrillThrough?: (filterColumn: string, filterValue: string, label?: string) => void;
+}
+
+const GUIDE_PALETTE = [
+  'var(--chart-1)',
+  'var(--chart-2)',
+  'var(--chart-4)',
+  'var(--chart-3)',
+  'var(--chart-5)',
+  'var(--chart-6)',
+  'var(--chart-7)',
+  'var(--chart-8)',
+];
+
+export const GuideChartRenderer: React.FC<GuideChartRendererProps> = ({
+  chartType,
+  rows,
+  categoryField,
+  secondaryCategoryField,
+  valueField,
+  secondaryValueField,
+  aggregation = 'sum',
+  isLight = false,
+  isLoading = false,
+  error = null,
+  onDrillThrough
+}) => {
+  const [hoverInfo, setHoverInfo] = useState<string | null>(null);
+
+  const barData = useMemo(
+    () => (chartType === 'bar' ? computeBarChartData(rows, categoryField, valueField, aggregation, 10) : null),
+    [chartType, rows, categoryField, valueField, aggregation]
+  );
+
+  const lineData = useMemo(
+    () => (chartType === 'line' ? computeLineSeriesData(rows, categoryField, valueField, aggregation, 60) : null),
+    [chartType, rows, categoryField, valueField, aggregation]
+  );
+
+  const scatterData = useMemo(
+    () =>
+      chartType === 'scatter'
+        ? computeScatterPlotData(rows, valueField, secondaryValueField || valueField, categoryField, 450)
+        : null,
+    [chartType, rows, valueField, secondaryValueField, categoryField]
+  );
+
+  const donutData = useMemo(
+    () => (chartType === 'donut' ? computeDonutChartData(rows, categoryField, valueField, aggregation, 5) : null),
+    [chartType, rows, categoryField, valueField, aggregation]
+  );
+
+  const heatmapData = useMemo(
+    () =>
+      chartType === 'heatmap'
+        ? computeHeatmapMatrixData(rows, categoryField, secondaryCategoryField || '', valueField, aggregation, 7, 7)
+        : null,
+    [chartType, rows, categoryField, secondaryCategoryField, valueField, aggregation]
+  );
+
+  const boxplotData = useMemo(
+    () => (chartType === 'boxplot' ? computeBoxplotSummary(rows, categoryField, valueField, 10) : null),
+    [chartType, rows, categoryField, valueField]
+  );
+
+  if (chartType === 'histogram') {
+    return (
+      <HistogramChart
+        rows={rows}
+        valueField={valueField}
+        isLight={isLight}
+        isLoading={isLoading}
+        error={error}
+        onBinClick={(label) => onDrillThrough?.(valueField, label, `Bin ${label}`)}
+      />
+    );
+  }
+
+  if (chartType === 'stacked_bar') {
+    return (
+      <StackedBarChart
+        rows={rows}
+        primaryCategoryField={categoryField}
+        secondaryCategoryField={secondaryCategoryField || categoryField}
+        valueField={valueField}
+        aggregation={aggregation}
+        isLight={isLight}
+        isLoading={isLoading}
+        error={error}
+        onCategoryClick={(cat) => onDrillThrough?.(categoryField, cat, cat)}
+      />
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div role="status" aria-label={`Loading ${chartType} chart`} className="w-full space-y-3 py-4 animate-pulse">
+        <div className="h-4 w-48 rounded bg-elevated" />
+        <div className="h-44 w-full rounded-xl bg-elevated" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div role="alert" aria-label={`${chartType} chart error: ${error}`} className="p-4 rounded-xl border border-subtle bg-elevated text-xs text-danger font-mono">
+        Unable to render {chartType} chart: {error}
+      </div>
+    );
+  }
+
+  // 1. BAR CHART
+  if (chartType === 'bar' && barData) {
+    if (barData.items.length === 0) {
+      return (
+        <div role="region" aria-label={`Bar chart of ${valueField} by ${categoryField}: no data`}>
+          <ModernEmptyState
+            title="No category data to compare"
+            message={`Select a category column and numeric measure with non-empty rows.`}
+          />
+        </div>
+      );
+    }
+
+    const maxAbs = Math.max(...barData.items.map(i => Math.abs(i.value)), 1);
+    const topItem = barData.items[0];
+    const summaryText = `Bar chart comparing ${valueField} (${aggregation}) across ${barData.items.length} ${categoryField} categories (value axis starts at zero). Leading category: ${topItem.category} with ${formatCompactNumber(topItem.value)} (${topItem.share}%).`;
+
+    return (
+      <div role="region" aria-label={summaryText} className="w-full space-y-2.5 no-depth-3d chart-viewport">
+        {barData.largeDataNotice && (
+          <div className="px-2.5 py-1 rounded-lg text-[10px] font-mono flex items-center gap-1.5 bg-accent-soft text-accent border border-subtle">
+            <Info className="w-3 h-3 shrink-0" aria-hidden="true" />
+            <span>{barData.largeDataNotice}</span>
+          </div>
+        )}
+
+        <div className="space-y-2">
+          {barData.items.map((item, idx) => {
+            const pct = Math.min(100, Math.max(4, (Math.abs(item.value) / maxAbs) * 100));
+            const barColor =
+              item.category === 'Other'
+                ? 'var(--border-strong)'
+                : item.value < 0
+                ? 'var(--chart-4)'
+                : idx === 0
+                ? 'var(--chart-1)'
+                : idx === 1
+                ? 'var(--chart-2)'
+                : GUIDE_PALETTE[idx % GUIDE_PALETTE.length];
+
+            return (
+              <div
+                key={item.category}
+                tabIndex={0}
+                role="button"
+                aria-label={`${item.category}: ${item.value.toLocaleString()} (${item.share}%)`}
+                onMouseEnter={() => setHoverInfo(`${item.category}: ${item.value.toLocaleString()} (${item.share}% share, ${item.count} rows)`)}
+                onMouseLeave={() => setHoverInfo(null)}
+                onFocus={() => setHoverInfo(`${item.category}: ${item.value.toLocaleString()} (${item.share}% share, ${item.count} rows)`)}
+                onBlur={() => setHoverInfo(null)}
+                onClick={() => onDrillThrough?.(categoryField, item.category, item.category)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onDrillThrough?.(categoryField, item.category, item.category);
+                  }
+                }}
+                className="space-y-1 p-1.5 -mx-1.5 rounded-lg cursor-pointer transition-colors hover:bg-card-hover focus-visible:outline-2 focus-visible:outline-[var(--accent)]"
+              >
+                <div className="flex justify-between items-center text-xs gap-2">
+                  <span
+                    className="font-medium truncate max-w-[210px] text-primary"
+                    title={item.category}
+                  >
+                    {item.displayLabel}
+                  </span>
+                  <span className="font-mono tabular-nums text-[11px] flex items-center gap-1.5">
+                    <strong className="text-primary">{formatCompactNumber(item.value)}</strong>
+                    <span className="text-muted">({item.share}%)</span>
+                  </span>
+                </div>
+                <div className="w-full h-3 rounded-full overflow-hidden bg-elevated border border-subtle">
+                  <div
+                    className="h-full rounded-full transition-all duration-300"
+                    style={{ width: `${pct}%`, backgroundColor: barColor }}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {hoverInfo && (
+          <div role="tooltip" className="px-3 py-1.5 rounded-lg border text-[11px] font-mono bg-[var(--chart-tooltip-bg)] text-primary border-subtle shadow-card">
+            {hoverInfo}
+          </div>
+        )}
+
+        <p className="text-[11px] font-mono leading-relaxed text-muted">
+          {summaryText}
+          {barData.hasOther ? ` (${barData.otherCount} additional categories grouped into "Other".)` : ''}
+        </p>
+      </div>
+    );
+  }
+
+  // 2. LINE CHART
+  if (chartType === 'line' && lineData) {
+    if (lineData.points.length === 0) {
+      return (
+        <div role="region" aria-label={`Line chart of ${valueField} over ${categoryField}: no data`}>
+          <ModernEmptyState
+            title="No time series data available"
+            message={`Select a date/period column and numeric measure with valid observations.`}
+          />
+        </div>
+      );
+    }
+
+    const pts = lineData.points;
+    const width = 520;
+    const height = 200;
+    const padL = 48;
+    const padR = 20;
+    const padT = 18;
+    const padB = 36;
+    const innerW = width - padL - padR;
+    const innerH = height - padT - padB;
+    const span = lineData.allEqual ? Math.max(1, Math.abs(lineData.maxVal) || 1) : lineData.maxVal - lineData.minVal;
+
+    const coords = pts.map((pt, i) => {
+      const x = pts.length === 1 ? padL + innerW / 2 : padL + (i / (pts.length - 1)) * innerW;
+      const y = lineData.allEqual
+        ? padT + innerH / 2
+        : padT + innerH - ((pt.value - lineData.minVal) / span) * innerH;
+      return { ...pt, x, y };
+    });
+
+    const pathD = coords.reduce((acc, c, i) => (i === 0 ? `M ${c.x},${c.y}` : `${acc} L ${c.x},${c.y}`), '');
+    const areaD = coords.length >= 2
+      ? `${pathD} L ${coords[coords.length - 1].x},${padT + innerH} L ${coords[0].x},${padT + innerH} Z`
+      : '';
+
+    const summaryText = `Line chart tracking ${valueField} across ${pts.length} intervals (${pts[0].label} to ${pts[pts.length - 1].label}). Range: ${formatCompactNumber(lineData.minVal)} to ${formatCompactNumber(lineData.maxVal)} (Mean: ${formatCompactNumber(lineData.meanVal)}).`;
+
+    return (
+      <div role="region" aria-label={summaryText} className="w-full space-y-2.5 no-depth-3d chart-viewport">
+        {lineData.notice && (
+          <div className="px-2.5 py-1 rounded-lg text-[10px] font-mono flex items-center gap-1.5 bg-elevated text-warning border border-subtle">
+            <Info className="w-3 h-3 shrink-0" aria-hidden="true" />
+            <span>{lineData.notice}</span>
+          </div>
+        )}
+
+        <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={summaryText} className="w-full h-48 overflow-visible select-none">
+          <defs>
+            <linearGradient id="guideLineFill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="var(--chart-1)" stopOpacity="0.35" />
+              <stop offset="100%" stopColor="var(--chart-1)" stopOpacity="0.0" />
+            </linearGradient>
+          </defs>
+
+          {[0, 0.5, 1].map((pct, i) => {
+            const y = padT + innerH * (1 - pct);
+            const val = lineData.allEqual ? lineData.maxVal : lineData.minVal + span * pct;
+            return (
+              <g key={i}>
+                <line x1={padL} y1={y} x2={width - padR} y2={y} stroke="var(--chart-grid)" strokeDasharray="3,3" />
+                <text x={padL - 6} y={y + 3} textAnchor="end" fill="var(--chart-axis)" fontSize="9" fontFamily="JetBrains Mono, monospace">
+                  {formatCompactNumber(val)}
+                </text>
+              </g>
+            );
+          })}
+
+          {areaD && <path d={areaD} fill="url(#guideLineFill)" />}
+          {coords.length >= 2 && (
+            <path d={pathD} fill="none" stroke="var(--chart-1)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+          )}
+
+          {coords.map((c, idx) => (
+            <g
+              key={`${c.label}-${idx}`}
+              tabIndex={0}
+              role="button"
+              aria-label={`${c.label}: ${c.value.toLocaleString()}`}
+              onMouseEnter={() => setHoverInfo(`${c.label}: ${c.value.toLocaleString()} (${c.count} records)`)}
+              onMouseLeave={() => setHoverInfo(null)}
+              onFocus={() => setHoverInfo(`${c.label}: ${c.value.toLocaleString()} (${c.count} records)`)}
+              onBlur={() => setHoverInfo(null)}
+              onClick={() => onDrillThrough?.(categoryField, c.label, c.label)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  onDrillThrough?.(categoryField, c.label, c.label);
+                }
+              }}
+              className="cursor-pointer focus:outline-none"
+            >
+              <circle cx={c.x} cy={c.y} r="4.5" fill="var(--bg-card)" stroke="var(--chart-1)" strokeWidth="2" />
+            </g>
+          ))}
+
+          {/* X-axis labels */}
+          {coords.length > 0 && (
+            <>
+              <text x={coords[0].x} y={padT + innerH + 18} textAnchor="start" fill="var(--chart-axis)" fontSize="9" fontFamily="JetBrains Mono, monospace">
+                {coords[0].displayLabel}
+              </text>
+              {coords.length > 2 && (
+                <text x={coords[Math.floor(coords.length / 2)].x} y={padT + innerH + 18} textAnchor="middle" fill="var(--chart-axis)" fontSize="9" fontFamily="JetBrains Mono, monospace">
+                  {coords[Math.floor(coords.length / 2)].displayLabel}
+                </text>
+              )}
+              {coords.length > 1 && (
+                <text x={coords[coords.length - 1].x} y={padT + innerH + 18} textAnchor="end" fill="var(--chart-axis)" fontSize="9" fontFamily="JetBrains Mono, monospace">
+                  {coords[coords.length - 1].displayLabel}
+                </text>
+              )}
+            </>
+          )}
+        </svg>
+
+        {hoverInfo && (
+          <div role="tooltip" className="px-3 py-1.5 rounded-lg border text-[11px] font-mono bg-[var(--chart-tooltip-bg)] text-primary border-subtle shadow-card">
+            {hoverInfo}
+          </div>
+        )}
+
+        <p className="text-[11px] font-mono leading-relaxed text-muted">
+          {summaryText}
+        </p>
+      </div>
+    );
+  }
+
+  // 3. SCATTER PLOT
+  if (chartType === 'scatter' && scatterData) {
+    const yCol = secondaryValueField || valueField;
+    if (scatterData.points.length === 0) {
+      return (
+        <div role="region" aria-label={`Scatter plot of ${valueField} vs ${yCol}: no data`}>
+          <ModernEmptyState
+            title="No paired numeric coordinates"
+            message={`Select two numeric measures with valid paired numbers to plot relationships.`}
+          />
+        </div>
+      );
+    }
+
+    const width = 520;
+    const height = 200;
+    const padL = 48;
+    const padR = 20;
+    const padT = 18;
+    const padB = 36;
+    const innerW = width - padL - padR;
+    const innerH = height - padT - padB;
+    const xSpan = scatterData.xMax - scatterData.xMin || 1;
+    const ySpan = scatterData.yMax - scatterData.yMin || 1;
+    const scaleX = (v: number) => padL + ((v - scatterData.xMin) / xSpan) * innerW;
+    const scaleY = (v: number) => padT + innerH - ((v - scatterData.yMin) / ySpan) * innerH;
+
+    const ty1 = Math.max(scatterData.yMin, Math.min(scatterData.yMax, scatterData.slope * scatterData.xMin + scatterData.intercept));
+    const ty2 = Math.max(scatterData.yMin, Math.min(scatterData.yMax, scatterData.slope * scatterData.xMax + scatterData.intercept));
+
+    const summaryText = `Scatter plot of ${valueField} (X) vs ${yCol} (Y) across ${scatterData.totalValidCount.toLocaleString()} records (Pearson r = ${scatterData.correlation}). Note: correlation does not prove causation.`;
+
+    return (
+      <div role="region" aria-label={summaryText} className="w-full space-y-2.5 no-depth-3d chart-viewport">
+        {scatterData.notice && (
+          <div className="px-2.5 py-1 rounded-lg text-[10px] font-mono flex items-center gap-1.5 bg-accent-soft text-accent border border-subtle">
+            <Info className="w-3 h-3 shrink-0" aria-hidden="true" />
+            <span>{scatterData.notice}</span>
+          </div>
+        )}
+
+        <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={summaryText} className="w-full h-48 overflow-visible select-none">
+          {[0, 0.5, 1].map((pct, i) => {
+            const y = padT + innerH * (1 - pct);
+            const val = scatterData.yMin + ySpan * pct;
+            return (
+              <g key={i}>
+                <line x1={padL} y1={y} x2={width - padR} y2={y} stroke="var(--chart-grid)" strokeDasharray="3,3" />
+                <text x={padL - 6} y={y + 3} textAnchor="end" fill="var(--chart-axis)" fontSize="9" fontFamily="JetBrains Mono, monospace">
+                  {formatCompactNumber(val)}
+                </text>
+              </g>
+            );
+          })}
+
+          {scatterData.points.length >= 2 && (
+            <line
+              x1={scaleX(scatterData.xMin)}
+              y1={scaleY(ty1)}
+              x2={scaleX(scatterData.xMax)}
+              y2={scaleY(ty2)}
+              stroke="var(--chart-4)"
+              strokeWidth="1.5"
+              strokeDasharray="4,4"
+            />
+          )}
+
+          {scatterData.points.map((pt, idx) => (
+            <circle
+              key={pt.id}
+              cx={scaleX(pt.x)}
+              cy={scaleY(pt.y)}
+              r="4.5"
+              tabIndex={idx < 25 ? 0 : -1}
+              role="button"
+              aria-label={`${pt.label}: ${valueField} ${pt.x}, ${yCol} ${pt.y}`}
+              fill={idx % 2 === 0 ? 'var(--chart-1)' : 'var(--chart-2)'}
+              fillOpacity="0.85"
+              stroke="var(--bg-card)"
+              strokeWidth="1.2"
+              onMouseEnter={() => setHoverInfo(`${pt.label} — ${valueField}: ${formatCompactNumber(pt.x)}, ${yCol}: ${formatCompactNumber(pt.y)}`)}
+              onMouseLeave={() => setHoverInfo(null)}
+              onFocus={() => setHoverInfo(`${pt.label} — ${valueField}: ${formatCompactNumber(pt.x)}, ${yCol}: ${formatCompactNumber(pt.y)}`)}
+              onBlur={() => setHoverInfo(null)}
+              onClick={() => onDrillThrough?.(categoryField, pt.label, pt.label)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  onDrillThrough?.(categoryField, pt.label, pt.label);
+                }
+              }}
+              className="cursor-pointer focus:outline-none"
+            />
+          ))}
+
+          <text x={padL + innerW / 2} y={padT + innerH + 22} textAnchor="middle" fill="var(--chart-axis)" fontSize="9" fontFamily="JetBrains Mono, monospace">
+            {truncateChartLabel(valueField, 22)} →
+          </text>
+        </svg>
+
+        {hoverInfo && (
+          <div role="tooltip" className="px-3 py-1.5 rounded-lg border text-[11px] font-mono bg-[var(--chart-tooltip-bg)] text-primary border-subtle shadow-card">
+            {hoverInfo}
+          </div>
+        )}
+
+        <p className="text-[11px] font-mono leading-relaxed text-muted">
+          {summaryText}
+        </p>
+      </div>
+    );
+  }
+
+  // 4. DONUT CHART
+  if (chartType === 'donut' && donutData) {
+    if (donutData.slices.length === 0 || donutData.absTotal === 0) {
+      return (
+        <div role="region" aria-label={`Donut chart of ${valueField} by ${categoryField}: no data`}>
+          <ModernEmptyState
+            title="No proportional share data"
+            message={`Select a category column (up to 5 values) and a non-zero numeric measure.`}
+          />
+        </div>
+      );
+    }
+
+    const topSlice = donutData.slices[0];
+    const summaryText = `Donut chart showing share of ${valueField} across ${donutData.slices.length} ${categoryField} slices. Largest share: ${topSlice.category} (${topSlice.sharePct}%, ${formatCompactNumber(topSlice.value)}).`;
+
+    let cumulativePct = 0;
+    return (
+      <div role="region" aria-label={summaryText} className="w-full space-y-2.5 no-depth-3d chart-viewport">
+        {donutData.notice && (
+          <div className="px-2.5 py-1 rounded-lg text-[10px] font-mono flex items-center gap-1.5 bg-elevated text-warning border border-subtle">
+            <Info className="w-3 h-3 shrink-0" aria-hidden="true" />
+            <span>{donutData.notice}</span>
+          </div>
+        )}
+
+        <div className="flex flex-col sm:flex-row items-center justify-around gap-4 py-1">
+          <div className="relative w-36 h-36 shrink-0">
+            <svg viewBox="0 0 100 100" role="img" aria-label={summaryText} className="w-full h-full -rotate-90">
+              {donutData.slices.map((s, idx) => {
+                const dash = `${(s.sharePct / 100) * 251.2} 251.2`;
+                const offset = -(cumulativePct / 100) * 251.2;
+                cumulativePct += s.sharePct;
+                const color = s.category === 'Other' ? 'var(--border-strong)' : GUIDE_PALETTE[idx % GUIDE_PALETTE.length];
+                return (
+                  <circle
+                    key={s.category}
+                    cx="50"
+                    cy="50"
+                    r="40"
+                    fill="transparent"
+                    stroke={color}
+                    strokeWidth="14"
+                    strokeDasharray={dash}
+                    strokeDashoffset={offset}
+                    onMouseEnter={() => setHoverInfo(`${s.category}: ${s.value.toLocaleString()} (${s.sharePct}%)`)}
+                    onMouseLeave={() => setHoverInfo(null)}
+                    onClick={() => onDrillThrough?.(categoryField, s.category, s.category)}
+                    className="cursor-pointer transition-opacity hover:opacity-85"
+                  />
+                );
+              })}
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+              <span className="text-[10px] uppercase font-mono text-muted">Total</span>
+              <span className="text-xs font-bold font-mono text-primary">
+                {formatCompactNumber(donutData.grandTotal)}
+              </span>
+            </div>
+          </div>
+
+          <div className="space-y-1.5 text-xs w-full max-w-[230px] font-mono">
+            {donutData.slices.map((s, idx) => {
+              const color = s.category === 'Other' ? 'var(--border-strong)' : GUIDE_PALETTE[idx % GUIDE_PALETTE.length];
+              return (
+                <div
+                  key={s.category}
+                  tabIndex={0}
+                  role="button"
+                  aria-label={`${s.category}: ${s.sharePct}% (${s.value.toLocaleString()})`}
+                  onClick={() => onDrillThrough?.(categoryField, s.category, s.category)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      onDrillThrough?.(categoryField, s.category, s.category);
+                    }
+                  }}
+                  className="flex items-center justify-between p-1 -m-1 rounded cursor-pointer transition-colors hover:bg-card-hover focus-visible:outline-2 focus-visible:outline-[var(--accent)]"
+                >
+                  <span className="flex items-center gap-1.5 truncate" title={s.category}>
+                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                    <span className="text-primary">{s.displayLabel}</span>
+                  </span>
+                  <span className="text-accent font-bold">{s.sharePct}%</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {hoverInfo && (
+          <div role="tooltip" className="px-3 py-1.5 rounded-lg border text-[11px] font-mono bg-[var(--chart-tooltip-bg)] text-primary border-subtle shadow-card">
+            {hoverInfo}
+          </div>
+        )}
+
+        <p className="text-[11px] font-mono leading-relaxed text-muted">
+          {summaryText}
+        </p>
+      </div>
+    );
+  }
+
+  // 5. HEATMAP
+  if (chartType === 'heatmap' && heatmapData) {
+    if (heatmapData.rowHeaders.length === 0 || heatmapData.colHeaders.length === 0) {
+      return (
+        <div role="region" aria-label={`Heatmap of ${valueField}: no data`}>
+          <ModernEmptyState
+            title="No grid pattern data"
+            message={`Select two categorical/time dimensions and one numeric measure to build a heatmap.`}
+          />
+        </div>
+      );
+    }
+
+    const summaryText = `Heatmap of ${valueField} (${aggregation}) across ${heatmapData.rowHeaders.length} ${categoryField} rows by ${heatmapData.colHeaders.length} ${secondaryCategoryField || 'columns'}. Scale: ${formatCompactNumber(heatmapData.minVal)} to ${formatCompactNumber(heatmapData.maxVal)}.`;
+
+    return (
+      <div role="region" aria-label={summaryText} className="w-full space-y-2.5 no-depth-3d chart-viewport">
+        {heatmapData.notice && (
+          <div className="px-2.5 py-1 rounded-lg text-[10px] font-mono flex items-center gap-1.5 bg-accent-soft text-accent border border-subtle">
+            <Info className="w-3 h-3 shrink-0" aria-hidden="true" />
+            <span>{heatmapData.notice}</span>
+          </div>
+        )}
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-[11px] font-mono border-collapse">
+            <thead>
+              <tr>
+                <th className="p-1.5 text-left text-muted">
+                  {truncateChartLabel(categoryField, 14)} \ {truncateChartLabel(secondaryCategoryField || valueField, 14)}
+                </th>
+                {heatmapData.colHeaders.map(col => (
+                  <th key={col} className="p-1.5 text-center text-secondary" title={col}>
+                    {truncateChartLabel(col, 10)}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {heatmapData.rowHeaders.map(rKey => (
+                <tr key={rKey}>
+                  <td className="p-1.5 font-semibold whitespace-nowrap text-primary" title={rKey}>
+                    {truncateChartLabel(rKey, 16)}
+                  </td>
+                  {heatmapData.colHeaders.map(cKey => {
+                    const cell = heatmapData.cellMap[rKey]?.[cKey];
+                    const val = cell?.value ?? 0;
+                    const count = cell?.count ?? 0;
+                    const alpha = cell?.intensity ?? 0;
+                    return (
+                      <td key={cKey} className="p-1">
+                        <button
+                          type="button"
+                          onMouseEnter={() => setHoverInfo(`${rKey} × ${cKey}: ${val.toLocaleString()} (${count} rows)`)}
+                          onMouseLeave={() => setHoverInfo(null)}
+                          onFocus={() => setHoverInfo(`${rKey} × ${cKey}: ${val.toLocaleString()} (${count} rows)`)}
+                          onBlur={() => setHoverInfo(null)}
+                          onClick={() => onDrillThrough?.(categoryField, rKey, `${rKey} × ${cKey}`)}
+                          style={{
+                            backgroundColor: count > 0 ? `rgba(45, 212, 191, ${alpha})` : 'var(--bg-elevated)'
+                          }}
+                          className={`w-full py-1.5 px-2 rounded-md text-center font-mono text-[10px] font-bold transition-transform hover:scale-[1.03] cursor-pointer focus-visible:outline-2 focus-visible:outline-[var(--accent)] ${
+                            count > 0
+                              ? alpha > 0.55
+                                ? 'text-slate-950'
+                                : 'text-primary'
+                              : 'text-muted'
+                          }`}
+                          title={`${rKey} × ${cKey}: ${val.toLocaleString()}`}
+                        >
+                          {count > 0 ? formatCompactNumber(val) : '—'}
+                        </button>
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Labeled Color Scale Legend */}
+        <div className="flex items-center justify-between text-[10px] font-mono pt-1">
+          <div className="flex items-center gap-2">
+            <span className="text-muted">Color scale ({valueField}):</span>
+            <span className="text-primary">{formatCompactNumber(heatmapData.minVal)}</span>
+            <div className="w-24 h-2.5 rounded-full bg-gradient-to-r from-[var(--accent)]/20 via-[var(--accent)]/60 to-[var(--accent)]" />
+            <span className="text-accent font-bold">{formatCompactNumber(heatmapData.maxVal)}</span>
+          </div>
+        </div>
+
+        {hoverInfo && (
+          <div role="tooltip" className="px-3 py-1.5 rounded-lg border text-[11px] font-mono bg-[var(--chart-tooltip-bg)] text-primary border-subtle shadow-card">
+            {hoverInfo}
+          </div>
+        )}
+
+        <p className="text-[11px] font-mono leading-relaxed text-muted">
+          {summaryText}
+        </p>
+      </div>
+    );
+  }
+
+  // 6. BOX PLOT
+  if (chartType === 'boxplot' && boxplotData) {
+    if (boxplotData.length === 0) {
+      return (
+        <div role="region" aria-label={`Box plot of ${valueField} by ${categoryField}: no data`}>
+          <ModernEmptyState
+            title="No spread data available"
+            message={`Select a category column and numeric column with valid values to compare medians and quartiles.`}
+          />
+        </div>
+      );
+    }
+
+    const allVals = boxplotData.flatMap(b => [b.min, b.max, ...b.outliers]);
+    const globalMin = Math.min(...allVals);
+    const globalMax = Math.max(...allVals);
+    const allEqual = globalMax === globalMin;
+    const span = allEqual ? Math.max(1, Math.abs(globalMax) || 1) : globalMax - globalMin;
+    const width = 520;
+    const height = 200;
+    const padL = 48;
+    const padR = 20;
+    const padT = 18;
+    const padB = 36;
+    const innerW = width - padL - padR;
+    const innerH = height - padT - padB;
+    const slotW = innerW / Math.max(1, boxplotData.length);
+    const scaleY = (v: number) => (allEqual ? padT + innerH / 2 : padT + innerH - ((v - globalMin) / span) * innerH);
+
+    const lead = boxplotData[0];
+    const summaryText = `Box plot comparing ${valueField} spread and median across ${boxplotData.length} ${categoryField} groups. Highest median: ${lead.category} (Median ${formatCompactNumber(lead.median)}, Q1 ${formatCompactNumber(lead.q1)}, Q3 ${formatCompactNumber(lead.q3)}, IQR ${formatCompactNumber(lead.iqr)}).`;
+
+    return (
+      <div role="region" aria-label={summaryText} className="w-full space-y-2.5 no-depth-3d chart-viewport">
+        <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={summaryText} className="w-full h-48 overflow-visible select-none">
+          {[0, 0.5, 1].map((pct, i) => {
+            const y = padT + innerH * (1 - pct);
+            const val = allEqual ? globalMax : globalMin + span * pct;
+            return (
+              <g key={i}>
+                <line x1={padL} y1={y} x2={width - padR} y2={y} stroke="var(--chart-grid)" strokeDasharray="3,3" />
+                <text x={padL - 6} y={y + 3} textAnchor="end" fill="var(--chart-axis)" fontSize="9" fontFamily="JetBrains Mono, monospace">
+                  {formatCompactNumber(val)}
+                </text>
+              </g>
+            );
+          })}
+
+          {boxplotData.map((stat, idx) => {
+            const cx = padL + idx * slotW + slotW / 2;
+            const boxW = Math.min(34, Math.max(14, slotW * 0.5));
+            const yMin = scaleY(stat.min);
+            const yQ1 = scaleY(stat.q1);
+            const yMed = scaleY(stat.median);
+            const yQ3 = scaleY(stat.q3);
+            const yMax = scaleY(stat.max);
+            const color = stat.category === 'Other' ? 'var(--border-strong)' : idx % 2 === 0 ? 'var(--chart-1)' : 'var(--chart-2)';
+
+            return (
+              <g
+                key={stat.category}
+                tabIndex={0}
+                role="button"
+                aria-label={`${stat.category}: median ${stat.median}, Q1 ${stat.q1}, Q3 ${stat.q3}, min ${stat.min}, max ${stat.max}`}
+                onMouseEnter={() =>
+                  setHoverInfo(
+                    `${stat.category}: Median ${formatCompactNumber(stat.median)} · Q1 ${formatCompactNumber(stat.q1)} · Q3 ${formatCompactNumber(stat.q3)} · IQR ${formatCompactNumber(stat.iqr)} (${stat.count} rows)`
+                  )
+                }
+                onMouseLeave={() => setHoverInfo(null)}
+                onFocus={() =>
+                  setHoverInfo(
+                    `${stat.category}: Median ${formatCompactNumber(stat.median)} · Q1 ${formatCompactNumber(stat.q1)} · Q3 ${formatCompactNumber(stat.q3)} · IQR ${formatCompactNumber(stat.iqr)} (${stat.count} rows)`
+                  )
+                }
+                onBlur={() => setHoverInfo(null)}
+                onClick={() => onDrillThrough?.(categoryField, stat.category, stat.category)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onDrillThrough?.(categoryField, stat.category, stat.category);
+                  }
+                }}
+                className="cursor-pointer focus:outline-none"
+              >
+                <line x1={cx} y1={yMin} x2={cx} y2={yMax} stroke={color} strokeWidth="1.5" strokeDasharray="2,2" />
+                <line x1={cx - boxW * 0.35} y1={yMin} x2={cx + boxW * 0.35} y2={yMin} stroke={color} strokeWidth="2" />
+                <line x1={cx - boxW * 0.35} y1={yMax} x2={cx + boxW * 0.35} y2={yMax} stroke={color} strokeWidth="2" />
+                <rect
+                  x={cx - boxW / 2}
+                  y={Math.min(yQ1, yQ3)}
+                  width={boxW}
+                  height={Math.max(4, Math.abs(yQ3 - yQ1))}
+                  rx="2.5"
+                  fill={color}
+                  fillOpacity="0.28"
+                  stroke={color}
+                  strokeWidth="1.8"
+                />
+                <line x1={cx - boxW / 2} y1={yMed} x2={cx + boxW / 2} y2={yMed} stroke="var(--chart-4)" strokeWidth="2.5" />
+                <text x={cx} y={padT + innerH + 18} textAnchor="middle" fill="var(--chart-axis)" fontSize="9" fontFamily="JetBrains Mono, monospace">
+                  {truncateChartLabel(stat.category, 9)}
+                </text>
+              </g>
+            );
+          })}
+        </svg>
+
+        {hoverInfo && (
+          <div role="tooltip" className="px-3 py-1.5 rounded-lg border text-[11px] font-mono bg-[var(--chart-tooltip-bg)] text-primary border-subtle shadow-card">
+            {hoverInfo}
+          </div>
+        )}
+
+        <p className="text-[11px] font-mono leading-relaxed text-muted">
+          {summaryText}
+        </p>
+      </div>
+    );
+  }
+
+  return null;
+};
+
