@@ -31,25 +31,25 @@ export const DataDictionaryLineageView: React.FC = () => {
   return (
     <div className="space-y-6 pb-12 animate-fadeIn max-w-5xl mx-auto">
       {/* Header */}
-      <div className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-6 flex flex-wrap items-center justify-between gap-4">
+      <div className="bg-card border border-subtle rounded-2xl p-6 flex flex-wrap items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-sky-400 font-mono">
             <BookOpen className="w-4 h-4" /> Traceability & Data Governance
           </div>
-          <h1 className="font-heading text-3xl sm:text-4xl font-bold text-white tracking-wide uppercase">
+          <h1 className="font-heading text-3xl sm:text-4xl font-bold text-primary tracking-wide uppercase">
             DATA DICTIONARY & LINEAGE
           </h1>
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-secondary">
             End-to-end provenance. Inspect exact column definitions or trace how raw data evolves into KPIs and exports.
           </p>
         </div>
 
         {/* View Switcher */}
-        <div className="flex items-center gap-1 bg-[#141414] p-1 rounded-xl border border-[#333]">
+        <div className="flex items-center gap-1 bg-card p-1 rounded-xl border border-subtle">
           <button
             onClick={() => setActiveTab('lineage')}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-              activeTab === 'lineage' ? 'bg-sky-600 text-white' : 'text-gray-400 hover:text-white'
+              activeTab === 'lineage' ? 'bg-sky-600 text-primary' : 'text-secondary hover:text-primary'
             }`}
           >
             Data Lineage Graph
@@ -57,7 +57,7 @@ export const DataDictionaryLineageView: React.FC = () => {
           <button
             onClick={() => setActiveTab('dictionary')}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-              activeTab === 'dictionary' ? 'bg-sky-600 text-white' : 'text-gray-400 hover:text-white'
+              activeTab === 'dictionary' ? 'bg-sky-600 text-primary' : 'text-secondary hover:text-primary'
             }`}
           >
             Column Data Dictionary
@@ -67,8 +67,8 @@ export const DataDictionaryLineageView: React.FC = () => {
 
       {activeTab === 'lineage' ? (
         /* Visual Lineage Graph */
-        <div className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-6 space-y-6">
-          <h2 className="font-heading text-xl font-bold text-white uppercase tracking-wide">
+        <div className="bg-card border border-subtle rounded-2xl p-6 space-y-6">
+          <h2 className="font-heading text-xl font-bold text-primary uppercase tracking-wide">
             END-TO-END ANALYTICAL PIPELINE PROVENANCE
           </h2>
 
@@ -76,25 +76,25 @@ export const DataDictionaryLineageView: React.FC = () => {
             {lineageNodes.map((node, idx) => (
               <div 
                 key={node.id} 
-                className="p-4 rounded-xl bg-[#141414] border border-[#2a2a2a] space-y-2 relative group hover:border-sky-500/50 transition-colors"
+                className="p-4 rounded-xl bg-card border border-subtle space-y-2 relative group hover:border-sky-500/50 transition-colors"
               >
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-mono text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded font-bold border border-sky-500/20">
                     STEP {node.id}
                   </span>
                   {idx < lineageNodes.length - 1 && (
-                    <ArrowRight className="w-3.5 h-3.5 text-gray-600 hidden md:block" />
+                    <ArrowRight className="w-3.5 h-3.5 text-muted hidden md:block" />
                   )}
                 </div>
 
-                <h4 className="font-bold text-white text-xs">{node.title}</h4>
-                <p className="text-[11px] text-gray-400 truncate">{node.desc}</p>
+                <h4 className="font-bold text-primary text-xs">{node.title}</h4>
+                <p className="text-[11px] text-secondary truncate">{node.desc}</p>
               </div>
             ))}
           </div>
 
-          <div className="p-4 rounded-xl bg-[#141414] border border-[#262626] text-xs text-gray-400 space-y-2 font-mono">
-            <div className="font-bold text-white uppercase text-[11px]">Auditability Guarantee (Rule 7 & 11):</div>
+          <div className="p-4 rounded-xl bg-card border border-subtle text-xs text-secondary space-y-2 font-mono">
+            <div className="font-bold text-primary uppercase text-[11px]">Auditability Guarantee (Rule 7 & 11):</div>
             <p>
               Every KPI card, chart visual, AI insight, and exported Power BI measure references the exact same immutable source fields and verified calculation formulas.
             </p>
@@ -102,14 +102,14 @@ export const DataDictionaryLineageView: React.FC = () => {
         </div>
       ) : (
         /* Data Dictionary Table */
-        <div className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-6 space-y-4">
-          <h2 className="font-heading text-xl font-bold text-white uppercase tracking-wide">
+        <div className="bg-card border border-subtle rounded-2xl p-6 space-y-4">
+          <h2 className="font-heading text-xl font-bold text-primary uppercase tracking-wide">
             ENTERPRISE DATA DICTIONARY ({columns.length} FIELDS)
           </h2>
 
-          <div className="overflow-x-auto rounded-xl border border-[#2a2a2a]">
+          <div className="overflow-x-auto rounded-xl border border-subtle">
             <table className="w-full text-left text-xs font-mono">
-              <thead className="bg-[#141414] text-gray-400 border-b border-[#2a2a2a]">
+              <thead className="bg-card text-secondary border-b border-subtle">
                 <tr>
                   <th className="p-3">Field Name</th>
                   <th className="p-3">Type</th>
@@ -119,7 +119,7 @@ export const DataDictionaryLineageView: React.FC = () => {
                   <th className="p-3">Extremes / Range</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#222]">
+              <tbody className="divide-y divide-[var(--border-subtle)]">
                 {columns.map(col => {
                   const role = col.isPrimaryKeyCandidate 
                     ? 'Primary Key' 
@@ -130,10 +130,10 @@ export const DataDictionaryLineageView: React.FC = () => {
                     : 'Dimension';
 
                   return (
-                    <tr key={col.name} className="hover:bg-[#202020] text-gray-300">
-                      <td className="p-3 font-bold text-white">{col.name}</td>
+                    <tr key={col.name} className="hover:bg-elevated text-secondary">
+                      <td className="p-3 font-bold text-primary">{col.name}</td>
                       <td className="p-3">
-                        <span className="px-1.5 py-0.5 rounded bg-[#242424] text-gray-300 text-[10px] uppercase">
+                        <span className="px-1.5 py-0.5 rounded bg-elevated text-secondary text-[10px] uppercase">
                           {col.dataType}
                         </span>
                       </td>
@@ -141,14 +141,14 @@ export const DataDictionaryLineageView: React.FC = () => {
                         <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                           role === 'Primary Key' ? 'bg-amber-500/20 text-amber-300' :
                           role === 'Measure' ? 'bg-blue-500/20 text-blue-300' :
-                          'bg-[#262626] text-gray-300'
+                          'bg-elevated text-secondary'
                         }`}>
                           {role}
                         </span>
                       </td>
                       <td className="p-3">{col.nullPercentage}%</td>
                       <td className="p-3">{col.uniquePercentage}%</td>
-                      <td className="p-3 text-gray-400">
+                      <td className="p-3 text-secondary">
                         {col.min !== undefined ? `${col.min} - ${col.max}` : '—'}
                       </td>
                     </tr>

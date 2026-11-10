@@ -102,13 +102,13 @@ export const KpiCardEditorModal: React.FC<KpiCardEditorModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fadeIn">
       <div 
         className={`w-full max-w-2xl rounded-2xl border shadow-2xl overflow-hidden flex flex-col max-h-[90vh] ${
-          isLight ? 'bg-white border-gray-200 text-gray-900' : 'bg-[#181818] border-[#333] text-gray-100'
+          isLight ? 'bg-white border-gray-200 text-primary' : 'bg-card border-subtle text-primary'
         }`}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle bg-surface-panel/50">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-[#21F1A8]/15 border border-[#21F1A8]/30 flex items-center justify-center text-[#21F1A8]">
+            <div className="w-8 h-8 rounded-lg bg-accent border border-teal-500/40 flex items-center justify-center text-accent">
               <Sliders className="w-4 h-4" />
             </div>
             <div>
@@ -142,8 +142,8 @@ export const KpiCardEditorModal: React.FC<KpiCardEditorModalProps> = ({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Total Invoiced Amount, Average Rating, Net Revenue..."
-              className={`w-full px-3.5 py-2.5 rounded-xl border text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#21F1A8] transition-all shadow-xs ${
-                isLight ? 'bg-gray-50 border-gray-300 text-gray-900' : 'bg-[#121212] border-[#2c2c2c] text-white'
+              className={`w-full px-3.5 py-2.5 rounded-xl border text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/30 transition-all shadow-xs ${
+                isLight ? 'bg-gray-50 border-gray-300 text-primary' : 'bg-app border-subtle text-primary'
               }`}
             />
           </div>
@@ -158,8 +158,8 @@ export const KpiCardEditorModal: React.FC<KpiCardEditorModalProps> = ({
               <select
                 value={sourceColumn}
                 onChange={(e) => setSourceColumn(e.target.value)}
-                className={`w-full px-3 py-2.5 rounded-xl border text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[#21F1A8] cursor-pointer shadow-xs ${
-                  isLight ? 'bg-gray-50 border-gray-300 text-gray-900' : 'bg-[#121212] border-[#2c2c2c] text-white'
+                className={`w-full px-3 py-2.5 rounded-xl border text-xs font-mono focus:outline-none focus:ring-2 focus:ring-teal-500/30 cursor-pointer shadow-xs ${
+                  isLight ? 'bg-gray-50 border-gray-300 text-primary' : 'bg-app border-subtle text-primary'
                 }`}
               >
                 <option value="*">* (All Rows / Total Count)</option>
@@ -188,8 +188,8 @@ export const KpiCardEditorModal: React.FC<KpiCardEditorModalProps> = ({
               <select
                 value={aggregation}
                 onChange={(e) => setAggregation(e.target.value as KPI['aggregation'])}
-                className={`w-full px-3 py-2.5 rounded-xl border text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[#21F1A8] cursor-pointer shadow-xs ${
-                  isLight ? 'bg-gray-50 border-gray-300 text-gray-900' : 'bg-[#121212] border-[#2c2c2c] text-white'
+                className={`w-full px-3 py-2.5 rounded-xl border text-xs font-mono focus:outline-none focus:ring-2 focus:ring-teal-500/30 cursor-pointer shadow-xs ${
+                  isLight ? 'bg-gray-50 border-gray-300 text-primary' : 'bg-app border-subtle text-primary'
                 }`}
               >
                 <option value="sum">SUM (Total Sum of all values)</option>
@@ -213,7 +213,7 @@ export const KpiCardEditorModal: React.FC<KpiCardEditorModalProps> = ({
                 onClick={() => setFormatType('currency')}
                 className={`px-3 py-2 rounded-xl text-xs font-medium border flex items-center justify-center gap-1.5 transition-all ${
                   formatType === 'currency'
-                    ? 'bg-[#21F1A8] text-black border-[#21F1A8] font-bold shadow-sm'
+                    ? 'bg-accent text-black border-teal-500/40 font-bold shadow-sm'
                     : 'bg-surface-panel border-border-subtle text-on-surface hover:bg-surface-elevated'
                 }`}
               >
@@ -224,7 +224,7 @@ export const KpiCardEditorModal: React.FC<KpiCardEditorModalProps> = ({
                 onClick={() => setFormatType('percent')}
                 className={`px-3 py-2 rounded-xl text-xs font-medium border flex items-center justify-center gap-1.5 transition-all ${
                   formatType === 'percent'
-                    ? 'bg-[#21F1A8] text-black border-[#21F1A8] font-bold shadow-sm'
+                    ? 'bg-accent text-black border-teal-500/40 font-bold shadow-sm'
                     : 'bg-surface-panel border-border-subtle text-on-surface hover:bg-surface-elevated'
                 }`}
               >
@@ -235,7 +235,7 @@ export const KpiCardEditorModal: React.FC<KpiCardEditorModalProps> = ({
                 onClick={() => setFormatType('integer')}
                 className={`px-3 py-2 rounded-xl text-xs font-medium border flex items-center justify-center gap-1.5 transition-all ${
                   formatType === 'integer'
-                    ? 'bg-[#21F1A8] text-black border-[#21F1A8] font-bold shadow-sm'
+                    ? 'bg-accent text-black border-teal-500/40 font-bold shadow-sm'
                     : 'bg-surface-panel border-border-subtle text-on-surface hover:bg-surface-elevated'
                 }`}
               >
@@ -246,7 +246,7 @@ export const KpiCardEditorModal: React.FC<KpiCardEditorModalProps> = ({
                 onClick={() => setFormatType('decimal')}
                 className={`px-3 py-2 rounded-xl text-xs font-medium border flex items-center justify-center gap-1.5 transition-all ${
                   formatType === 'decimal'
-                    ? 'bg-[#21F1A8] text-black border-[#21F1A8] font-bold shadow-sm'
+                    ? 'bg-accent text-black border-teal-500/40 font-bold shadow-sm'
                     : 'bg-surface-panel border-border-subtle text-on-surface hover:bg-surface-elevated'
                 }`}
               >
@@ -257,7 +257,7 @@ export const KpiCardEditorModal: React.FC<KpiCardEditorModalProps> = ({
                 onClick={() => setFormatType('custom')}
                 className={`px-3 py-2 rounded-xl text-xs font-medium border flex items-center justify-center gap-1.5 transition-all ${
                   formatType === 'custom'
-                    ? 'bg-[#21F1A8] text-black border-[#21F1A8] font-bold shadow-sm'
+                    ? 'bg-accent text-black border-teal-500/40 font-bold shadow-sm'
                     : 'bg-surface-panel border-border-subtle text-on-surface hover:bg-surface-elevated'
                 }`}
               >
@@ -274,7 +274,7 @@ export const KpiCardEditorModal: React.FC<KpiCardEditorModalProps> = ({
                   onChange={(e) => setCustomUnit(e.target.value)}
                   placeholder="Custom unit suffix e.g. pts, °C, hrs, kg, tickets, orders..."
                   className={`w-full px-3 py-2 rounded-xl border text-xs focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 shadow-xs ${
-                    isLight ? 'bg-gray-50 border-gray-300 text-gray-900' : 'bg-[#121212] border-[#2c2c2c] text-white'
+                    isLight ? 'bg-gray-50 border-gray-300 text-primary' : 'bg-app border-subtle text-primary'
                   }`}
                 />
               </div>
@@ -311,7 +311,7 @@ export const KpiCardEditorModal: React.FC<KpiCardEditorModalProps> = ({
               <span>Live Calculation Preview</span>
             </label>
             <div className={`p-4 rounded-xl border shadow-inner ${
-              isLight ? 'bg-sky-50/50 border-sky-200' : 'bg-[#121212] border-[#222]'
+              isLight ? 'bg-sky-50/50 border-sky-200' : 'bg-app border-subtle'
             }`}>
               <div className="flex items-center justify-between mb-2">
                 <span className="font-label-caps text-label-caps uppercase text-on-surface-variant font-bold truncate max-w-[200px]">
@@ -363,7 +363,7 @@ export const KpiCardEditorModal: React.FC<KpiCardEditorModalProps> = ({
             <button
               type="button"
               onClick={handleSave}
-              className="px-5 py-2 rounded-xl bg-sky-600 text-white text-xs font-bold hover:bg-sky-500 transition-all shadow-md shadow-sky-600/20 flex items-center gap-1.5"
+              className="px-5 py-2 rounded-xl bg-sky-600 text-primary text-xs font-bold hover:bg-sky-500 transition-all shadow-md shadow-sky-600/20 flex items-center gap-1.5"
             >
               <Check className="w-4 h-4 stroke-[2.5]" /> Save & Apply Everywhere
             </button>

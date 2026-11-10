@@ -129,12 +129,12 @@ const ToastCard: React.FC<ToastCardProps> = ({ toast, onDismiss, isLight }) => {
           {toast.type === 'progress' && typeof toast.progress === 'number' && (
             <div className="mt-3 space-y-1.5">
               <div className="flex items-center justify-between text-[11px] font-mono">
-                <span className={isLight ? 'text-slate-500' : 'text-slate-400'}>Ingestion Pipeline</span>
-                <span className="font-bold text-[#00D2FF]">{Math.round(toast.progress)}%</span>
+                <span className={isLight ? 'text-muted' : 'text-secondary'}>Ingestion Pipeline</span>
+                <span className="font-bold text-accent">{Math.round(toast.progress)}%</span>
               </div>
-              <div className={`h-1.5 w-full rounded-full overflow-hidden ${isLight ? 'bg-slate-200' : 'bg-slate-800'}`}>
+              <div className={`h-1.5 w-full rounded-full overflow-hidden ${isLight ? 'bg-input' : 'bg-elevated'}`}>
                 <div 
-                  className="h-full rounded-full bg-gradient-to-r from-[#21F1A8] via-[#00D2FF] to-[#3B82F6] transition-all duration-300 ease-out"
+                  className="h-full rounded-full bg-gradient-to-r from-teal-500/20 via-indigo-500/10 to-transparent transition-all duration-300 ease-out"
                   style={{ width: `${toast.progress}%` }}
                 />
               </div>
@@ -153,9 +153,9 @@ const ToastCard: React.FC<ToastCardProps> = ({ toast, onDismiss, isLight }) => {
                 className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm cursor-pointer ${
                   toast.action.variant === 'secondary'
                     ? isLight
-                      ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200'
-                      : 'bg-[#1b2a40] hover:bg-[#243958] text-slate-200 border border-[#2b4468]'
-                    : 'bg-[#21F1A8] hover:bg-[#1cdb97] text-slate-950 shadow-[0_0_12px_rgba(33,241,168,0.3)]'
+                      ? 'bg-elevated hover:bg-input text-primary border border-slate-200'
+                      : 'bg-accent hover:bg-accent text-primary border border-teal-500/40'
+                    : 'bg-accent hover:bg-accent text-primary shadow-lg'
                 }`}
               >
                 <span>{toast.action.label}</span>
@@ -172,8 +172,8 @@ const ToastCard: React.FC<ToastCardProps> = ({ toast, onDismiss, isLight }) => {
           aria-label="Dismiss notification"
           className={`p-1 rounded-lg transition-colors cursor-pointer shrink-0 ${
             isLight 
-              ? 'text-slate-400 hover:text-slate-800 hover:bg-slate-100' 
-              : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
+              ? 'text-secondary hover:text-primary hover:bg-elevated' 
+              : 'text-secondary hover:text-primary hover:bg-elevated'
           }`}
         >
           <X className="w-4 h-4" />
@@ -211,8 +211,8 @@ export const ToastContainer: React.FC = () => {
             onClick={clearAll}
             className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono uppercase tracking-wider border shadow-md transition-all cursor-pointer ${
               isLight
-                ? 'bg-white/90 text-slate-600 border-slate-200 hover:bg-slate-100'
-                : 'bg-[#0f1726]/90 text-slate-400 border-slate-700/60 hover:text-white hover:bg-[#16233a]'
+                ? 'bg-white/90 text-muted border-slate-200 hover:bg-elevated'
+                : 'bg-accent text-secondary border-slate-700/60 hover:text-primary hover:bg-accent'
             }`}
           >
             <Trash2 className="w-3 h-3" />

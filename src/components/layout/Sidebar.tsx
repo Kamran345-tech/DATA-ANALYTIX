@@ -286,22 +286,22 @@ export const Sidebar: React.FC = () => {
 
       <aside className={`fixed inset-y-0 lg:static top-0 lg:top-auto left-0 z-50 lg:z-30 w-72 lg:w-64 flex flex-col h-full max-h-full overflow-y-auto select-none shrink-0 transition-all ${
         isLight
-          ? 'bg-white/85 backdrop-blur-2xl border-r border-slate-200/80 shadow-[4px_0_24px_rgba(0,0,0,0.05)]'
-          : 'bg-[#070D1B]/85 backdrop-blur-2xl border-r border-white/[0.08] shadow-[4px_0_32px_rgba(0,0,0,0.4)]'
+          ? 'bg-white/85 backdrop-blur-2xl border-r border-slate-200/80 shadow-lg'
+          : 'bg-app backdrop-blur-2xl border-r border-white/[0.08] shadow-lg'
       }`}>
         {/* Mobile Header with Close button */}
         <div className={`flex lg:hidden items-center justify-between p-4 border-b ${
-          isLight ? 'border-slate-200 bg-slate-50/90' : 'border-white/10 bg-[#0B1120]/90 backdrop-blur-md'
+          isLight ? 'border-slate-200 bg-elevated' : 'border-white/10 bg-app backdrop-blur-md'
         }`}>
           <span className={`font-heading text-lg font-bold tracking-wider ${
-            isLight ? 'text-slate-900' : 'text-white'
+            isLight ? 'text-primary' : 'text-primary'
           }`}>
             DATA<span className="text-cyan-400">ANALYTIX</span>
           </span>
           <button 
             onClick={() => setIsSidebarOpen(false)}
             className={`p-1.5 rounded-lg ${
-              isLight ? 'text-slate-500 hover:text-slate-900 hover:bg-slate-200' : 'text-gray-400 hover:text-white hover:bg-white/10'
+              isLight ? 'text-muted hover:text-primary hover:bg-input' : 'text-secondary hover:text-primary hover:bg-white/10'
             }`}
           >
             ✕
@@ -312,7 +312,7 @@ export const Sidebar: React.FC = () => {
           {navSections.map((section, idx) => (
             <div key={idx} className="space-y-1">
               <h4 className={`px-3 text-[10px] font-bold tracking-wider uppercase font-mono ${
-                isLight ? 'text-slate-500' : 'text-cyan-400/80'
+                isLight ? 'text-muted' : 'text-cyan-400/80'
               }`}>
                 {section.title}
               </h4>
@@ -346,17 +346,17 @@ export const Sidebar: React.FC = () => {
                           isActive 
                             ? isLight
                               ? 'bg-cyan-50/90 text-cyan-950 border border-cyan-400/50 font-bold shadow-xs'
-                              : 'bg-gradient-to-r from-cyan-500/20 via-indigo-500/10 to-transparent border border-cyan-400/40 text-cyan-300 font-semibold shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_0_15px_rgba(34,211,238,0.15)]' 
+                              : 'bg-gradient-to-r from-cyan-500/20 via-indigo-500/10 to-transparent border border-cyan-400/40 text-cyan-300 font-semibold shadow-lg' 
                             : isLight
-                              ? 'text-slate-700 hover:text-slate-900 hover:bg-slate-100/80 border border-transparent'
-                              : 'text-slate-300 hover:text-white hover:bg-white/[0.05] border border-transparent hover:border-white/[0.06]'
+                              ? 'text-muted hover:text-primary hover:bg-elevated border border-transparent'
+                              : 'text-secondary hover:text-primary hover:bg-white/[0.05] border border-transparent hover:border-white/[0.06]'
                         }`}
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
                           <Icon className={`w-4 h-4 shrink-0 transition-transform ${
                             isActive 
                               ? isLight ? 'text-cyan-700' : 'text-cyan-400' 
-                              : isLight ? 'text-slate-500 group-hover:text-slate-900' : 'text-slate-400 group-hover:text-white'
+                              : isLight ? 'text-muted group-hover:text-primary' : 'text-secondary group-hover:text-primary'
                           }`} />
                           <span className="truncate">{item.label}</span>
                         </div>
@@ -366,11 +366,11 @@ export const Sidebar: React.FC = () => {
                             <span className={`px-1.5 py-0.5 text-[9px] font-bold rounded uppercase tracking-wider ${
                               isActive 
                                 ? isLight
-                                  ? 'bg-cyan-600 text-white'
-                                  : 'bg-cyan-400 text-slate-950 font-bold shadow-[0_0_8px_rgba(34,211,238,0.4)]' 
+                                  ? 'bg-cyan-600 text-primary'
+                                  : 'bg-cyan-400 text-primary font-bold shadow-lg' 
                                 : isLight
-                                  ? 'bg-slate-100 text-slate-700 border border-slate-200'
-                                  : 'bg-white/[0.06] text-slate-300 border border-white/10'
+                                  ? 'bg-elevated text-muted border border-slate-200'
+                                  : 'bg-white/[0.06] text-secondary border border-white/10'
                             }`}>
                               {item.badge}
                             </span>
@@ -390,8 +390,8 @@ export const Sidebar: React.FC = () => {
 
         <div className={`mt-auto p-3 border-t space-y-2.5 ${
           isLight
-            ? 'border-slate-200/80 bg-slate-50/70 text-slate-600'
-            : 'border-white/[0.08] bg-[#0B1120]/70 backdrop-blur-md text-slate-300'
+            ? 'border-slate-200/80 bg-elevated text-muted'
+            : 'border-white/[0.08] bg-app backdrop-blur-md text-secondary'
         }`}>
           {/* Firebase Cloud Sync Status Card */}
           <button
@@ -400,7 +400,7 @@ export const Sidebar: React.FC = () => {
               currentUser
                 ? isLight
                   ? 'bg-cyan-50/90 border-cyan-300 hover:bg-cyan-100/90 shadow-2xs'
-                  : 'bg-cyan-950/30 border-cyan-500/30 hover:border-cyan-400/60 hover:bg-cyan-900/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]'
+                  : 'bg-cyan-950/30 border-cyan-500/30 hover:border-cyan-400/60 hover:bg-cyan-900/30 shadow-lg'
                 : isLight
                   ? 'bg-white/80 border-slate-200 hover:border-cyan-500 shadow-2xs'
                   : 'glass-card hover:border-cyan-400/40'
@@ -410,7 +410,7 @@ export const Sidebar: React.FC = () => {
               <div className="flex items-center gap-1.5">
                 <Cloud className={`w-3.5 h-3.5 ${isLight ? 'text-cyan-700' : 'text-cyan-400'}`} />
                 <span className={`text-[10px] font-bold tracking-wider uppercase font-mono ${
-                  isLight ? 'text-slate-800' : 'text-slate-200'
+                  isLight ? 'text-primary' : 'text-primary'
                 }`}>
                   Firebase Cloud
                 </span>
@@ -418,26 +418,26 @@ export const Sidebar: React.FC = () => {
               <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-mono font-semibold ${
                 currentUser
                   ? isLight ? 'bg-cyan-100 text-cyan-800' : 'bg-cyan-500/20 text-cyan-300'
-                  : isLight ? 'bg-slate-100 text-slate-600' : 'bg-white/10 text-slate-300'
+                  : isLight ? 'bg-elevated text-muted' : 'bg-white/10 text-secondary'
               }`}>
                 <span className={`w-1.5 h-1.5 rounded-full ${currentUser ? 'bg-cyan-400 animate-pulse' : 'bg-cyan-500'}`} />
                 {currentUser ? 'Active' : 'Connected'}
               </span>
             </div>
             <p className={`text-[10px] leading-tight truncate ${
-              isLight ? 'text-slate-500' : 'text-slate-400'
+              isLight ? 'text-muted' : 'text-secondary'
             }`}>
               {currentUser ? `User: ${currentUser.displayName || currentUser.email}` : isGuestMode ? 'Guest Demo Session. Click to Sign In' : 'Firestore & Auth live. Click to Sign In'}
             </p>
           </button>
 
           <div className="flex items-center justify-between text-[11px]">
-            <span className="text-slate-400">Engine Status</span>
+            <span className="text-secondary">Engine Status</span>
             <span className={`flex items-center gap-1 font-mono font-medium ${
               isLight ? 'text-cyan-700' : 'text-cyan-400'
             }`}>
               <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${
-                isLight ? 'bg-cyan-600' : 'bg-cyan-400 shadow-[0_0_8px_#22D3EE]'
+                isLight ? 'bg-cyan-600' : 'bg-cyan-400 shadow-lg'
               }`}></span>
               Deterministic Online
             </span>
@@ -448,11 +448,11 @@ export const Sidebar: React.FC = () => {
             isLight ? 'border-slate-200/80' : 'border-white/[0.08]'
           }`}>
             <div className="flex items-center justify-between">
-              <span className={`font-mono ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>Developed by:</span>
-              <span className={`font-semibold ${isLight ? 'text-slate-800' : 'text-slate-200'}`}>Kamran Badar</span>
+              <span className={`font-mono ${isLight ? 'text-secondary' : 'text-muted'}`}>Developed by:</span>
+              <span className={`font-semibold ${isLight ? 'text-primary' : 'text-primary'}`}>Kamran Badar</span>
             </div>
             <div className={`text-[9px] text-right truncate font-mono ${
-              isLight ? 'text-slate-400' : 'text-slate-500'
+              isLight ? 'text-secondary' : 'text-muted'
             }`}>
               Analytics Technologies
             </div>

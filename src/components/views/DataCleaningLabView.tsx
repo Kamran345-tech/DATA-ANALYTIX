@@ -31,6 +31,7 @@ import {
 import { usePlatform } from '../../store/usePlatformStore';
 import { DataType, MessyDataIssue } from '../../types';
 import { detectMessyIssues } from '../../engine/dataQuality';
+import { DownloadMenu } from '../common/DownloadMenu';
 
 export const DataCleaningLabView: React.FC = () => {
   const { 
@@ -283,14 +284,16 @@ export const DataCleaningLabView: React.FC = () => {
           >
             <Trash2 className="w-3.5 h-3.5" /> Reset
           </button>
+
+          <DownloadMenu context="cleaning" />
         </div>
       </div>
 
       {/* 2. Live Health & 1-Click Master Auto-Clean Hero */}
       <div className={`border rounded-2xl p-5 sm:p-6 flex flex-col md:flex-row items-center justify-between gap-5 transition-all ${
         isLight 
-          ? 'bg-gradient-to-r from-sky-50/70 via-white to-cyan-50/70 border-sky-300 shadow-sm text-slate-900' 
-          : 'bg-gradient-to-r from-[#1c1c1c] via-[#132238] to-[#1c1c1c] border-cyan-500/40 shadow-xl shadow-black/40 text-white'
+          ? 'bg-gradient-to-r from-sky-50/70 via-white to-cyan-50/70 border-sky-300 shadow-sm text-primary' 
+          : 'bg-gradient-to-r from-teal-500/20 via-indigo-500/10 to-transparent border-cyan-500/40 shadow-xl shadow-black/40 text-primary'
       }`}>
         <div className="space-y-2 text-center md:text-left">
           <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
@@ -301,13 +304,13 @@ export const DataCleaningLabView: React.FC = () => {
             }`}>
               <Sparkles className="w-3.5 h-3.5" /> AI Data Cleaner
             </span>
-            <span className={`text-xs font-mono ${isLight ? 'text-slate-600 font-medium' : 'text-gray-400'}`}>
+            <span className={`text-xs font-mono ${isLight ? 'text-muted font-medium' : 'text-secondary'}`}>
               Audited {cleanRows.length} rows • {transformations.length} cleaning steps applied
             </span>
           </div>
 
           <h2 className={`font-heading text-xl sm:text-2xl font-bold uppercase ${
-            isLight ? 'text-slate-900' : 'text-white'
+            isLight ? 'text-primary' : 'text-primary'
           }`}>
             {messyIssues.length === 0 ? (
               <span className="text-sky-600 dark:text-cyan-400 flex items-center gap-2">
@@ -319,7 +322,7 @@ export const DataCleaningLabView: React.FC = () => {
           </h2>
 
           <p className={`text-xs max-w-2xl leading-relaxed ${
-            isLight ? 'text-slate-600 font-medium' : 'text-gray-300'
+            isLight ? 'text-muted font-medium' : 'text-secondary'
           }`}>
             {messyIssues.length === 0 
               ? 'All whitespace trimmed, duplicates removed, text casing standardized, and missing values resolved. Your dataset is clean for Star Schema modeling and Power BI.'
@@ -329,9 +332,9 @@ export const DataCleaningLabView: React.FC = () => {
 
         <div className="flex flex-col sm:flex-row items-center gap-3 shrink-0">
           <div className={`px-4 py-2.5 rounded-xl text-center border ${
-            isLight ? 'bg-white border-slate-200 shadow-2xs' : 'bg-[#141414] border-[#333]'
+            isLight ? 'bg-white border-slate-200 shadow-2xs' : 'bg-card border-subtle'
           }`}>
-            <span className={`text-[10px] uppercase font-mono block ${isLight ? 'text-slate-500 font-semibold' : 'text-gray-400'}`}>Data Quality</span>
+            <span className={`text-[10px] uppercase font-mono block ${isLight ? 'text-muted font-semibold' : 'text-secondary'}`}>Data Quality</span>
             <span className="text-2xl font-heading font-extrabold text-sky-600 dark:text-cyan-400">
               {qualityReport.overallScore}%
             </span>
@@ -340,7 +343,7 @@ export const DataCleaningLabView: React.FC = () => {
           {messyIssues.length > 0 && (
             <button
               onClick={handleAutoCleanAll}
-              className="flex items-center gap-2 px-5 py-3 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-heading font-bold text-sm uppercase transition-all transform hover:-translate-y-0.5 shadow-lg shadow-sky-600/30 cursor-pointer"
+              className="flex items-center gap-2 px-5 py-3 rounded-xl bg-sky-600 hover:bg-sky-500 text-primary font-heading font-bold text-sm uppercase transition-all transform hover:-translate-y-0.5 shadow-lg shadow-sky-600/30 cursor-pointer"
             >
               <Zap className="w-4 h-4 fill-current" />
               <span>1-Click Auto-Clean All Issues</span>
@@ -355,7 +358,7 @@ export const DataCleaningLabView: React.FC = () => {
           onClick={() => setActiveTab('doctor')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl whitespace-nowrap transition-all cursor-pointer ${
             activeTab === 'doctor'
-              ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/30 font-bold'
+              ? 'bg-sky-600 text-primary shadow-lg shadow-sky-600/30 font-bold'
               : 'bg-card text-secondary hover:bg-card-hover hover:text-primary border border-subtle'
           }`}
         >
@@ -366,7 +369,7 @@ export const DataCleaningLabView: React.FC = () => {
           onClick={() => setActiveTab('checklist')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl whitespace-nowrap transition-all cursor-pointer ${
             activeTab === 'checklist'
-              ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/30 font-bold'
+              ? 'bg-sky-600 text-primary shadow-lg shadow-sky-600/30 font-bold'
               : 'bg-card text-secondary hover:bg-card-hover hover:text-primary border border-subtle'
           }`}
         >
@@ -377,7 +380,7 @@ export const DataCleaningLabView: React.FC = () => {
           onClick={() => setActiveTab('diff')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl whitespace-nowrap transition-all cursor-pointer ${
             activeTab === 'diff'
-              ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/30 font-bold'
+              ? 'bg-sky-600 text-primary shadow-lg shadow-sky-600/30 font-bold'
               : 'bg-card text-secondary hover:bg-card-hover hover:text-primary border border-subtle'
           }`}
         >
@@ -388,7 +391,7 @@ export const DataCleaningLabView: React.FC = () => {
           onClick={() => setActiveTab('manual')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl whitespace-nowrap transition-all cursor-pointer ${
             activeTab === 'manual'
-              ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/30 font-bold'
+              ? 'bg-sky-600 text-primary shadow-lg shadow-sky-600/30 font-bold'
               : 'bg-card text-secondary hover:bg-card-hover hover:text-primary border border-subtle'
           }`}
         >
@@ -415,7 +418,7 @@ export const DataCleaningLabView: React.FC = () => {
                 </button>
                 <button
                   onClick={handleExportCleanCSV}
-                  className="px-4 py-2 rounded-xl bg-sky-600 text-white text-xs font-bold hover:bg-sky-500 cursor-pointer"
+                  className="px-4 py-2 rounded-xl bg-sky-600 text-primary text-xs font-bold hover:bg-sky-500 cursor-pointer"
                 >
                   Download Cleaned CSV
                 </button>
@@ -471,7 +474,7 @@ export const DataCleaningLabView: React.FC = () => {
                     </span>
                     <button
                       onClick={() => handleFixIssue(issue)}
-                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-semibold text-xs shadow-md shadow-sky-600/20 transition-all cursor-pointer"
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-primary font-semibold text-xs shadow-md shadow-sky-600/20 transition-all cursor-pointer"
                     >
                       <Wand2 className="w-3.5 h-3.5" />
                       <span>Fix Now</span>
@@ -606,7 +609,7 @@ export const DataCleaningLabView: React.FC = () => {
               <button
                 onClick={() => setDiffViewMode('cleaned')}
                 className={`px-3 py-1.5 rounded-lg font-semibold transition-colors cursor-pointer ${
-                  diffViewMode === 'cleaned' ? 'bg-sky-600 text-white' : 'text-secondary hover:text-primary'
+                  diffViewMode === 'cleaned' ? 'bg-sky-600 text-primary' : 'text-secondary hover:text-primary'
                 }`}
               >
                 Cleaned Data ({cleanRows.length} rows)
@@ -614,7 +617,7 @@ export const DataCleaningLabView: React.FC = () => {
               <button
                 onClick={() => setDiffViewMode('raw')}
                 className={`px-3 py-1.5 rounded-lg font-semibold transition-colors cursor-pointer ${
-                  diffViewMode === 'raw' ? 'bg-sky-600 text-white' : 'text-secondary hover:text-primary'
+                  diffViewMode === 'raw' ? 'bg-sky-600 text-primary' : 'text-secondary hover:text-primary'
                 }`}
               >
                 Original Raw ({rawRows.length} rows)
@@ -800,7 +803,7 @@ export const DataCleaningLabView: React.FC = () => {
 
               <button
                 onClick={handleApplyManual}
-                className="w-full py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-semibold transition-all shadow-md shadow-sky-600/20 cursor-pointer"
+                className="w-full py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-primary font-semibold transition-all shadow-md shadow-sky-600/20 cursor-pointer"
               >
                 Apply Transformation
               </button>

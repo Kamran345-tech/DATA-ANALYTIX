@@ -423,18 +423,14 @@ export const LoginPage: React.FC = () => {
       {/* ========================================================================= */}
       {/* RIGHT COLUMN: SLATE PANEL WITH 3-PILLAR SCENE (52% WIDTH)                 */}
       {/* ========================================================================= */}
-      <div className={`relative lg:w-[52%] xl:w-[54%] flex flex-col justify-between p-6 sm:p-10 lg:p-12 overflow-hidden border-t lg:border-t-0 lg:border-l transition-colors duration-200 order-2 ${
-        isLight 
-          ? 'bg-slate-900 text-slate-100 border-slate-200' 
-          : 'bg-[#0f172a] text-slate-100 border-[#273449]'
-      }`}>
+      <div className="relative lg:w-[52%] xl:w-[54%] flex flex-col justify-between p-6 sm:p-10 lg:p-12 overflow-hidden border-t lg:border-t-0 lg:border-l transition-colors duration-200 order-2 bg-sidebar text-primary border-subtle">
         <div className="absolute inset-0 pointer-events-none opacity-45 z-0">
           <DataCanvasAnimation />
         </div>
 
         <div className="relative z-10 flex items-center justify-between">
           <BrandLogo size="lg" showSubtitle={true} />
-          <div className="hidden sm:flex items-center gap-2 text-xs font-mono font-medium text-slate-300">
+          <div className="hidden sm:flex items-center gap-2 text-xs font-mono font-medium text-secondary">
             <span className="w-2 h-2 rounded-full bg-teal-400 animate-pulse" />
             <span>Enterprise Engine v2.5</span>
           </div>
@@ -443,20 +439,20 @@ export const LoginPage: React.FC = () => {
         {/* Center Content + 3-Pillar Isometric Scene */}
         <div className="relative z-10 my-auto py-8 space-y-6 max-w-xl mx-auto w-full">
           <div className="space-y-2.5">
-            <div className="flex items-center gap-2 text-xs font-mono font-bold tracking-wider uppercase text-teal-400">
+            <div className="flex items-center gap-2 text-xs font-mono font-bold tracking-wider uppercase text-accent">
               <span>SQL</span>
-              <span className="text-slate-500">·</span>
+              <span className="text-muted">·</span>
               <span className="text-indigo-400">PYTHON</span>
-              <span className="text-slate-500">·</span>
+              <span className="text-muted">·</span>
               <span className="text-sky-400">POWER BI</span>
             </div>
-            <h1 className="font-heading text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.1] text-white">
+            <h1 className="font-heading text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.1] text-primary">
               Raw data in.{' '}
               <span className="bg-gradient-to-r from-teal-300 via-sky-400 to-indigo-400 bg-clip-text text-transparent">
                 Clear decisions out.
               </span>
             </h1>
-            <p className="text-sm sm:text-base text-slate-300 leading-relaxed">
+            <p className="text-sm sm:text-base text-secondary leading-relaxed">
               Ingest spreadsheets, profile data quality across 4 dimensions, model star schemas, and query in ANSI SQL, DAX, or Python.
             </p>
           </div>
@@ -469,31 +465,31 @@ export const LoginPage: React.FC = () => {
           {/* Pipeline Highlights */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
             {[
-              { step: '01', name: 'Ingestion', sub: 'CSV, XLSX, DB', color: 'text-teal-400' },
+              { step: '01', name: 'Ingestion', sub: 'CSV, XLSX, DB', color: 'text-accent' },
               { step: '02', name: 'Quality Audit', sub: '4D Quality Score', color: 'text-indigo-400' },
               { step: '03', name: 'Star Schema', sub: '1:N Kimball ERD', color: 'text-sky-400' },
               { step: '04', name: 'PBIP & Reports', sub: 'DAX & Boardroom', color: 'text-emerald-400' }
             ].map((stage, idx) => (
-              <div key={idx} className="bg-slate-950/60 border border-slate-800 p-3 rounded-xl">
-                <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 mb-1">
+              <div key={idx} className="bg-card border border-subtle p-3 rounded-xl">
+                <div className="flex items-center justify-between text-[10px] font-mono text-muted mb-1">
                   <span>{stage.step}</span>
                   <span className="w-1.5 h-1.5 rounded-full bg-teal-400" />
                 </div>
                 <div className={`text-xs font-bold ${stage.color}`}>{stage.name}</div>
-                <div className="text-[10px] text-slate-400 truncate mt-0.5">{stage.sub}</div>
+                <div className="text-[10px] text-secondary truncate mt-0.5">{stage.sub}</div>
               </div>
             ))}
           </div>
         </div>
 
         {/* Right Footer */}
-        <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs font-mono text-slate-400 pt-4 border-t border-slate-800/80">
+        <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs font-mono text-secondary pt-4 border-t border-subtle">
           <div className="flex items-center gap-2">
-            <span>Architecture by <strong className="text-teal-400 font-semibold">Kamran Badar</strong></span>
+            <span>Architecture by <strong className="text-accent font-semibold">Kamran Badar</strong></span>
             <span>|</span>
             <span>Data Analytix</span>
           </div>
-          <div className="flex items-center gap-1.5 text-teal-400">
+          <div className="flex items-center gap-1.5 text-accent">
             <ShieldCheck className="w-4 h-4" />
             <span>Zero-Trust Enterprise Identity</span>
           </div>

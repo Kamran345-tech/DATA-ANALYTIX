@@ -37,6 +37,7 @@ import {
 } from '../../engine/chartRecommendationEngine';
 import { ChartGuideId } from '../../config/chartGuide';
 import { ModernEmptyState } from '../modern/ModernEmptyState';
+import { DownloadMenu } from '../common/DownloadMenu';
 
 // ============================================================================
 // 1. CHRONOLOGICAL TIME SERIES LINE & AREA CHART
@@ -52,7 +53,7 @@ export const TimeSeriesAreaChart: React.FC<TimeSeriesProps> = ({
   data,
   metricName,
   forecastData,
-  color = '#22D3EE'
+  color = 'var(--chart-3)'
 }) => {
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const [showSMA, setShowSMA] = useState(true);
@@ -118,7 +119,7 @@ export const TimeSeriesAreaChart: React.FC<TimeSeriesProps> = ({
 
   if (chartPoints.length < 2) {
     return (
-      <div className="h-64 flex items-center justify-center text-xs text-slate-500 bg-surface-panel/40 rounded-xl border border-border-subtle">
+      <div className="h-64 flex items-center justify-center text-xs text-muted bg-surface-panel/40 rounded-xl border border-border-subtle">
         Insufficient time-series data points to render chronological trend curve.
       </div>
     );
@@ -184,12 +185,12 @@ export const TimeSeriesAreaChart: React.FC<TimeSeriesProps> = ({
       {/* Control bar */}
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
         <div className="flex items-center gap-3">
-          <span className="flex items-center gap-1.5 text-slate-800 dark:text-slate-200 font-medium">
+          <span className="flex items-center gap-1.5 text-primary dark:text-primary font-medium">
             <span className="w-3 h-1 rounded bg-cyan-400"></span>
             {metricName} (Actual)
           </span>
           {smaCoords.length > 0 && (
-            <label className="flex items-center gap-1.5 cursor-pointer text-slate-600 dark:text-slate-300 hover:text-cyan-400">
+            <label className="flex items-center gap-1.5 cursor-pointer text-muted dark:text-secondary hover:text-cyan-400">
               <input 
                 type="checkbox" 
                 checked={showSMA} 
@@ -209,8 +210,8 @@ export const TimeSeriesAreaChart: React.FC<TimeSeriesProps> = ({
         </div>
 
         {activePt && (
-          <div className="bg-[#141414] border border-cyan-400/40 px-3 py-1 rounded-lg text-xs font-mono flex items-center gap-2">
-            <span className="text-gray-400">{activePt.period}:</span>
+          <div className="bg-card border border-cyan-400/40 px-3 py-1 rounded-lg text-xs font-mono flex items-center gap-2">
+            <span className="text-secondary">{activePt.period}:</span>
             <span className="text-cyan-400 font-bold">
               {activePt.value.toLocaleString()}
             </span>
@@ -230,12 +231,12 @@ export const TimeSeriesAreaChart: React.FC<TimeSeriesProps> = ({
         >
           <defs>
             <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#22D3EE" stopOpacity="0.25" />
-              <stop offset="100%" stopColor="#22D3EE" stopOpacity="0.0" />
+              <stop offset="0%" stopColor="var(--chart-3)" stopOpacity="0.25" />
+              <stop offset="100%" stopColor="var(--chart-3)" stopOpacity="0.0" />
             </linearGradient>
             <linearGradient id="forecastGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#60A5FA" stopOpacity="0.2" />
-              <stop offset="100%" stopColor="#60A5FA" stopOpacity="0.0" />
+              <stop offset="0%" stopColor="var(--chart-3)" stopOpacity="0.2" />
+              <stop offset="100%" stopColor="var(--chart-3)" stopOpacity="0.0" />
             </linearGradient>
           </defs>
 
@@ -251,7 +252,7 @@ export const TimeSeriesAreaChart: React.FC<TimeSeriesProps> = ({
                   x2={width - paddingRight} 
                   y2={y} 
                   stroke="currentColor"
-                  className="text-slate-200 dark:text-slate-800" 
+                  className="text-primary dark:text-primary" 
                   strokeDasharray="3,3" 
                 />
                 <text 
@@ -273,7 +274,7 @@ export const TimeSeriesAreaChart: React.FC<TimeSeriesProps> = ({
           <path 
             d={linePath} 
             fill="none" 
-            stroke="#22D3EE" 
+            stroke="var(--chart-3)" 
             strokeWidth="2.5" 
             strokeLinecap="round" 
             strokeLinejoin="round" 
@@ -284,7 +285,7 @@ export const TimeSeriesAreaChart: React.FC<TimeSeriesProps> = ({
             <path 
               d={smaPath} 
               fill="none" 
-              stroke="#818CF8" 
+              stroke="var(--chart-2)" 
               strokeWidth="2" 
               strokeDasharray="4,3" 
             />
@@ -295,7 +296,7 @@ export const TimeSeriesAreaChart: React.FC<TimeSeriesProps> = ({
             <path 
               d={forecastPath} 
               fill="none" 
-              stroke="#60A5FA" 
+              stroke="var(--chart-3)" 
               strokeWidth="2.5" 
               strokeDasharray="5,4" 
             />
@@ -320,7 +321,7 @@ export const TimeSeriesAreaChart: React.FC<TimeSeriesProps> = ({
                     y1={paddingTop} 
                     x2={x} 
                     y2={paddingTop + innerHeight} 
-                    stroke="#00d8f6" 
+                    stroke="var(--chart-3)" 
                     strokeWidth="1" 
                     strokeDasharray="2,2" 
                   />
@@ -331,8 +332,8 @@ export const TimeSeriesAreaChart: React.FC<TimeSeriesProps> = ({
                   cx={x}
                   cy={y}
                   r={isHovered ? 6 : pt.isForecast ? 3.5 : 4}
-                  fill={pt.isForecast ? '#00d8f6' : '#141414'}
-                  stroke={pt.isForecast ? '#00d8f6' : '#0284C7'}
+                  fill={pt.isForecast ? 'var(--chart-3)' : 'var(--bg-card)'}
+                  stroke={pt.isForecast ? 'var(--chart-3)' : 'var(--chart-3)'}
                   strokeWidth="2"
                   className="cursor-pointer transition-all"
                   onMouseEnter={() => setHoverIndex(idx)}
@@ -355,7 +356,7 @@ export const TimeSeriesAreaChart: React.FC<TimeSeriesProps> = ({
                     x={x}
                     y={paddingTop + innerHeight + 18}
                     textAnchor="middle"
-                    fill="#777"
+                    fill="var(--text-muted)"
                     fontSize="10"
                     fontFamily="monospace"
                   >
@@ -410,7 +411,7 @@ export const Pareto8020Chart: React.FC<ParetoProps> = ({
 
   if (sortedData.length === 0) {
     return (
-      <div className="h-64 flex items-center justify-center text-xs text-gray-500 bg-[#141414] rounded-xl border border-[#262626]">
+      <div className="h-64 flex items-center justify-center text-xs text-muted bg-card rounded-xl border border-subtle">
         No dimensional data available for Pareto (80/20) analysis.
       </div>
     );
@@ -452,11 +453,11 @@ export const Pareto8020Chart: React.FC<ParetoProps> = ({
           <span className="px-2 py-0.5 rounded bg-cyan-500/15 text-cyan-400 font-bold text-[10px] font-mono">
             PARETO PRINCIPLE (80/20)
           </span>
-          <span className="text-gray-300">
-            Vital <strong className="text-white">{vitalCount}</strong> of {sortedData.length} items drive ~80% of {metricName}
+          <span className="text-secondary">
+            Vital <strong className="text-primary">{vitalCount}</strong> of {sortedData.length} items drive ~80% of {metricName}
           </span>
         </div>
-        <div className="flex items-center gap-3 text-[11px] text-gray-400">
+        <div className="flex items-center gap-3 text-[11px] text-secondary">
           <span className="flex items-center gap-1">
             <span className="w-2.5 h-2.5 rounded-sm bg-cyan-500"></span> Item Value
           </span>
@@ -470,7 +471,7 @@ export const Pareto8020Chart: React.FC<ParetoProps> = ({
       </div>
 
       {/* SVG Canvas */}
-      <div className="relative w-full bg-[#141414] rounded-2xl border border-[#262626] p-2 overflow-hidden select-none">
+      <div className="relative w-full bg-card rounded-2xl border border-subtle p-2 overflow-hidden select-none">
         <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-64 sm:h-72 overflow-visible">
           {/* Horizontal 80% line */}
           <line
@@ -478,14 +479,14 @@ export const Pareto8020Chart: React.FC<ParetoProps> = ({
             y1={getPctY(80)}
             x2={width - paddingRight}
             y2={getPctY(80)}
-            stroke="#ef4444"
+            stroke="var(--danger)"
             strokeWidth="1.5"
             strokeDasharray="4,4"
           />
           <text
             x={width - paddingRight + 5}
             y={getPctY(80) + 3.5}
-            fill="#ef4444"
+            fill="var(--danger)"
             fontSize="10"
             fontFamily="monospace"
             fontWeight="bold"
@@ -499,8 +500,8 @@ export const Pareto8020Chart: React.FC<ParetoProps> = ({
             const val = maxVal * pct;
             return (
               <g key={i}>
-                <line x1={paddingLeft} y1={y} x2={width - paddingRight} y2={y} stroke="#222" />
-                <text x={paddingLeft - 8} y={y + 3.5} textAnchor="end" fill="#666" fontSize="10" fontFamily="monospace">
+                <line x1={paddingLeft} y1={y} x2={width - paddingRight} y2={y} stroke="var(--border-subtle)" />
+                <text x={paddingLeft - 8} y={y + 3.5} textAnchor="end" fill="var(--text-muted)" fontSize="10" fontFamily="monospace">
                   {Math.round(val).toLocaleString()}
                 </text>
               </g>
@@ -511,7 +512,7 @@ export const Pareto8020Chart: React.FC<ParetoProps> = ({
           {[0, 50, 100].map((pct, i) => {
             const y = getPctY(pct);
             return (
-              <text key={i} x={width - paddingRight + 8} y={y + 3.5} fill="#888" fontSize="10" fontFamily="monospace">
+              <text key={i} x={width - paddingRight + 8} y={y + 3.5} fill="var(--text-muted)" fontSize="10" fontFamily="monospace">
                 {pct}%
               </text>
             );
@@ -533,7 +534,7 @@ export const Pareto8020Chart: React.FC<ParetoProps> = ({
                   width={barWidth}
                   height={Math.max(2, h)}
                   rx="4"
-                  fill={isSelected ? '#00d8f6' : isVital ? '#0284C7' : '#1e293b'}
+                  fill={isSelected ? 'var(--chart-3)' : isVital ? 'var(--chart-3)' : 'var(--bg-card)'}
                   className="transition-colors group-hover:fill-sky-400"
                 />
                 {/* Bar Value text */}
@@ -541,7 +542,7 @@ export const Pareto8020Chart: React.FC<ParetoProps> = ({
                   x={x + barWidth / 2}
                   y={y - 6}
                   textAnchor="middle"
-                  fill="#bbb"
+                  fill="var(--text-secondary)"
                   fontSize="9"
                   fontFamily="monospace"
                 >
@@ -554,7 +555,7 @@ export const Pareto8020Chart: React.FC<ParetoProps> = ({
                   y={paddingTop + innerHeight + 16}
                   textAnchor="end"
                   transform={`rotate(-35, ${x + barWidth / 2}, ${paddingTop + innerHeight + 16})`}
-                  fill={isSelected ? '#00d8f6' : '#888'}
+                  fill={isSelected ? 'var(--chart-3)' : 'var(--text-muted)'}
                   fontSize="10"
                   className="truncate max-w-[80px]"
                 >
@@ -565,7 +566,7 @@ export const Pareto8020Chart: React.FC<ParetoProps> = ({
           })}
 
           {/* Cumulative Percentage Line */}
-          <path d={cumLinePath} fill="none" stroke="#fbbf24" strokeWidth="2.25" strokeLinecap="round" />
+          <path d={cumLinePath} fill="none" stroke="var(--chart-4)" strokeWidth="2.25" strokeLinecap="round" />
 
           {/* Cumulative Points */}
           {cumCoords.map((pt, i) => (
@@ -574,8 +575,8 @@ export const Pareto8020Chart: React.FC<ParetoProps> = ({
               cx={pt.x}
               cy={pt.y}
               r="4"
-              fill="#141414"
-              stroke="#fbbf24"
+              fill="var(--bg-card)"
+              stroke="var(--chart-4)"
               strokeWidth="2"
             />
           ))}
@@ -594,7 +595,7 @@ interface DonutProps {
   onSelectCategory?: (category: string) => void;
 }
 
-const PALETTE = ['#0284C7', '#00d8f6', '#38bdf8', '#818cf8', '#f59e0b', '#ec4899', '#6366f1'];
+const PALETTE = ['var(--chart-3)', 'var(--chart-3)', 'var(--chart-3)', 'var(--chart-2)', 'var(--chart-4)', 'var(--chart-5)', 'var(--chart-2)'];
 
 export const DonutCompositionChart: React.FC<DonutProps> = ({
   data,
@@ -613,7 +614,7 @@ export const DonutCompositionChart: React.FC<DonutProps> = ({
 
   if (topItems.length === 0) {
     return (
-      <div className="h-64 flex items-center justify-center text-xs text-gray-500 bg-[#141414] rounded-xl border border-[#262626]">
+      <div className="h-64 flex items-center justify-center text-xs text-muted bg-card rounded-xl border border-subtle">
         No dimensional data to render composition donut.
       </div>
     );
@@ -641,7 +642,7 @@ export const DonutCompositionChart: React.FC<DonutProps> = ({
   const activeItem = hoverIdx !== null ? slices[hoverIdx] : null;
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center bg-[#141414] rounded-2xl border border-[#262626] p-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center bg-card rounded-2xl border border-subtle p-4">
       {/* SVG Donut */}
       <div className="relative flex items-center justify-center">
         <svg viewBox="0 0 180 180" className="w-44 h-44 transform -rotate-90">
@@ -650,7 +651,7 @@ export const DonutCompositionChart: React.FC<DonutProps> = ({
             cy="90"
             r={radius}
             fill="transparent"
-            stroke="#222"
+            stroke="var(--border-subtle)"
             strokeWidth="24"
           />
           {slices.map((s, i) => (
@@ -676,15 +677,15 @@ export const DonutCompositionChart: React.FC<DonutProps> = ({
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none p-2">
           {activeItem ? (
             <>
-              <span className="text-[10px] text-gray-400 font-mono truncate max-w-[90px]">{activeItem.category}</span>
-              <span className="text-base font-bold text-white font-mono">{activeItem.share}%</span>
-              <span className="text-[9px] text-[#21F1A8] font-mono">{activeItem.value.toLocaleString()}</span>
+              <span className="text-[10px] text-secondary font-mono truncate max-w-[90px]">{activeItem.category}</span>
+              <span className="text-base font-bold text-primary font-mono">{activeItem.share}%</span>
+              <span className="text-[9px] text-accent font-mono">{activeItem.value.toLocaleString()}</span>
             </>
           ) : (
             <>
-              <span className="text-[10px] text-gray-400 uppercase font-mono">Total</span>
-              <span className="text-base font-extrabold text-white font-mono">{total.toLocaleString()}</span>
-              <span className="text-[9px] text-gray-500 font-mono">{metricName}</span>
+              <span className="text-[10px] text-secondary uppercase font-mono">Total</span>
+              <span className="text-base font-extrabold text-primary font-mono">{total.toLocaleString()}</span>
+              <span className="text-[9px] text-muted font-mono">{metricName}</span>
             </>
           )}
         </div>
@@ -699,16 +700,16 @@ export const DonutCompositionChart: React.FC<DonutProps> = ({
             onMouseEnter={() => setHoverIdx(idx)}
             onMouseLeave={() => setHoverIdx(null)}
             className={`flex items-center justify-between p-1.5 rounded-lg cursor-pointer transition-colors ${
-              hoverIdx === idx ? 'bg-[#222]' : 'hover:bg-[#1a1a1a]'
+              hoverIdx === idx ? 'bg-elevated' : 'hover:bg-card'
             }`}
           >
             <div className="flex items-center gap-2 min-w-0">
               <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: s.color }}></span>
-              <span className="text-gray-300 truncate max-w-[110px]">{s.category}</span>
+              <span className="text-secondary truncate max-w-[110px]">{s.category}</span>
             </div>
             <div className="text-right font-mono shrink-0 pl-2">
-              <span className="text-white font-semibold">{s.share}%</span>
-              <span className="text-gray-500 text-[10px] block">{s.value.toLocaleString()}</span>
+              <span className="text-primary font-semibold">{s.share}%</span>
+              <span className="text-muted text-[10px] block">{s.value.toLocaleString()}</span>
             </div>
           </div>
         ))}
@@ -794,7 +795,7 @@ export const StatisticalBoxplotInspector: React.FC<StatsInspectorProps> = ({ row
   }, [selectedCol, rows]);
 
   if (numericCols.length === 0 || !stats) {
-    return <div className="p-4 text-xs text-gray-500">No numeric variables available for distribution audit.</div>;
+    return <div className="p-4 text-xs text-muted">No numeric variables available for distribution audit.</div>;
   }
 
   // Visual Box Plot scaling
@@ -802,20 +803,20 @@ export const StatisticalBoxplotInspector: React.FC<StatsInspectorProps> = ({ row
   const getPct = (val: number) => Math.max(0, Math.min(100, ((val - stats.min) / range) * 100));
 
   return (
-    <div className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-5 space-y-4">
+    <div className="bg-card border border-subtle rounded-2xl p-5 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="font-heading text-lg font-bold text-white tracking-wide uppercase flex items-center gap-2">
-            <BarChart3 className="w-4 h-4 text-[#21F1A8]" />
+          <h3 className="font-heading text-lg font-bold text-primary tracking-wide uppercase flex items-center gap-2">
+            <BarChart3 className="w-4 h-4 text-accent" />
             STATISTICAL DISTRIBUTION & FIVE-NUMBER SUMMARY
           </h3>
-          <p className="text-xs text-gray-400">Parametric and non-parametric data dispersion analytics.</p>
+          <p className="text-xs text-secondary">Parametric and non-parametric data dispersion analytics.</p>
         </div>
 
         <select
           value={selectedCol}
           onChange={(e) => setSelectedCol(e.target.value)}
-          className="bg-[#141414] text-xs text-[#21F1A8] font-mono px-3 py-1.5 rounded-lg border border-[#333] focus:border-[#21F1A8] focus:outline-none"
+          className="bg-card text-xs text-accent font-mono px-3 py-1.5 rounded-lg border border-subtle focus:border-teal-500/40 focus:outline-none"
         >
           {numericCols.map(c => (
             <option key={c.name} value={c.name}>{c.name}</option>
@@ -824,8 +825,8 @@ export const StatisticalBoxplotInspector: React.FC<StatsInspectorProps> = ({ row
       </div>
 
       {/* Visual Boxplot Horizontal representation */}
-      <div className="space-y-2 bg-[#141414] p-4 rounded-xl border border-[#262626]">
-        <div className="flex justify-between text-[11px] text-gray-400 font-mono">
+      <div className="space-y-2 bg-card p-4 rounded-xl border border-subtle">
+        <div className="flex justify-between text-[11px] text-secondary font-mono">
           <span>Min: {stats.min.toLocaleString()}</span>
           <span>Median: {stats.median.toLocaleString()}</span>
           <span>Max: {stats.max.toLocaleString()}</span>
@@ -833,11 +834,11 @@ export const StatisticalBoxplotInspector: React.FC<StatsInspectorProps> = ({ row
 
         <div className="relative h-12 flex items-center">
           {/* Whiskers line (Min to Max) */}
-          <div className="absolute w-full h-1 bg-[#282828] rounded"></div>
+          <div className="absolute w-full h-1 bg-elevated rounded"></div>
 
           {/* Interquartile Box (Q1 to Q3) */}
           <div 
-            className="absolute h-8 bg-[#21F1A8]/20 border-2 border-[#21F1A8] rounded"
+            className="absolute h-8 bg-accent border-2 border-teal-500/40 rounded"
             style={{
               left: `${getPct(stats.q1)}%`,
               width: `${Math.max(2, getPct(stats.q3) - getPct(stats.q1))}%`
@@ -861,7 +862,7 @@ export const StatisticalBoxplotInspector: React.FC<StatsInspectorProps> = ({ row
           )}
         </div>
 
-        <div className="flex justify-between text-[10px] text-gray-500 font-mono">
+        <div className="flex justify-between text-[10px] text-muted font-mono">
           <span>Q1 (25%): {stats.q1.toLocaleString()}</span>
           <span>IQR: {stats.iqr.toLocaleString()}</span>
           <span>Q3 (75%): {stats.q3.toLocaleString()}</span>
@@ -870,23 +871,23 @@ export const StatisticalBoxplotInspector: React.FC<StatsInspectorProps> = ({ row
 
       {/* Metrics Cards Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs font-mono">
-        <div className="p-2.5 rounded-lg bg-[#141414] border border-[#262626]">
-          <span className="text-gray-500 text-[10px] block">Mean (Average)</span>
-          <span className="text-white font-bold text-sm">{stats.mean.toLocaleString()}</span>
+        <div className="p-2.5 rounded-lg bg-card border border-subtle">
+          <span className="text-muted text-[10px] block">Mean (Average)</span>
+          <span className="text-primary font-bold text-sm">{stats.mean.toLocaleString()}</span>
         </div>
-        <div className="p-2.5 rounded-lg bg-[#141414] border border-[#262626]">
-          <span className="text-gray-500 text-[10px] block">Std Deviation (σ)</span>
-          <span className="text-[#21F1A8] font-bold text-sm">±{stats.stdDev.toLocaleString()}</span>
+        <div className="p-2.5 rounded-lg bg-card border border-subtle">
+          <span className="text-muted text-[10px] block">Std Deviation (σ)</span>
+          <span className="text-accent font-bold text-sm">±{stats.stdDev.toLocaleString()}</span>
         </div>
-        <div className="p-2.5 rounded-lg bg-[#141414] border border-[#262626]">
-          <span className="text-gray-500 text-[10px] block">Skewness Index</span>
-          <span className={`font-bold text-sm ${Math.abs(stats.skewness) > 1 ? 'text-amber-400' : 'text-white'}`}>
+        <div className="p-2.5 rounded-lg bg-card border border-subtle">
+          <span className="text-muted text-[10px] block">Skewness Index</span>
+          <span className={`font-bold text-sm ${Math.abs(stats.skewness) > 1 ? 'text-amber-400' : 'text-primary'}`}>
             {stats.skewness} ({stats.skewness > 0 ? 'Right Skew' : stats.skewness < 0 ? 'Left Skew' : 'Normal'})
           </span>
         </div>
-        <div className="p-2.5 rounded-lg bg-[#141414] border border-[#262626]">
-          <span className="text-gray-500 text-[10px] block">Outlier Detection</span>
-          <span className={`font-bold text-sm ${stats.outlierCount > 0 ? 'text-red-400' : 'text-[#21F1A8]'}`}>
+        <div className="p-2.5 rounded-lg bg-card border border-subtle">
+          <span className="text-muted text-[10px] block">Outlier Detection</span>
+          <span className={`font-bold text-sm ${stats.outlierCount > 0 ? 'text-red-400' : 'text-accent'}`}>
             {stats.outlierCount} records ({((stats.outlierCount / stats.n) * 100).toFixed(1)}%)
           </span>
         </div>
@@ -932,33 +933,33 @@ export const WhatIfScenarioSimulator: React.FC<WhatIfProps> = ({
   };
 
   return (
-    <div className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-5 space-y-5">
+    <div className="bg-card border border-subtle rounded-2xl p-5 space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="space-y-1">
-          <h3 className="font-heading text-lg font-bold text-white tracking-wide uppercase flex items-center gap-2">
-            <Sliders className="w-4 h-4 text-[#21F1A8]" />
+          <h3 className="font-heading text-lg font-bold text-primary tracking-wide uppercase flex items-center gap-2">
+            <Sliders className="w-4 h-4 text-accent" />
             WHAT-IF BUSINESS SCENARIO SIMULATOR
           </h3>
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-secondary">
             Model business levers (Pricing, Market Volume, COGS) to project financial outcome deltas in real-time.
           </p>
         </div>
 
         <button
           onClick={resetAll}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#252525] hover:bg-[#333] text-gray-300 text-xs transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-elevated hover:bg-elevated text-secondary text-xs transition-colors"
         >
           <RotateCcw className="w-3.5 h-3.5" /> Reset Levers
         </button>
       </div>
 
       {/* Sliders Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 bg-[#141414] p-4 rounded-xl border border-[#262626]">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 bg-card p-4 rounded-xl border border-subtle">
         {/* Price Slider */}
         <div className="space-y-2">
           <div className="flex justify-between text-xs font-mono">
-            <span className="text-gray-300 font-medium">Price Adjustment</span>
-            <span className={`font-bold ${priceShift > 0 ? 'text-[#21F1A8]' : priceShift < 0 ? 'text-red-400' : 'text-gray-400'}`}>
+            <span className="text-secondary font-medium">Price Adjustment</span>
+            <span className={`font-bold ${priceShift > 0 ? 'text-accent' : priceShift < 0 ? 'text-red-400' : 'text-secondary'}`}>
               {priceShift > 0 ? '+' : ''}{priceShift}%
             </span>
           </div>
@@ -968,9 +969,9 @@ export const WhatIfScenarioSimulator: React.FC<WhatIfProps> = ({
             max="30" 
             value={priceShift} 
             onChange={(e) => setPriceShift(Number(e.target.value))}
-            className="w-full accent-[#21F1A8] cursor-pointer"
+            className="w-full accent-[var(--chart-1)] cursor-pointer"
           />
-          <div className="flex justify-between text-[10px] text-gray-500 font-mono">
+          <div className="flex justify-between text-[10px] text-muted font-mono">
             <span>-30%</span>
             <span>0%</span>
             <span>+30%</span>
@@ -980,8 +981,8 @@ export const WhatIfScenarioSimulator: React.FC<WhatIfProps> = ({
         {/* Volume Slider */}
         <div className="space-y-2">
           <div className="flex justify-between text-xs font-mono">
-            <span className="text-gray-300 font-medium">Demand / Volume Shift</span>
-            <span className={`font-bold ${volumeShift > 0 ? 'text-[#21F1A8]' : volumeShift < 0 ? 'text-red-400' : 'text-gray-400'}`}>
+            <span className="text-secondary font-medium">Demand / Volume Shift</span>
+            <span className={`font-bold ${volumeShift > 0 ? 'text-accent' : volumeShift < 0 ? 'text-red-400' : 'text-secondary'}`}>
               {volumeShift > 0 ? '+' : ''}{volumeShift}%
             </span>
           </div>
@@ -991,9 +992,9 @@ export const WhatIfScenarioSimulator: React.FC<WhatIfProps> = ({
             max="50" 
             value={volumeShift} 
             onChange={(e) => setVolumeShift(Number(e.target.value))}
-            className="w-full accent-[#21F1A8] cursor-pointer"
+            className="w-full accent-[var(--chart-1)] cursor-pointer"
           />
-          <div className="flex justify-between text-[10px] text-gray-500 font-mono">
+          <div className="flex justify-between text-[10px] text-muted font-mono">
             <span>-50%</span>
             <span>0%</span>
             <span>+50%</span>
@@ -1003,8 +1004,8 @@ export const WhatIfScenarioSimulator: React.FC<WhatIfProps> = ({
         {/* COGS Slider */}
         <div className="space-y-2">
           <div className="flex justify-between text-xs font-mono">
-            <span className="text-gray-300 font-medium">COGS / Unit Cost</span>
-            <span className={`font-bold ${costShift > 0 ? 'text-red-400' : costShift < 0 ? 'text-[#21F1A8]' : 'text-gray-400'}`}>
+            <span className="text-secondary font-medium">COGS / Unit Cost</span>
+            <span className={`font-bold ${costShift > 0 ? 'text-red-400' : costShift < 0 ? 'text-accent' : 'text-secondary'}`}>
               {costShift > 0 ? '+' : ''}{costShift}%
             </span>
           </div>
@@ -1016,7 +1017,7 @@ export const WhatIfScenarioSimulator: React.FC<WhatIfProps> = ({
             onChange={(e) => setCostShift(Number(e.target.value))}
             className="w-full accent-amber-400 cursor-pointer"
           />
-          <div className="flex justify-between text-[10px] text-gray-500 font-mono">
+          <div className="flex justify-between text-[10px] text-muted font-mono">
             <span>-30%</span>
             <span>0%</span>
             <span>+30%</span>
@@ -1027,35 +1028,35 @@ export const WhatIfScenarioSimulator: React.FC<WhatIfProps> = ({
       {/* Projection Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Revenue Projection */}
-        <div className="bg-[#141414] border border-[#262626] rounded-xl p-4 space-y-2">
-          <span className="text-xs text-gray-400 font-mono">Projected Total Revenue</span>
+        <div className="bg-card border border-subtle rounded-xl p-4 space-y-2">
+          <span className="text-xs text-secondary font-mono">Projected Total Revenue</span>
           <div className="flex items-baseline justify-between">
-            <span className="font-heading text-2xl font-bold text-white font-mono">
+            <span className="font-heading text-2xl font-bold text-primary font-mono">
               ${Math.round(projectedRevenue).toLocaleString()}
             </span>
-            <span className={`text-xs font-mono font-bold flex items-center ${revDelta >= 0 ? 'text-[#21F1A8]' : 'text-red-400'}`}>
+            <span className={`text-xs font-mono font-bold flex items-center ${revDelta >= 0 ? 'text-accent' : 'text-red-400'}`}>
               {revDelta >= 0 ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />}
               {revDelta >= 0 ? '+' : ''}{Math.round(revDelta).toLocaleString()} ({revDeltaPct.toFixed(1)}%)
             </span>
           </div>
-          <div className="text-[10px] text-gray-500">
+          <div className="text-[10px] text-muted">
             Baseline: ${Math.round(baselineRevenue).toLocaleString()}
           </div>
         </div>
 
         {/* Profit Projection */}
-        <div className="bg-[#141414] border border-[#262626] rounded-xl p-4 space-y-2">
-          <span className="text-xs text-gray-400 font-mono">Projected Operating Margin / Profit</span>
+        <div className="bg-card border border-subtle rounded-xl p-4 space-y-2">
+          <span className="text-xs text-secondary font-mono">Projected Operating Margin / Profit</span>
           <div className="flex items-baseline justify-between">
-            <span className="font-heading text-2xl font-bold text-white font-mono">
+            <span className="font-heading text-2xl font-bold text-primary font-mono">
               ${Math.round(projectedProfit).toLocaleString()}
             </span>
-            <span className={`text-xs font-mono font-bold flex items-center ${profitDelta >= 0 ? 'text-[#21F1A8]' : 'text-red-400'}`}>
+            <span className={`text-xs font-mono font-bold flex items-center ${profitDelta >= 0 ? 'text-accent' : 'text-red-400'}`}>
               {profitDelta >= 0 ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />}
               {profitDelta >= 0 ? '+' : ''}{Math.round(profitDelta).toLocaleString()} ({profitDeltaPct.toFixed(1)}%)
             </span>
           </div>
-          <div className="text-[10px] text-gray-500">
+          <div className="text-[10px] text-muted">
             Baseline: ${Math.round(baselineProfit).toLocaleString()}
           </div>
         </div>
@@ -1175,69 +1176,69 @@ export const MultiDimensionalPivotTable: React.FC<PivotProps> = ({ rows, columns
   };
 
   if (stringCols.length === 0 || numCols.length === 0) {
-    return <div className="p-4 text-xs text-gray-500">Need at least 1 string and 1 numeric column for Pivot analysis.</div>;
+    return <div className="p-4 text-xs text-muted">Need at least 1 string and 1 numeric column for Pivot analysis.</div>;
   }
 
   return (
-    <div className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-5 space-y-4">
+    <div className="bg-card border border-subtle rounded-2xl p-5 space-y-4">
       {/* Controls */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="font-heading text-lg font-bold text-white tracking-wide uppercase flex items-center gap-2">
-            <Table2 className="w-4 h-4 text-[#21F1A8]" />
+          <h3 className="font-heading text-lg font-bold text-primary tracking-wide uppercase flex items-center gap-2">
+            <Table2 className="w-4 h-4 text-accent" />
             MULTI-DIMENSIONAL CROSS-TAB / PIVOT MATRIX
           </h3>
-          <p className="text-xs text-gray-400">Slice and dice metrics across dual orthogonal categorical axes.</p>
+          <p className="text-xs text-secondary">Slice and dice metrics across dual orthogonal categorical axes.</p>
         </div>
 
         <button
           onClick={exportPivotCSV}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#252525] hover:bg-[#333] text-gray-300 text-xs transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-elevated hover:bg-elevated text-secondary text-xs transition-colors"
         >
-          <Download className="w-3.5 h-3.5 text-[#21F1A8]" /> Export Pivot CSV
+          <Download className="w-3.5 h-3.5 text-accent" /> Export Pivot CSV
         </button>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-[#141414] p-3 rounded-xl border border-[#262626] text-xs">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-card p-3 rounded-xl border border-subtle text-xs">
         <div>
-          <label className="text-gray-400 block text-[10px] mb-1 uppercase font-mono">Row Dimension</label>
+          <label className="text-secondary block text-[10px] mb-1 uppercase font-mono">Row Dimension</label>
           <select 
             value={rowDim} 
             onChange={(e) => setRowDim(e.target.value)}
-            className="w-full bg-[#1b1b1b] text-white p-2 rounded-lg border border-[#333] focus:border-[#21F1A8] focus:outline-none"
+            className="w-full bg-card text-primary p-2 rounded-lg border border-subtle focus:border-teal-500/40 focus:outline-none"
           >
             {stringCols.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
           </select>
         </div>
 
         <div>
-          <label className="text-gray-400 block text-[10px] mb-1 uppercase font-mono">Column Dimension</label>
+          <label className="text-secondary block text-[10px] mb-1 uppercase font-mono">Column Dimension</label>
           <select 
             value={colDim} 
             onChange={(e) => setColDim(e.target.value)}
-            className="w-full bg-[#1b1b1b] text-white p-2 rounded-lg border border-[#333] focus:border-[#21F1A8] focus:outline-none"
+            className="w-full bg-card text-primary p-2 rounded-lg border border-subtle focus:border-teal-500/40 focus:outline-none"
           >
             {stringCols.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
           </select>
         </div>
 
         <div>
-          <label className="text-gray-400 block text-[10px] mb-1 uppercase font-mono">Metric Field</label>
+          <label className="text-secondary block text-[10px] mb-1 uppercase font-mono">Metric Field</label>
           <select 
             value={valMetric} 
             onChange={(e) => setValMetric(e.target.value)}
-            className="w-full bg-[#1b1b1b] text-white p-2 rounded-lg border border-[#333] focus:border-[#21F1A8] focus:outline-none"
+            className="w-full bg-card text-primary p-2 rounded-lg border border-subtle focus:border-teal-500/40 focus:outline-none"
           >
             {numCols.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
           </select>
         </div>
 
         <div>
-          <label className="text-gray-400 block text-[10px] mb-1 uppercase font-mono">Aggregation</label>
+          <label className="text-secondary block text-[10px] mb-1 uppercase font-mono">Aggregation</label>
           <select 
             value={aggType} 
             onChange={(e) => setAggType(e.target.value as any)}
-            className="w-full bg-[#1b1b1b] text-[#21F1A8] font-bold p-2 rounded-lg border border-[#333] focus:border-[#21F1A8] focus:outline-none"
+            className="w-full bg-card text-accent font-bold p-2 rounded-lg border border-subtle focus:border-teal-500/40 focus:outline-none"
           >
             <option value="sum">SUM</option>
             <option value="avg">AVERAGE</option>
@@ -1247,51 +1248,51 @@ export const MultiDimensionalPivotTable: React.FC<PivotProps> = ({ rows, columns
       </div>
 
       {/* Cross-tab table with heat-map opacity */}
-      <div className="overflow-x-auto rounded-xl border border-[#262626]">
+      <div className="overflow-x-auto rounded-xl border border-subtle">
         <table className="w-full text-xs text-left border-collapse">
           <thead>
-            <tr className="bg-[#141414] text-gray-400 border-b border-[#282828] font-mono">
-              <th className="p-3 font-semibold text-white">{rowDim} \ {colDim}</th>
+            <tr className="bg-card text-secondary border-b border-subtle font-mono">
+              <th className="p-3 font-semibold text-primary">{rowDim} \ {colDim}</th>
               {colHeaders.map(ch => (
                 <th key={ch} className="p-3 font-semibold text-right">{ch}</th>
               ))}
-              <th className="p-3 font-semibold text-right text-[#21F1A8] bg-[#1a231f]">Total</th>
+              <th className="p-3 font-semibold text-right text-accent bg-accent">Total</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#242424] font-mono">
+          <tbody className="divide-y divide-[var(--border-subtle)] font-mono">
             {rowHeaders.map(rh => (
-              <tr key={rh} className="hover:bg-[#1a1a1a] transition-colors">
-                <td className="p-3 font-medium text-gray-200 bg-[#161616] whitespace-nowrap">{rh}</td>
+              <tr key={rh} className="hover:bg-card transition-colors">
+                <td className="p-3 font-medium text-primary bg-card whitespace-nowrap">{rh}</td>
                 {colHeaders.map(ch => {
                   const val = matrix[rh]?.[ch] || 0;
                   const intensity = Math.min(0.65, (val / maxCellValue) * 0.65);
                   return (
                     <td 
                       key={ch} 
-                      className="p-3 text-right text-gray-200"
+                      className="p-3 text-right text-primary"
                       style={{
-                        backgroundColor: val > 0 ? `rgba(33, 241, 168, ${intensity})` : undefined
+                        backgroundColor: val > 0 ? `color-mix(in srgb, var(--chart-1) 25%, transparent)` : undefined
                       }}
                     >
                       {val > 0 ? val.toLocaleString() : '-'}
                     </td>
                   );
                 })}
-                <td className="p-3 text-right font-bold text-white bg-[#161f1b]">
+                <td className="p-3 text-right font-bold text-primary bg-accent">
                   {(rowTotals[rh] || 0).toLocaleString()}
                 </td>
               </tr>
             ))}
           </tbody>
           <tfoot>
-            <tr className="bg-[#141414] text-gray-300 font-mono font-bold border-t border-[#333]">
-              <td className="p-3 text-white uppercase">Col Summary</td>
+            <tr className="bg-card text-secondary font-mono font-bold border-t border-subtle">
+              <td className="p-3 text-primary uppercase">Col Summary</td>
               {colHeaders.map(ch => (
-                <td key={ch} className="p-3 text-right text-[#21F1A8]">
+                <td key={ch} className="p-3 text-right text-accent">
                   {(colTotals[ch] || 0).toLocaleString()}
                 </td>
               ))}
-              <td className="p-3 text-right text-[#21F1A8] bg-[#1a231f] text-sm">
+              <td className="p-3 text-right text-accent bg-accent text-sm">
                 {grandTotal.toLocaleString()}
               </td>
             </tr>
@@ -1448,7 +1449,7 @@ export const ScatterPlotChart: React.FC<ScatterPlotProps> = ({
 
   if (numericCols.length < 2) {
     return (
-      <div className="p-8 text-center text-xs text-gray-500 bg-[#1c1c1c] rounded-2xl border border-[#2d2d2d]">
+      <div className="p-8 text-center text-xs text-muted bg-card rounded-2xl border border-subtle">
         Scatter Plot requires at least 2 numerical dimensions in the schema to analyze correlation.
       </div>
     );
@@ -1489,12 +1490,12 @@ export const ScatterPlotChart: React.FC<ScatterPlotProps> = ({
     : 'No Linear Correlation';
 
   const corrColor = corrMagnitude >= 0.7 
-    ? '#21F1A8' 
+    ? 'var(--chart-1)' 
     : corrMagnitude >= 0.4 
-    ? '#00d8f6' 
+    ? 'var(--chart-3)' 
     : corrMagnitude >= 0.2 
-    ? '#f59e0b' 
-    : '#888';
+    ? 'var(--chart-4)' 
+    : 'var(--text-muted)';
 
   const exportCSV = () => {
     const csvLines = [`Category,${xField},${yField}${sizeField ? `,${sizeField}` : ''}`];
@@ -1511,70 +1512,70 @@ export const ScatterPlotChart: React.FC<ScatterPlotProps> = ({
   };
 
   return (
-    <div className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-5 space-y-4">
+    <div className="bg-card border border-subtle rounded-2xl p-5 space-y-4">
       {/* Header & Controls */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="space-y-0.5">
-          <h3 className="font-heading text-lg font-bold text-white tracking-wide uppercase flex items-center gap-2">
-            <CircleDot className="w-4 h-4 text-[#21F1A8]" />
+          <h3 className="font-heading text-lg font-bold text-primary tracking-wide uppercase flex items-center gap-2">
+            <CircleDot className="w-4 h-4 text-accent" />
             {title}
           </h3>
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-secondary">
             Bivariate statistical dispersion and linear ordinary least-squares regression trendline.
           </p>
         </div>
 
         <div className="flex items-center gap-2">
           {/* Correlation Badge */}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#141414] border border-[#2d2d2d] text-xs font-mono">
-            <span className="text-gray-400">Pearson r:</span>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-card border border-subtle text-xs font-mono">
+            <span className="text-secondary">Pearson r:</span>
             <span className="font-bold" style={{ color: corrColor }}>
               {correlation > 0 ? `+${correlation}` : correlation}
             </span>
-            <span className="text-[10px] text-gray-500 hidden sm:inline">({corrText})</span>
-            <span className="text-[10px] text-gray-500 font-mono pl-1 border-l border-[#333]">R²: {rSquared}</span>
+            <span className="text-[10px] text-muted hidden sm:inline">({corrText})</span>
+            <span className="text-[10px] text-muted font-mono pl-1 border-l border-subtle">R²: {rSquared}</span>
           </div>
 
           <button
             onClick={exportCSV}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#252525] hover:bg-[#333] text-gray-300 text-xs transition-colors"
+            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-elevated hover:bg-elevated text-secondary text-xs transition-colors"
             title="Export scatter dataset to CSV"
           >
-            <Download className="w-3.5 h-3.5 text-[#21F1A8]" />
+            <Download className="w-3.5 h-3.5 text-accent" />
           </button>
         </div>
       </div>
 
       {/* Axis Selectors */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-[#141414] p-3 rounded-xl border border-[#262626] text-xs">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-card p-3 rounded-xl border border-subtle text-xs">
         <div>
-          <label className="text-gray-400 block text-[10px] mb-1 uppercase font-mono">X-Axis (Horizontal)</label>
+          <label className="text-secondary block text-[10px] mb-1 uppercase font-mono">X-Axis (Horizontal)</label>
           <select
             value={xField}
             onChange={(e) => setXField(e.target.value)}
-            className="w-full bg-[#1b1b1b] text-[#21F1A8] font-mono p-2 rounded-lg border border-[#333] focus:border-[#21F1A8] focus:outline-none"
+            className="w-full bg-card text-accent font-mono p-2 rounded-lg border border-subtle focus:border-teal-500/40 focus:outline-none"
           >
             {numericCols.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
           </select>
         </div>
 
         <div>
-          <label className="text-gray-400 block text-[10px] mb-1 uppercase font-mono">Y-Axis (Vertical)</label>
+          <label className="text-secondary block text-[10px] mb-1 uppercase font-mono">Y-Axis (Vertical)</label>
           <select
             value={yField}
             onChange={(e) => setYField(e.target.value)}
-            className="w-full bg-[#1b1b1b] text-cyan-400 font-mono p-2 rounded-lg border border-[#333] focus:border-cyan-400 focus:outline-none"
+            className="w-full bg-card text-cyan-400 font-mono p-2 rounded-lg border border-subtle focus:border-cyan-400 focus:outline-none"
           >
             {numericCols.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
           </select>
         </div>
 
         <div>
-          <label className="text-gray-400 block text-[10px] mb-1 uppercase font-mono">Label / Dimension</label>
+          <label className="text-secondary block text-[10px] mb-1 uppercase font-mono">Label / Dimension</label>
           <select
             value={catField}
             onChange={(e) => setCatField(e.target.value)}
-            className="w-full bg-[#1b1b1b] text-white p-2 rounded-lg border border-[#333] focus:border-[#21F1A8] focus:outline-none"
+            className="w-full bg-card text-primary p-2 rounded-lg border border-subtle focus:border-teal-500/40 focus:outline-none"
           >
             <option value="">(Row Index)</option>
             {stringCols.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
@@ -1582,11 +1583,11 @@ export const ScatterPlotChart: React.FC<ScatterPlotProps> = ({
         </div>
 
         <div>
-          <label className="text-gray-400 block text-[10px] mb-1 uppercase font-mono">Bubble Size (Optional)</label>
+          <label className="text-secondary block text-[10px] mb-1 uppercase font-mono">Bubble Size (Optional)</label>
           <select
             value={sizeField}
             onChange={(e) => setSizeField(e.target.value)}
-            className="w-full bg-[#1b1b1b] text-amber-400 font-mono p-2 rounded-lg border border-[#333] focus:border-amber-400 focus:outline-none"
+            className="w-full bg-card text-amber-400 font-mono p-2 rounded-lg border border-subtle focus:border-amber-400 focus:outline-none"
           >
             <option value="">(Uniform Size)</option>
             {numericCols.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
@@ -1595,7 +1596,7 @@ export const ScatterPlotChart: React.FC<ScatterPlotProps> = ({
       </div>
 
       {/* SVG Scatterplot Canvas */}
-      <div className="relative w-full bg-[#141414] rounded-2xl border border-[#262626] p-2 overflow-hidden select-none">
+      <div className="relative w-full bg-card rounded-2xl border border-subtle p-2 overflow-hidden select-none">
         <svg 
           viewBox={`0 0 ${width} ${height}`} 
           className="w-full h-72 sm:h-80 overflow-visible"
@@ -1603,8 +1604,8 @@ export const ScatterPlotChart: React.FC<ScatterPlotProps> = ({
         >
           <defs>
             <linearGradient id="scatterGlow" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stopColor="#21F1A8" stopOpacity="0.8" />
-              <stop offset="100%" stopColor="#00d8f6" stopOpacity="0.8" />
+              <stop offset="0%" stopColor="var(--chart-1)" stopOpacity="0.8" />
+              <stop offset="100%" stopColor="var(--chart-3)" stopOpacity="0.8" />
             </linearGradient>
           </defs>
 
@@ -1614,8 +1615,8 @@ export const ScatterPlotChart: React.FC<ScatterPlotProps> = ({
             const val = yMin + (yMax - yMin) * pct;
             return (
               <g key={`y-grid-${i}`}>
-                <line x1={paddingLeft} y1={y} x2={width - paddingRight} y2={y} stroke="#222" strokeDasharray="3,3" />
-                <text x={paddingLeft - 8} y={y + 3.5} textAnchor="end" fill="#666" fontSize="10" fontFamily="monospace">
+                <line x1={paddingLeft} y1={y} x2={width - paddingRight} y2={y} stroke="var(--border-subtle)" strokeDasharray="3,3" />
+                <text x={paddingLeft - 8} y={y + 3.5} textAnchor="end" fill="var(--text-muted)" fontSize="10" fontFamily="monospace">
                   {Math.round(val).toLocaleString()}
                 </text>
               </g>
@@ -1628,8 +1629,8 @@ export const ScatterPlotChart: React.FC<ScatterPlotProps> = ({
             const val = xMin + (xMax - xMin) * pct;
             return (
               <g key={`x-grid-${i}`}>
-                <line x1={x} y1={paddingTop} x2={x} y2={paddingTop + innerHeight} stroke="#222" strokeDasharray="3,3" />
-                <text x={x} y={paddingTop + innerHeight + 18} textAnchor="middle" fill="#666" fontSize="10" fontFamily="monospace">
+                <line x1={x} y1={paddingTop} x2={x} y2={paddingTop + innerHeight} stroke="var(--border-subtle)" strokeDasharray="3,3" />
+                <text x={x} y={paddingTop + innerHeight + 18} textAnchor="middle" fill="var(--text-muted)" fontSize="10" fontFamily="monospace">
                   {Math.round(val).toLocaleString()}
                 </text>
               </g>
@@ -1641,7 +1642,7 @@ export const ScatterPlotChart: React.FC<ScatterPlotProps> = ({
             x={paddingLeft + innerWidth / 2} 
             y={paddingTop + innerHeight + 38} 
             textAnchor="middle" 
-            fill="#aaa" 
+            fill="var(--text-secondary)" 
             fontSize="11" 
             fontFamily="monospace"
             fontWeight="bold"
@@ -1654,7 +1655,7 @@ export const ScatterPlotChart: React.FC<ScatterPlotProps> = ({
             y={18} 
             transform="rotate(-90)" 
             textAnchor="middle" 
-            fill="#aaa" 
+            fill="var(--text-secondary)" 
             fontSize="11" 
             fontFamily="monospace"
             fontWeight="bold"
@@ -1669,7 +1670,7 @@ export const ScatterPlotChart: React.FC<ScatterPlotProps> = ({
               y1={svgTrendY1}
               x2={svgTrendX2}
               y2={svgTrendY2}
-              stroke="#fbbf24"
+              stroke="var(--chart-4)"
               strokeWidth="2"
               strokeDasharray="5,4"
               className="opacity-80"
@@ -1698,8 +1699,8 @@ export const ScatterPlotChart: React.FC<ScatterPlotProps> = ({
                 {/* Crosshair guide on hover */}
                 {isHovered && (
                   <>
-                    <line x1={paddingLeft} y1={cy} x2={width - paddingRight} y2={cy} stroke="#21F1A8" strokeWidth="1" strokeDasharray="2,2" />
-                    <line x1={cx} y1={paddingTop} x2={cx} y2={paddingTop + innerHeight} stroke="#21F1A8" strokeWidth="1" strokeDasharray="2,2" />
+                    <line x1={paddingLeft} y1={cy} x2={width - paddingRight} y2={cy} stroke="var(--chart-1)" strokeWidth="1" strokeDasharray="2,2" />
+                    <line x1={cx} y1={paddingTop} x2={cx} y2={paddingTop + innerHeight} stroke="var(--chart-1)" strokeWidth="1" strokeDasharray="2,2" />
                   </>
                 )}
 
@@ -1708,7 +1709,7 @@ export const ScatterPlotChart: React.FC<ScatterPlotProps> = ({
                   cx={cx}
                   cy={cy}
                   r={isHovered ? r + 5 : r + 1}
-                  fill={isHovered ? '#21F1A8' : 'transparent'}
+                  fill={isHovered ? 'var(--chart-1)' : 'transparent'}
                   opacity={isHovered ? 0.35 : 0}
                   className="transition-all"
                 />
@@ -1718,8 +1719,8 @@ export const ScatterPlotChart: React.FC<ScatterPlotProps> = ({
                   cx={cx}
                   cy={cy}
                   r={r}
-                  fill={isHovered ? '#21F1A8' : '#00d8f6'}
-                  stroke={isHovered ? '#ffffff' : '#21F1A8'}
+                  fill={isHovered ? 'var(--chart-1)' : 'var(--chart-3)'}
+                  stroke={isHovered ? 'var(--text-primary)' : 'var(--chart-1)'}
                   strokeWidth={isHovered ? 2 : 1.5}
                   className="transition-transform duration-200"
                 />
@@ -1730,45 +1731,45 @@ export const ScatterPlotChart: React.FC<ScatterPlotProps> = ({
 
         {/* Hover Tooltip Overlay */}
         {hoverPoint && (
-          <div className="absolute top-4 right-4 bg-[#181818]/95 border border-[#21F1A8]/60 backdrop-blur-md rounded-xl p-3 text-xs font-mono space-y-1 shadow-2xl pointer-events-none max-w-xs animate-fadeIn">
-            <div className="font-bold text-white border-b border-[#2d2d2d] pb-1 truncate">
+          <div className="absolute top-4 right-4 bg-card border border-teal-500/40 backdrop-blur-md rounded-xl p-3 text-xs font-mono space-y-1 shadow-2xl pointer-events-none max-w-xs animate-fadeIn">
+            <div className="font-bold text-primary border-b border-subtle pb-1 truncate">
               {hoverPoint.category}
             </div>
-            <div className="flex justify-between gap-4 text-gray-400">
+            <div className="flex justify-between gap-4 text-secondary">
               <span>{xField}:</span>
-              <span className="text-[#21F1A8] font-bold">{hoverPoint.xVal.toLocaleString()}</span>
+              <span className="text-accent font-bold">{hoverPoint.xVal.toLocaleString()}</span>
             </div>
-            <div className="flex justify-between gap-4 text-gray-400">
+            <div className="flex justify-between gap-4 text-secondary">
               <span>{yField}:</span>
               <span className="text-cyan-400 font-bold">{hoverPoint.yVal.toLocaleString()}</span>
             </div>
             {sizeField && hoverPoint.sizeVal !== undefined && (
-              <div className="flex justify-between gap-4 text-gray-400">
+              <div className="flex justify-between gap-4 text-secondary">
                 <span>{sizeField} (Size):</span>
                 <span className="text-amber-400 font-bold">{hoverPoint.sizeVal.toLocaleString()}</span>
               </div>
             )}
-            <div className="pt-1 text-[10px] text-gray-500 italic">Click point to drill-through</div>
+            <div className="pt-1 text-[10px] text-muted italic">Click point to drill-through</div>
           </div>
         )}
       </div>
 
       {/* Regression & Trendline Controls */}
-      <div className="flex flex-wrap items-center justify-between text-xs text-gray-400 pt-1 border-t border-[#262626]">
-        <label className="flex items-center gap-2 cursor-pointer hover:text-white">
+      <div className="flex flex-wrap items-center justify-between text-xs text-secondary pt-1 border-t border-subtle">
+        <label className="flex items-center gap-2 cursor-pointer hover:text-primary">
           <input
             type="checkbox"
             checked={showRegression}
             onChange={(e) => setShowRegression(e.target.checked)}
-            className="rounded accent-[#21F1A8]"
+            className="rounded accent-[var(--chart-1)]"
           />
           <span className="flex items-center gap-1.5 font-mono text-[11px]">
             <span className="w-3 h-0.5 border-t border-dashed border-amber-400"></span>
             Linear Ordinary Least-Squares Fit: 
-            <strong className="text-white">y = {slope >= 0 ? `${slope.toFixed(2)}x + ${intercept.toFixed(1)}` : `${slope.toFixed(2)}x - ${Math.abs(intercept).toFixed(1)}`}</strong>
+            <strong className="text-primary">y = {slope >= 0 ? `${slope.toFixed(2)}x + ${intercept.toFixed(1)}` : `${slope.toFixed(2)}x - ${Math.abs(intercept).toFixed(1)}`}</strong>
           </span>
         </label>
-        <span className="text-[11px] font-mono text-gray-500">
+        <span className="text-[11px] font-mono text-muted">
           Showing {points.length} observed coordinates
         </span>
       </div>
@@ -1921,31 +1922,31 @@ export const HeatMapChart: React.FC<HeatMapProps> = ({
 
   // Interpolate color for heat map cell
   const getCellColor = (val: number, min: number, max: number) => {
-    if (val === 0 || min === max) return '#181818';
+    if (val === 0 || min === max) return 'var(--bg-card)';
     const norm = Math.max(0, Math.min(1, (val - min) / (max - min || 1)));
-    // Color scale: #14241d (low) -> #0f5132 -> #21F1A8 (peak)
-    return `rgba(33, 241, 168, ${0.15 + norm * 0.8})`;
+    // Color scale: var(--chart-1) (low) -> var(--chart-1) -> var(--chart-1) (peak)
+    return `color-mix(in srgb, var(--chart-1) 25%, transparent)`;
   };
 
   const getCorrColor = (r: number) => {
-    if (r === 1) return 'rgba(33, 241, 168, 0.95)';
+    if (r === 1) return 'var(--chart-1)';
     if (r > 0) {
-      return `rgba(33, 241, 168, ${0.15 + r * 0.75})`;
+      return `color-mix(in srgb, var(--chart-1) 25%, transparent)`;
     }
     const abs = Math.abs(r);
-    return `rgba(239, 68, 68, ${0.15 + abs * 0.75})`;
+    return `color-mix(in srgb, var(--danger) 25%, transparent)`;
   };
 
   return (
-    <div className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-5 space-y-4">
+    <div className="bg-card border border-subtle rounded-2xl p-5 space-y-4">
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="space-y-0.5">
-          <h3 className="font-heading text-lg font-bold text-white tracking-wide uppercase flex items-center gap-2">
-            <Grid className="w-4 h-4 text-[#21F1A8]" />
+          <h3 className="font-heading text-lg font-bold text-primary tracking-wide uppercase flex items-center gap-2">
+            <Grid className="w-4 h-4 text-accent" />
             {title}
           </h3>
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-secondary">
             {mode === 'matrix' 
               ? 'Multi-dimensional categorical co-occurrence heat intensity.' 
               : 'Pairwise Pearson correlation coefficients between all schema numerical metrics.'}
@@ -1953,11 +1954,11 @@ export const HeatMapChart: React.FC<HeatMapProps> = ({
         </div>
 
         {/* View Mode Switcher */}
-        <div className="flex items-center gap-1 bg-[#141414] p-1 rounded-xl border border-[#2d2d2d] text-xs">
+        <div className="flex items-center gap-1 bg-card p-1 rounded-xl border border-subtle text-xs">
           <button
             onClick={() => setMode('matrix')}
             className={`px-3 py-1.5 rounded-lg font-medium transition-all ${
-              mode === 'matrix' ? 'bg-[#21F1A8] text-black font-semibold' : 'text-gray-400 hover:text-white'
+              mode === 'matrix' ? 'bg-accent text-black font-semibold' : 'text-secondary hover:text-primary'
             }`}
           >
             Dimensional Density Grid
@@ -1965,7 +1966,7 @@ export const HeatMapChart: React.FC<HeatMapProps> = ({
           <button
             onClick={() => setMode('correlation')}
             className={`px-3 py-1.5 rounded-lg font-medium transition-all ${
-              mode === 'correlation' ? 'bg-[#21F1A8] text-black font-semibold' : 'text-gray-400 hover:text-white'
+              mode === 'correlation' ? 'bg-accent text-black font-semibold' : 'text-secondary hover:text-primary'
             }`}
           >
             Correlation Matrix
@@ -1975,46 +1976,46 @@ export const HeatMapChart: React.FC<HeatMapProps> = ({
 
       {/* Controls for Dimensional Matrix mode */}
       {mode === 'matrix' && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-[#141414] p-3 rounded-xl border border-[#262626] text-xs">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-card p-3 rounded-xl border border-subtle text-xs">
           <div>
-            <label className="text-gray-400 block text-[10px] mb-1 uppercase font-mono">Row Dimension (Y)</label>
+            <label className="text-secondary block text-[10px] mb-1 uppercase font-mono">Row Dimension (Y)</label>
             <select
               value={rowDim}
               onChange={(e) => setRowDim(e.target.value)}
-              className="w-full bg-[#1b1b1b] text-white p-2 rounded-lg border border-[#333] focus:border-[#21F1A8] focus:outline-none"
+              className="w-full bg-card text-primary p-2 rounded-lg border border-subtle focus:border-teal-500/40 focus:outline-none"
             >
               {stringCols.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
             </select>
           </div>
 
           <div>
-            <label className="text-gray-400 block text-[10px] mb-1 uppercase font-mono">Column Dimension (X)</label>
+            <label className="text-secondary block text-[10px] mb-1 uppercase font-mono">Column Dimension (X)</label>
             <select
               value={colDim}
               onChange={(e) => setColDim(e.target.value)}
-              className="w-full bg-[#1b1b1b] text-white p-2 rounded-lg border border-[#333] focus:border-[#21F1A8] focus:outline-none"
+              className="w-full bg-card text-primary p-2 rounded-lg border border-subtle focus:border-teal-500/40 focus:outline-none"
             >
               {stringCols.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
             </select>
           </div>
 
           <div>
-            <label className="text-gray-400 block text-[10px] mb-1 uppercase font-mono">Metric Field</label>
+            <label className="text-secondary block text-[10px] mb-1 uppercase font-mono">Metric Field</label>
             <select
               value={metric}
               onChange={(e) => setMetric(e.target.value)}
-              className="w-full bg-[#1b1b1b] text-[#21F1A8] font-mono p-2 rounded-lg border border-[#333] focus:border-[#21F1A8] focus:outline-none"
+              className="w-full bg-card text-accent font-mono p-2 rounded-lg border border-subtle focus:border-teal-500/40 focus:outline-none"
             >
               {numCols.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
             </select>
           </div>
 
           <div>
-            <label className="text-gray-400 block text-[10px] mb-1 uppercase font-mono">Aggregation</label>
+            <label className="text-secondary block text-[10px] mb-1 uppercase font-mono">Aggregation</label>
             <select
               value={agg}
               onChange={(e) => setAgg(e.target.value as any)}
-              className="w-full bg-[#1b1b1b] text-[#21F1A8] font-bold p-2 rounded-lg border border-[#333] focus:border-[#21F1A8] focus:outline-none"
+              className="w-full bg-card text-accent font-bold p-2 rounded-lg border border-subtle focus:border-teal-500/40 focus:outline-none"
             >
               <option value="sum">SUM</option>
               <option value="avg">AVERAGE</option>
@@ -2026,11 +2027,11 @@ export const HeatMapChart: React.FC<HeatMapProps> = ({
 
       {/* Heat Map Visualization Table */}
       {mode === 'matrix' ? (
-        <div className="overflow-x-auto rounded-xl border border-[#262626]">
+        <div className="overflow-x-auto rounded-xl border border-subtle">
           <table className="w-full text-xs text-left border-collapse select-none">
             <thead>
-              <tr className="bg-[#141414] text-gray-400 border-b border-[#282828] font-mono">
-                <th className="p-3 font-semibold text-white sticky left-0 bg-[#141414] z-10">
+              <tr className="bg-card text-secondary border-b border-subtle font-mono">
+                <th className="p-3 font-semibold text-primary sticky left-0 bg-card z-10">
                   {rowDim} \ {colDim}
                 </th>
                 {matrixData.colHeaders.map(ch => (
@@ -2040,10 +2041,10 @@ export const HeatMapChart: React.FC<HeatMapProps> = ({
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#222] font-mono">
+            <tbody className="divide-y divide-[var(--border-subtle)] font-mono">
               {matrixData.rowHeaders.map(rh => (
                 <tr key={rh} className="hover:brightness-110 transition-all">
-                  <td className="p-3 font-medium text-gray-200 bg-[#161616] sticky left-0 z-10 whitespace-nowrap border-r border-[#262626]">
+                  <td className="p-3 font-medium text-primary bg-card sticky left-0 z-10 whitespace-nowrap border-r border-subtle">
                     {rh}
                   </td>
                   {matrixData.colHeaders.map(ch => {
@@ -2057,11 +2058,11 @@ export const HeatMapChart: React.FC<HeatMapProps> = ({
                         onClick={() => onCellClick?.(rowDim, rh, colDim, ch, cell.val)}
                         onMouseEnter={() => setHoverCell({ r: rh, c: ch, val: cell.val, count: cell.count })}
                         onMouseLeave={() => setHoverCell(null)}
-                        className="p-3 text-center cursor-pointer transition-all border border-[#222]"
+                        className="p-3 text-center cursor-pointer transition-all border border-subtle"
                         style={{
                           backgroundColor: cellBg,
-                          outline: isHovered ? '2px solid #ffffff' : undefined,
-                          color: cell.val > (matrixData.maxVal * 0.4) ? '#ffffff' : '#9ca3af'
+                          outline: isHovered ? '2px solid var(--text-primary)' : undefined,
+                          color: cell.val > (matrixData.maxVal * 0.4) ? 'var(--text-primary)' : 'var(--text-secondary)'
                         }}
                         title={`Click to drilldown: ${rh} × ${ch} = ${cell.val.toLocaleString()} (${cell.count} records)`}
                       >
@@ -2078,11 +2079,11 @@ export const HeatMapChart: React.FC<HeatMapProps> = ({
         </div>
       ) : (
         /* Correlation Heat Map Matrix */
-        <div className="overflow-x-auto rounded-xl border border-[#262626]">
+        <div className="overflow-x-auto rounded-xl border border-subtle">
           <table className="w-full text-xs text-left border-collapse select-none font-mono">
             <thead>
-              <tr className="bg-[#141414] text-gray-400 border-b border-[#282828]">
-                <th className="p-3 font-semibold text-white sticky left-0 bg-[#141414] z-10">Metric</th>
+              <tr className="bg-card text-secondary border-b border-subtle">
+                <th className="p-3 font-semibold text-primary sticky left-0 bg-card z-10">Metric</th>
                 {correlationData.variables.map(v => (
                   <th key={v} className="p-3 font-semibold text-center truncate max-w-[100px]" title={v}>
                     {v}
@@ -2090,10 +2091,10 @@ export const HeatMapChart: React.FC<HeatMapProps> = ({
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#222]">
+            <tbody className="divide-y divide-[var(--border-subtle)]">
               {correlationData.variables.map(v1 => (
                 <tr key={v1}>
-                  <td className="p-3 font-semibold text-white bg-[#161616] sticky left-0 z-10 whitespace-nowrap border-r border-[#262626]">
+                  <td className="p-3 font-semibold text-primary bg-card sticky left-0 z-10 whitespace-nowrap border-r border-subtle">
                     {v1}
                   </td>
                   {correlationData.variables.map(v2 => {
@@ -2103,7 +2104,7 @@ export const HeatMapChart: React.FC<HeatMapProps> = ({
                     return (
                       <td
                         key={v2}
-                        className="p-3 text-center border border-[#222] font-bold text-white transition-transform hover:scale-105"
+                        className="p-3 text-center border border-subtle font-bold text-primary transition-transform hover:scale-105"
                         style={{ backgroundColor: bg }}
                         title={`${v1} vs ${v2}: Pearson r = ${r > 0 ? `+${r}` : r}`}
                       >
@@ -2119,25 +2120,25 @@ export const HeatMapChart: React.FC<HeatMapProps> = ({
       )}
 
       {/* Heat Scale Legend */}
-      <div className="flex flex-wrap items-center justify-between gap-3 text-xs pt-2 border-t border-[#262626] font-mono">
-        <div className="flex items-center gap-2 text-gray-400">
+      <div className="flex flex-wrap items-center justify-between gap-3 text-xs pt-2 border-t border-subtle font-mono">
+        <div className="flex items-center gap-2 text-secondary">
           <span>Heat Scale:</span>
           {mode === 'matrix' ? (
             <div className="flex items-center gap-1">
               <span className="text-[10px]">Min ({matrixData.minVal})</span>
-              <div className="w-24 h-3 rounded-full bg-gradient-to-r from-[#181818] via-[#0f5132] to-[#21F1A8] border border-[#333]"></div>
-              <span className="text-[10px] text-[#21F1A8]">Max ({matrixData.maxVal.toLocaleString()})</span>
+              <div className="w-24 h-3 rounded-full bg-gradient-to-r from-teal-500/20 via-indigo-500/10 to-transparent border border-subtle"></div>
+              <span className="text-[10px] text-accent">Max ({matrixData.maxVal.toLocaleString()})</span>
             </div>
           ) : (
             <div className="flex items-center gap-1">
               <span className="text-[10px] text-red-400">-1.0 (Inverse)</span>
-              <div className="w-28 h-3 rounded-full bg-gradient-to-r from-red-500 via-[#181818] to-[#21F1A8] border border-[#333]"></div>
-              <span className="text-[10px] text-[#21F1A8]">+1.0 (Positive)</span>
+              <div className="w-28 h-3 rounded-full bg-gradient-to-r from-red-500 via-indigo-500/10 to-transparent border border-subtle"></div>
+              <span className="text-[10px] text-accent">+1.0 (Positive)</span>
             </div>
           )}
         </div>
 
-        <span className="text-[11px] text-gray-500">
+        <span className="text-[11px] text-muted">
           Click any cell to drill-through to matching granular records
         </span>
       </div>
@@ -2159,7 +2160,7 @@ export interface RadarProps {
 export const RadarSpiderChart: React.FC<RadarProps> = ({
   data,
   metricName = 'Score',
-  color = '#21F1A8',
+  color = 'var(--chart-1)',
   onAxisClick,
   title = 'RADAR / MULTI-DIMENSIONAL SPIDER FOOTPRINT'
 }) => {
@@ -2175,7 +2176,7 @@ export const RadarSpiderChart: React.FC<RadarProps> = ({
 
   if (cleanData.length < 3) {
     return (
-      <div className="p-8 text-center text-xs text-gray-500 bg-[#1c1c1c] rounded-2xl border border-[#2d2d2d]">
+      <div className="p-8 text-center text-xs text-muted bg-card rounded-2xl border border-subtle">
         Radar / Spider chart requires at least 3 dimensional metrics to plot multi-axial polygon.
       </div>
     );
@@ -2207,18 +2208,18 @@ export const RadarSpiderChart: React.FC<RadarProps> = ({
   ) + ' Z';
 
   return (
-    <div className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-5 space-y-4">
+    <div className="bg-card border border-subtle rounded-2xl p-5 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="space-y-0.5">
-          <h3 className="font-heading text-lg font-bold text-white tracking-wide uppercase flex items-center gap-2">
-            <Compass className="w-4 h-4 text-[#21F1A8]" />
+          <h3 className="font-heading text-lg font-bold text-primary tracking-wide uppercase flex items-center gap-2">
+            <Compass className="w-4 h-4 text-accent" />
             {title}
           </h3>
-          <p className="text-xs text-gray-400">Radial balanced footprint across {numAxes} orthogonal categorical dimensions.</p>
+          <p className="text-xs text-secondary">Radial balanced footprint across {numAxes} orthogonal categorical dimensions.</p>
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row items-center justify-around gap-6 bg-[#141414] rounded-xl p-4 border border-[#262626]">
+      <div className="flex flex-col sm:flex-row items-center justify-around gap-6 bg-card rounded-xl p-4 border border-subtle">
         {/* SVG Spider Canvas */}
         <div className="relative">
           <svg viewBox={`0 0 ${size} ${size}`} className="w-72 h-72 sm:w-80 sm:h-80 overflow-visible select-none">
@@ -2235,7 +2236,7 @@ export const RadarSpiderChart: React.FC<RadarProps> = ({
                   key={lIdx}
                   points={ringPoints}
                   fill="none"
-                  stroke="#282828"
+                  stroke="var(--border-subtle)"
                   strokeWidth="1"
                   strokeDasharray={lIdx === levels.length - 1 ? 'none' : '3,3'}
                 />
@@ -2247,7 +2248,7 @@ export const RadarSpiderChart: React.FC<RadarProps> = ({
               const angle = i * angleStep - Math.PI / 2;
               const x2 = center + radius * Math.cos(angle);
               const y2 = center + radius * Math.sin(angle);
-              return <line key={i} x1={center} y1={center} x2={x2} y2={y2} stroke="#333" strokeWidth="1" />;
+              return <line key={i} x1={center} y1={center} x2={x2} y2={y2} stroke="var(--border-subtle)" strokeWidth="1" />;
             })}
 
             {/* Value Area Polygon */}
@@ -2274,7 +2275,7 @@ export const RadarSpiderChart: React.FC<RadarProps> = ({
                     cx={pt.x}
                     cy={pt.y}
                     r={isHovered ? 6 : 4}
-                    fill="#141414"
+                    fill="var(--bg-card)"
                     stroke={color}
                     strokeWidth={isHovered ? 3 : 2}
                     onMouseEnter={() => setHoverIdx(i)}
@@ -2285,7 +2286,7 @@ export const RadarSpiderChart: React.FC<RadarProps> = ({
                     y={ly}
                     textAnchor="middle"
                     dominantBaseline="middle"
-                    fill={isHovered ? '#21F1A8' : '#888'}
+                    fill={isHovered ? 'var(--chart-1)' : 'var(--text-muted)'}
                     fontSize="10"
                     fontFamily="monospace"
                     className="transition-colors hover:fill-white font-medium"
@@ -2302,7 +2303,7 @@ export const RadarSpiderChart: React.FC<RadarProps> = ({
 
         {/* Legend / Values List */}
         <div className="space-y-2 text-xs font-mono w-full sm:w-48">
-          <div className="text-[11px] text-gray-400 uppercase border-b border-[#2d2d2d] pb-1 font-bold">
+          <div className="text-[11px] text-secondary uppercase border-b border-subtle pb-1 font-bold">
             Axes Summary
           </div>
           {cleanData.map((d, i) => (
@@ -2311,11 +2312,11 @@ export const RadarSpiderChart: React.FC<RadarProps> = ({
               onMouseEnter={() => setHoverIdx(i)}
               onMouseLeave={() => setHoverIdx(null)}
               className={`flex justify-between items-center p-1.5 rounded-lg cursor-pointer transition-colors ${
-                hoverIdx === i ? 'bg-[#222]' : 'hover:bg-[#1a1a1a]'
+                hoverIdx === i ? 'bg-elevated' : 'hover:bg-card'
               }`}
             >
-              <span className="text-gray-300 truncate max-w-[110px]">{d.label}</span>
-              <span className="text-[#21F1A8] font-bold">{d.value.toLocaleString()}</span>
+              <span className="text-secondary truncate max-w-[110px]">{d.label}</span>
+              <span className="text-accent font-bold">{d.value.toLocaleString()}</span>
             </div>
           ))}
         </div>
@@ -2343,24 +2344,24 @@ export const FunnelConversionChart: React.FC<FunnelProps> = ({
   const topVal = stages[0]?.value || 1;
 
   if (!stages || stages.length === 0) {
-    return <div className="p-4 text-xs text-gray-500">No funnel stage pipeline data available.</div>;
+    return <div className="p-4 text-xs text-muted">No funnel stage pipeline data available.</div>;
   }
 
-  const colors = ['#06b6d4', '#3b82f6', '#818cf8', '#f59e0b', '#ec4899', '#ef4444'];
+  const colors = ['var(--chart-3)', 'var(--chart-3)', 'var(--chart-2)', 'var(--chart-4)', 'var(--chart-5)', 'var(--danger)'];
 
   return (
-    <div className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-5 space-y-4">
+    <div className="bg-card border border-subtle rounded-2xl p-5 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="space-y-0.5">
-          <h3 className="font-heading text-lg font-bold text-white tracking-wide uppercase flex items-center gap-2">
+          <h3 className="font-heading text-lg font-bold text-primary tracking-wide uppercase flex items-center gap-2">
             <Filter className="w-4 h-4 text-cyan-400" />
             {title}
           </h3>
-          <p className="text-xs text-gray-400">Sequential stage drop-off and conversion efficiency flow.</p>
+          <p className="text-xs text-secondary">Sequential stage drop-off and conversion efficiency flow.</p>
         </div>
       </div>
 
-      <div className="space-y-3 bg-[#141414] p-4 rounded-xl border border-[#262626]">
+      <div className="space-y-3 bg-card p-4 rounded-xl border border-subtle">
         {stages.map((stg, idx) => {
           const widthPct = Math.max(15, Math.min(100, (stg.value / topVal) * 100));
           const prevVal = idx > 0 ? stages[idx - 1].value : stg.value;
@@ -2376,14 +2377,14 @@ export const FunnelConversionChart: React.FC<FunnelProps> = ({
               title={`Stage: ${stg.stage} - ${stg.value.toLocaleString()}`}
             >
               <div className="flex items-center justify-between text-xs font-mono">
-                <span className="text-gray-200 font-semibold group-hover:text-[#21F1A8] transition-colors flex items-center gap-1.5">
+                <span className="text-primary font-semibold group-hover:text-accent transition-colors flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full" style={{ backgroundColor: stageColor }}></span>
                   {idx + 1}. {stg.stage}
                 </span>
 
                 <div className="flex items-center gap-3">
-                  <span className="text-white font-bold">{stg.value.toLocaleString()}</span>
-                  <span className="text-gray-400 text-[11px]">({overallRetention.toFixed(1)}% of Top)</span>
+                  <span className="text-primary font-bold">{stg.value.toLocaleString()}</span>
+                  <span className="text-secondary text-[11px]">({overallRetention.toFixed(1)}% of Top)</span>
                   {idx > 0 && dropOffPct > 0 && (
                     <span className="text-red-400 text-[10px] bg-red-500/10 px-1.5 py-0.5 rounded">
                       ↓ -{dropOffPct.toFixed(1)}% drop
@@ -2457,23 +2458,23 @@ export const WaterfallChart: React.FC<WaterfallProps> = ({
   }, [steps, baseValue]);
 
   return (
-    <div className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-5 space-y-4">
+    <div className="bg-card border border-subtle rounded-2xl p-5 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="space-y-0.5">
-          <h3 className="font-heading text-lg font-bold text-white tracking-wide uppercase flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-[#21F1A8]" />
+          <h3 className="font-heading text-lg font-bold text-primary tracking-wide uppercase flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 text-accent" />
             {title}
           </h3>
-          <p className="text-xs text-gray-400">Step-by-step sequential delta additions, deductions, and ending reconciliation balance.</p>
+          <p className="text-xs text-secondary">Step-by-step sequential delta additions, deductions, and ending reconciliation balance.</p>
         </div>
       </div>
 
-      <div className="bg-[#141414] p-4 rounded-xl border border-[#262626] overflow-x-auto">
-        <div className="flex items-end justify-between gap-2 min-w-[500px] h-56 pt-6 pb-8 border-b border-[#282828] relative">
+      <div className="bg-card p-4 rounded-xl border border-subtle overflow-x-auto">
+        <div className="flex items-end justify-between gap-2 min-w-[500px] h-56 pt-6 pb-8 border-b border-subtle relative">
           {enrichedSteps.map((step, idx) => {
             const h = Math.max(4, (Math.abs(step.value) / maxRunning) * 160);
             const bottomOffset = (Math.min(step.start, step.end) / maxRunning) * 160;
-            const barColor = step.isTotal ? '#00d8f6' : step.isPositive ? '#0284C7' : '#ef4444';
+            const barColor = step.isTotal ? 'var(--chart-3)' : step.isPositive ? 'var(--chart-3)' : 'var(--danger)';
 
             return (
               <div 
@@ -2492,13 +2493,13 @@ export const WaterfallChart: React.FC<WaterfallProps> = ({
                     }}
                   />
                   {/* Delta text on top */}
-                  <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[10px] font-mono font-bold whitespace-nowrap text-white">
+                  <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[10px] font-mono font-bold whitespace-nowrap text-primary">
                     {step.isTotal ? '' : step.isPositive ? '+' : ''}{step.value.toLocaleString()}
                   </span>
                 </div>
 
                 {/* Step Label */}
-                <span className="text-[10px] text-gray-400 font-mono truncate max-w-[70px] mt-2 group-hover:text-white" title={step.label}>
+                <span className="text-[10px] text-secondary font-mono truncate max-w-[70px] mt-2 group-hover:text-primary" title={step.label}>
                   {step.label}
                 </span>
               </div>
@@ -2540,18 +2541,18 @@ export const GaugeSpeedometerChart: React.FC<GaugeProps> = ({
   const rotation = -90 + (pct / 100) * 180;
 
   const statusColor = attainment 
-    ? (attainment >= 100 ? '#00d8f6' : attainment >= 80 ? '#38bdf8' : '#ef4444')
-    : '#00d8f6';
+    ? (attainment >= 100 ? 'var(--chart-3)' : attainment >= 80 ? 'var(--chart-3)' : 'var(--danger)')
+    : 'var(--chart-3)';
 
   return (
-    <div className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-5 space-y-4">
+    <div className="bg-card border border-subtle rounded-2xl p-5 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="space-y-0.5">
-          <h3 className="font-heading text-lg font-bold text-white tracking-wide uppercase flex items-center gap-2">
+          <h3 className="font-heading text-lg font-bold text-primary tracking-wide uppercase flex items-center gap-2">
             <Gauge className="w-4 h-4 text-cyan-400" />
             {title}
           </h3>
-          <p className="text-xs text-gray-400">Real-time target pacing against defined threshold milestones.</p>
+          <p className="text-xs text-secondary">Real-time target pacing against defined threshold milestones.</p>
         </div>
         {attainment !== null && (
           <span className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold" style={{ backgroundColor: `${statusColor}22`, color: statusColor }}>
@@ -2560,14 +2561,14 @@ export const GaugeSpeedometerChart: React.FC<GaugeProps> = ({
         )}
       </div>
 
-      <div className="flex flex-col items-center justify-center bg-[#141414] rounded-xl p-4 border border-[#262626] relative">
+      <div className="flex flex-col items-center justify-center bg-card rounded-xl p-4 border border-subtle relative">
         <svg viewBox="0 0 240 130" className="w-60 h-32 overflow-visible select-none">
           <defs>
             <linearGradient id="gaugeArc" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor="#ef4444" />
-              <stop offset="50%" stopColor="#f59e0b" />
-              <stop offset="85%" stopColor="#0284C7" />
-              <stop offset="100%" stopColor="#00d8f6" />
+              <stop offset="0%" stopColor="var(--danger)" />
+              <stop offset="50%" stopColor="var(--chart-4)" />
+              <stop offset="85%" stopColor="var(--chart-3)" />
+              <stop offset="100%" stopColor="var(--chart-3)" />
             </linearGradient>
           </defs>
 
@@ -2575,7 +2576,7 @@ export const GaugeSpeedometerChart: React.FC<GaugeProps> = ({
           <path
             d="M 30 115 A 90 90 0 0 1 210 115"
             fill="none"
-            stroke="#262626"
+            stroke="var(--border-subtle)"
             strokeWidth="16"
             strokeLinecap="round"
           />
@@ -2593,29 +2594,29 @@ export const GaugeSpeedometerChart: React.FC<GaugeProps> = ({
           />
 
           {/* Needle Center Pivot */}
-          <circle cx="120" cy="115" r="7" fill="#ffffff" />
+          <circle cx="120" cy="115" r="7" fill="var(--text-primary)" />
 
           {/* Needle Pointer */}
           <g transform={`rotate(${rotation}, 120, 115)`} className="transition-transform duration-700 ease-out">
-            <line x1="120" y1="115" x2="120" y2="35" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" />
-            <polygon points="116,45 124,45 120,30" fill="#ffffff" />
+            <line x1="120" y1="115" x2="120" y2="35" stroke="var(--text-primary)" strokeWidth="3" strokeLinecap="round" />
+            <polygon points="116,45 124,45 120,30" fill="var(--text-primary)" />
           </g>
 
           {/* Min & Max Labels */}
-          <text x="30" y="130" fill="#777" fontSize="10" fontFamily="monospace" textAnchor="middle">
+          <text x="30" y="130" fill="var(--text-muted)" fontSize="10" fontFamily="monospace" textAnchor="middle">
             {min.toLocaleString()}
           </text>
-          <text x="210" y="130" fill="#777" fontSize="10" fontFamily="monospace" textAnchor="middle">
+          <text x="210" y="130" fill="var(--text-muted)" fontSize="10" fontFamily="monospace" textAnchor="middle">
             {maxScale.toLocaleString()}
           </text>
         </svg>
 
         {/* Value Callout */}
         <div className="text-center mt-2">
-          <div className="font-heading text-2xl font-extrabold text-white font-mono">
+          <div className="font-heading text-2xl font-extrabold text-primary font-mono">
             {unit}{value.toLocaleString()}
           </div>
-          <div className="text-xs text-gray-400 font-mono">
+          <div className="text-xs text-secondary font-mono">
             {metricName} {target ? `(Target: ${unit}${target.toLocaleString()})` : ''}
           </div>
         </div>
@@ -2646,26 +2647,26 @@ export const TreemapChart: React.FC<TreemapProps> = ({
 
   const total = useMemo(() => sorted.reduce((acc, c) => acc + c.value, 0), [sorted]);
 
-  const palette = ['#06b6d4', '#3b82f6', '#818cf8', '#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#64748b'];
+  const palette = ['var(--chart-3)', 'var(--chart-3)', 'var(--chart-2)', 'var(--chart-2)', 'var(--chart-7)', 'var(--chart-5)', 'var(--chart-4)', 'var(--text-muted)'];
 
   if (sorted.length === 0) {
-    return <div className="p-4 text-xs text-gray-500">No data to render Treemap.</div>;
+    return <div className="p-4 text-xs text-muted">No data to render Treemap.</div>;
   }
 
   return (
-    <div className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-5 space-y-4">
+    <div className="bg-card border border-subtle rounded-2xl p-5 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="space-y-0.5">
-          <h3 className="font-heading text-lg font-bold text-white tracking-wide uppercase flex items-center gap-2">
+          <h3 className="font-heading text-lg font-bold text-primary tracking-wide uppercase flex items-center gap-2">
             <Layers className="w-4 h-4 text-cyan-400" />
             {title}
           </h3>
-          <p className="text-xs text-gray-400">Proportional hierarchical area tiles representing contribution weight.</p>
+          <p className="text-xs text-secondary">Proportional hierarchical area tiles representing contribution weight.</p>
         </div>
         <span className="text-xs font-mono text-cyan-400 font-bold">Total: {total.toLocaleString()}</span>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 bg-[#141414] p-3 rounded-xl border border-[#262626]">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 bg-card p-3 rounded-xl border border-subtle">
         {sorted.map((item, idx) => {
           const share = total > 0 ? (item.value / total) * 100 : 0;
           const color = palette[idx % palette.length];
@@ -2675,13 +2676,13 @@ export const TreemapChart: React.FC<TreemapProps> = ({
             <div
               key={idx}
               onClick={() => onItemClick?.(item.label)}
-              className={`p-3.5 rounded-xl border border-[#2d2d2d] cursor-pointer transition-all hover:scale-[1.02] flex flex-col justify-between ${
+              className={`p-3.5 rounded-xl border border-subtle cursor-pointer transition-all hover:scale-[1.02] flex flex-col justify-between ${
                 isLarge ? 'sm:col-span-2 sm:row-span-2 min-h-[120px]' : 'min-h-[85px]'
               }`}
               style={{ backgroundColor: `${color}18`, borderColor: `${color}44` }}
             >
               <div className="flex justify-between items-start gap-2">
-                <span className="font-bold text-white text-xs truncate" title={item.label}>
+                <span className="font-bold text-primary text-xs truncate" title={item.label}>
                   {item.label}
                 </span>
                 <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-black/40 font-bold" style={{ color }}>
@@ -2690,10 +2691,10 @@ export const TreemapChart: React.FC<TreemapProps> = ({
               </div>
 
               <div>
-                <div className="font-heading text-base sm:text-lg font-bold text-white font-mono">
+                <div className="font-heading text-base sm:text-lg font-bold text-primary font-mono">
                   {item.value.toLocaleString()}
                 </div>
-                <div className="text-[10px] text-gray-400 font-mono">{metricName}</div>
+                <div className="text-[10px] text-secondary font-mono">{metricName}</div>
               </div>
             </div>
           );
@@ -2719,7 +2720,7 @@ export interface HistogramChartProps {
 export const HistogramChart: React.FC<HistogramChartProps> = ({
   rows,
   valueField,
-  color = '#2DD4BF',
+  color = 'var(--chart-1)',
   isLight = false,
   isLoading = false,
   error = null,
@@ -2736,8 +2737,8 @@ export const HistogramChart: React.FC<HistogramChartProps> = ({
   if (isLoading) {
     return (
       <div role="status" aria-label={`Loading histogram for ${valueField}`} className="w-full space-y-3 py-4 animate-pulse">
-        <div className="h-4 w-48 rounded bg-slate-700/40" />
-        <div className="h-44 w-full rounded-xl bg-slate-700/25" />
+        <div className="h-4 w-48 rounded bg-input" />
+        <div className="h-44 w-full rounded-xl bg-input" />
       </div>
     );
   }
@@ -2784,16 +2785,16 @@ export const HistogramChart: React.FC<HistogramChartProps> = ({
     >
       <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono">
         <div className="flex flex-wrap items-center gap-2">
-          <span className={isLight ? 'text-slate-600' : 'text-slate-400'}>
-            Bins: <strong className={isLight ? 'text-slate-900' : 'text-white'}>{summary.binCount}</strong> ({summary.methodUsed === 'freedman-diaconis' ? 'Freedman-Diaconis' : 'Sturges'})
+          <span className={isLight ? 'text-muted' : 'text-secondary'}>
+            Bins: <strong className={isLight ? 'text-primary' : 'text-primary'}>{summary.binCount}</strong> ({summary.methodUsed === 'freedman-diaconis' ? 'Freedman-Diaconis' : 'Sturges'})
           </span>
-          <span aria-hidden="true" className="text-slate-500">·</span>
-          <span className={isLight ? 'text-slate-600' : 'text-slate-400'}>
-            Median: <strong className="text-[#2DD4BF] tabular-nums">{formatCompactNumber(summary.median)}</strong>
+          <span aria-hidden="true" className="text-muted">·</span>
+          <span className={isLight ? 'text-muted' : 'text-secondary'}>
+            Median: <strong className="text-accent tabular-nums">{formatCompactNumber(summary.median)}</strong>
           </span>
-          <span aria-hidden="true" className="text-slate-500">·</span>
-          <span className={isLight ? 'text-slate-600' : 'text-slate-400'}>
-            Mean: <strong className="text-[#818CF8] tabular-nums">{formatCompactNumber(summary.mean)}</strong>
+          <span aria-hidden="true" className="text-muted">·</span>
+          <span className={isLight ? 'text-muted' : 'text-secondary'}>
+            Mean: <strong className="text-primary tabular-nums">{formatCompactNumber(summary.mean)}</strong>
           </span>
         </div>
 
@@ -3217,6 +3218,8 @@ export const GuideChartRenderer: React.FC<GuideChartRendererProps> = ({
   onDrillThrough
 }) => {
   const [hoverInfo, setHoverInfo] = useState<string | null>(null);
+  const chartContainerId = `guide-chart-${chartType}-${categoryField}-${valueField}`.replace(/[^a-zA-Z0-9_-]/g, '-');
+  const chartTitle = `${chartType.toUpperCase()}: ${valueField} by ${categoryField}`;
 
   const barData = useMemo(
     () => (chartType === 'bar' ? computeBarChartData(rows, categoryField, valueField, aggregation, 10) : null),
@@ -3318,7 +3321,25 @@ export const GuideChartRenderer: React.FC<GuideChartRendererProps> = ({
     const summaryText = `Bar chart comparing ${valueField} (${aggregation}) across ${barData.items.length} ${categoryField} categories (value axis starts at zero). Leading category: ${topItem.category} with ${formatCompactNumber(topItem.value)} (${topItem.share}%).`;
 
     return (
-      <div role="region" aria-label={summaryText} className="w-full space-y-2.5 no-depth-3d chart-viewport">
+      <div id={chartContainerId} role="region" aria-label={summaryText} className="w-full space-y-2.5 no-depth-3d chart-viewport">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-[10px] font-mono uppercase tracking-wider text-muted">{chartTitle}</span>
+          <DownloadMenu
+            context="chart"
+            compact
+            chartPayload={{
+              chartId: chartContainerId,
+              chartTitle,
+              containerSelector: `#${chartContainerId}`,
+              chartType,
+              categoryField,
+              secondaryCategoryField,
+              valueField,
+              secondaryValueField,
+              aggregation,
+            }}
+          />
+        </div>
         {barData.largeDataNotice && (
           <div className="px-2.5 py-1 rounded-lg text-[10px] font-mono flex items-center gap-1.5 bg-accent-soft text-accent border border-subtle">
             <Info className="w-3 h-3 shrink-0" aria-hidden="true" />
@@ -3801,12 +3822,12 @@ export const GuideChartRenderer: React.FC<GuideChartRendererProps> = ({
                           onBlur={() => setHoverInfo(null)}
                           onClick={() => onDrillThrough?.(categoryField, rKey, `${rKey} × ${cKey}`)}
                           style={{
-                            backgroundColor: count > 0 ? `rgba(45, 212, 191, ${alpha})` : 'var(--bg-elevated)'
+                            backgroundColor: count > 0 ? `color-mix(in srgb, var(--chart-1) 25%, transparent)` : 'var(--bg-elevated)'
                           }}
                           className={`w-full py-1.5 px-2 rounded-md text-center font-mono text-[10px] font-bold transition-transform hover:scale-[1.03] cursor-pointer focus-visible:outline-2 focus-visible:outline-[var(--accent)] ${
                             count > 0
                               ? alpha > 0.55
-                                ? 'text-slate-950'
+                                ? 'text-primary'
                                 : 'text-primary'
                               : 'text-muted'
                           }`}

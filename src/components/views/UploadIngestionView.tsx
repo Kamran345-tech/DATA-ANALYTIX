@@ -82,12 +82,12 @@ export const UploadIngestionView: React.FC = () => {
       <div className="text-center space-y-4">
         <div className="space-y-2">
           <h1 className={`font-heading text-3xl sm:text-4xl font-bold tracking-tight uppercase ${
-            isLight ? 'text-slate-900' : 'text-white'
+            isLight ? 'text-primary' : 'text-primary'
           }`}>
             INGEST &amp; ANALYZE BUSINESS DATA
           </h1>
           <p className={`text-sm max-w-xl mx-auto ${
-            isLight ? 'text-slate-600' : 'text-slate-400'
+            isLight ? 'text-muted' : 'text-secondary'
           }`}>
             Upload your raw file or connect directly to any live database server. The engine validates structure, maps column roles, models star schemas, and compiles dashboards.
           </p>
@@ -113,21 +113,21 @@ export const UploadIngestionView: React.FC = () => {
                         : 'bg-teal-500/10 border border-teal-500/30 text-teal-300'
                       : isCompleted
                       ? isLight
-                        ? 'bg-slate-50 text-slate-700'
-                        : 'bg-slate-900/60 text-slate-300'
+                        ? 'bg-elevated text-muted'
+                        : 'bg-card text-secondary'
                       : isLight
-                      ? 'text-slate-400'
-                      : 'text-slate-500'
+                      ? 'text-secondary'
+                      : 'text-muted'
                   }`}
                 >
                   <span className={`w-6 h-6 rounded-full font-mono text-xs font-bold flex items-center justify-center shrink-0 ${
                     isCurrent
-                      ? 'bg-teal-500 text-slate-950'
+                      ? 'bg-teal-500 text-primary'
                       : isCompleted
                       ? 'bg-emerald-500/20 text-emerald-500 border border-emerald-500/40'
                       : isLight
-                      ? 'bg-slate-200 text-slate-600'
-                      : 'bg-slate-800 text-slate-400'
+                      ? 'bg-input text-muted'
+                      : 'bg-elevated text-secondary'
                   }`}>
                     {isCompleted ? '✓' : item.step}
                   </span>
@@ -145,9 +145,9 @@ export const UploadIngestionView: React.FC = () => {
         <div className="inline-flex p-1 rounded-2xl border gap-1 shadow-md bg-elevated border-subtle">
           <button
             type="button"
-            className="px-5 py-2 rounded-xl text-xs font-bold transition-all bg-sky-600 text-white shadow-md flex items-center gap-2"
+            className="px-5 py-2 rounded-xl text-xs font-bold transition-all bg-sky-600 text-primary shadow-md flex items-center gap-2"
           >
-            <UploadCloud className="w-4 h-4 text-white" />
+            <UploadCloud className="w-4 h-4 text-primary" />
             <span>Local Flat File Upload</span>
           </button>
           <button
@@ -191,11 +191,11 @@ export const UploadIngestionView: React.FC = () => {
 
           <div className="space-y-1.5">
             <h3 className={`font-heading text-xl font-bold ${
-              isLight ? 'text-slate-900' : 'text-white'
+              isLight ? 'text-primary' : 'text-primary'
             }`}>
               DRAG &amp; DROP RAW SPREADSHEET OR FILE
             </h3>
-            <p className={`text-xs ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+            <p className={`text-xs ${isLight ? 'text-muted' : 'text-secondary'}`}>
               Supports CSV, Microsoft Excel (.xlsx, .xls), JSON, and Delimited TXT
             </p>
             <div className="flex items-center justify-center gap-2 pt-1 font-mono text-[10px]">
@@ -203,7 +203,7 @@ export const UploadIngestionView: React.FC = () => {
                 <span
                   key={ext}
                   className={`px-2 py-0.5 rounded border ${
-                    isLight ? 'bg-slate-100 border-slate-200 text-slate-600' : 'bg-slate-900 border-slate-800 text-slate-400'
+                    isLight ? 'bg-elevated border-slate-200 text-muted' : 'bg-card border-slate-800 text-secondary'
                   }`}
                 >
                   {ext}
@@ -217,8 +217,8 @@ export const UploadIngestionView: React.FC = () => {
             onClick={() => fileInputRef.current?.click()}
             className={`px-6 py-2.5 rounded-xl text-xs font-semibold border transition-colors cursor-pointer ${
               isLight 
-                ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300' 
-                : 'bg-slate-800 hover:bg-slate-700 text-white border-slate-700'
+                ? 'bg-elevated hover:bg-input text-primary border-slate-300' 
+                : 'bg-elevated hover:bg-input text-primary border-slate-700'
             }`}
           >
             Browse Local Machine
@@ -285,11 +285,11 @@ export const UploadIngestionView: React.FC = () => {
               <Table2 className="w-4 h-4 text-teal-500 dark:text-teal-400" />
               <div>
                 <h3 className={`font-heading text-sm font-bold uppercase tracking-wide ${
-                  isLight ? 'text-slate-900' : 'text-white'
+                  isLight ? 'text-primary' : 'text-primary'
                 }`}>
                   COLUMN-ROLE SCHEMA TABLE ({project.name})
                 </h3>
-                <p className={`text-xs ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                <p className={`text-xs ${isLight ? 'text-muted' : 'text-secondary'}`}>
                   {columns.length} columns profiled across {cleanRows.length.toLocaleString()} clean records
                 </p>
               </div>
@@ -308,7 +308,7 @@ export const UploadIngestionView: React.FC = () => {
             <table className="w-full text-left border-collapse no-depth-3d">
               <thead>
                 <tr className={`border-b font-mono text-[11px] uppercase tracking-wider ${
-                  isLight ? 'bg-slate-100/80 text-slate-600 border-slate-200' : 'bg-slate-950/60 text-slate-400 border-slate-800'
+                  isLight ? 'bg-elevated text-muted border-slate-200' : 'bg-card text-secondary border-slate-800'
                 }`}>
                   <th className="py-2.5 px-4">Column Name</th>
                   <th className="py-2.5 px-4">Detected Type</th>
@@ -326,10 +326,10 @@ export const UploadIngestionView: React.FC = () => {
                   return (
                     <tr
                       key={col.name}
-                      className={isLight ? 'hover:bg-slate-50' : 'hover:bg-slate-900/50'}
+                      className={isLight ? 'hover:bg-elevated' : 'hover:bg-card'}
                     >
                       <td className={`py-2.5 px-4 font-semibold flex items-center gap-2 ${
-                        isLight ? 'text-slate-900' : 'text-slate-100'
+                        isLight ? 'text-primary' : 'text-primary'
                       }`}>
                         {col.dataType === 'number' ? (
                           <Hash className="w-3.5 h-3.5 text-teal-400 shrink-0" />
@@ -360,8 +360,8 @@ export const UploadIngestionView: React.FC = () => {
                           onChange={(e) => setRoleOverrides(prev => ({ ...prev, [col.name]: e.target.value }))}
                           className={`text-xs rounded-lg px-2 py-1 border focus:outline-none cursor-pointer ${
                             isLight
-                              ? 'bg-slate-50 border-slate-200 text-slate-800'
-                              : 'bg-slate-900 border-slate-700 text-slate-200'
+                              ? 'bg-elevated border-slate-200 text-primary'
+                              : 'bg-card border-slate-700 text-primary'
                           }`}
                         >
                           <option value="Identifier / Key">Identifier / Key</option>
@@ -376,10 +376,10 @@ export const UploadIngestionView: React.FC = () => {
                           {completeness}%
                         </span>
                       </td>
-                      <td className={`py-2.5 px-4 text-right tabular-nums ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
+                      <td className={`py-2.5 px-4 text-right tabular-nums ${isLight ? 'text-muted' : 'text-secondary'}`}>
                         {(col.distinctCount || 0).toLocaleString()}
                       </td>
-                      <td className={`py-2.5 px-4 truncate max-w-[160px] ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                      <td className={`py-2.5 px-4 truncate max-w-[160px] ${isLight ? 'text-muted' : 'text-secondary'}`}>
                         {sampleVal !== undefined && sampleVal !== null ? String(sampleVal) : '—'}
                       </td>
                     </tr>
@@ -395,7 +395,7 @@ export const UploadIngestionView: React.FC = () => {
       <div className={`space-y-4 pt-4 border-t ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className={`font-heading text-xl font-bold tracking-wide uppercase ${
-            isLight ? 'text-slate-900' : 'text-white'
+            isLight ? 'text-primary' : 'text-primary'
           }`}>
             CURATED INDUSTRY BENCHMARK DATASETS
           </h3>
@@ -415,7 +415,7 @@ export const UploadIngestionView: React.FC = () => {
               className="depth-card p-5 rounded-[20px] border bg-card border-subtle hover:border-accent/50 space-y-3 transition-colors"
             >
               <div className="flex items-center justify-between">
-                <span className={`text-xs font-mono ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>{demo.category}</span>
+                <span className={`text-xs font-mono ${isLight ? 'text-muted' : 'text-secondary'}`}>{demo.category}</span>
                 <span className={`text-[10px] font-semibold px-2 py-0.5 rounded border ${
                   isLight 
                     ? 'text-teal-800 bg-teal-50 border-teal-200' 
@@ -425,11 +425,11 @@ export const UploadIngestionView: React.FC = () => {
                 </span>
               </div>
 
-              <h4 className={`font-heading text-lg font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>{demo.name}</h4>
-              <p className={`text-xs ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>{demo.description}</p>
+              <h4 className={`font-heading text-lg font-bold ${isLight ? 'text-primary' : 'text-primary'}`}>{demo.name}</h4>
+              <p className={`text-xs ${isLight ? 'text-muted' : 'text-secondary'}`}>{demo.description}</p>
 
               <div className="pt-2 flex items-center justify-between">
-                <span className={`text-xs font-mono ${isLight ? 'text-slate-500' : 'text-slate-500'}`}>{demo.rowsCount} records</span>
+                <span className={`text-xs font-mono ${isLight ? 'text-muted' : 'text-muted'}`}>{demo.rowsCount} records</span>
                 <button
                   onClick={() => {
                     loadDemoDataset(demo.id);
@@ -437,8 +437,8 @@ export const UploadIngestionView: React.FC = () => {
                   }}
                   className={`px-4 py-1.5 rounded-lg text-xs font-medium border transition-colors flex items-center gap-1.5 cursor-pointer ${
                     isLight 
-                      ? 'bg-slate-50 hover:bg-teal-50 text-teal-800 border-slate-300 hover:border-teal-500' 
-                      : 'bg-slate-900 hover:bg-slate-800 text-white border-slate-700 hover:border-teal-400'
+                      ? 'bg-elevated hover:bg-teal-50 text-teal-800 border-slate-300 hover:border-teal-500' 
+                      : 'bg-card hover:bg-elevated text-primary border-slate-700 hover:border-teal-400'
                   }`}
                 >
                   <span>Load Benchmark</span>

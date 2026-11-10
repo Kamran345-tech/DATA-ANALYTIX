@@ -1,5 +1,4 @@
 import Papa from 'papaparse';
-import * as XLSX from 'xlsx';
 import { DataType } from '../../types';
 import { parseRobustNumber } from '../dataParser';
 
@@ -209,6 +208,7 @@ export async function parseFileV2(
 
   // Excel support with selectable sheet
   if (extension === 'xlsx' || extension === 'xls') {
+    const XLSX = await import('xlsx');
     const buffer = await file.arrayBuffer();
     const workbook = XLSX.read(buffer, { type: 'array', cellDates: true });
     const sheetNames = workbook.SheetNames;

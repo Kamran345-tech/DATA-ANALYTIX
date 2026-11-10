@@ -130,8 +130,8 @@ export const Tooltip: React.FC<TooltipProps> = ({
           <div
             className={`rounded-xl p-3 text-xs backdrop-blur-md transition-colors ${
               isLight
-                ? 'bg-white/95 text-slate-800 border border-slate-200 shadow-xl shadow-slate-900/10'
-                : 'bg-[#111827]/95 text-gray-200 border border-[#00F5A0]/40 shadow-2xl shadow-black/60'
+                ? 'bg-white/95 text-primary border border-slate-200 shadow-xl shadow-slate-900/10'
+                : 'bg-accent text-primary border border-teal-500/40 shadow-2xl shadow-black/60'
             }`}
           >
             {/* Header */}
@@ -144,7 +144,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
                 {title && (
                   <span
                     className={`font-bold tracking-wide text-[11px] truncate ${
-                      isLight ? 'text-slate-900' : 'text-white'
+                      isLight ? 'text-primary' : 'text-primary'
                     }`}
                   >
                     {title}
@@ -155,7 +155,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
                     className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold tracking-wider uppercase shrink-0 ${
                       isLight
                         ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                        : 'bg-[#00F5A0]/20 text-[#00F5A0] border border-[#00F5A0]/30'
+                        : 'bg-accent text-accent border border-teal-500/40'
                     }`}
                   >
                     {tag}
@@ -167,7 +167,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
             {/* Body */}
             <div
               className={`text-[11px] leading-relaxed ${
-                isLight ? 'text-slate-600' : 'text-gray-300'
+                isLight ? 'text-muted' : 'text-secondary'
               }`}
             >
               {content}
@@ -178,7 +178,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
               className={`absolute w-2 h-2 ${
                 isLight
                   ? 'bg-white border-slate-200'
-                  : 'bg-[#111827] border-[#00F5A0]/40'
+                  : 'bg-accent border-teal-500/40'
               } ${
                 effectiveSide === 'right'
                   ? 'left-0 -translate-x-1/2 top-1/2 -translate-y-1/2 rotate-45 border-l border-b'

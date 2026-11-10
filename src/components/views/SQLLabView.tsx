@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import { usePlatform } from '../../store/usePlatformStore';
 import { executeSQLQuery, generateStarterSQLQueries, translateNaturalLanguageToSQL, SQLQueryResult } from '../../engine/sqlEngine';
-import * as XLSX from 'xlsx';
+import { DownloadMenu } from '../common/DownloadMenu';
 
 export const SQLLabView: React.FC = () => {
   const { dataModel, columns, applyCleanedRows, setCurrentTab, brand, themeMode } = usePlatform();
@@ -106,8 +106,9 @@ export const SQLLabView: React.FC = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const exportCSV = () => {
+  const exportCSV = async () => {
     if (!result || result.rows.length === 0) return;
+    const XLSX = await import('xlsx');
     const ws = XLSX.utils.json_to_sheet(result.rows);
     const csv = XLSX.utils.sheet_to_csv(ws);
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -139,13 +140,14 @@ export const SQLLabView: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={handleRun}
             className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-accent text-on-accent font-bold text-xs transition-all cursor-pointer shadow-md"
           >
             <Play className="w-3.5 h-3.5 fill-current" /> Run Query
           </button>
+          <DownloadMenu context="sql_lab" customSql={query} />
         </div>
       </div>
 

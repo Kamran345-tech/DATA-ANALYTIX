@@ -89,7 +89,7 @@ display(df.describe())
 # Chart 1: Distribution of ${primaryNum}
 plt.figure(figsize=(10, 4))
 if "${primaryNum}" in df.columns:
-    sns.histplot(df["${primaryNum}"].dropna(), kde=True, color="#21F1A8")
+    sns.histplot(df["${primaryNum}"].dropna(), kde=True, color="var(--chart-1)")
     plt.title("Statistical Distribution of ${primaryNum}", fontsize=14, fontweight='bold')
     plt.xlabel("${primaryNum}")
     plt.ylabel("Frequency")
@@ -226,23 +226,23 @@ print("Colab Pipeline Execution Complete!")
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
       <div 
-        className="relative w-full max-w-2xl bg-[#161616] border border-[#2d2d2d] rounded-3xl shadow-2xl overflow-hidden p-6 sm:p-8 space-y-6 max-h-[90vh] overflow-y-auto"
+        className="relative w-full max-w-2xl bg-card border border-subtle rounded-3xl shadow-2xl overflow-hidden p-6 sm:p-8 space-y-6 max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-[#2d2d2d] pb-4">
+        <div className="flex items-center justify-between border-b border-subtle pb-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-amber-500/15 text-amber-400 flex items-center justify-center border border-amber-500/30">
               <FileCode2 className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-white tracking-wide flex items-center gap-2">
+              <h3 className="text-lg font-bold text-primary tracking-wide flex items-center gap-2">
                 <span>Google Colab Integration</span>
                 <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-amber-500/20 text-amber-300 font-semibold uppercase">
                   Jupyter .ipynb
                 </span>
               </h3>
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-secondary">
                 Run live Python / Pandas code on Google Cloud GPU/CPU with 1 click
               </p>
             </div>
@@ -250,36 +250,36 @@ print("Colab Pipeline Execution Complete!")
 
           <button 
             onClick={onClose}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-[#252525] transition-colors"
+            className="p-1.5 rounded-lg text-secondary hover:text-primary hover:bg-elevated transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* 2 Easy Setup Steps (In Urdu & English) */}
-        <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-2xl p-4 sm:p-5 space-y-3">
-          <h4 className="text-xs font-bold text-[#21F1A8] font-mono uppercase tracking-wider flex items-center gap-1.5">
+        <div className="bg-card border border-subtle rounded-2xl p-4 sm:p-5 space-y-3">
+          <h4 className="text-xs font-bold text-accent font-mono uppercase tracking-wider flex items-center gap-1.5">
             <BookOpen className="w-4 h-4" />
             <span>Google Colab mh kesy run krna h? (Quick Setup Guide):</span>
           </h4>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-            <div className="p-3 bg-[#131313] rounded-xl border border-[#252525] space-y-1">
-              <span className="font-bold text-white flex items-center gap-1.5">
-                <span className="w-5 h-5 rounded-full bg-[#21F1A8] text-black flex items-center justify-center text-[11px] font-bold">1</span>
+            <div className="p-3 bg-app rounded-xl border border-subtle space-y-1">
+              <span className="font-bold text-primary flex items-center gap-1.5">
+                <span className="w-5 h-5 rounded-full bg-accent text-black flex items-center justify-center text-[11px] font-bold">1</span>
                 <span>Download .ipynb Notebook:</span>
               </span>
-              <p className="text-gray-400 text-[11px] leading-relaxed">
+              <p className="text-secondary text-[11px] leading-relaxed">
                 Neechy <strong>&quot;Download Colab Notebook (.ipynb)&quot;</strong> button py click kren. File apky computer py save ho jayegi.
               </p>
             </div>
 
-            <div className="p-3 bg-[#131313] rounded-xl border border-[#252525] space-y-1">
-              <span className="font-bold text-white flex items-center gap-1.5">
-                <span className="w-5 h-5 rounded-full bg-[#21F1A8] text-black flex items-center justify-center text-[11px] font-bold">2</span>
+            <div className="p-3 bg-app rounded-xl border border-subtle space-y-1">
+              <span className="font-bold text-primary flex items-center gap-1.5">
+                <span className="w-5 h-5 rounded-full bg-accent text-black flex items-center justify-center text-[11px] font-bold">2</span>
                 <span>Upload to Google Colab:</span>
               </span>
-              <p className="text-gray-400 text-[11px] leading-relaxed">
+              <p className="text-secondary text-[11px] leading-relaxed">
                 Colab open kren (<code>colab.research.google.com</code>), <strong>File &rarr; Upload Notebook</strong> click kren aur ye file select kren. Code ready to run hoga!
               </p>
             </div>
@@ -290,7 +290,7 @@ print("Colab Pipeline Execution Complete!")
         <div className="flex flex-wrap items-center gap-3">
           <button
             onClick={handleDownloadIpynb}
-            className="flex-1 py-3 px-4 rounded-xl bg-[#21F1A8] text-black font-semibold text-xs hover:bg-[#1cdb97] transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#21F1A8]/20"
+            className="flex-1 py-3 px-4 rounded-xl bg-accent text-black font-semibold text-xs hover:bg-accent transition-all flex items-center justify-center gap-2 shadow-lg shadow-lg/20"
           >
             {downloaded ? <Check className="w-4 h-4" /> : <Download className="w-4 h-4" />}
             <span>{downloaded ? 'Notebook Downloaded!' : 'Download Colab Notebook (.ipynb)'}</span>
@@ -300,7 +300,7 @@ print("Colab Pipeline Execution Complete!")
             href="https://colab.research.google.com/#create=true"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex-1 py-3 px-4 rounded-xl bg-[#242424] hover:bg-[#303030] text-gray-200 font-semibold text-xs border border-[#3a3a3a] transition-all flex items-center justify-center gap-2"
+            className="flex-1 py-3 px-4 rounded-xl bg-elevated hover:bg-elevated text-primary font-semibold text-xs border border-teal-500/40 transition-all flex items-center justify-center gap-2"
           >
             <ExternalLink className="w-4 h-4 text-amber-400" />
             <span>Open Google Colab (New Tab)</span>
@@ -309,29 +309,29 @@ print("Colab Pipeline Execution Complete!")
 
         {/* Direct Python Code Preview with Copy */}
         <div className="space-y-2">
-          <div className="flex items-center justify-between text-xs text-gray-400">
-            <span className="font-mono text-[11px] text-gray-300 flex items-center gap-1.5">
-              <Terminal className="w-3.5 h-3.5 text-[#21F1A8]" />
+          <div className="flex items-center justify-between text-xs text-secondary">
+            <span className="font-mono text-[11px] text-secondary flex items-center gap-1.5">
+              <Terminal className="w-3.5 h-3.5 text-accent" />
               <span>Or copy ready-to-run Python script for Colab cell:</span>
             </span>
             <button
               onClick={handleCopyCode}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#222] hover:bg-[#2c2c2c] text-gray-200 hover:text-white transition-colors text-[11px]"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-elevated hover:bg-elevated text-primary hover:text-primary transition-colors text-[11px]"
             >
-              {copiedCode ? <Check className="w-3.5 h-3.5 text-[#21F1A8]" /> : <Copy className="w-3.5 h-3.5" />}
+              {copiedCode ? <Check className="w-3.5 h-3.5 text-accent" /> : <Copy className="w-3.5 h-3.5" />}
               <span>{copiedCode ? 'Copied to Clipboard' : 'Copy Code'}</span>
             </button>
           </div>
 
-          <pre className="bg-[#111] text-[11px] text-[#21F1A8] font-mono p-4 rounded-2xl border border-[#262626] max-h-56 overflow-y-auto leading-relaxed">
+          <pre className="bg-app text-[11px] text-accent font-mono p-4 rounded-2xl border border-subtle max-h-56 overflow-y-auto leading-relaxed">
             {colabScript}
           </pre>
         </div>
 
         {/* Footer info */}
-        <div className="flex items-center justify-between pt-2 border-t border-[#262626] text-[11px] text-gray-500">
+        <div className="flex items-center justify-between pt-2 border-t border-subtle text-[11px] text-muted">
           <span>Developed by: Kamran Badar | Badar Analytics</span>
-          <span className="text-[#21F1A8] font-mono">Compatible with Python 3.10+ / Colab</span>
+          <span className="text-accent font-mono">Compatible with Python 3.10+ / Colab</span>
         </div>
       </div>
     </div>

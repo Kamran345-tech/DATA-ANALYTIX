@@ -253,32 +253,32 @@ DIVIDE([Total ${primaryMetric}] - SUM('${tableName}'[COGS]), [Total ${primaryMet
       
       {/* Header Banner */}
       <div className={`p-5 rounded-2xl border flex flex-wrap items-center justify-between gap-4 ${
-        isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-[#151921] border-[#222938] shadow-md'
+        isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-accent border-teal-500/40 shadow-md'
       }`}>
         <div>
           <div className="flex items-center gap-2">
-            <span className={`p-1.5 rounded-lg ${isLight ? 'bg-emerald-100 text-emerald-800' : 'bg-[#21F1A8]/15 text-[#21F1A8]'}`}>
+            <span className={`p-1.5 rounded-lg ${isLight ? 'bg-emerald-100 text-emerald-800' : 'bg-accent text-accent'}`}>
               <Network className="w-5 h-5" />
             </span>
-            <h2 className={`text-lg font-bold tracking-tight uppercase ${isLight ? 'text-slate-900' : 'text-white'}`}>
+            <h2 className={`text-lg font-bold tracking-tight uppercase ${isLight ? 'text-primary' : 'text-primary'}`}>
               Data Engineering & Semantic Architecture Suite
             </h2>
           </div>
-          <p className={`text-xs mt-1 ${isLight ? 'text-slate-500' : 'text-gray-400'}`}>
+          <p className={`text-xs mt-1 ${isLight ? 'text-muted' : 'text-secondary'}`}>
             End-to-end lineage DAG, automated dbt/Great Expectations assertions, in-browser SQL execution sandbox, and production pipeline exports.
           </p>
         </div>
 
         <div className="flex items-center gap-2">
           <div className={`px-3 py-1.5 rounded-xl border text-xs font-mono font-semibold flex items-center gap-1.5 ${
-            isLight ? 'bg-emerald-50 text-emerald-800 border-emerald-300' : 'bg-[#21F1A8]/15 text-[#21F1A8] border-[#21F1A8]/30'
+            isLight ? 'bg-emerald-50 text-emerald-800 border-emerald-300' : 'bg-accent text-accent border-teal-500/40'
           }`}>
             <ShieldCheck className="w-4 h-4" />
             <span>Health: {qualityReport.overallScore}% Verified</span>
           </div>
 
           <div className={`px-3 py-1.5 rounded-xl border text-xs font-mono ${
-            isLight ? 'bg-slate-100 text-slate-700 border-slate-200' : 'bg-[#1A202C] text-gray-300 border-[#2D3748]'
+            isLight ? 'bg-elevated text-muted border-slate-200' : 'bg-accent text-secondary border-teal-500/40'
           }`}>
             <span>Latency: 1.4ms</span>
           </div>
@@ -289,7 +289,7 @@ DIVIDE([Total ${primaryMetric}] - SUM('${tableName}'[COGS]), [Total ${primaryMet
       {/* 1. INTERACTIVE DATA LINEAGE DAG PIPELINE                            */}
       {/* =================================================================== */}
       <div className={`p-6 rounded-2xl border ${
-        isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-[#151921] border-[#222938]'
+        isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-accent border-teal-500/40'
       }`}>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
@@ -298,7 +298,7 @@ DIVIDE([Total ${primaryMetric}] - SUM('${tableName}'[COGS]), [Total ${primaryMet
               Automated Data Pipeline Lineage (DAG)
             </h3>
           </div>
-          <span className="text-xs text-gray-400 font-mono">
+          <span className="text-xs text-secondary font-mono">
             Click any node to inspect execution telemetry
           </span>
         </div>
@@ -404,27 +404,27 @@ DIVIDE([Total ${primaryMetric}] - SUM('${tableName}'[COGS]), [Total ${primaryMet
                 selectedDagNode === node.id
                   ? isLight 
                     ? 'bg-cyan-50 border-cyan-400 ring-2 ring-cyan-300 shadow-md' 
-                    : 'bg-[#182333] border-cyan-400 ring-2 ring-cyan-400/30 shadow-lg shadow-cyan-500/10'
+                    : 'bg-accent border-cyan-400 ring-2 ring-cyan-400/30 shadow-lg shadow-cyan-500/10'
                   : isLight 
-                    ? 'bg-white border-slate-200 hover:bg-slate-50' 
+                    ? 'bg-white border-slate-200 hover:bg-elevated' 
                     : 'glass-card border-white/10 hover:border-cyan-400/30'
               }`}
             >
               <div>
                 <div className="flex items-center justify-between text-[10px] font-mono font-bold text-cyan-400 mb-1">
                   <span>{node.step}</span>
-                  <span className="text-slate-400">{node.latency}</span>
+                  <span className="text-secondary">{node.latency}</span>
                 </div>
-                <div className="font-bold text-xs truncate mb-1 text-slate-100" title={node.title}>{node.title}</div>
+                <div className="font-bold text-xs truncate mb-1 text-primary" title={node.title}>{node.title}</div>
                 <div className="text-[11px] font-semibold text-cyan-300">{node.metric}</div>
-                <p className="text-[10px] text-slate-400 mt-1 line-clamp-2 leading-tight">{node.desc}</p>
+                <p className="text-[10px] text-secondary mt-1 line-clamp-2 leading-tight">{node.desc}</p>
               </div>
 
               <div className="pt-2.5 mt-2 border-t border-white/10 flex items-center justify-between text-[10px] font-semibold">
                 <span className="text-emerald-400 flex items-center gap-1">
                   <CheckCircle2 className="w-3 h-3" /> {node.status}
                 </span>
-                <span className="text-slate-400 font-mono">Stage {node.id + 1}</span>
+                <span className="text-secondary font-mono">Stage {node.id + 1}</span>
               </div>
             </div>
           ))}
@@ -435,7 +435,7 @@ DIVIDE([Total ${primaryMetric}] - SUM('${tableName}'[COGS]), [Total ${primaryMet
       {/* 2. AUTOMATED DATA TESTS SUITE (dbt / Great Expectations)            */}
       {/* =================================================================== */}
       <div className={`p-6 rounded-2xl border ${
-        isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-[#151921] border-[#222938]'
+        isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-accent border-teal-500/40'
       }`}>
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <div className="flex items-center gap-2">
@@ -452,7 +452,7 @@ DIVIDE([Total ${primaryMetric}] - SUM('${tableName}'[COGS]), [Total ${primaryMet
             <button
               onClick={() => copyCode(JSON.stringify(testSuite, null, 2), 'tests')}
               className={`flex items-center gap-1 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
-                isLight ? 'bg-slate-100 border-slate-200 hover:bg-slate-200' : 'bg-[#1B2230] border-[#2D3748] hover:bg-[#252F44]'
+                isLight ? 'bg-elevated border-slate-200 hover:bg-input' : 'bg-accent border-teal-500/40 hover:bg-accent'
               }`}
             >
               {copiedKey === 'tests' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
@@ -466,7 +466,7 @@ DIVIDE([Total ${primaryMetric}] - SUM('${tableName}'[COGS]), [Total ${primaryMet
           <table className="w-full text-xs text-left">
             <thead>
               <tr className={`border-b font-mono uppercase text-[10px] tracking-wider ${
-                isLight ? 'border-slate-200 text-slate-500' : 'border-[#222938] text-gray-400'
+                isLight ? 'border-slate-200 text-muted' : 'border-teal-500/40 text-secondary'
               }`}>
                 <th className="py-2.5 px-3">Test Assertion Name</th>
                 <th className="py-2.5 px-3">Category</th>
@@ -477,10 +477,10 @@ DIVIDE([Total ${primaryMetric}] - SUM('${tableName}'[COGS]), [Total ${primaryMet
             </thead>
             <tbody className="divide-y divide-inherit">
               {testSuite.map(t => (
-                <tr key={t.id} className={isLight ? 'hover:bg-slate-50' : 'hover:bg-[#1A202C]'}>
+                <tr key={t.id} className={isLight ? 'hover:bg-elevated' : 'hover:bg-accent'}>
                   <td className="py-2.5 px-3 font-mono font-bold text-emerald-400">
                     {t.name}
-                    <span className="block text-[10px] font-normal text-gray-400 font-sans mt-0.5">
+                    <span className="block text-[10px] font-normal text-secondary font-sans mt-0.5">
                       {t.description}
                     </span>
                   </td>
@@ -503,7 +503,7 @@ DIVIDE([Total ${primaryMetric}] - SUM('${tableName}'[COGS]), [Total ${primaryMet
       {/* 3. IN-BROWSER SQL EXECUTION SANDBOX                                 */}
       {/* =================================================================== */}
       <div className={`p-6 rounded-2xl border ${
-        isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-[#151921] border-[#222938]'
+        isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-accent border-teal-500/40'
       }`}>
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <div className="flex items-center gap-2">
@@ -511,7 +511,7 @@ DIVIDE([Total ${primaryMetric}] - SUM('${tableName}'[COGS]), [Total ${primaryMet
             <h3 className="text-sm font-bold uppercase tracking-wider">
               Interactive In-Browser SQL Console
             </h3>
-            <span className="text-xs text-gray-400 font-mono">
+            <span className="text-xs text-secondary font-mono">
               Target: <strong className="text-emerald-400">{tableName}</strong> ({cleanRows.length} rows)
             </span>
           </div>
@@ -519,7 +519,7 @@ DIVIDE([Total ${primaryMetric}] - SUM('${tableName}'[COGS]), [Total ${primaryMet
           <div className="flex items-center gap-2">
             <button
               onClick={handleExecuteSql}
-              className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-[#21F1A8] text-slate-950 font-bold text-xs hover:bg-[#1cdb97] transition-all cursor-pointer shadow-sm"
+              className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-accent text-primary font-bold text-xs hover:bg-accent transition-all cursor-pointer shadow-sm"
             >
               <Play className="w-3.5 h-3.5 fill-current" />
               <span>Run Query</span>
@@ -536,8 +536,8 @@ DIVIDE([Total ${primaryMetric}] - SUM('${tableName}'[COGS]), [Total ${primaryMet
               rows={5}
               className={`w-full font-mono text-xs p-3.5 rounded-xl border focus:outline-none leading-relaxed ${
                 isLight 
-                  ? 'bg-slate-50 border-slate-300 text-slate-900 focus:bg-white focus:border-emerald-500' 
-                  : 'bg-[#0E131F] border-[#222938] text-emerald-300 focus:border-[#21F1A8]'
+                  ? 'bg-elevated border-slate-300 text-primary focus:bg-white focus:border-emerald-500' 
+                  : 'bg-accent border-teal-500/40 text-emerald-300 focus:border-teal-500/40'
               }`}
               spellCheck={false}
             />
@@ -545,9 +545,9 @@ DIVIDE([Total ${primaryMetric}] - SUM('${tableName}'[COGS]), [Total ${primaryMet
 
           {/* Execution Telemetry or Error */}
           {queryDuration !== null && (
-            <div className="flex items-center justify-between text-xs font-mono text-gray-400 px-1">
+            <div className="flex items-center justify-between text-xs font-mono text-secondary px-1">
               <span>Execution Time: <strong className="text-emerald-400">{queryDuration}ms</strong></span>
-              <span>Returned: <strong className="text-white">{queryResult?.length || 0} rows</strong></span>
+              <span>Returned: <strong className="text-primary">{queryResult?.length || 0} rows</strong></span>
             </div>
           )}
 
@@ -563,7 +563,7 @@ DIVIDE([Total ${primaryMetric}] - SUM('${tableName}'[COGS]), [Total ${primaryMet
             <div className="overflow-x-auto border rounded-xl max-h-60 border-inherit">
               <table className="w-full text-xs text-left">
                 <thead className={`border-b font-mono uppercase text-[10px] ${
-                  isLight ? 'bg-slate-100 border-slate-200 text-slate-700' : 'bg-[#11141C] border-[#222938] text-gray-300'
+                  isLight ? 'bg-elevated border-slate-200 text-muted' : 'bg-accent border-teal-500/40 text-secondary'
                 }`}>
                   <tr>
                     {Object.keys(queryResult[0]).map(col => (
@@ -573,7 +573,7 @@ DIVIDE([Total ${primaryMetric}] - SUM('${tableName}'[COGS]), [Total ${primaryMet
                 </thead>
                 <tbody className="divide-y divide-inherit">
                   {queryResult.map((row, rIdx) => (
-                    <tr key={rIdx} className={isLight ? 'hover:bg-slate-50' : 'hover:bg-[#1A202C]'}>
+                    <tr key={rIdx} className={isLight ? 'hover:bg-elevated' : 'hover:bg-accent'}>
                       {Object.values(row).map((val: any, cIdx) => (
                         <td key={cIdx} className="py-2 px-3 font-mono text-[11px]">
                           {typeof val === 'number' ? val.toLocaleString() : String(val ?? '')}
@@ -592,7 +592,7 @@ DIVIDE([Total ${primaryMetric}] - SUM('${tableName}'[COGS]), [Total ${primaryMet
       {/* 4. PRODUCTION CODE GENERATION & EXPORT STUDIO                       */}
       {/* =================================================================== */}
       <div className={`p-6 rounded-2xl border ${
-        isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-[#151921] border-[#222938]'
+        isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-accent border-teal-500/40'
       }`}>
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <div className="flex items-center gap-2">
@@ -615,8 +615,8 @@ DIVIDE([Total ${primaryMetric}] - SUM('${tableName}'[COGS]), [Total ${primaryMet
                 onClick={() => setActiveCodeTab(tab.id as any)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                   activeCodeTab === tab.id
-                    ? isLight ? 'bg-emerald-600 text-white shadow-xs font-bold' : 'bg-[#21F1A8] text-slate-950 font-bold shadow-xs'
-                    : isLight ? 'bg-slate-100 text-slate-700 hover:bg-slate-200' : 'bg-[#1B2230] text-gray-300 hover:bg-[#252F44]'
+                    ? isLight ? 'bg-emerald-600 text-primary shadow-xs font-bold' : 'bg-accent text-primary font-bold shadow-xs'
+                    : isLight ? 'bg-elevated text-muted hover:bg-input' : 'bg-accent text-secondary hover:bg-accent'
                 }`}
               >
                 {tab.label}
@@ -628,7 +628,7 @@ DIVIDE([Total ${primaryMetric}] - SUM('${tableName}'[COGS]), [Total ${primaryMet
                 const codeMap = { dbt: dbtModelCode, airflow: airflowDagCode, ddl: ddlSqlCode, dax: daxMeasureCode };
                 copyCode(codeMap[activeCodeTab], activeCodeTab);
               }}
-              className="ml-2 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-sm"
+              className="ml-2 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-primary text-xs font-bold transition-all shadow-sm"
               title="Copy snippet to clipboard"
             >
               {copiedKey === activeCodeTab ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
@@ -639,7 +639,7 @@ DIVIDE([Total ${primaryMetric}] - SUM('${tableName}'[COGS]), [Total ${primaryMet
 
         {/* Code Display Area */}
         <div className={`p-4 rounded-xl border font-mono text-xs overflow-x-auto leading-relaxed ${
-          isLight ? 'bg-slate-900 text-slate-100 border-slate-800' : 'bg-[#0A0D14] text-emerald-300 border-[#1E2638]'
+          isLight ? 'bg-card text-primary border-slate-800' : 'bg-accent text-emerald-300 border-teal-500/40'
         }`}>
           <pre>
             {activeCodeTab === 'dbt' && dbtModelCode}

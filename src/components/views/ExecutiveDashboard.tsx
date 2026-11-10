@@ -51,7 +51,8 @@ import { EditableDashboardTitle } from '../common/EditableDashboardTitle';
 import { EditableAnalystName } from '../common/EditableAnalystName';
 import { KpiCardEditorModal } from '../common/KpiCardEditorModal';
 import { Tooltip } from '../common/Tooltip';
-import { generateEnterpriseReportPDF, downloadDashboardAndReportBundle } from '../../engine/exportEngine';
+import { DownloadMenu } from '../common/DownloadMenu';
+import { buildSopFileName } from '../../config/designTokens';
 import { 
   TimeSeriesAreaChart, 
   Pareto8020Chart, 
@@ -74,6 +75,7 @@ import {
 } from '../../engine/chartRecommendationEngine';
 import { loadFeatureFlags, FeatureFlags } from '../../config/features';
 import { getChartGuideRule, formatChartGuideReason } from '../../config/chartGuide';
+import { DASHBOARD_THEME_PALETTES, colorWithAlpha } from '../../config/designTokens';
 
 type DashboardTab = 
   | 'overview' 
@@ -136,92 +138,7 @@ export const ExecutiveDashboard: React.FC = () => {
     return 'cyber_emerald';
   });
 
-  const themePalettes: Record<DashboardVisualTheme, {
-    name: string;
-    trendActual: string;
-    trendSma: string;
-    trendAreaGrad: string;
-    donutColors: { stroke: string; dot: string }[];
-    barColors: string[];
-  }> = {
-    cyber_emerald: {
-      name: 'Azure Blue',
-      trendActual: '#0284C7',
-      trendSma: '#6366F1',
-      trendAreaGrad: '#6366F1',
-      donutColors: [
-        { stroke: '#0284C7', dot: 'bg-sky-600' },
-        { stroke: '#38BDF8', dot: 'bg-sky-400' },
-        { stroke: '#6366F1', dot: 'bg-indigo-500' },
-        { stroke: '#8B5CF6', dot: 'bg-purple-500' },
-        { stroke: '#EC4899', dot: 'bg-pink-500' },
-        { stroke: '#F59E0B', dot: 'bg-amber-500' }
-      ],
-      barColors: ['#0284C7', '#38BDF8', '#6366F1', '#8B5CF6']
-    },
-    wall_street: {
-      name: 'Wall St',
-      trendActual: '#10B981',
-      trendSma: '#F59E0B',
-      trendAreaGrad: '#F59E0B',
-      donutColors: [
-        { stroke: '#10B981', dot: 'bg-emerald-500' },
-        { stroke: '#059669', dot: 'bg-emerald-600' },
-        { stroke: '#F59E0B', dot: 'bg-amber-500' },
-        { stroke: '#D97706', dot: 'bg-amber-600' },
-        { stroke: '#0D9488', dot: 'bg-teal-600' },
-        { stroke: '#64748B', dot: 'bg-slate-500' }
-      ],
-      barColors: ['#10B981', '#059669', '#F59E0B', '#D97706']
-    },
-    power_bi: {
-      name: 'Power BI',
-      trendActual: '#F2C811',
-      trendSma: '#0078D4',
-      trendAreaGrad: '#0078D4',
-      donutColors: [
-        { stroke: '#F2C811', dot: 'bg-amber-400' },
-        { stroke: '#0078D4', dot: 'bg-blue-600' },
-        { stroke: '#5C2D91', dot: 'bg-purple-700' },
-        { stroke: '#D83B01', dot: 'bg-orange-600' },
-        { stroke: '#107C41', dot: 'bg-green-700' },
-        { stroke: '#00B7C3', dot: 'bg-cyan-600' }
-      ],
-      barColors: ['#F2C811', '#0078D4', '#5C2D91', '#D83B01']
-    },
-    sunset_royal: {
-      name: 'Royal',
-      trendActual: '#A855F7',
-      trendSma: '#EC4899',
-      trendAreaGrad: '#EC4899',
-      donutColors: [
-        { stroke: '#A855F7', dot: 'bg-purple-500' },
-        { stroke: '#EC4899', dot: 'bg-pink-500' },
-        { stroke: '#F43F5E', dot: 'bg-rose-500' },
-        { stroke: '#8B5CF6', dot: 'bg-violet-500' },
-        { stroke: '#38BDF8', dot: 'bg-sky-400' },
-        { stroke: '#F59E0B', dot: 'bg-amber-500' }
-      ],
-      barColors: ['#A855F7', '#EC4899', '#F43F5E', '#8B5CF6']
-    },
-    nordic_light: {
-      name: 'Frost',
-      trendActual: '#38BDF8',
-      trendSma: '#2DD4BF',
-      trendAreaGrad: '#2DD4BF',
-      donutColors: [
-        { stroke: '#38BDF8', dot: 'bg-sky-400' },
-        { stroke: '#2DD4BF', dot: 'bg-teal-400' },
-        { stroke: '#0EA5E9', dot: 'bg-sky-500' },
-        { stroke: '#14B8A6', dot: 'bg-teal-500' },
-        { stroke: '#60A5FA', dot: 'bg-blue-400' },
-        { stroke: '#94A3B8', dot: 'bg-slate-400' }
-      ],
-      barColors: ['#38BDF8', '#2DD4BF', '#0EA5E9', '#14B8A6']
-    }
-  };
-
-  const activeThemeConfig = themePalettes[visualTheme] || themePalettes.cyber_emerald;
+  const activeThemeConfig = DASHBOARD_THEME_PALETTES[visualTheme] || DASHBOARD_THEME_PALETTES.cyber_emerald;
 
   const handleSetVisualTheme = (thm: DashboardVisualTheme) => {
     setVisualTheme(thm);
@@ -381,7 +298,7 @@ export const ExecutiveDashboard: React.FC = () => {
       categoryField: cat,
       valueField: val,
       aggregation: newVisAgg,
-      color: '#0284C7',
+      color: 'var(--chart-3)',
       description: `${newVisAgg.toUpperCase()}(${val}) by ${cat}`,
       isCustomRenamed: true
     };
@@ -644,7 +561,7 @@ export const ExecutiveDashboard: React.FC = () => {
   };
 
   // Download Executive Report PDF
-  const handleDownloadExecutivePDF = () => {
+  const handleDownloadExecutivePDF = async () => {
     try {
       setIsPdfGenerating(true);
       const payload = {
@@ -660,6 +577,7 @@ export const ExecutiveDashboard: React.FC = () => {
         transformations,
         qualityReport
       };
+      const { generateEnterpriseReportPDF } = await import('../../engine/exportEngine');
       const doc = generateEnterpriseReportPDF(payload, {
         customVisuals,
         categoryPerformance: analytics.categoryPerformance,
@@ -667,7 +585,7 @@ export const ExecutiveDashboard: React.FC = () => {
         anomalies: analytics.anomalies,
         opportunities: analytics.opportunities
       });
-      doc.save(`${project.name.replace(/[^a-zA-Z0-9_-]/g, '_')}_Executive_Report.pdf`);
+      doc.save(buildSopFileName('executive-report', project.name || 'dashboard', 'pdf'));
       setDownloadSuccess('Executive PDF Report downloaded successfully!');
       setTimeout(() => setDownloadSuccess(null), 3000);
     } catch (err: any) {
@@ -715,7 +633,7 @@ export const ExecutiveDashboard: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `${project.name.replace(/[^a-zA-Z0-9_-]/g, '_')}_Executive_Dashboard.json`;
+    link.download = buildSopFileName('dashboard-spec', project.name || 'dashboard', 'json');
     link.click();
     URL.revokeObjectURL(url);
     setDownloadSuccess('Executive Dashboard downloaded as JSON package!');
@@ -726,6 +644,7 @@ export const ExecutiveDashboard: React.FC = () => {
   const handleDownloadBundleZip = async () => {
     try {
       setIsBundleGenerating(true);
+      const { downloadDashboardAndReportBundle } = await import('../../engine/exportEngine');
       const payload = {
         project,
         brand,
@@ -783,8 +702,8 @@ export const ExecutiveDashboard: React.FC = () => {
           />
 
           {/* Title row: Logo & Titles on Left, Telemetry Health Badges on Right */}
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-            <div className="flex items-start gap-4 min-w-0">
+          <div className="flex flex-col xl:flex-row xl:items-start justify-between gap-4">
+            <div className="flex items-start gap-4 min-w-0 flex-1">
               {/* Company Logo Display & Uploader Button */}
               <div className="relative group shrink-0">
                 {brand.logoUrl ? (
@@ -797,14 +716,14 @@ export const ExecutiveDashboard: React.FC = () => {
                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 rounded-2xl transition-opacity flex items-center justify-center gap-1.5">
                       <button
                         onClick={() => fileInputRef.current?.click()}
-                        className="p-1 rounded-lg bg-surface-panel text-white hover:text-cyan-400 transition-colors"
+                        className="p-1 rounded-lg bg-elevated text-primary hover:text-accent transition-colors"
                         title="Change Company Logo"
                       >
                         <Pencil className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={removeCompanyLogo}
-                        className="p-1 rounded-lg bg-surface-panel text-rose-400 hover:text-rose-300 transition-colors"
+                        className="p-1 rounded-lg bg-elevated text-rose-400 hover:text-rose-300 transition-colors"
                         title="Remove Logo"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -814,7 +733,7 @@ export const ExecutiveDashboard: React.FC = () => {
                 ) : (
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl border-2 border-dashed border-cyan-500/40 hover:border-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 flex flex-col items-center justify-center gap-1 transition-all cursor-pointer shadow-xs group"
+                    className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl border-2 border-dashed border-cyan-500/40 hover:border-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/20 text-accent flex flex-col items-center justify-center gap-1 transition-all cursor-pointer shadow-xs group"
                     title="Upload Company Logo (Appears on Dashboard, Top Bar, and PDF Reports)"
                   >
                     <UploadCloud className="w-5 h-5 group-hover:scale-110 transition-transform" />
@@ -823,52 +742,50 @@ export const ExecutiveDashboard: React.FC = () => {
                 )}
               </div>
 
-              <div className="flex flex-col gap-1.5 min-w-0">
-                <div className="flex items-center gap-1.5 text-[10px] font-bold tracking-widest text-on-surface-variant uppercase font-mono flex-wrap">
-                  <span className="text-cyan-400 font-bold">{brand.companyName.toUpperCase()}</span>
+              <div className="flex flex-col gap-1.5 min-w-0 flex-1">
+                <div className="flex items-center gap-1.5 text-[10px] font-bold tracking-widest text-secondary uppercase font-mono flex-wrap">
+                  <span className="text-accent font-bold">{brand.companyName.toUpperCase()}</span>
                   <span>/</span>
                   <span>{brand.department.toUpperCase()}</span>
                   <span>/</span>
-                  <span className="px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 font-bold flex items-center gap-1 border border-cyan-400/30 shadow-[0_0_8px_rgba(34,211,238,0.2)]">
-                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" /> VERIFIED ANALYTICS MODEL
-                  </span>
+                  <span className="text-accent font-bold">VERIFIED ANALYTICS MODEL</span>
                 </div>
 
                 {/* Title & Rename Control */}
-                <div className="flex items-center gap-2 flex-wrap mt-0.5">
-                  <h1 className="font-headline-xl text-headline-xl text-on-surface tracking-tight font-extrabold flex items-center gap-2 flex-wrap">
-                    <EditableDashboardTitle className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight uppercase" showLabelPrefix={false} />
+                <div className="flex items-center gap-2 flex-wrap mt-0.5 min-w-0">
+                  <h1 className="font-headline-xl text-headline-xl text-primary tracking-tight font-extrabold flex items-center gap-2 flex-wrap min-w-0">
+                    <EditableDashboardTitle className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight uppercase break-words" showLabelPrefix={false} />
                   </h1>
                 </div>
 
-                <p className="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-2 flex-wrap">
-                  <span>Scope: <strong className="text-on-surface font-semibold">{project.name}</strong></span>
-                  <span className="w-1 h-1 rounded-full bg-border-prominent" />
+                <p className="font-body-sm text-body-sm text-secondary flex items-center gap-2 flex-wrap">
+                  <span>Scope: <strong className="text-primary font-semibold">{project.name}</strong></span>
+                  <span aria-hidden="true">·</span>
                   <span className="flex items-center gap-1">Prepared by: <EditableAnalystName /></span>
-                  <span className="w-1 h-1 rounded-full bg-border-prominent" />
-                  <span>Audited: <strong className="text-cyan-400 font-semibold">{filteredRows.length.toLocaleString()} rows</strong></span>
+                  <span aria-hidden="true">·</span>
+                  <span>Audited: <strong className="text-accent font-semibold tabular-nums">{filteredRows.length.toLocaleString()} rows</strong></span>
                 </p>
               </div>
             </div>
 
-            {/* Telemetry Health Badges */}
-            <div className="flex items-center gap-2.5 glass-card px-4 py-2 rounded-xl shadow-xs shrink-0 self-start lg:self-center">
-              <div 
+            {/* Telemetry Health Summary (Non-overlapping, responsive flex item) */}
+            <div className="flex flex-wrap items-center gap-3 bg-input border border-subtle px-4 py-2.5 rounded-xl shadow-xs shrink-0 self-start">
+              <button
+                type="button"
                 onClick={() => setCurrentTab('quality')}
-                className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
+                className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity text-left"
                 title="Click to view Data Quality Audit"
               >
-                <span className="font-label-caps text-label-caps text-on-surface-variant tracking-wider uppercase font-bold text-[11px]">DATA QUALITY</span>
-                <div className="flex items-center gap-1 text-cyan-400 font-headline-sm text-headline-sm font-bold">
-                  <span className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#22D3EE]" />
-                  <span>{qualityReport.overallScore}%</span>
-                </div>
-              </div>
-              <div className="w-px h-5 bg-white/10" />
+                <span className="font-mono text-secondary tracking-wider uppercase font-bold text-[11px] whitespace-nowrap">DATA QUALITY</span>
+                <span className="text-accent font-mono text-sm font-bold tabular-nums whitespace-nowrap">
+                  {qualityReport.overallScore}%
+                </span>
+              </button>
+              <div className="w-px h-4 bg-[var(--border-subtle)]" />
               <div className="flex items-center gap-2">
-                <span className="font-label-caps text-label-caps text-on-surface-variant tracking-wider uppercase font-bold text-[11px]">BUSINESS HEALTH</span>
-                <span className="text-amber-400 font-headline-sm text-headline-sm font-bold flex items-center gap-1">
-                  <Award className="w-3.5 h-3.5 text-amber-400" />
+                <span className="font-mono text-secondary tracking-wider uppercase font-bold text-[11px] whitespace-nowrap">BUSINESS HEALTH</span>
+                <span className="text-amber-500 font-mono text-sm font-bold flex items-center gap-1 tabular-nums whitespace-nowrap">
+                  <Award className="w-3.5 h-3.5 shrink-0" />
                   <span>{analytics.businessHealthScore ? `${analytics.businessHealthScore.score}/100` : '80/100'}</span>
                 </span>
               </div>
@@ -878,6 +795,9 @@ export const ExecutiveDashboard: React.FC = () => {
           {/* Action Toolbar Row: Responsive, Generous Breathing Room, Zero Vertical Text Clamping */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-3 border-t border-white/[0.08]">
             <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+              {/* Unified SOP Download Menu */}
+              <DownloadMenu context="executive_dashboard" label="Download" />
+
               {/* Download Bundle ZIP */}
               <button
                 onClick={handleDownloadBundleZip}
@@ -886,7 +806,7 @@ export const ExecutiveDashboard: React.FC = () => {
                 title="Download both Dashboard (JSON) and Executive PDF Report in a combined ZIP bundle"
               >
                 {isBundleGenerating ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin text-white shrink-0" />
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-primary shrink-0" />
                 ) : (
                   <Download className="w-3.5 h-3.5 stroke-[2.5] shrink-0" />
                 )}
@@ -941,8 +861,8 @@ export const ExecutiveDashboard: React.FC = () => {
             </div>
 
             {/* Live Indicator / Quick Telemetry Note */}
-            <div className="hidden xl:flex items-center gap-2 text-[11px] font-mono text-slate-400 shrink-0">
-              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shrink-0 shadow-[0_0_8px_#22D3EE]" />
+            <div className="hidden xl:flex items-center gap-2 text-[11px] font-mono text-secondary shrink-0">
+              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shrink-0 shadow-lg" />
               <span className="whitespace-nowrap">Real-Time Engine Sync Active</span>
             </div>
           </div>
@@ -970,10 +890,10 @@ export const ExecutiveDashboard: React.FC = () => {
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1 border shadow-xs ${
                     dashboardPersona === p.id
                       ? isLight 
-                        ? 'bg-sky-600 text-white font-bold border-sky-600 shadow-sm'
-                        : 'bg-cyan-500 dark:bg-cyan-400 text-slate-950 font-bold border-cyan-400 shadow-[0_0_12px_rgba(34,211,238,0.35)]'
+                        ? 'bg-sky-600 text-primary font-bold border-sky-600 shadow-sm'
+                        : 'bg-cyan-500 dark:bg-cyan-400 text-primary font-bold border-cyan-400 shadow-lg'
                       : isLight 
-                        ? 'bg-white hover:bg-slate-100 text-slate-700 hover:text-slate-900 border-slate-200'
+                        ? 'bg-white hover:bg-elevated text-muted hover:text-primary border-slate-200'
                         : 'bg-surface-panel hover:bg-surface-elevated text-on-surface-variant hover:text-on-surface border-border-subtle'
                   }`}
                   title={p.desc}
@@ -985,7 +905,7 @@ export const ExecutiveDashboard: React.FC = () => {
 
             {/* Multiple Visual Theme Switcher */}
             <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-on-surface-variant font-mono">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-muted dark:text-on-surface-variant font-mono">
                 THEME:
               </span>
               {[
@@ -1004,8 +924,8 @@ export const ExecutiveDashboard: React.FC = () => {
                   }}
                   className={`px-2 py-1 rounded-lg text-xs font-semibold transition-all border ${
                     visualTheme === thm.id
-                      ? isLight ? 'bg-sky-600 text-white font-bold border-sky-700 shadow-xs' : 'bg-cyan-400 text-slate-950 font-bold border-cyan-400 shadow-xs'
-                      : isLight ? 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100 hover:text-slate-900' : 'bg-elevated text-secondary border-subtle hover:bg-card-hover'
+                      ? isLight ? 'bg-sky-600 text-primary font-bold border-sky-700 shadow-xs' : 'bg-cyan-400 text-primary font-bold border-cyan-400 shadow-xs'
+                      : isLight ? 'bg-white text-muted border-slate-300 hover:bg-elevated hover:text-primary' : 'bg-elevated text-secondary border-subtle hover:bg-card-hover'
                   }`}
                   title={`Switch styling palette to ${thm.label}`}
                 >
@@ -1217,12 +1137,12 @@ export const ExecutiveDashboard: React.FC = () => {
           {displayKpis.map((kpi, kIdx) => {
             const isPositive = (kpi.changePercent ?? 0) >= 0;
             const statusTheme = kpi.status === 'Above Target'
-              ? { text: 'text-cyan-400', bg: 'bg-cyan-500/20', dot: 'bg-cyan-400', border: 'border-cyan-500/30', stroke: '#22D3EE' }
+              ? { text: 'text-cyan-400', bg: 'bg-cyan-500/20', dot: 'bg-cyan-400', border: 'border-cyan-500/30', stroke: 'var(--chart-3)' }
               : kpi.status === 'At Risk'
-              ? { text: 'text-rose-400', bg: 'bg-rose-500/20', dot: 'bg-rose-400', border: 'border-rose-500/30', stroke: '#F43F5E' }
+              ? { text: 'text-rose-400', bg: 'bg-rose-500/20', dot: 'bg-rose-400', border: 'border-rose-500/30', stroke: 'var(--danger)' }
               : kpi.status === 'Below Target'
-              ? { text: 'text-amber-400', bg: 'bg-amber-500/20', dot: 'bg-amber-400', border: 'border-amber-500/30', stroke: '#F59E0B' }
-              : { text: 'text-cyan-400', bg: 'bg-cyan-500/15', dot: 'bg-cyan-400', border: 'border-cyan-500/30', stroke: '#22D3EE' };
+              ? { text: 'text-amber-400', bg: 'bg-amber-500/20', dot: 'bg-amber-400', border: 'border-amber-500/30', stroke: 'var(--chart-4)' }
+              : { text: 'text-cyan-400', bg: 'bg-cyan-500/15', dot: 'bg-cyan-400', border: 'border-cyan-500/30', stroke: 'var(--chart-3)' };
 
             const filteredKpi = computeFilteredKpi(kpi);
 
@@ -1252,7 +1172,7 @@ export const ExecutiveDashboard: React.FC = () => {
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5 min-w-0">
                       <span className={`font-mono text-xs uppercase tracking-wider font-bold truncate max-w-[130px] sm:max-w-[155px] ${
-                        isLight ? 'text-slate-700' : 'text-slate-300'
+                        isLight ? 'text-muted' : 'text-secondary'
                       }`} title={kpi.name}>
                         {kpi.name}
                       </span>
@@ -1263,7 +1183,7 @@ export const ExecutiveDashboard: React.FC = () => {
                           setEditingKpi(kpi);
                         }}
                         className={`p-1 rounded transition-colors shrink-0 group-hover:opacity-100 opacity-60 ${
-                          isLight ? 'hover:bg-slate-200 text-slate-400 hover:text-sky-600' : 'hover:bg-surface-elevated text-slate-400 hover:text-cyan-400'
+                          isLight ? 'hover:bg-input text-secondary hover:text-sky-600' : 'hover:bg-surface-elevated text-secondary hover:text-cyan-400'
                         }`}
                         title="Customize heading, column & calculation formula"
                       >
@@ -1279,7 +1199,7 @@ export const ExecutiveDashboard: React.FC = () => {
                     <div className="flex flex-col min-w-0">
                       <div className="flex items-baseline gap-2 flex-wrap">
                         <span className={`font-metric-display text-metric-display font-extrabold tracking-tight leading-none truncate tabular-nums ${
-                          isLight ? 'text-slate-900 font-extrabold' : 'text-white'
+                          isLight ? 'text-primary font-extrabold' : 'text-primary'
                         }`} title={filteredKpi.formatted}>
                           {filteredKpi.formatted}
                         </span>
@@ -1290,7 +1210,7 @@ export const ExecutiveDashboard: React.FC = () => {
                         )}
                       </div>
                       {filteredKpi.isFiltered && (
-                        <div className="text-[11px] font-mono text-slate-500 dark:text-slate-400 mt-0.5">
+                        <div className="text-[11px] font-mono text-muted dark:text-secondary mt-0.5">
                           of {kpi.formattedValue} total
                         </div>
                       )}
@@ -1305,10 +1225,10 @@ export const ExecutiveDashboard: React.FC = () => {
                             <span className={`font-bold tabular-nums ${isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'}`}>
                               {isPositive ? '+' : ''}{kpi.changePercent}%
                             </span>
-                            <span className={isLight ? 'text-slate-500' : 'text-slate-400'}>vs prior window</span>
+                            <span className={isLight ? 'text-muted' : 'text-secondary'}>vs prior window</span>
                           </>
                         ) : (
-                          <span className={`text-[11px] font-mono ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                          <span className={`text-[11px] font-mono ${isLight ? 'text-muted' : 'text-secondary'}`}>
                             Formula: {kpi.aggregation.toUpperCase()}
                           </span>
                         )}
@@ -1320,7 +1240,7 @@ export const ExecutiveDashboard: React.FC = () => {
                       <svg className="w-full h-full fill-none stroke-2 overflow-visible" viewBox="0 0 100 40">
                         <defs>
                           <filter id={`spark-shadow-${kpi.id}`} x="-20%" y="-20%" width="140%" height="150%">
-                            <feDropShadow dx="0" dy="2" stdDeviation="1.5" floodColor="#000000" floodOpacity="0.45" />
+                            <feDropShadow dx="0" dy="2" stdDeviation="1.5" floodColor="var(--bg-app)" floodOpacity="0.45" />
                           </filter>
                         </defs>
                         <path d={sparkPath} stroke={statusTheme.stroke} strokeWidth="2.5" strokeLinecap="round" filter={`url(#spark-shadow-${kpi.id})`} />
@@ -1330,7 +1250,7 @@ export const ExecutiveDashboard: React.FC = () => {
                   </div>
 
                   <div className={`pt-2 border-t border-border-subtle flex items-center justify-between text-xs font-mono ${
-                    isLight ? 'text-slate-500' : 'text-slate-400'
+                    isLight ? 'text-muted' : 'text-secondary'
                   }`}>
                     <span className="truncate max-w-[150px]" title={kpi.traceableSource}>
                       Src: {kpi.traceableSource}
@@ -1358,14 +1278,14 @@ export const ExecutiveDashboard: React.FC = () => {
           }`}>
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-4">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-cyan-500/15 text-cyan-500 dark:text-cyan-400 border border-cyan-400/30 flex items-center justify-center shadow-[0_0_18px_rgba(34,211,238,0.25)]">
+                <div className="w-9 h-9 rounded-xl bg-cyan-500/15 text-cyan-500 dark:text-cyan-400 border border-cyan-400/30 flex items-center justify-center shadow-lg">
                   <Sparkles className="w-4 h-4 text-cyan-500 dark:text-cyan-400" />
                 </div>
                 <div>
-                  <h2 className="font-headline-sm text-headline-sm text-slate-900 dark:text-slate-100 font-bold tracking-tight">
+                  <h2 className="font-headline-sm text-headline-sm text-primary dark:text-primary font-bold tracking-tight">
                     AI DECISION DIRECTIVES: WHAT • WHY • MANAGEMENT ACTION
                   </h2>
-                  <p className="font-body-sm text-body-sm text-slate-600 dark:text-slate-300">
+                  <p className="font-body-sm text-body-sm text-muted dark:text-secondary">
                     Synthesized causal inferences derived from {filteredRows.length.toLocaleString()} audited records in {project.name}
                   </p>
                 </div>
@@ -1373,7 +1293,7 @@ export const ExecutiveDashboard: React.FC = () => {
 
               <div className="flex items-center gap-2">
                 <span className="px-3 py-1.5 rounded-lg bg-cyan-500/10 text-cyan-600 dark:text-cyan-300 font-label-caps text-label-caps tracking-wider uppercase font-bold flex items-center gap-2 border border-cyan-500/25 shadow-xs">
-                  <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_8px_#22D3EE]" />
+                  <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shadow-lg" />
                   Traceable to Verified Model
                 </span>
               </div>
@@ -1404,7 +1324,7 @@ export const ExecutiveDashboard: React.FC = () => {
                       <div>
                         <div className="flex items-center justify-between mb-3.5">
                           <span className={`font-headline-sm text-headline-sm font-bold truncate pr-2 ${
-                            isLight ? 'text-slate-900' : 'text-slate-100'
+                            isLight ? 'text-primary' : 'text-primary'
                           }`}>
                             {dir.title}
                           </span>
@@ -1418,7 +1338,7 @@ export const ExecutiveDashboard: React.FC = () => {
                               WHAT
                             </span>
                             <p className={`font-body-sm text-body-sm mt-1 leading-relaxed font-medium ${
-                              isLight ? 'text-slate-800' : 'text-slate-200'
+                              isLight ? 'text-primary' : 'text-primary'
                             }`}>
                               {dir.what}
                             </p>
@@ -1428,7 +1348,7 @@ export const ExecutiveDashboard: React.FC = () => {
                               WHY
                             </span>
                             <p className={`font-body-sm text-body-sm mt-1 leading-relaxed font-normal ${
-                              isLight ? 'text-slate-700' : 'text-slate-300'
+                              isLight ? 'text-muted' : 'text-secondary'
                             }`}>
                               {dir.why}
                             </p>
@@ -1444,7 +1364,7 @@ export const ExecutiveDashboard: React.FC = () => {
                           <Zap className="w-3.5 h-3.5 text-sky-600 dark:text-cyan-400" /> MANAGEMENT ACTION
                         </span>
                         <p className={`font-body-sm text-body-sm mt-1 font-medium leading-relaxed ${
-                          isLight ? 'text-slate-800' : 'text-cyan-100'
+                          isLight ? 'text-primary' : 'text-cyan-100'
                         }`}>
                           {dir.action}
                         </p>
@@ -1479,10 +1399,10 @@ export const ExecutiveDashboard: React.FC = () => {
                           <Activity className="w-4 h-4 text-cyan-500 dark:text-cyan-400" />
                         </div>
                         <div>
-                          <h3 className="font-headline-sm text-headline-sm text-slate-900 dark:text-slate-100 font-bold uppercase tracking-wide">
+                          <h3 className="font-headline-sm text-headline-sm text-primary dark:text-primary font-bold uppercase tracking-wide">
                             CHRONOLOGICAL TREND PERFORMANCE
                           </h3>
-                          <p className={`text-[11px] font-mono ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                          <p className={`text-[11px] font-mono ${isLight ? 'text-muted' : 'text-secondary'}`}>
                             {trendGranularity === 'auto' ? 'Auto-Aggregated Trajectory' : trendGranularity === 'monthly' ? 'Monthly Calendar Rollup' : trendGranularity === 'smooth' ? 'Gaussian Trendline' : trendGranularity === 'weekly' ? 'Weekly Interval Rollup' : 'Raw Granular Telemetry'}
                           </p>
                         </div>
@@ -1516,7 +1436,7 @@ export const ExecutiveDashboard: React.FC = () => {
                   <div className="flex flex-wrap items-center gap-2">
                     {/* Time Rollup Filter */}
                     <div className={`flex items-center p-0.5 rounded-lg border text-xs font-mono ${
-                      isLight ? 'bg-slate-100 border-slate-200' : 'bg-surface-panel border-border-subtle'
+                      isLight ? 'bg-elevated border-slate-200' : 'bg-surface-panel border-border-subtle'
                     }`}>
                       {(['auto', 'monthly', 'smooth', 'raw'] as const).map(mode => (
                         <button
@@ -1528,7 +1448,7 @@ export const ExecutiveDashboard: React.FC = () => {
                               ? isLight 
                                 ? 'bg-white text-sky-700 shadow-xs border border-slate-200 font-bold' 
                                 : 'bg-cyan-500/20 text-cyan-300 shadow-xs border border-cyan-500/40 font-bold'
-                              : isLight ? 'text-slate-600 hover:text-slate-900' : 'text-slate-400 hover:text-slate-200'
+                              : isLight ? 'text-muted hover:text-primary' : 'text-secondary hover:text-primary'
                           }`}
                           title={`Switch trend view to ${mode}`}
                         >
@@ -1539,7 +1459,7 @@ export const ExecutiveDashboard: React.FC = () => {
 
                     {/* Chart Mode: Area vs Bar */}
                     <div className={`flex items-center p-0.5 rounded-lg border text-xs ${
-                      isLight ? 'bg-slate-100 border-slate-200' : 'bg-surface-panel border-border-subtle'
+                      isLight ? 'bg-elevated border-slate-200' : 'bg-surface-panel border-border-subtle'
                     }`}>
                       <button
                         type="button"
@@ -1547,7 +1467,7 @@ export const ExecutiveDashboard: React.FC = () => {
                         className={`px-2 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
                           trendChartType === 'area'
                             ? isLight ? 'bg-white text-sky-700 shadow-xs' : 'bg-cyan-500/20 text-cyan-300 shadow-xs'
-                            : isLight ? 'text-slate-600' : 'text-slate-400'
+                            : isLight ? 'text-muted' : 'text-secondary'
                         }`}
                         title="Area Spline Curve"
                       >
@@ -1559,7 +1479,7 @@ export const ExecutiveDashboard: React.FC = () => {
                         className={`px-2 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
                           trendChartType === 'bar'
                             ? isLight ? 'bg-white text-sky-700 shadow-xs' : 'bg-cyan-500/20 text-cyan-300 shadow-xs'
-                            : isLight ? 'text-slate-600' : 'text-slate-400'
+                            : isLight ? 'text-muted' : 'text-secondary'
                         }`}
                         title="Bar Columns"
                       >
@@ -1573,8 +1493,8 @@ export const ExecutiveDashboard: React.FC = () => {
                       onChange={(e) => setSelectedTrendMetric(e.target.value)}
                       className={`glass-input h-7 px-2 text-xs font-mono rounded-lg border focus:outline-none cursor-pointer ${
                         isLight 
-                          ? 'bg-white text-slate-900 border-slate-300' 
-                          : 'bg-surface-panel text-slate-100 border-border-subtle'
+                          ? 'bg-white text-primary border-slate-300' 
+                          : 'bg-surface-panel text-primary border-border-subtle'
                       }`}
                       title="Select metric column"
                     >
@@ -1590,8 +1510,8 @@ export const ExecutiveDashboard: React.FC = () => {
                   const rawPoints = currentTrend?.dataPoints || [];
                   if (rawPoints.length < 2) {
                     return (
-                      <div className="h-64 flex flex-col items-center justify-center text-slate-500 font-label-sm text-label-sm gap-2">
-                        <Activity className="w-8 h-8 opacity-40 text-slate-400" />
+                      <div className="h-64 flex flex-col items-center justify-center text-muted font-label-sm text-label-sm gap-2">
+                        <Activity className="w-8 h-8 opacity-40 text-secondary" />
                         <span>Insufficient observation records to render time series trend.</span>
                       </div>
                     );
@@ -1779,13 +1699,13 @@ export const ExecutiveDashboard: React.FC = () => {
                       {/* Executive Insight Strip: Latest, Peak, Trough, Mean */}
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 my-3">
                         <div className={`p-2.5 rounded-xl border flex flex-col justify-between ${
-                          isLight ? 'bg-slate-50 border-slate-200' : 'bg-surface-panel/80 border-white/10'
+                          isLight ? 'bg-elevated border-slate-200' : 'bg-surface-panel/80 border-white/10'
                         }`}>
-                          <span className={`text-[10px] font-mono uppercase tracking-wider font-semibold ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                          <span className={`text-[10px] font-mono uppercase tracking-wider font-semibold ${isLight ? 'text-muted' : 'text-secondary'}`}>
                             Latest Run-Rate
                           </span>
                           <div className="flex items-baseline gap-1.5 mt-0.5">
-                            <span className={`font-mono text-sm sm:text-base font-extrabold ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                            <span className={`font-mono text-sm sm:text-base font-extrabold ${isLight ? 'text-primary' : 'text-primary'}`}>
                               {formatNum(latestVal)}
                             </span>
                             <span className={`text-[10px] font-mono font-bold ${
@@ -1797,48 +1717,48 @@ export const ExecutiveDashboard: React.FC = () => {
                         </div>
 
                         <div className={`p-2.5 rounded-xl border flex flex-col justify-between ${
-                          isLight ? 'bg-slate-50 border-slate-200' : 'bg-surface-panel/80 border-white/10'
+                          isLight ? 'bg-elevated border-slate-200' : 'bg-surface-panel/80 border-white/10'
                         }`}>
-                          <span className={`text-[10px] font-mono uppercase tracking-wider font-semibold ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                          <span className={`text-[10px] font-mono uppercase tracking-wider font-semibold ${isLight ? 'text-muted' : 'text-secondary'}`}>
                             Series Peak
                           </span>
                           <div className="flex items-baseline gap-1.5 mt-0.5">
                             <span className={`font-mono text-sm sm:text-base font-extrabold ${isLight ? 'text-sky-700' : 'text-cyan-400'}`}>
                               {formatNum(values[peakIdx])}
                             </span>
-                            <span className={`text-[10px] font-mono truncate max-w-[65px] ${isLight ? 'text-slate-500' : 'text-slate-400'}`} title={activePoints[peakIdx]?.period}>
+                            <span className={`text-[10px] font-mono truncate max-w-[65px] ${isLight ? 'text-muted' : 'text-secondary'}`} title={activePoints[peakIdx]?.period}>
                               {activePoints[peakIdx]?.period}
                             </span>
                           </div>
                         </div>
 
                         <div className={`p-2.5 rounded-xl border flex flex-col justify-between ${
-                          isLight ? 'bg-slate-50 border-slate-200' : 'bg-surface-panel/80 border-white/10'
+                          isLight ? 'bg-elevated border-slate-200' : 'bg-surface-panel/80 border-white/10'
                         }`}>
-                          <span className={`text-[10px] font-mono uppercase tracking-wider font-semibold ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                          <span className={`text-[10px] font-mono uppercase tracking-wider font-semibold ${isLight ? 'text-muted' : 'text-secondary'}`}>
                             Series Trough
                           </span>
                           <div className="flex items-baseline gap-1.5 mt-0.5">
                             <span className={`font-mono text-sm sm:text-base font-extrabold ${isLight ? 'text-amber-700' : 'text-amber-400'}`}>
                               {formatNum(values[troughIdx])}
                             </span>
-                            <span className={`text-[10px] font-mono truncate max-w-[65px] ${isLight ? 'text-slate-500' : 'text-slate-400'}`} title={activePoints[troughIdx]?.period}>
+                            <span className={`text-[10px] font-mono truncate max-w-[65px] ${isLight ? 'text-muted' : 'text-secondary'}`} title={activePoints[troughIdx]?.period}>
                               {activePoints[troughIdx]?.period}
                             </span>
                           </div>
                         </div>
 
                         <div className={`p-2.5 rounded-xl border flex flex-col justify-between ${
-                          isLight ? 'bg-slate-50 border-slate-200' : 'bg-surface-panel/80 border-white/10'
+                          isLight ? 'bg-elevated border-slate-200' : 'bg-surface-panel/80 border-white/10'
                         }`}>
-                          <span className={`text-[10px] font-mono uppercase tracking-wider font-semibold ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                          <span className={`text-[10px] font-mono uppercase tracking-wider font-semibold ${isLight ? 'text-muted' : 'text-secondary'}`}>
                             Baseline Mean
                           </span>
                           <div className="flex items-baseline gap-1.5 mt-0.5">
-                            <span className={`font-mono text-sm sm:text-base font-extrabold ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>
+                            <span className={`font-mono text-sm sm:text-base font-extrabold ${isLight ? 'text-primary' : 'text-primary'}`}>
                               {formatNum(meanVal)}
                             </span>
-                            <span className={`text-[10px] font-mono ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                            <span className={`text-[10px] font-mono ${isLight ? 'text-muted' : 'text-secondary'}`}>
                               avg
                             </span>
                           </div>
@@ -1849,7 +1769,7 @@ export const ExecutiveDashboard: React.FC = () => {
                       <div className="flex flex-wrap items-center justify-between gap-2 px-1 mb-2 text-[11px] font-mono">
                         <div className="flex flex-wrap items-center gap-3">
                           <span className="flex items-center gap-1.5 font-semibold text-cyan-600 dark:text-cyan-400">
-                            <span className="w-3.5 h-1 rounded-full bg-cyan-500 shadow-[0_0_6px_rgba(34,211,238,0.5)]" />
+                            <span className="w-3.5 h-1 rounded-full bg-cyan-500 shadow-lg" />
                             <span>Actual ({selectedTrendMetric})</span>
                           </span>
                           {trendChartType === 'area' && (
@@ -1858,12 +1778,12 @@ export const ExecutiveDashboard: React.FC = () => {
                               <span>3-Period SMA</span>
                             </span>
                           )}
-                          <span className={`flex items-center gap-1.5 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                          <span className={`flex items-center gap-1.5 ${isLight ? 'text-muted' : 'text-secondary'}`}>
                             <span className="w-3.5 h-0.5 border-t-2 border-dotted border-slate-400" />
                             <span>Baseline Mean ({formatNum(meanVal)})</span>
                           </span>
                         </div>
-                        <span className={`text-[10px] hidden sm:inline-flex items-center gap-1 ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>
+                        <span className={`text-[10px] hidden sm:inline-flex items-center gap-1 ${isLight ? 'text-secondary' : 'text-muted'}`}>
                           <span>• Hover curve to scrub observations</span>
                         </span>
                       </div>
@@ -1871,7 +1791,7 @@ export const ExecutiveDashboard: React.FC = () => {
                       {/* Main Telemetry SVG Chart with 3D Depth & Hover Scrubbing */}
                       <div className={`w-full h-72 relative rounded-xl p-3 flex flex-col justify-between border overflow-hidden ${
                         isLight 
-                          ? 'bg-slate-50/90 border-slate-200 shadow-inner' 
+                          ? 'bg-elevated border-slate-200 shadow-inner' 
                           : 'bg-surface-panel/40 border-border-subtle track-3d-recessed'
                       }`}>
                         <div className="w-full flex-1 relative overflow-hidden">
@@ -1909,7 +1829,7 @@ export const ExecutiveDashboard: React.FC = () => {
                           >
                             <defs>
                               <filter id="trendLine3dShadow" x="-10%" y="-10%" width="130%" height="150%">
-                                <feDropShadow dx="0" dy="4" stdDeviation="3.5" floodColor="#000000" floodOpacity="0.55" />
+                                <feDropShadow dx="0" dy="4" stdDeviation="3.5" floodColor="var(--bg-app)" floodOpacity="0.55" />
                               </filter>
                               <linearGradient id="trendLuminousArea" x1="0" y1="0" x2="0" y2="1">
                                 <stop offset="0%" stopColor={activeThemeConfig.trendActual} stopOpacity="0.35" />
@@ -1972,7 +1892,7 @@ export const ExecutiveDashboard: React.FC = () => {
                                       width={bW}
                                       height={Math.min(bH, 6)}
                                       rx="2"
-                                      fill="#ffffff"
+                                      fill="var(--text-primary)"
                                       fillOpacity={0.35}
                                     />
                                   </g>
@@ -2012,12 +1932,12 @@ export const ExecutiveDashboard: React.FC = () => {
                                 {peakPt && (
                                   <g className="select-none pointer-events-none">
                                     <circle cx={peakPt.x} cy={peakPt.y} r="6" fill={activeThemeConfig.trendActual} fillOpacity="0.25" className="animate-pulse" />
-                                    <circle cx={peakPt.x} cy={peakPt.y} r="3.5" fill="#38BDF8" stroke="#ffffff" strokeWidth="1.5" />
+                                    <circle cx={peakPt.x} cy={peakPt.y} r="3.5" fill="var(--chart-3)" stroke="var(--text-primary)" strokeWidth="1.5" />
                                     <text 
                                       x={peakPt.x} 
                                       y={Math.max(12, peakPt.y - 8)} 
                                       textAnchor="middle" 
-                                      fill={isLight ? '#0284c7' : '#38bdf8'} 
+                                      fill={isLight ? 'var(--chart-3)' : 'var(--chart-3)'} 
                                       fontSize="9" 
                                       fontFamily="monospace"
                                       fontWeight="bold"
@@ -2030,12 +1950,12 @@ export const ExecutiveDashboard: React.FC = () => {
                                 {/* Trough Marker */}
                                 {troughPt && troughIdx !== peakIdx && (
                                   <g className="select-none pointer-events-none">
-                                    <circle cx={troughPt.x} cy={troughPt.y} r="3" fill="#F59E0B" stroke="#ffffff" strokeWidth="1.2" />
+                                    <circle cx={troughPt.x} cy={troughPt.y} r="3" fill="var(--chart-4)" stroke="var(--text-primary)" strokeWidth="1.2" />
                                     <text 
                                       x={troughPt.x} 
                                       y={Math.min(160, troughPt.y + 12)} 
                                       textAnchor="middle" 
-                                      fill={isLight ? '#b45309' : '#fbbf24'} 
+                                      fill={isLight ? 'var(--chart-4)' : 'var(--chart-4)'} 
                                       fontSize="8.5" 
                                       fontFamily="monospace"
                                       fontWeight="bold"
@@ -2073,7 +1993,7 @@ export const ExecutiveDashboard: React.FC = () => {
                                   cy={hoveredTrendPt.y}
                                   r="5"
                                   fill={activeThemeConfig.trendActual}
-                                  stroke="#ffffff"
+                                  stroke="var(--text-primary)"
                                   strokeWidth="2"
                                   filter="url(#trendLine3dShadow)"
                                 />
@@ -2081,7 +2001,7 @@ export const ExecutiveDashboard: React.FC = () => {
                                   cx={hoveredTrendPt.x - 1.2}
                                   cy={hoveredTrendPt.y - 1.2}
                                   r="1.4"
-                                  fill="#ffffff"
+                                  fill="var(--text-primary)"
                                 />
                               </g>
                             )}
@@ -2098,7 +2018,7 @@ export const ExecutiveDashboard: React.FC = () => {
                               }}
                             >
                               <div className="flex items-center justify-between gap-3 font-mono text-[11px] pb-1 border-b border-border-subtle">
-                                <span className={`font-bold ${isLight ? 'text-slate-800' : 'text-slate-200'}`}>{hoveredTrendPt.period}</span>
+                                <span className={`font-bold ${isLight ? 'text-primary' : 'text-primary'}`}>{hoveredTrendPt.period}</span>
                                 <span className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${
                                   hoveredTrendPt.deltaVsMean >= 0 
                                     ? isLight ? 'bg-emerald-50 text-emerald-700' : 'bg-emerald-500/20 text-emerald-400'
@@ -2112,7 +2032,7 @@ export const ExecutiveDashboard: React.FC = () => {
                                   {formatNum(hoveredTrendPt.value)}
                                 </span>
                                 {hoveredTrendPt.sma !== undefined && (
-                                  <span className={`text-[10px] font-mono ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                                  <span className={`text-[10px] font-mono ${isLight ? 'text-muted' : 'text-secondary'}`}>
                                     SMA: {formatNum(hoveredTrendPt.sma)}
                                   </span>
                                 )}
@@ -2122,7 +2042,7 @@ export const ExecutiveDashboard: React.FC = () => {
                         </div>
 
                         {/* Horizontal Date Labels - Clean, non-overlapping */}
-                        <div className="flex justify-between items-center font-mono text-[11px] text-slate-500 dark:text-slate-400 pt-2 border-t border-border-subtle select-none px-1">
+                        <div className="flex justify-between items-center font-mono text-[11px] text-muted dark:text-secondary pt-2 border-t border-border-subtle select-none px-1">
                           {labelIndices.map(idx => (
                             <span 
                               key={idx} 
@@ -2143,9 +2063,9 @@ export const ExecutiveDashboard: React.FC = () => {
               </div>
 
               {/* Card Footer: Direction, Trajectory and Telemetry Rate */}
-              <div className={`mt-3 pt-2.5 border-t border-border-subtle flex flex-wrap items-center justify-between gap-2 text-label-sm font-label-sm ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+              <div className={`mt-3 pt-2.5 border-t border-border-subtle flex flex-wrap items-center justify-between gap-2 text-label-sm font-label-sm ${isLight ? 'text-muted' : 'text-secondary'}`}>
                 <div className="flex items-center gap-2">
-                  <span>Direction: <strong className={`capitalize ${isLight ? 'text-slate-900 font-bold' : 'text-slate-100'}`}>{currentTrend?.direction || 'stable'}</strong> ({currentTrend?.changePercent !== undefined ? `${currentTrend.changePercent >= 0 ? '+' : ''}${currentTrend.changePercent}%` : 'N/A'})</span>
+                  <span>Direction: <strong className={`capitalize ${isLight ? 'text-primary font-bold' : 'text-primary'}`}>{currentTrend?.direction || 'stable'}</strong> ({currentTrend?.changePercent !== undefined ? `${currentTrend.changePercent >= 0 ? '+' : ''}${currentTrend.changePercent}%` : 'N/A'})</span>
                   <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-semibold ${
                     isLight ? 'bg-sky-50 text-sky-700 border border-sky-200' : 'bg-cyan-500/10 text-cyan-300 border border-cyan-500/30'
                   }`}>
@@ -2153,7 +2073,7 @@ export const ExecutiveDashboard: React.FC = () => {
                   </span>
                 </div>
                 <span className={`${isLight ? 'text-sky-700' : 'text-cyan-400'} flex items-center gap-1.5 font-semibold`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${isLight ? 'bg-sky-600 shadow-[0_0_6px_#0284c7]' : 'bg-cyan-400 shadow-[0_0_6px_#22D3EE]'}`} /> Verified Telemetry Rate: 100%
+                  <span className={`w-1.5 h-1.5 rounded-full ${isLight ? 'bg-sky-600 shadow-lg' : 'bg-cyan-400 shadow-lg'}`} /> Verified Telemetry Rate: 100%
                 </span>
               </div>
             </div>
@@ -2175,7 +2095,7 @@ export const ExecutiveDashboard: React.FC = () => {
                     >
                       <div className="flex items-center gap-2 cursor-help">
                         <PieChart className="w-5 h-5 text-cyan-500 dark:text-cyan-400" />
-                        <h3 className="font-headline-sm text-headline-sm text-slate-900 dark:text-slate-100 font-bold uppercase tracking-wide">
+                        <h3 className="font-headline-sm text-headline-sm text-primary dark:text-primary font-bold uppercase tracking-wide">
                           SEGMENT SHARE OF TOTAL
                         </h3>
                       </div>
@@ -2205,14 +2125,14 @@ export const ExecutiveDashboard: React.FC = () => {
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <span className="font-label-sm text-label-sm text-slate-700 dark:text-slate-300 uppercase font-bold">DIMENSION:</span>
+                    <span className="font-label-sm text-label-sm text-muted dark:text-secondary uppercase font-bold">DIMENSION:</span>
                     <select
                       value={selectedDimension}
                       onChange={(e) => setSelectedDimension(e.target.value)}
                       className={`glass-input h-8 px-2.5 font-label-sm text-label-sm rounded-lg border focus:outline-none cursor-pointer ${
                         isLight 
-                          ? 'bg-white text-slate-900 border-slate-300' 
-                          : 'bg-surface-panel text-slate-100 border-border-subtle'
+                          ? 'bg-white text-primary border-slate-300' 
+                          : 'bg-surface-panel text-primary border-border-subtle'
                       }`}
                     >
                       {stringCols.map(c => (
@@ -2239,7 +2159,7 @@ export const ExecutiveDashboard: React.FC = () => {
                           <svg className="w-full h-full transform -rotate-90 overflow-visible" viewBox="0 0 100 100">
                             <defs>
                               <filter id="donut3dDepth" x="-20%" y="-20%" width="140%" height="150%">
-                                <feDropShadow dx="0" dy="4" stdDeviation="3.5" floodColor="#000000" floodOpacity="0.55" />
+                                <feDropShadow dx="0" dy="4" stdDeviation="3.5" floodColor="var(--bg-app)" floodOpacity="0.55" />
                               </filter>
                             </defs>
                             <circle 
@@ -2247,7 +2167,7 @@ export const ExecutiveDashboard: React.FC = () => {
                               cy="50" 
                               r="38" 
                               fill="transparent" 
-                              stroke={isLight ? '#e2e8f0' : '#1e293b'} 
+                              stroke={isLight ? 'var(--text-primary)' : 'var(--bg-card)'} 
                               strokeWidth="12" 
                               filter="url(#donut3dDepth)"
                             />
@@ -2279,9 +2199,9 @@ export const ExecutiveDashboard: React.FC = () => {
                               ? 'bg-white border-slate-200 shadow-md' 
                               : 'medallion-3d border-white/15'
                           }`}>
-                            <span className="font-label-caps text-label-caps uppercase text-slate-500 dark:text-slate-400 font-bold tracking-wider text-[10px]">TOTAL</span>
+                            <span className="font-label-caps text-label-caps uppercase text-muted dark:text-secondary font-bold tracking-wider text-[10px]">TOTAL</span>
                             <span className={`font-headline-lg text-headline-lg font-extrabold leading-tight my-0.5 ${
-                              isLight ? 'text-slate-900' : 'text-white'
+                              isLight ? 'text-primary' : 'text-primary'
                             }`}>
                               {totalCatValue >= 1000000 ? `${(totalCatValue / 1000000).toFixed(1)}M` : totalCatValue >= 1000 ? `${(totalCatValue / 1000).toFixed(1)}k` : Math.round(totalCatValue).toLocaleString()}
                             </span>
@@ -2301,23 +2221,23 @@ export const ExecutiveDashboard: React.FC = () => {
                               onClick={() => handleDrilldown(seg.category)}
                               className={`flex items-center justify-between p-2 rounded-lg transition-all border cursor-pointer ${
                                 isLight 
-                                  ? 'bg-slate-50/90 hover:bg-sky-50 border-slate-200' 
+                                  ? 'bg-elevated hover:bg-sky-50 border-slate-200' 
                                   : 'bg-surface-panel/80 hover:bg-surface-elevated border-white/10 shadow-2xs hover:border-cyan-400/30'
                               }`}
                               title={`Click to filter granular rows by ${seg.category}`}
                             >
                               <div className="flex items-center gap-2 min-w-0">
                                 <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${colors[idx % colors.length].dot}`} />
-                                <span className={`font-medium truncate max-w-[130px] ${isLight ? 'text-slate-800' : 'text-slate-200'}`}>{seg.category}</span>
+                                <span className={`font-medium truncate max-w-[130px] ${isLight ? 'text-primary' : 'text-primary'}`}>{seg.category}</span>
                               </div>
                               <div className="flex items-center gap-2.5 font-mono flex-shrink-0">
-                                <span className={`font-bold ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>{seg.share ? `${seg.share.toFixed(1)}%` : '0%'}</span>
-                                <span className={`text-[10px] ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>{seg.value >= 1000 ? `${(seg.value / 1000).toFixed(1)}k` : seg.value.toLocaleString()}</span>
+                                <span className={`font-bold ${isLight ? 'text-primary' : 'text-primary'}`}>{seg.share ? `${seg.share.toFixed(1)}%` : '0%'}</span>
+                                <span className={`text-[10px] ${isLight ? 'text-muted' : 'text-secondary'}`}>{seg.value >= 1000 ? `${(seg.value / 1000).toFixed(1)}k` : seg.value.toLocaleString()}</span>
                               </div>
                             </div>
                           ))
                         ) : (
-                          <div className="text-xs text-slate-500 p-2 text-center">
+                          <div className="text-xs text-muted p-2 text-center">
                             No categorical dimensions found in current dataset.
                           </div>
                         )}
@@ -2327,8 +2247,8 @@ export const ExecutiveDashboard: React.FC = () => {
                 })()}
               </div>
 
-              <div className={`pt-2.5 border-t border-border-subtle flex items-center justify-between text-label-sm font-label-sm ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
-                <span>Active Segments: <strong className={isLight ? 'text-slate-900 font-bold' : 'text-slate-100 font-bold'}>{currentCategoryData?.length || 0}</strong></span>
+              <div className={`pt-2.5 border-t border-border-subtle flex items-center justify-between text-label-sm font-label-sm ${isLight ? 'text-muted' : 'text-secondary'}`}>
+                <span>Active Segments: <strong className={isLight ? 'text-primary font-bold' : 'text-primary font-bold'}>{currentCategoryData?.length || 0}</strong></span>
                 <span 
                   onClick={() => setActiveTab('pareto')}
                   className={`${isLight ? 'text-sky-700 hover:text-sky-900' : 'text-cyan-400 hover:text-cyan-300'} hover:underline flex items-center gap-1 cursor-pointer font-semibold`}
@@ -2353,10 +2273,10 @@ export const ExecutiveDashboard: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <BarChart3 className="w-5 h-5 text-teal-500 dark:text-teal-400" />
                     <div>
-                      <h3 className="font-headline-sm text-headline-sm text-slate-900 dark:text-slate-100 font-bold uppercase tracking-wide">
+                      <h3 className="font-headline-sm text-headline-sm text-primary dark:text-primary font-bold uppercase tracking-wide">
                         TOP PRODUCTS &amp; SEGMENTS
                       </h3>
-                      <p className={`text-[11px] font-mono ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                      <p className={`text-[11px] font-mono ${isLight ? 'text-muted' : 'text-secondary'}`}>
                         Ranked performance by {selectedTrendMetric || numericCols[0]?.name || 'Volume'} across {selectedDimension || stringCols[0]?.name || 'Category'}
                       </p>
                     </div>
@@ -2401,7 +2321,7 @@ export const ExecutiveDashboard: React.FC = () => {
 
                     if (topBars.length === 0) {
                       return (
-                        <div className="text-xs text-slate-500 py-8 text-center font-mono">
+                        <div className="text-xs text-muted py-8 text-center font-mono">
                           No ranked product or category segments available in current dataset.
                         </div>
                       );
@@ -2414,25 +2334,25 @@ export const ExecutiveDashboard: React.FC = () => {
                         <div
                           key={idx}
                           onClick={() => handleDrilldown(item.category)}
-                          className="group cursor-pointer p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-white/[0.03] transition-colors"
+                          className="group cursor-pointer p-2 rounded-xl hover:bg-elevated dark:hover:bg-white/[0.03] transition-colors"
                         >
                           <div className="flex items-center justify-between text-xs mb-1.5">
                             <div className="flex items-center gap-2 min-w-0">
-                              <span className="font-mono text-[11px] font-bold text-slate-400 w-5">#{idx + 1}</span>
-                              <span className={`font-semibold truncate ${isLight ? 'text-slate-800' : 'text-slate-100'}`}>
+                              <span className="font-mono text-[11px] font-bold text-secondary w-5">#{idx + 1}</span>
+                              <span className={`font-semibold truncate ${isLight ? 'text-primary' : 'text-primary'}`}>
                                 {item.category}
                               </span>
                             </div>
                             <div className="flex items-center gap-2 font-mono tabular-nums shrink-0">
-                              <span className={`font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                              <span className={`font-bold ${isLight ? 'text-primary' : 'text-primary'}`}>
                                 {fmtBar(item.value)}
                               </span>
-                              <span className={`text-[11px] ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                              <span className={`text-[11px] ${isLight ? 'text-muted' : 'text-secondary'}`}>
                                 ({item.share ? `${item.share.toFixed(1)}%` : '0%'})
                               </span>
                             </div>
                           </div>
-                          <div className={`w-full h-2.5 rounded-full overflow-hidden ${isLight ? 'bg-slate-100' : 'bg-slate-800/90'}`}>
+                          <div className={`w-full h-2.5 rounded-full overflow-hidden ${isLight ? 'bg-elevated' : 'bg-elevated'}`}>
                             <div
                               className="h-full rounded-full transition-all duration-500"
                               style={{ width: `${pct}%`, backgroundColor: barHex }}
@@ -2445,7 +2365,7 @@ export const ExecutiveDashboard: React.FC = () => {
                 </div>
               </div>
 
-              <div className={`pt-2.5 border-t border-border-subtle flex items-center justify-between text-xs ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+              <div className={`pt-2.5 border-t border-border-subtle flex items-center justify-between text-xs ${isLight ? 'text-muted' : 'text-secondary'}`}>
                 <span className="font-mono text-[11px]">Click any bar to inspect underlying rows</span>
                 <button
                   type="button"
@@ -2471,10 +2391,10 @@ export const ExecutiveDashboard: React.FC = () => {
                       <Sparkles className="w-4 h-4" />
                     </div>
                     <div>
-                      <h3 className="font-headline-sm text-headline-sm text-slate-900 dark:text-slate-100 font-bold tracking-wide">
+                      <h3 className="font-headline-sm text-headline-sm text-primary dark:text-primary font-bold tracking-wide">
                         Ask your data
                       </h3>
-                      <p className={`text-[11px] font-mono ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                      <p className={`text-[11px] font-mono ${isLight ? 'text-muted' : 'text-secondary'}`}>
                         Natural-language query grounded on {filteredRows.length.toLocaleString()} rows
                       </p>
                     </div>
@@ -2503,13 +2423,13 @@ export const ExecutiveDashboard: React.FC = () => {
                       placeholder={`Ask about ${selectedTrendMetric || 'revenue'}, ${selectedDimension || 'segments'}, or anomalies...`}
                       className={`w-full rounded-xl pl-3.5 pr-24 py-3 text-xs border focus:outline-none transition-all ${
                         isLight
-                          ? 'bg-slate-50 border-slate-300 text-slate-900 focus:border-teal-500'
-                          : 'bg-slate-900/90 border-slate-700/80 text-slate-100 focus:border-teal-400'
+                          ? 'bg-elevated border-slate-300 text-primary focus:border-teal-500'
+                          : 'bg-card border-slate-700/80 text-primary focus:border-teal-400'
                       }`}
                     />
                     <button
                       type="submit"
-                      className="absolute right-1.5 top-1.5 bottom-1.5 px-3 rounded-lg bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs transition-colors cursor-pointer flex items-center gap-1"
+                      className="absolute right-1.5 top-1.5 bottom-1.5 px-3 rounded-lg bg-teal-500 hover:bg-teal-400 text-primary font-bold text-xs transition-colors cursor-pointer flex items-center gap-1"
                     >
                       <span>Ask AI</span>
                       <ArrowUpRight className="w-3.5 h-3.5" />
@@ -2517,7 +2437,7 @@ export const ExecutiveDashboard: React.FC = () => {
                   </div>
 
                   <div className="space-y-1.5">
-                    <span className={`text-[10px] font-mono uppercase tracking-wider block ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                    <span className={`text-[10px] font-mono uppercase tracking-wider block ${isLight ? 'text-muted' : 'text-secondary'}`}>
                       Suggested questions:
                     </span>
                     <div className="flex flex-wrap gap-1.5">
@@ -2535,8 +2455,8 @@ export const ExecutiveDashboard: React.FC = () => {
                           }}
                           className={`text-[11px] px-2.5 py-1.5 rounded-lg border text-left transition-all cursor-pointer ${
                             isLight
-                              ? 'bg-slate-50 hover:bg-teal-50 text-slate-700 border-slate-200 hover:border-teal-300'
-                              : 'bg-slate-900/60 hover:bg-slate-800 text-slate-300 border-slate-800 hover:border-teal-500/40'
+                              ? 'bg-elevated hover:bg-teal-50 text-muted border-slate-200 hover:border-teal-300'
+                              : 'bg-card hover:bg-elevated text-secondary border-slate-800 hover:border-teal-500/40'
                           }`}
                         >
                           {suggestion}
@@ -2547,7 +2467,7 @@ export const ExecutiveDashboard: React.FC = () => {
                 </form>
               </div>
 
-              <div className={`pt-2.5 border-t border-border-subtle flex items-center justify-between text-xs ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+              <div className={`pt-2.5 border-t border-border-subtle flex items-center justify-between text-xs ${isLight ? 'text-muted' : 'text-secondary'}`}>
                 <span className="font-mono text-[11px]">Zero-hallucination schema grounding</span>
                 <button
                   type="button"
@@ -2572,14 +2492,14 @@ export const ExecutiveDashboard: React.FC = () => {
               <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${
                 isLight
                   ? 'bg-rose-50 text-rose-700 border-rose-200 shadow-xs'
-                  : 'bg-rose-500/20 text-rose-400 border-rose-400/30 shadow-[0_0_12px_rgba(244,63,94,0.15)]'
+                  : 'bg-rose-500/20 text-rose-400 border-rose-400/30 shadow-lg'
               }`}>
                 <AlertTriangle className={`w-5 h-5 ${isLight ? 'text-rose-700' : 'text-rose-400'}`} />
               </div>
               <div className="flex-1 flex flex-col gap-0.5">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className={`font-headline-sm text-headline-sm font-bold ${
-                    isLight ? 'text-slate-900' : 'text-slate-100'
+                    isLight ? 'text-primary' : 'text-primary'
                   }`}>
                     {primaryAnomaly ? primaryAnomaly.title : 'Statistical Dispersion Audit'}
                   </span>
@@ -2592,7 +2512,7 @@ export const ExecutiveDashboard: React.FC = () => {
                   </span>
                 </div>
                 <p className={`font-body-sm text-body-sm mt-0.5 ${
-                  isLight ? 'text-slate-700 font-medium' : 'text-slate-300'
+                  isLight ? 'text-muted font-medium' : 'text-secondary'
                 }`}>
                   {primaryAnomaly ? primaryAnomaly.reason : 'All numerical distributions conform to standard statistical limits.'}
                 </p>
@@ -2613,14 +2533,14 @@ export const ExecutiveDashboard: React.FC = () => {
               <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${
                 isLight
                   ? 'bg-sky-50 text-sky-700 border-sky-200 shadow-xs'
-                  : 'bg-sky-500/15 text-cyan-400 border-sky-400/30 shadow-[0_0_12px_rgba(2,132,199,0.2)]'
+                  : 'bg-sky-500/15 text-cyan-400 border-sky-400/30 shadow-lg'
               }`}>
                 <TrendingUp className={`w-5 h-5 ${isLight ? 'text-sky-700' : 'text-cyan-400'}`} />
               </div>
               <div className="flex-1 flex flex-col gap-0.5">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className={`font-headline-sm text-headline-sm font-bold ${
-                    isLight ? 'text-slate-900' : 'text-slate-100'
+                    isLight ? 'text-primary' : 'text-primary'
                   }`}>
                     {primaryOpportunity ? primaryOpportunity.title : 'Segment Optimization Directive'}
                   </span>
@@ -2633,7 +2553,7 @@ export const ExecutiveDashboard: React.FC = () => {
                   </span>
                 </div>
                 <p className={`font-body-sm text-body-sm mt-0.5 ${
-                  isLight ? 'text-slate-700 font-medium' : 'text-slate-300'
+                  isLight ? 'text-muted font-medium' : 'text-secondary'
                 }`}>
                   {primaryOpportunity ? primaryOpportunity.potentialImpact : 'Active data segments demonstrate balanced proportional distribution.'}
                 </p>
@@ -2651,12 +2571,12 @@ export const ExecutiveDashboard: React.FC = () => {
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border-subtle pb-3">
               <div>
                 <h3 className={`font-heading text-lg font-bold tracking-wide uppercase flex items-center gap-2 ${
-                  isLight ? 'text-slate-900' : 'text-white'
+                  isLight ? 'text-primary' : 'text-primary'
                 }`}>
                   <Layers className={`w-4 h-4 ${isLight ? 'text-sky-600' : 'text-cyan-400'}`} />
                   ATTACHED DASHBOARD VISUALIZATIONS & CUSTOM CHARTS
                 </h3>
-                <p className={`text-xs ${isLight ? 'text-slate-600 font-medium' : 'text-gray-400'}`}>
+                <p className={`text-xs ${isLight ? 'text-muted font-medium' : 'text-secondary'}`}>
                   Attached visual widgets synchronized with active filters, drill-through, and export engines.
                 </p>
               </div>
@@ -2669,7 +2589,7 @@ export const ExecutiveDashboard: React.FC = () => {
                     setNewVisVal(numericCols[0]?.name || '');
                     setIsAddVisModalOpen(true);
                   }}
-                  className="px-2.5 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold flex items-center gap-1 shadow-xs cursor-pointer"
+                  className="px-2.5 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-primary text-xs font-semibold flex items-center gap-1 shadow-xs cursor-pointer"
                   title="Add a new custom visual card to this dashboard"
                 >
                   <Plus className="w-3.5 h-3.5" />
@@ -2681,8 +2601,8 @@ export const ExecutiveDashboard: React.FC = () => {
                   onClick={handleAutoSyncVisuals}
                   className={`px-2.5 py-1.5 rounded-lg border text-xs font-semibold flex items-center gap-1 shadow-2xs cursor-pointer ${
                     isLight
-                      ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
-                      : 'bg-surface-panel hover:bg-surface-elevated text-slate-200 border-border-subtle'
+                      ? 'bg-elevated hover:bg-input text-muted border-slate-200'
+                      : 'bg-surface-panel hover:bg-surface-elevated text-primary border-border-subtle'
                   }`}
                   title="Auto-adapt all visual cards to match current dataset schema"
                 >
@@ -2773,18 +2693,18 @@ export const ExecutiveDashboard: React.FC = () => {
                                 autoFocus
                                 className={`px-2.5 py-1 text-xs border rounded font-bold uppercase focus:outline-none w-full max-w-xs ${
                                   isLight 
-                                    ? 'bg-slate-50 border-sky-500 text-slate-900' 
-                                    : 'bg-surface-panel border-sky-500 text-slate-100'
+                                    ? 'bg-elevated border-sky-500 text-primary' 
+                                    : 'bg-surface-panel border-sky-500 text-primary'
                                 }`}
                               />
-                              <button onClick={() => handleSaveVisTitle(vis.id)} className="p-1 rounded bg-sky-600 text-white cursor-pointer" title="Save title"><Check className="w-3.5 h-3.5" /></button>
-                              <button onClick={() => setEditingVisId(null)} className="p-1 rounded bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 cursor-pointer" title="Cancel"><X className="w-3.5 h-3.5" /></button>
+                              <button onClick={() => handleSaveVisTitle(vis.id)} className="p-1 rounded bg-sky-600 text-primary cursor-pointer" title="Save title"><Check className="w-3.5 h-3.5" /></button>
+                              <button onClick={() => setEditingVisId(null)} className="p-1 rounded bg-input dark:bg-input text-muted dark:text-primary cursor-pointer" title="Cancel"><X className="w-3.5 h-3.5" /></button>
                             </div>
                           ) : (
                             <div className="flex items-center gap-2 group/visTitle min-w-0 flex-1">
                               <h4 
                                 className={`font-heading text-sm sm:text-base font-bold uppercase tracking-tight truncate min-w-0 flex-1 ${
-                                  isLight ? 'text-slate-900 font-extrabold' : 'text-slate-100 font-bold'
+                                  isLight ? 'text-primary font-extrabold' : 'text-primary font-bold'
                                 }`}
                                 title={displayTitle}
                               >
@@ -2835,8 +2755,8 @@ export const ExecutiveDashboard: React.FC = () => {
                               })()}
                             </div>
                           )}
-                          <div className={`font-body-sm text-body-sm pt-0.5 ${isLight ? 'text-slate-600 font-medium' : 'text-slate-400'}`}>
-                            {agg.toUpperCase()}({val}) by {cat} • Total: <strong className={`font-semibold ${isLight ? 'text-slate-900 font-bold' : 'text-slate-100'}`}>{formatVal(total)}</strong>
+                          <div className={`font-body-sm text-body-sm pt-0.5 ${isLight ? 'text-muted font-medium' : 'text-secondary'}`}>
+                            {agg.toUpperCase()}({val}) by {cat} • Total: <strong className={`font-semibold ${isLight ? 'text-primary font-bold' : 'text-primary'}`}>{formatVal(total)}</strong>
                           </div>
                         </div>
 
@@ -2845,7 +2765,7 @@ export const ExecutiveDashboard: React.FC = () => {
                           className={`font-label-sm text-label-sm flex items-center gap-1 transition-colors cursor-pointer shrink-0 ${
                             isLight
                               ? 'text-sky-700 hover:text-sky-900 font-semibold'
-                              : 'text-slate-400 hover:text-cyan-400'
+                              : 'text-secondary hover:text-cyan-400'
                           }`}
                           title="Drill-through to records"
                         >
@@ -2886,27 +2806,27 @@ export const ExecutiveDashboard: React.FC = () => {
                                 })()}
                               </svg>
                               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center px-1">
-                                <span className={`font-mono uppercase font-bold text-[9px] tracking-wider ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>TOTAL</span>
-                                <span className={`font-mono text-sm sm:text-base font-extrabold tabular-nums tracking-tight ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>{formatVal(total)}</span>
+                                <span className={`font-mono uppercase font-bold text-[9px] tracking-wider ${isLight ? 'text-muted' : 'text-secondary'}`}>TOTAL</span>
+                                <span className={`font-mono text-sm sm:text-base font-extrabold tabular-nums tracking-tight ${isLight ? 'text-primary' : 'text-primary'}`}>{formatVal(total)}</span>
                               </div>
                             </div>
                             <div className="space-y-1.5 text-xs w-full max-w-[210px]">
                               {items.slice(0, 5).map((it, i) => {
-                                const dotColor = activeThemeConfig.donutColors[i % activeThemeConfig.donutColors.length]?.stroke || '#0284C7';
+                                const dotColor = activeThemeConfig.donutColors[i % activeThemeConfig.donutColors.length]?.stroke || 'var(--chart-3)';
                                 return (
                                   <div 
                                     key={i} 
                                     onClick={() => handleDrilldown(it.category)}
-                                    className="flex justify-between items-center text-xs p-1 rounded-md hover:bg-slate-100 dark:hover:bg-white/5 transition-colors cursor-pointer group"
+                                    className="flex justify-between items-center text-xs p-1 rounded-md hover:bg-elevated dark:hover:bg-white/5 transition-colors cursor-pointer group"
                                   >
                                     <div className="flex items-center gap-1.5 min-w-0">
                                       <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: dotColor }} />
-                                      <span className={`truncate max-w-[110px] font-medium group-hover:text-sky-500 transition-colors ${isLight ? 'text-slate-800' : 'text-slate-200'}`} title={it.category}>
+                                      <span className={`truncate max-w-[110px] font-medium group-hover:text-sky-500 transition-colors ${isLight ? 'text-primary' : 'text-primary'}`} title={it.category}>
                                         {it.category}
                                       </span>
                                     </div>
                                     <div className="flex items-center gap-1 font-mono shrink-0 tabular-nums">
-                                      <span className={`font-semibold ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>{it.share}%</span>
+                                      <span className={`font-semibold ${isLight ? 'text-primary' : 'text-primary'}`}>{it.share}%</span>
                                     </div>
                                   </div>
                                 );
@@ -2917,7 +2837,7 @@ export const ExecutiveDashboard: React.FC = () => {
                           /* Tukey Quartile Boxplot in Executive Dashboard */
                           (() => {
                             const bData = computeBoxplotSummary(effectiveVisualRows, cat, val);
-                            if (bData.length === 0) return <div className="text-xs text-slate-500 p-4 text-center">Insufficient dispersion for boxplot.</div>;
+                            if (bData.length === 0) return <div className="text-xs text-muted p-4 text-center">Insufficient dispersion for boxplot.</div>;
                             const allVals = bData.flatMap(b => [b.min, b.max, ...b.outliers]);
                             const gMin = Math.min(...allVals);
                             const gMax = Math.max(...allVals);
@@ -2933,7 +2853,7 @@ export const ExecutiveDashboard: React.FC = () => {
                                 <svg viewBox="0 0 390 145" className="w-full h-36 overflow-visible select-none">
                                   {[0, 0.5, 1].map((pct, idx) => {
                                     const y = 10 + pH * (1 - pct);
-                                    return <line key={idx} x1="25" y1={y} x2="385" y2={y} stroke={isLight ? '#e2e8f0' : 'rgba(255,255,255,0.08)'} strokeDasharray="3,3" />;
+                                    return <line key={idx} x1="25" y1={y} x2="385" y2={y} stroke={isLight ? 'var(--text-primary)' : 'var(--border-subtle)'} strokeDasharray="3,3" />;
                                   })}
                                   {bData.map((st, idx) => {
                                     const cX = padX + idx * gW + gW / 2;
@@ -2946,22 +2866,22 @@ export const ExecutiveDashboard: React.FC = () => {
 
                                     return (
                                       <g key={idx} className="cursor-pointer group" onClick={() => handleDrilldown(st.category)}>
-                                        <line x1={cX} y1={yMin} x2={cX} y2={yMax} stroke="#0284C7" strokeWidth="1.5" strokeDasharray="2,2" />
-                                        <line x1={cX - bW * 0.35} y1={yMin} x2={cX + bW * 0.35} y2={yMin} stroke="#0284C7" strokeWidth="2" />
-                                        <line x1={cX - bW * 0.35} y1={yMax} x2={cX + bW * 0.35} y2={yMax} stroke="#0284C7" strokeWidth="2" />
-                                        <rect x={cX - bW / 2} y={Math.min(yQ1, yQ3)} width={bW} height={Math.max(4, Math.abs(yQ3 - yQ1))} fill="#0284C7" fillOpacity={isLight ? 0.25 : 0.4} stroke="#0284C7" strokeWidth="1.5" rx="3" />
-                                        <line x1={cX - bW / 2} y1={yMed} x2={cX + bW / 2} y2={yMed} stroke={isLight ? '#0369a1' : '#38bdf8'} strokeWidth="2.5" />
+                                        <line x1={cX} y1={yMin} x2={cX} y2={yMax} stroke="var(--chart-3)" strokeWidth="1.5" strokeDasharray="2,2" />
+                                        <line x1={cX - bW * 0.35} y1={yMin} x2={cX + bW * 0.35} y2={yMin} stroke="var(--chart-3)" strokeWidth="2" />
+                                        <line x1={cX - bW * 0.35} y1={yMax} x2={cX + bW * 0.35} y2={yMax} stroke="var(--chart-3)" strokeWidth="2" />
+                                        <rect x={cX - bW / 2} y={Math.min(yQ1, yQ3)} width={bW} height={Math.max(4, Math.abs(yQ3 - yQ1))} fill="var(--chart-3)" fillOpacity={isLight ? 0.25 : 0.4} stroke="var(--chart-3)" strokeWidth="1.5" rx="3" />
+                                        <line x1={cX - bW / 2} y1={yMed} x2={cX + bW / 2} y2={yMed} stroke={isLight ? 'var(--chart-3)' : 'var(--chart-3)'} strokeWidth="2.5" />
                                         {st.outliers.map((oVal, oIdx) => (
-                                          <circle key={oIdx} cx={cX} cy={scY(oVal)} r="3" fill="#ef4444" stroke="#fff" strokeWidth="0.8" />
+                                          <circle key={oIdx} cx={cX} cy={scY(oVal)} r="3" fill="var(--danger)" stroke="var(--text-primary)" strokeWidth="0.8" />
                                         ))}
-                                        <text x={cX} y="138" textAnchor="middle" fill={isLight ? '#334155' : '#94a3b8'} fontSize="9" fontWeight="600">
+                                        <text x={cX} y="138" textAnchor="middle" fill={isLight ? 'var(--border-subtle)' : 'var(--text-secondary)'} fontSize="9" fontWeight="600">
                                           {st.category.length > 7 ? `${st.category.slice(0, 6)}…` : st.category}
                                         </text>
                                       </g>
                                     );
                                   })}
                                 </svg>
-                                <div className="flex justify-between items-center text-[10px] font-mono text-slate-500 pt-1 border-t border-border-subtle">
+                                <div className="flex justify-between items-center text-[10px] font-mono text-muted pt-1 border-t border-border-subtle">
                                   <span>Median: {bData[0]?.median ? formatVal(bData[0].median) : 'N/A'}</span>
                                   <span className="text-sky-600 dark:text-cyan-400 font-semibold">Tukey 5-Number Dispersion</span>
                                 </div>
@@ -2980,24 +2900,24 @@ export const ExecutiveDashboard: React.FC = () => {
                                     onClick={() => handleDrilldown(it.category)}
                                     className="p-2 rounded-xl border cursor-pointer hover:scale-105 hover:-translate-y-0.5 transition-all flex flex-col justify-between shadow-md relative overflow-hidden"
                                     style={{ 
-                                      backgroundColor: `rgba(2, 132, 199, ${intensity})`,
-                                      borderColor: isLight ? 'rgba(2, 132, 199, 0.4)' : 'rgba(255, 255, 255, 0.16)',
+                                      backgroundColor: `color-mix(in srgb, var(--border-strong) 25%, transparent)`,
+                                      borderColor: isLight ? 'color-mix(in srgb, var(--border-strong) 40%, transparent)' : 'var(--border-subtle)',
                                       boxShadow: isLight
-                                        ? 'inset 0 1px 1px rgba(255,255,255,0.6), 0 2px 6px rgba(0,0,0,0.1)'
-                                        : 'inset 0 1px 1px rgba(255,255,255,0.35), inset 0 -1px 1px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.4)'
+                                        ? 'inset 0 1px 1px color-mix(in srgb, var(--text-primary) 60%, transparent), 0 2px 6px color-mix(in srgb, var(--bg-app) 10%, transparent)'
+                                        : 'inset 0 1px 1px color-mix(in srgb, var(--text-primary) 35%, transparent), inset 0 -1px 1px color-mix(in srgb, var(--bg-app) 40%, transparent), 0 4px 12px color-mix(in srgb, var(--bg-app) 40%, transparent)'
                                     }}
                                     title={`${it.category}: ${formatVal(it.value)}`}
                                   >
                                     <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent pointer-events-none" />
-                                    <span className="text-[10px] text-white font-extrabold truncate relative z-10 drop-shadow-xs">{it.category}</span>
-                                    <span className="text-[9px] text-white/95 font-bold font-mono relative z-10">
+                                    <span className="text-[10px] text-primary font-extrabold truncate relative z-10 drop-shadow-xs">{it.category}</span>
+                                    <span className="text-[9px] text-primary font-bold font-mono relative z-10">
                                       {it.value >= 1000 ? `${(it.value / 1000).toFixed(1)}k` : it.value}
                                     </span>
                                   </div>
                                 );
                               })}
                             </div>
-                            <div className="flex justify-between text-[10px] text-slate-500 dark:text-slate-400 font-mono pt-1">
+                            <div className="flex justify-between text-[10px] text-muted dark:text-secondary font-mono pt-1">
                               <span>Max: {formatVal(maxVal)}</span>
                               <span className="text-sky-600 dark:text-cyan-400 font-semibold">Temporal Matrix</span>
                             </div>
@@ -3010,7 +2930,7 @@ export const ExecutiveDashboard: React.FC = () => {
                                 <svg viewBox="0 0 400 135" className="w-full h-34 overflow-visible select-none">
                                   <defs>
                                     <filter id={`shadow-spline-${visKey}`} x="-10%" y="-10%" width="120%" height="150%">
-                                      <feDropShadow dx="0" dy="4" stdDeviation="3" floodColor="#000000" floodOpacity="0.55" />
+                                      <feDropShadow dx="0" dy="4" stdDeviation="3" floodColor="var(--bg-app)" floodOpacity="0.55" />
                                     </filter>
                                     <linearGradient id={`grad-spline-${visKey}`} x1="0" y1="0" x2="0" y2="1">
                                       <stop offset="0%" stopColor={activeThemeConfig.trendActual} stopOpacity="0.32" />
@@ -3020,7 +2940,7 @@ export const ExecutiveDashboard: React.FC = () => {
 
                                   {/* Grid lines */}
                                   {[0, 0.5, 1].map((pct, i) => (
-                                    <line key={i} x1="20" y1={10 + 95 * (1 - pct)} x2="385" y2={10 + 95 * (1 - pct)} stroke={isLight ? '#e2e8f0' : 'rgba(255,255,255,0.08)'} strokeDasharray="3,3" />
+                                    <line key={i} x1="20" y1={10 + 95 * (1 - pct)} x2="385" y2={10 + 95 * (1 - pct)} stroke={isLight ? 'var(--text-primary)' : 'var(--border-subtle)'} strokeDasharray="3,3" />
                                   ))}
 
                                   {(() => {
@@ -3051,22 +2971,22 @@ export const ExecutiveDashboard: React.FC = () => {
                                         {coords.map((c, i) => (
                                           <g key={i} className="cursor-pointer group" onClick={() => handleDrilldown(c.category)}>
                                             <circle cx={c.x} cy={c.y} r="6" fill={activeThemeConfig.trendActual} fillOpacity="0.25" className="group-hover:r-8 transition-all" />
-                                            <circle cx={c.x} cy={c.y} r="3.5" fill={isLight ? activeThemeConfig.trendActual : '#0F172A'} stroke={activeThemeConfig.trendActual} strokeWidth="2" filter={`url(#shadow-spline-${visKey})`} />
-                                            <circle cx={c.x - 1} cy={c.y - 1} r="1.2" fill="#ffffff" fillOpacity="0.9" />
+                                            <circle cx={c.x} cy={c.y} r="3.5" fill={isLight ? activeThemeConfig.trendActual : 'var(--bg-app)'} stroke={activeThemeConfig.trendActual} strokeWidth="2" filter={`url(#shadow-spline-${visKey})`} />
+                                            <circle cx={c.x - 1} cy={c.y - 1} r="1.2" fill="var(--text-primary)" fillOpacity="0.9" />
                                           </g>
                                         ))}
                                       </>
                                     );
                                   })()}
                                 </svg>
-                                <div className="flex justify-between text-[11px] text-slate-500 font-mono pt-1">
+                                <div className="flex justify-between text-[11px] text-muted font-mono pt-1">
                                   <span className="truncate max-w-[120px] font-medium">{items[0]?.category}</span>
                                   <span className="text-[10px] text-sky-600 dark:text-cyan-400 font-semibold">Cubic Spline Series</span>
                                   <span className="truncate max-w-[120px] text-right font-medium">{items[items.length - 1]?.category}</span>
                                 </div>
                               </div>
                             ) : (
-                              <div className="p-4 text-center text-xs text-slate-500 font-mono">Need at least 2 observations for time-series spline.</div>
+                              <div className="p-4 text-center text-xs text-muted font-mono">Need at least 2 observations for time-series spline.</div>
                             )}
                           </div>
                         ) : visType === 'table' ? (
@@ -3074,8 +2994,8 @@ export const ExecutiveDashboard: React.FC = () => {
                             <table className="w-full text-left font-body-sm text-body-sm">
                               <thead className={`border-b font-mono text-[10px] uppercase font-bold tracking-wider ${
                                 isLight 
-                                  ? 'bg-slate-100 text-slate-800 border-slate-200' 
-                                  : 'bg-surface-panel text-slate-400 border-border-subtle'
+                                  ? 'bg-elevated text-primary border-slate-200' 
+                                  : 'bg-surface-panel text-secondary border-border-subtle'
                               }`}>
                                 <tr>
                                   <th className="p-2">Rank</th>
@@ -3090,13 +3010,13 @@ export const ExecutiveDashboard: React.FC = () => {
                                     key={idx} 
                                     onClick={() => handleDrilldown(it.category)}
                                     className={`transition-colors cursor-pointer ${
-                                      isLight ? 'hover:bg-slate-50' : 'hover:bg-surface-elevated/70'
+                                      isLight ? 'hover:bg-elevated' : 'hover:bg-surface-elevated/70'
                                     }`}
                                   >
-                                    <td className="p-2 text-slate-400 font-bold">#{idx + 1}</td>
-                                    <td className={`p-2 font-medium truncate max-w-[130px] font-sans ${isLight ? 'text-slate-800' : 'text-slate-200'}`}>{it.category}</td>
+                                    <td className="p-2 text-secondary font-bold">#{idx + 1}</td>
+                                    <td className={`p-2 font-medium truncate max-w-[130px] font-sans ${isLight ? 'text-primary' : 'text-primary'}`}>{it.category}</td>
                                     <td className={`p-2 text-right font-bold tabular-nums ${isLight ? 'text-sky-700' : 'text-cyan-400'}`}>{formatVal(it.value)}</td>
-                                    <td className={`p-2 text-right font-semibold tabular-nums ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>{it.share}%</td>
+                                    <td className={`p-2 text-right font-semibold tabular-nums ${isLight ? 'text-primary' : 'text-primary'}`}>{it.share}%</td>
                                   </tr>
                                 ))}
                               </tbody>
@@ -3107,27 +3027,27 @@ export const ExecutiveDashboard: React.FC = () => {
                           <div className="w-full space-y-3">
                             {items.slice(0, 5).map((it, idx) => {
                               const pct = Math.min(100, Math.max(6, (it.value / maxVal) * 100));
-                              const barColor = activeThemeConfig.barColors[idx % activeThemeConfig.barColors.length] || '#0284C7';
+                              const barColor = activeThemeConfig.barColors[idx % activeThemeConfig.barColors.length] || 'var(--chart-3)';
                               return (
                                 <div 
                                   key={idx} 
                                   onClick={() => handleDrilldown(it.category)}
-                                  className="space-y-1.5 p-1 -mx-1 rounded-xl hover:bg-slate-50 dark:hover:bg-white/[0.04] transition-all cursor-pointer group"
+                                  className="space-y-1.5 p-1 -mx-1 rounded-xl hover:bg-elevated dark:hover:bg-white/[0.04] transition-all cursor-pointer group"
                                 >
                                   <div className="flex justify-between items-center text-xs">
                                     <div className="flex items-center gap-2 min-w-0">
-                                      <span className="font-mono text-[10px] text-slate-400 font-bold shrink-0">#{idx + 1}</span>
+                                      <span className="font-mono text-[10px] text-secondary font-bold shrink-0">#{idx + 1}</span>
                                       <span className={`font-semibold truncate max-w-[190px] group-hover:text-sky-600 dark:group-hover:text-cyan-400 transition-colors ${
-                                        isLight ? 'text-slate-800' : 'text-slate-200'
+                                        isLight ? 'text-primary' : 'text-primary'
                                       }`} title={it.category}>
                                         {it.category}
                                       </span>
                                     </div>
                                     <div className="flex items-baseline gap-1.5 font-mono shrink-0 tabular-nums">
-                                      <span className={`font-extrabold ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>
+                                      <span className={`font-extrabold ${isLight ? 'text-primary' : 'text-primary'}`}>
                                         {formatVal(it.value)}
                                       </span>
-                                      <span className={`text-[10px] font-medium ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                                      <span className={`text-[10px] font-medium ${isLight ? 'text-muted' : 'text-secondary'}`}>
                                         ({it.share}%)
                                       </span>
                                     </div>
@@ -3135,14 +3055,14 @@ export const ExecutiveDashboard: React.FC = () => {
 
                                   <div className={`w-full h-3.5 rounded-lg overflow-hidden p-0.5 border transition-all ${
                                     isLight 
-                                      ? 'bg-slate-200/70 border-slate-300 shadow-inner' 
-                                      : 'bg-[#0a0f1d] border-white/10 track-3d-recessed'
+                                      ? 'bg-input border-slate-300 shadow-inner' 
+                                      : 'bg-app border-white/10 track-3d-recessed'
                                   }`}>
                                     <div 
                                       className="h-full rounded-md transition-all duration-500 relative overflow-hidden group-hover:brightness-110 shadow-md bar-3d-cylinder"
                                       style={{
                                         width: `${pct}%`,
-                                        background: `linear-gradient(180deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.1) 40%, ${barColor} 65%, ${barColor} 100%)`,
+                                        background: `linear-gradient(180deg, color-mix(in srgb, var(--text-primary) 45%, transparent) 0%, var(--border-subtle) 40%, ${barColor} 65%, ${barColor} 100%)`,
                                         boxShadow: `0 2px 8px ${barColor}66`
                                       }}
                                     >
@@ -3157,7 +3077,7 @@ export const ExecutiveDashboard: React.FC = () => {
                       </div>
 
                       {/* Widget Footer */}
-                      <div className={`pt-2.5 border-t border-border-subtle flex items-center justify-between text-xs ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                      <div className={`pt-2.5 border-t border-border-subtle flex items-center justify-between text-xs ${isLight ? 'text-muted' : 'text-secondary'}`}>
                         <span className="font-mono text-[11px]">{effectiveVisualRows.length.toLocaleString()} rows filtered</span>
                         <span className={`font-semibold flex items-center gap-1.5 text-[11px] ${isLight ? 'text-sky-700' : 'text-cyan-400'}`}>
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -3172,8 +3092,8 @@ export const ExecutiveDashboard: React.FC = () => {
               <div className="glass-card border border-white/10 dark:border-white/10 rounded-2xl p-6 text-center space-y-3">
                 <Layers className="w-8 h-8 text-sky-600 dark:text-cyan-400 mx-auto opacity-70" />
                 <div className="space-y-1">
-                  <h4 className="text-sm font-bold text-white">Attach Custom Dashboards</h4>
-                  <p className="text-xs text-gray-400 max-w-md mx-auto">
+                  <h4 className="text-sm font-bold text-primary">Attach Custom Dashboards</h4>
+                  <p className="text-xs text-secondary max-w-md mx-auto">
                     Create tailored charts in the Dashboard Builder or click the Scatter Plot, Heat Map, or Multi-Chart tabs above to explore all chart types!
                   </p>
                 </div>
@@ -3233,11 +3153,11 @@ export const ExecutiveDashboard: React.FC = () => {
       {activeTab === 'multivariate' && (
         <div className="space-y-6">
           <div className="glass-card rounded-2xl p-5 sm:p-6 space-y-1 shadow-xl border border-white/10 dark:border-white/10">
-            <h3 className="font-heading text-xl font-bold text-slate-900 dark:text-white tracking-wide uppercase flex items-center gap-2">
+            <h3 className="font-heading text-xl font-bold text-primary dark:text-primary tracking-wide uppercase flex items-center gap-2">
               <Layers className="w-5 h-5 text-sky-600 dark:text-cyan-400" />
               COMPREHENSIVE MULTI-CHART ANALYTICS SUITE
             </h3>
-            <p className="text-xs text-slate-600 dark:text-gray-400">
+            <p className="text-xs text-muted dark:text-secondary">
               Interactive Radar/Spider Footprint, Conversion Funnel, Financial Variance Waterfall, Proportional Treemap, and Performance Gauge Dial.
             </p>
           </div>
@@ -3305,22 +3225,22 @@ export const ExecutiveDashboard: React.FC = () => {
         <div className="glass-card rounded-2xl p-5 sm:p-6 space-y-4 shadow-xl border border-white/10 dark:border-white/10">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h3 className="font-heading text-xl font-bold text-slate-900 dark:text-white tracking-wide uppercase flex items-center gap-2">
+              <h3 className="font-heading text-xl font-bold text-primary dark:text-primary tracking-wide uppercase flex items-center gap-2">
                 <BarChart3 className="w-5 h-5 text-sky-600 dark:text-cyan-400" />
                 PARETO PRINCIPLE (80/20 ANALYSIS)
               </h3>
-              <p className="text-xs text-slate-600 dark:text-gray-400">
+              <p className="text-xs text-muted dark:text-secondary">
                 Identify the critical 20% of contributors driving 80% of aggregate volume or financial output.
               </p>
             </div>
 
             {stringCols.length > 0 && (
               <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-600 dark:text-gray-400 font-mono">Dimension:</span>
+                <span className="text-xs text-muted dark:text-secondary font-mono">Dimension:</span>
                 <select
                   value={selectedDimension}
                   onChange={(e) => setSelectedDimension(e.target.value)}
-                  className="glass-input text-xs text-slate-900 dark:text-cyan-300 font-mono px-3 py-1.5 rounded-lg border border-slate-300 dark:border-white/10 focus:border-sky-500 focus:outline-none"
+                  className="glass-input text-xs text-primary dark:text-cyan-300 font-mono px-3 py-1.5 rounded-lg border border-slate-300 dark:border-white/10 focus:border-sky-500 focus:outline-none"
                 >
                   {stringCols.map(c => (
                     <option key={c.name} value={c.name}>{c.name}</option>
@@ -3382,8 +3302,8 @@ export const ExecutiveDashboard: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
           <div className={`w-full max-w-lg border rounded-2xl shadow-2xl p-6 space-y-5 max-h-[90vh] overflow-y-auto card-3d ${
             isLight
-              ? 'bg-white border-slate-200 text-slate-900 shadow-xl'
-              : 'bg-surface-card border-white/15 text-slate-100 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.85)]'
+              ? 'bg-white border-slate-200 text-primary shadow-xl'
+              : 'bg-surface-card border-white/15 text-primary shadow-lg'
           }`}>
             <div className={`flex items-center justify-between border-b pb-3 ${
               isLight ? 'border-slate-200' : 'border-border-subtle'
@@ -3393,14 +3313,14 @@ export const ExecutiveDashboard: React.FC = () => {
                   <BarChart3 className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className={`font-bold text-base ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>Add Custom Visual</h3>
-                  <p className={`text-xs ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>Map metrics & dimensions from {project.name}</p>
+                  <h3 className={`font-bold text-base ${isLight ? 'text-primary' : 'text-primary'}`}>Add Custom Visual</h3>
+                  <p className={`text-xs ${isLight ? 'text-muted' : 'text-secondary'}`}>Map metrics & dimensions from {project.name}</p>
                 </div>
               </div>
               <button 
                 onClick={() => setIsAddVisModalOpen(false)} 
                 className={`p-1.5 rounded-lg cursor-pointer ${
-                  isLight ? 'hover:bg-slate-100 text-slate-500' : 'hover:bg-surface-panel text-slate-400'
+                  isLight ? 'hover:bg-elevated text-muted' : 'hover:bg-surface-panel text-secondary'
                 }`}
               >
                 <X className="w-5 h-5" />
@@ -3409,7 +3329,7 @@ export const ExecutiveDashboard: React.FC = () => {
 
             <form onSubmit={handleAddCustomVisual} className="space-y-4 text-xs">
               <div className="space-y-1">
-                <label className={`font-bold uppercase ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>Visual Title</label>
+                <label className={`font-bold uppercase ${isLight ? 'text-muted' : 'text-secondary'}`}>Visual Title</label>
                 <input
                   type="text"
                   required
@@ -3418,22 +3338,22 @@ export const ExecutiveDashboard: React.FC = () => {
                   onChange={(e) => setNewVisTitle(e.target.value)}
                   className={`w-full px-3 py-2 border rounded-xl font-medium focus:outline-none ${
                     isLight 
-                      ? 'bg-slate-50 border-slate-300 text-slate-900 focus:border-sky-500' 
-                      : 'bg-surface-panel border-white/10 text-slate-100 focus:border-cyan-400'
+                      ? 'bg-elevated border-slate-300 text-primary focus:border-sky-500' 
+                      : 'bg-surface-panel border-white/10 text-primary focus:border-cyan-400'
                   }`}
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className={`font-bold uppercase ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>Chart Type</label>
+                  <label className={`font-bold uppercase ${isLight ? 'text-muted' : 'text-secondary'}`}>Chart Type</label>
                   <select
                     value={newVisType}
                     onChange={(e) => setNewVisType(e.target.value as any)}
                     className={`w-full px-3 py-2 border rounded-xl font-medium focus:outline-none cursor-pointer ${
                       isLight 
-                        ? 'bg-slate-50 border-slate-300 text-slate-900 focus:border-sky-500' 
-                        : 'bg-surface-panel border-white/10 text-slate-100 focus:border-cyan-400'
+                        ? 'bg-elevated border-slate-300 text-primary focus:border-sky-500' 
+                        : 'bg-surface-panel border-white/10 text-primary focus:border-cyan-400'
                     }`}
                   >
                     <option value="bar">Bar Chart</option>
@@ -3444,14 +3364,14 @@ export const ExecutiveDashboard: React.FC = () => {
                 </div>
 
                 <div className="space-y-1">
-                  <label className={`font-bold uppercase ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>Aggregation</label>
+                  <label className={`font-bold uppercase ${isLight ? 'text-muted' : 'text-secondary'}`}>Aggregation</label>
                   <select
                     value={newVisAgg}
                     onChange={(e) => setNewVisAgg(e.target.value as any)}
                     className={`w-full px-3 py-2 border rounded-xl font-medium focus:outline-none cursor-pointer ${
                       isLight 
-                        ? 'bg-slate-50 border-slate-300 text-slate-900 focus:border-sky-500' 
-                        : 'bg-surface-panel border-white/10 text-slate-100 focus:border-cyan-400'
+                        ? 'bg-elevated border-slate-300 text-primary focus:border-sky-500' 
+                        : 'bg-surface-panel border-white/10 text-primary focus:border-cyan-400'
                     }`}
                   >
                     <option value="sum">SUM</option>
@@ -3465,14 +3385,14 @@ export const ExecutiveDashboard: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className={`font-bold uppercase ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>Dimension / Axis</label>
+                  <label className={`font-bold uppercase ${isLight ? 'text-muted' : 'text-secondary'}`}>Dimension / Axis</label>
                   <select
                     value={newVisCat || stringCols[0]?.name || ''}
                     onChange={(e) => setNewVisCat(e.target.value)}
                     className={`w-full px-3 py-2 border rounded-xl font-medium focus:outline-none cursor-pointer ${
                       isLight 
-                        ? 'bg-slate-50 border-slate-300 text-slate-900 focus:border-sky-500' 
-                        : 'bg-surface-panel border-white/10 text-slate-100 focus:border-cyan-400'
+                        ? 'bg-elevated border-slate-300 text-primary focus:border-sky-500' 
+                        : 'bg-surface-panel border-white/10 text-primary focus:border-cyan-400'
                     }`}
                   >
                     {stringCols.map(c => (
@@ -3482,14 +3402,14 @@ export const ExecutiveDashboard: React.FC = () => {
                 </div>
 
                 <div className="space-y-1">
-                  <label className={`font-bold uppercase ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>Metric Column</label>
+                  <label className={`font-bold uppercase ${isLight ? 'text-muted' : 'text-secondary'}`}>Metric Column</label>
                   <select
                     value={newVisVal || numericCols[0]?.name || ''}
                     onChange={(e) => setNewVisVal(e.target.value)}
                     className={`w-full px-3 py-2 border rounded-xl font-medium focus:outline-none cursor-pointer ${
                       isLight 
-                        ? 'bg-slate-50 border-slate-300 text-slate-900 focus:border-sky-500' 
-                        : 'bg-surface-panel border-white/10 text-slate-100 focus:border-cyan-400'
+                        ? 'bg-elevated border-slate-300 text-primary focus:border-sky-500' 
+                        : 'bg-surface-panel border-white/10 text-primary focus:border-cyan-400'
                     }`}
                   >
                     {numericCols.map(c => (
@@ -3505,15 +3425,15 @@ export const ExecutiveDashboard: React.FC = () => {
                   onClick={() => setIsAddVisModalOpen(false)}
                   className={`px-4 py-2 rounded-xl font-medium cursor-pointer ${
                     isLight 
-                      ? 'bg-slate-100 hover:bg-slate-200 text-slate-700' 
-                      : 'bg-surface-panel hover:bg-surface-elevated text-slate-300'
+                      ? 'bg-elevated hover:bg-input text-muted' 
+                      : 'bg-surface-panel hover:bg-surface-elevated text-secondary'
                   }`}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-sky-600 hover:bg-sky-500 text-white font-bold rounded-xl shadow-xs cursor-pointer"
+                  className="px-5 py-2 bg-sky-600 hover:bg-sky-500 text-primary font-bold rounded-xl shadow-xs cursor-pointer"
                 >
                   Add Visual to Dashboard
                 </button>

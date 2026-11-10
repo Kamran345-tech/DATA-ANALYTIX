@@ -589,8 +589,8 @@ export const HowToUseView: React.FC = () => {
       <div
         className={`p-6 sm:p-8 rounded-2xl border transition-all shadow-sm ${
           isLight
-            ? 'bg-white border-slate-200 text-slate-900 shadow-slate-100'
-            : 'bg-[#1c1c1c] border-[#2d2d2d] text-white'
+            ? 'bg-white border-slate-200 text-primary shadow-slate-100'
+            : 'bg-card border-subtle text-primary'
         }`}
       >
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
@@ -605,20 +605,20 @@ export const HowToUseView: React.FC = () => {
               >
                 <Compass className="w-3.5 h-3.5" /> Complete Platform Documentation
               </span>
-              <span className={`text-xs ${isLight ? 'text-slate-500' : 'text-gray-400'}`}>
+              <span className={`text-xs ${isLight ? 'text-muted' : 'text-secondary'}`}>
                 17 Enterprise Modules
               </span>
             </div>
 
             <h1
               className={`font-heading text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight uppercase ${
-                isLight ? 'text-slate-900' : 'text-white'
+                isLight ? 'text-primary' : 'text-primary'
               }`}
             >
               How to Use Data Analytix
             </h1>
 
-            <p className={`text-sm sm:text-base leading-relaxed ${isLight ? 'text-slate-700' : 'text-gray-300'}`}>
+            <p className={`text-sm sm:text-base leading-relaxed ${isLight ? 'text-muted' : 'text-secondary'}`}>
               End-to-end user manual, module playbook, and architectural workflow directory. Learn how each module functions, key analytics capabilities, step-by-step procedures, and production delivery artifacts.
             </p>
           </div>
@@ -627,18 +627,18 @@ export const HowToUseView: React.FC = () => {
           <div className="flex flex-col sm:flex-row lg:flex-col gap-3 shrink-0">
             <div
               className={`flex items-center justify-between p-2 rounded-xl border text-xs gap-3 ${
-                isLight ? 'bg-slate-50 border-slate-200' : 'bg-[#141414] border-[#2e2e2e]'
+                isLight ? 'bg-elevated border-slate-200' : 'bg-card border-subtle'
               }`}
             >
-              <span className={`text-[11px] font-medium ${isLight ? 'text-slate-600' : 'text-gray-400'}`}>
+              <span className={`text-[11px] font-medium ${isLight ? 'text-muted' : 'text-secondary'}`}>
                 Display Theme:
               </span>
               <button
                 onClick={() => setThemeMode(isLight ? 'dark' : 'light')}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shadow-xs ${
                   isLight
-                    ? 'bg-white text-slate-900 border border-slate-300 hover:bg-slate-100'
-                    : 'bg-[#262626] text-cyan-400 border border-cyan-500/40 hover:bg-[#303030]'
+                    ? 'bg-white text-primary border border-slate-300 hover:bg-elevated'
+                    : 'bg-elevated text-cyan-400 border border-cyan-500/40 hover:bg-elevated'
                 }`}
               >
                 {isLight ? (
@@ -658,11 +658,11 @@ export const HowToUseView: React.FC = () => {
         </div>
 
         {/* Global Search inside How to Use */}
-        <div className="mt-6 pt-6 border-t border-slate-200 dark:border-[#2a2a2a] flex flex-col sm:flex-row items-center gap-3">
+        <div className="mt-6 pt-6 border-t border-slate-200 dark:border-subtle flex flex-col sm:flex-row items-center gap-3">
           <div className="relative flex-1 w-full">
             <Search
               className={`w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none ${
-                isLight ? 'text-slate-400' : 'text-gray-400'
+                isLight ? 'text-secondary' : 'text-secondary'
               }`}
             />
             <input
@@ -672,15 +672,15 @@ export const HowToUseView: React.FC = () => {
               onChange={e => setSearchQuery(e.target.value)}
               className={`w-full text-xs sm:text-sm pl-10 pr-8 py-2.5 rounded-xl border transition-all focus:outline-none ${
                 isLight
-                  ? 'bg-slate-50 text-slate-900 border-slate-300 placeholder:text-slate-400 focus:bg-white focus:border-sky-600 focus:ring-2 focus:ring-sky-500/20'
-                  : 'bg-[#151515] text-white border-[#333] placeholder:text-gray-500 focus:border-cyan-400'
+                  ? 'bg-elevated text-primary border-slate-300 placeholder:text-secondary focus:bg-white focus:border-sky-600 focus:ring-2 focus:ring-sky-500/20'
+                  : 'bg-card text-primary border-subtle placeholder:text-muted focus:border-cyan-400'
               }`}
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
                 className={`absolute right-3 top-1/2 -translate-y-1/2 text-xs p-1 rounded transition-colors ${
-                  isLight ? 'text-slate-400 hover:text-slate-700' : 'text-gray-400 hover:text-white'
+                  isLight ? 'text-secondary hover:text-muted' : 'text-secondary hover:text-primary'
                 }`}
               >
                 ✕
@@ -688,7 +688,7 @@ export const HowToUseView: React.FC = () => {
             )}
           </div>
 
-          <div className={`text-xs font-mono shrink-0 ${isLight ? 'text-slate-500' : 'text-gray-400'}`}>
+          <div className={`text-xs font-mono shrink-0 ${isLight ? 'text-muted' : 'text-secondary'}`}>
             Showing {filteredModules.length} of {MODULES.length} modules
           </div>
         </div>
@@ -701,12 +701,12 @@ export const HowToUseView: React.FC = () => {
         <div>
           <h2
             className={`font-heading text-xl sm:text-2xl font-bold uppercase tracking-wide ${
-              isLight ? 'text-slate-900' : 'text-white'
+              isLight ? 'text-primary' : 'text-primary'
             }`}
           >
             ⚡ 5-Step Rapid Enterprise Lifecycle
           </h2>
-          <p className={`text-xs ${isLight ? 'text-slate-600' : 'text-gray-400'}`}>
+          <p className={`text-xs ${isLight ? 'text-muted' : 'text-secondary'}`}>
             The standard production pipeline from raw telemetry ingestion to board-ready executive intelligence and Power BI PBIP bundles.
           </p>
         </div>
@@ -719,7 +719,7 @@ export const HowToUseView: React.FC = () => {
               className={`p-4 rounded-xl border transition-all cursor-pointer group flex flex-col justify-between ${
                 isLight
                   ? 'bg-white border-slate-200 hover:border-sky-500 hover:shadow-md'
-                  : 'bg-[#1c1c1c] border-[#2d2d2d] hover:border-cyan-400/60 hover:shadow-lg'
+                  : 'bg-card border-subtle hover:border-cyan-400/60 hover:shadow-lg'
               }`}
             >
               <div className="space-y-2">
@@ -727,8 +727,8 @@ export const HowToUseView: React.FC = () => {
                   <span
                     className={`text-xs font-mono font-bold px-2 py-0.5 rounded-md ${
                       isLight
-                        ? 'bg-slate-100 text-slate-800 border border-slate-200'
-                        : 'bg-[#131d2e] text-cyan-400 border border-cyan-500/30'
+                        ? 'bg-elevated text-primary border border-slate-200'
+                        : 'bg-accent text-cyan-400 border border-cyan-500/30'
                     }`}
                   >
                     STEP {step.num}
@@ -742,18 +742,18 @@ export const HowToUseView: React.FC = () => {
 
                 <h3
                   className={`font-heading text-sm font-bold uppercase tracking-wide group-hover:underline ${
-                    isLight ? 'text-slate-900' : 'text-white'
+                    isLight ? 'text-primary' : 'text-primary'
                   }`}
                 >
                   {step.title}
                 </h3>
 
-                <p className={`text-xs leading-relaxed ${isLight ? 'text-slate-600' : 'text-gray-400'}`}>
+                <p className={`text-xs leading-relaxed ${isLight ? 'text-muted' : 'text-secondary'}`}>
                   {step.desc}
                 </p>
               </div>
 
-              <div className="pt-3 mt-3 border-t border-slate-100 dark:border-[#262626] flex items-center justify-between text-[11px] font-semibold">
+              <div className="pt-3 mt-3 border-t border-slate-100 dark:border-subtle flex items-center justify-between text-[11px] font-semibold">
                 <span className={isLight ? 'text-sky-700' : 'text-cyan-400'}>
                   Open Module →
                 </span>
@@ -776,11 +776,11 @@ export const HowToUseView: React.FC = () => {
               className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all border ${
                 isActive
                   ? isLight
-                    ? 'bg-sky-600 text-white border-sky-600 shadow-xs font-bold'
-                    : 'bg-cyan-500 text-slate-950 border-cyan-400 font-bold'
+                    ? 'bg-sky-600 text-primary border-sky-600 shadow-xs font-bold'
+                    : 'bg-cyan-500 text-primary border-cyan-400 font-bold'
                   : isLight
-                    ? 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
-                    : 'bg-[#191919] text-gray-400 border-[#2d2d2d] hover:text-white hover:bg-[#222]'
+                    ? 'bg-white text-muted border-slate-200 hover:bg-elevated'
+                    : 'bg-card text-secondary border-subtle hover:text-primary hover:bg-elevated'
               }`}
             >
               <span>{cat.label}</span>
@@ -788,11 +788,11 @@ export const HowToUseView: React.FC = () => {
                 className={`ml-1.5 px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
                   isActive
                     ? isLight
-                      ? 'bg-sky-800 text-white'
-                      : 'bg-slate-900/40 text-slate-950 font-bold'
+                      ? 'bg-sky-800 text-primary'
+                      : 'bg-card text-primary font-bold'
                     : isLight
-                      ? 'bg-slate-100 text-slate-600'
-                      : 'bg-[#262626] text-gray-400'
+                      ? 'bg-elevated text-muted'
+                      : 'bg-elevated text-secondary'
                 }`}
               >
                 {cat.count}
@@ -814,7 +814,7 @@ export const HowToUseView: React.FC = () => {
               className={`p-6 sm:p-7 rounded-2xl border transition-all ${
                 isLight
                   ? 'bg-white border-slate-200 shadow-xs hover:border-slate-300 hover:shadow-md'
-                  : 'bg-[#1c1c1c] border-[#2d2d2d] hover:border-[#383838]'
+                  : 'bg-card border-subtle hover:border-subtle'
               }`}
             >
               {/* Card Header: Icon, Category, Title, Badge, Open Button */}
@@ -834,12 +834,12 @@ export const HowToUseView: React.FC = () => {
                     <div className="flex items-center gap-2 flex-wrap">
                       <span
                         className={`text-[10px] font-bold font-mono uppercase tracking-wider px-2 py-0.5 rounded ${
-                          isLight ? 'bg-slate-100 text-slate-700 border border-slate-200' : 'bg-[#262626] text-gray-300'
+                          isLight ? 'bg-elevated text-muted border border-slate-200' : 'bg-elevated text-secondary'
                         }`}
                       >
                         {mod.categoryLabel}
                       </span>
-                      <span className={`text-[11px] font-medium ${isLight ? 'text-slate-500' : 'text-gray-400'}`}>
+                      <span className={`text-[11px] font-medium ${isLight ? 'text-muted' : 'text-secondary'}`}>
                         • {mod.tag}
                       </span>
                       {mod.badge && (
@@ -857,7 +857,7 @@ export const HowToUseView: React.FC = () => {
 
                     <h2
                       className={`font-heading text-xl sm:text-2xl font-bold uppercase tracking-wide ${
-                        isLight ? 'text-slate-900' : 'text-white'
+                        isLight ? 'text-primary' : 'text-primary'
                       }`}
                     >
                       {mod.title}
@@ -870,8 +870,8 @@ export const HowToUseView: React.FC = () => {
                   onClick={() => setCurrentTab(mod.id)}
                   className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl font-semibold text-xs transition-all shrink-0 shadow-xs ${
                     isLight
-                      ? 'bg-sky-600 hover:bg-sky-500 text-white font-bold'
-                      : 'bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold'
+                      ? 'bg-sky-600 hover:bg-sky-500 text-primary font-bold'
+                      : 'bg-cyan-500 hover:bg-cyan-400 text-primary font-bold'
                   }`}
                 >
                   <span>Launch Module</span>
@@ -881,7 +881,7 @@ export const HowToUseView: React.FC = () => {
 
               {/* Summary Paragraph */}
               <div className="mt-4">
-                <p className={`text-xs sm:text-sm leading-relaxed ${isLight ? 'text-slate-700' : 'text-gray-300'}`}>
+                <p className={`text-xs sm:text-sm leading-relaxed ${isLight ? 'text-muted' : 'text-secondary'}`}>
                   {mod.summary}
                 </p>
               </div>
@@ -891,14 +891,14 @@ export const HowToUseView: React.FC = () => {
                 {/* Column 1: Core Capabilities & Analytics */}
                 <div
                   className={`p-4 rounded-xl border space-y-3 ${
-                    isLight ? 'bg-slate-50/80 border-slate-200' : 'bg-[#161616] border-[#262626]'
+                    isLight ? 'bg-elevated border-slate-200' : 'bg-card border-subtle'
                   }`}
                 >
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className={`w-4 h-4 ${isLight ? 'text-sky-700' : 'text-cyan-400'}`} />
                     <h3
                       className={`font-heading text-sm font-bold uppercase tracking-wider ${
-                        isLight ? 'text-slate-900' : 'text-white'
+                        isLight ? 'text-primary' : 'text-primary'
                       }`}
                     >
                       Core Capabilities & Features
@@ -907,7 +907,7 @@ export const HowToUseView: React.FC = () => {
 
                   <ul className="space-y-2 text-xs">
                     {mod.whatYouCanDo.map((item, i) => (
-                      <li key={i} className={`flex items-start gap-2 ${isLight ? 'text-slate-700' : 'text-gray-300'}`}>
+                      <li key={i} className={`flex items-start gap-2 ${isLight ? 'text-muted' : 'text-secondary'}`}>
                         <span
                           className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${
                             isLight ? 'bg-sky-600' : 'bg-cyan-400'
@@ -922,14 +922,14 @@ export const HowToUseView: React.FC = () => {
                 {/* Column 2: Execution Workflow & Steps */}
                 <div
                   className={`p-4 rounded-xl border space-y-3 ${
-                    isLight ? 'bg-slate-50/80 border-slate-200' : 'bg-[#161616] border-[#262626]'
+                    isLight ? 'bg-elevated border-slate-200' : 'bg-card border-subtle'
                   }`}
                 >
                   <div className="flex items-center gap-2">
                     <Play className={`w-4 h-4 ${isLight ? 'text-sky-700' : 'text-cyan-400'}`} />
                     <h3
                       className={`font-heading text-sm font-bold uppercase tracking-wider ${
-                        isLight ? 'text-slate-900' : 'text-white'
+                        isLight ? 'text-primary' : 'text-primary'
                       }`}
                     >
                       Step-by-Step Procedure
@@ -942,13 +942,13 @@ export const HowToUseView: React.FC = () => {
                         <span
                           className={`w-5 h-5 rounded-md flex items-center justify-center font-mono font-bold text-[10px] shrink-0 ${
                             isLight
-                              ? 'bg-white text-slate-900 border border-slate-300 shadow-2xs'
-                              : 'bg-[#222] text-cyan-400 border border-[#333]'
+                              ? 'bg-white text-primary border border-slate-300 shadow-2xs'
+                              : 'bg-elevated text-cyan-400 border border-subtle'
                           }`}
                         >
                           {i + 1}
                         </span>
-                        <span className={`leading-relaxed ${isLight ? 'text-slate-700' : 'text-gray-300'}`}>
+                        <span className={`leading-relaxed ${isLight ? 'text-muted' : 'text-secondary'}`}>
                           {step}
                         </span>
                       </li>
@@ -960,7 +960,7 @@ export const HowToUseView: React.FC = () => {
                     className={`mt-3 p-2.5 rounded-lg border flex items-start gap-2 text-xs ${
                       isLight
                         ? 'bg-sky-50 border-sky-200 text-sky-950'
-                        : 'bg-[#0f1f2e] border-cyan-500/30 text-cyan-200'
+                        : 'bg-accent border-cyan-500/30 text-cyan-200'
                     }`}
                   >
                     <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
@@ -974,13 +974,13 @@ export const HowToUseView: React.FC = () => {
               {/* Output Artifact Footer */}
               <div
                 className={`mt-4 pt-3 border-t flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs ${
-                  isLight ? 'border-slate-100 text-slate-600' : 'border-[#262626] text-gray-400'
+                  isLight ? 'border-slate-100 text-muted' : 'border-subtle text-secondary'
                 }`}
               >
                 <div className="flex items-center gap-2">
                   <Layers className={`w-3.5 h-3.5 ${isLight ? 'text-sky-700' : 'text-cyan-400'}`} />
                   <span className="font-semibold">Deliverable Artifact:</span>
-                  <span className={isLight ? 'text-slate-800 font-mono text-[11px]' : 'text-gray-300 font-mono text-[11px]'}>
+                  <span className={isLight ? 'text-primary font-mono text-[11px]' : 'text-secondary font-mono text-[11px]'}>
                     {mod.outputArtifact}
                   </span>
                 </div>
@@ -1002,10 +1002,10 @@ export const HowToUseView: React.FC = () => {
         {filteredModules.length === 0 && (
           <div
             className={`p-12 text-center rounded-2xl border ${
-              isLight ? 'bg-white border-slate-200' : 'bg-[#1c1c1c] border-[#2d2d2d]'
+              isLight ? 'bg-white border-slate-200' : 'bg-card border-subtle'
             }`}
           >
-            <p className={`text-base font-semibold ${isLight ? 'text-slate-700' : 'text-gray-300'}`}>
+            <p className={`text-base font-semibold ${isLight ? 'text-muted' : 'text-secondary'}`}>
               No modules found matching "{searchQuery}".
             </p>
             <button
@@ -1013,7 +1013,7 @@ export const HowToUseView: React.FC = () => {
                 setSearchQuery('');
                 setSelectedCategory('all');
               }}
-              className="mt-3 px-4 py-2 text-xs font-bold rounded-lg bg-sky-600 text-white"
+              className="mt-3 px-4 py-2 text-xs font-bold rounded-lg bg-sky-600 text-primary"
             >
               Reset Filters
             </button>
@@ -1026,18 +1026,18 @@ export const HowToUseView: React.FC = () => {
       {/* ===================================================================== */}
       <div
         className={`p-6 sm:p-8 rounded-2xl border ${
-          isLight ? 'bg-white border-slate-200' : 'bg-[#1c1c1c] border-[#2d2d2d]'
+          isLight ? 'bg-white border-slate-200' : 'bg-card border-subtle'
         }`}
       >
         <div className="mb-6">
           <h2
             className={`font-heading text-2xl font-bold uppercase tracking-wide ${
-              isLight ? 'text-slate-900' : 'text-white'
+              isLight ? 'text-primary' : 'text-primary'
             }`}
           >
             ❓ Frequently Asked Questions
           </h2>
-          <p className={`text-xs mt-1 ${isLight ? 'text-slate-600' : 'text-gray-400'}`}>
+          <p className={`text-xs mt-1 ${isLight ? 'text-muted' : 'text-secondary'}`}>
             Common technical and operational questions regarding data workflows, export compatibility, and security.
           </p>
         </div>
@@ -1047,26 +1047,26 @@ export const HowToUseView: React.FC = () => {
             <div
               key={idx}
               className={`p-4 rounded-xl border flex flex-col justify-between ${
-                isLight ? 'bg-slate-50 border-slate-200' : 'bg-[#171717] border-[#282828]'
+                isLight ? 'bg-elevated border-slate-200' : 'bg-card border-subtle'
               }`}
             >
               <div>
                 <h4
                   className={`font-heading text-sm font-bold uppercase tracking-wide flex items-start gap-2 ${
-                    isLight ? 'text-slate-900' : 'text-white'
+                    isLight ? 'text-primary' : 'text-primary'
                   }`}
                 >
                   <span className={isLight ? 'text-sky-700' : 'text-cyan-400'}>Q:</span>
                   <span>{faq.q}</span>
                 </h4>
-                <p className={`mt-2 text-xs leading-relaxed ${isLight ? 'text-slate-600' : 'text-gray-300'}`}>
+                <p className={`mt-2 text-xs leading-relaxed ${isLight ? 'text-muted' : 'text-secondary'}`}>
                   {faq.a}
                 </p>
               </div>
 
-              <div className="mt-3 pt-2 border-t border-slate-200/50 dark:border-[#222] flex items-center gap-1.5 text-[11px]">
+              <div className="mt-3 pt-2 border-t border-slate-200/50 dark:border-subtle flex items-center gap-1.5 text-[11px]">
                 <Check className={`w-3.5 h-3.5 ${isLight ? 'text-sky-600' : 'text-cyan-400'}`} />
-                <span className={`font-mono ${isLight ? 'text-slate-500' : 'text-gray-500'}`}>
+                <span className={`font-mono ${isLight ? 'text-muted' : 'text-muted'}`}>
                   Verified Enterprise Architecture
                 </span>
               </div>

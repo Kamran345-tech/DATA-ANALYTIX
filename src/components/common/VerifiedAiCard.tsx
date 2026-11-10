@@ -46,7 +46,7 @@ export const VerifiedAiCard: React.FC<VerifiedAiCardProps> = ({
   const isVerified = unverifiedCount === 0;
 
   return (
-    <div className={`rounded-xl border border-slate-800 bg-[#0F172A] p-5 shadow-sm ${className}`}>
+    <div className={`rounded-xl border border-slate-800 bg-app p-5 shadow-sm ${className}`}>
       <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-800 mb-4">
         <div className="flex items-center gap-2">
           {isVerified ? (
@@ -60,27 +60,27 @@ export const VerifiedAiCard: React.FC<VerifiedAiCardProps> = ({
               {unverifiedCount} Unverified Metric Claim{unverifiedCount > 1 ? 's' : ''}
             </span>
           )}
-          <span className="text-[11px] font-mono text-slate-400">
+          <span className="text-[11px] font-mono text-secondary">
             {model} {isRuleBased ? '(Deterministic)' : '(Grounded)'}
           </span>
         </div>
 
         {sourceMetrics.length > 0 && (
-          <div className="text-[11px] text-slate-400">
+          <div className="text-[11px] text-secondary">
             Grounded against {sourceMetrics.length} KPI{sourceMetrics.length > 1 ? 's' : ''}
           </div>
         )}
       </div>
 
-      <div className="text-sm leading-relaxed text-slate-200 whitespace-pre-line space-y-2">
+      <div className="text-sm leading-relaxed text-primary whitespace-pre-line space-y-2">
         {text}
       </div>
 
       {sourceMetrics.length > 0 && (
         <div className="mt-4 pt-3 border-t border-slate-800/80 flex flex-wrap items-center gap-1.5">
-          <span className="text-[11px] text-slate-400 font-medium">Audited Sources:</span>
+          <span className="text-[11px] text-secondary font-medium">Audited Sources:</span>
           {sourceMetrics.map(metric => (
-            <span key={metric} className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300">
+            <span key={metric} className="text-[10px] font-mono px-2 py-0.5 rounded bg-elevated text-secondary">
               {metric}
             </span>
           ))}

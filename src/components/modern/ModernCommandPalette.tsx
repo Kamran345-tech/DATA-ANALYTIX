@@ -174,7 +174,7 @@ export const ModernCommandPalette: React.FC<ModernCommandPaletteProps> = ({ isOp
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className={`p-1.5 rounded-lg ${isSelected ? 'bg-[var(--modern-primary)] text-white' : 'bg-[var(--modern-bg-surface-2)] text-[var(--modern-text-muted)]'}`}>
+                    <div className={`p-1.5 rounded-lg ${isSelected ? 'bg-[var(--modern-primary)] text-primary' : 'bg-[var(--modern-bg-surface-2)] text-[var(--modern-text-muted)]'}`}>
                       <Icon className="w-4 h-4" />
                     </div>
                     <div className="truncate">

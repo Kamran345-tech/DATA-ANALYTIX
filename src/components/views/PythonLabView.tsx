@@ -34,8 +34,8 @@ import {
   DonutCompositionChart, 
   TreemapChart 
 } from '../charts/InteractiveCharts';
-import * as XLSX from 'xlsx';
 import { ColabNotebookModal } from '../common/ColabNotebookModal';
+import { DownloadMenu } from '../common/DownloadMenu';
 
 export const PythonLabView: React.FC = () => {
   const { cleanRows, columns, project, dataModel, applyCleanedRows, setCurrentTab, brand } = usePlatform();
@@ -159,8 +159,9 @@ export const PythonLabView: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
-  const exportCleanedCSV = () => {
+  const exportCleanedCSV = async () => {
     const rowsToExport = result?.outputRows || cleanRows;
+    const XLSX = await import('xlsx');
     const ws = XLSX.utils.json_to_sheet(rowsToExport);
     const csv = XLSX.utils.sheet_to_csv(ws);
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -272,6 +273,7 @@ export const PythonLabView: React.FC = () => {
           >
             <Play className="w-4 h-4 fill-current" /> Run &amp; Build Dashboard
           </button>
+          <DownloadMenu context="python_lab" customPython={script} />
         </div>
       </div>
 

@@ -284,49 +284,49 @@ export const LiveServerConnectorView: React.FC = () => {
   return (
     <div className="max-w-6xl mx-auto space-y-8 pb-16 animate-fadeIn">
       {/* Header */}
-      <div className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-3xl p-6 sm:p-8 flex flex-wrap items-center justify-between gap-6 shadow-xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-[#21F1A8]/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="bg-card border border-subtle rounded-3xl p-6 sm:p-8 flex flex-wrap items-center justify-between gap-6 shadow-xl relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-80 h-80 bg-accent rounded-full blur-3xl pointer-events-none" />
 
         <div className="space-y-2 max-w-2xl relative">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#21F1A8]/10 text-[#21F1A8] text-xs font-mono font-semibold border border-[#21F1A8]/20">
-            <Radio className="w-3.5 h-3.5 animate-pulse text-[#21F1A8]" />
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent text-accent text-xs font-mono font-semibold border border-teal-500/40">
+            <Radio className="w-3.5 h-3.5 animate-pulse text-accent" />
             UNIVERSAL DATABASE & LIVE SERVER CONNECTOR
           </div>
-          <h1 className="font-heading text-3xl sm:text-4xl font-bold text-white tracking-wide uppercase">
+          <h1 className="font-heading text-3xl sm:text-4xl font-bold text-primary tracking-wide uppercase">
             CONNECT TO ANY DATABASE & SERVER
           </h1>
-          <p className="text-xs sm:text-sm text-gray-400 leading-relaxed">
-            Attach credentials for any server: <span className="text-white font-medium">PostgreSQL, MySQL, SQL Server, MongoDB, Snowflake, Oracle, or REST APIs</span>. Stream live records directly into the analytical pipeline for in-browser SQL or Python cleaning. *(Note: Direct database wire protocols operate in sandbox demo mode; use REST API for live external HTTP endpoints).*
+          <p className="text-xs sm:text-sm text-secondary leading-relaxed">
+            Attach credentials for any server: <span className="text-primary font-medium">PostgreSQL, MySQL, SQL Server, MongoDB, Snowflake, Oracle, or REST APIs</span>. Stream live records directly into the analytical pipeline for in-browser SQL or Python cleaning. *(Note: Direct database wire protocols operate in sandbox demo mode; use REST API for live external HTTP endpoints).*
           </p>
         </div>
 
         {/* Live streaming status card if connected */}
         {liveConnection.isConnected ? (
-          <div className="p-4 rounded-2xl bg-[#141414] border border-[#21F1A8]/40 space-y-2.5 min-w-[240px]">
+          <div className="p-4 rounded-2xl bg-card border border-teal-500/40 space-y-2.5 min-w-[240px]">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-mono uppercase text-gray-400">Stream Status:</span>
-              <span className="inline-flex items-center gap-1.5 text-xs font-bold text-[#21F1A8]">
-                <span className="w-2 h-2 rounded-full bg-[#21F1A8] animate-ping" />
+              <span className="text-[11px] font-mono uppercase text-secondary">Stream Status:</span>
+              <span className="inline-flex items-center gap-1.5 text-xs font-bold text-accent">
+                <span className="w-2 h-2 rounded-full bg-accent animate-ping" />
                 LIVE CONNECTED
               </span>
             </div>
-            <div className="text-xs font-mono text-gray-300">
-              <div>DB: <span className="text-white font-bold">{liveConnection.database}</span></div>
-              <div>Table: <span className="text-[#21F1A8] font-bold">{liveConnection.tableName}</span></div>
-              <div className="text-gray-500 text-[10px]">Synced: {liveConnection.lastSynced || 'Just now'} ({liveConnection.fetchCount} syncs)</div>
+            <div className="text-xs font-mono text-secondary">
+              <div>DB: <span className="text-primary font-bold">{liveConnection.database}</span></div>
+              <div>Table: <span className="text-accent font-bold">{liveConnection.tableName}</span></div>
+              <div className="text-muted text-[10px]">Synced: {liveConnection.lastSynced || 'Just now'} ({liveConnection.fetchCount} syncs)</div>
             </div>
             <div className="pt-1 flex gap-2">
               <button
                 onClick={syncLiveStream}
                 disabled={liveConnection.isSyncing}
-                className="flex-1 py-1.5 px-3 rounded-lg bg-[#21F1A8] text-black font-bold text-xs hover:bg-[#1cdb97] transition-all flex items-center justify-center gap-1"
+                className="flex-1 py-1.5 px-3 rounded-lg bg-accent text-black font-bold text-xs hover:bg-accent transition-all flex items-center justify-center gap-1"
               >
                 <RefreshCw className={`w-3 h-3 ${liveConnection.isSyncing ? 'animate-spin' : ''}`} />
                 {liveConnection.isSyncing ? 'Syncing...' : 'Sync Now'}
               </button>
               <button
                 onClick={() => setCurrentTab('executive_dashboard')}
-                className="py-1.5 px-3 rounded-lg bg-[#242424] hover:bg-[#303030] text-white text-xs border border-[#383838]"
+                className="py-1.5 px-3 rounded-lg bg-elevated hover:bg-elevated text-primary text-xs border border-subtle"
               >
                 View Dashboard
               </button>
@@ -338,8 +338,8 @@ export const LiveServerConnectorView: React.FC = () => {
               onClick={() => setActiveTab('templates')}
               className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
                 activeTab === 'templates' 
-                  ? 'bg-[#21F1A8] text-black shadow-lg shadow-[#21F1A8]/20' 
-                  : 'bg-[#242424] text-gray-300 hover:text-white border border-[#333]'
+                  ? 'bg-accent text-black shadow-lg shadow-lg/20' 
+                  : 'bg-elevated text-secondary hover:text-primary border border-subtle'
               }`}
             >
               Curated Live Servers
@@ -348,8 +348,8 @@ export const LiveServerConnectorView: React.FC = () => {
               onClick={() => setActiveTab('custom')}
               className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
                 activeTab === 'custom' 
-                  ? 'bg-[#21F1A8] text-black shadow-lg shadow-[#21F1A8]/20' 
-                  : 'bg-[#242424] text-gray-300 hover:text-white border border-[#333]'
+                  ? 'bg-accent text-black shadow-lg shadow-lg/20' 
+                  : 'bg-elevated text-secondary hover:text-primary border border-subtle'
               }`}
             >
               Custom Server Credentials
@@ -364,11 +364,11 @@ export const LiveServerConnectorView: React.FC = () => {
         {/* Left Column: Preset Templates */}
         <div className="lg:col-span-5 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="font-heading text-lg font-bold text-white uppercase tracking-wide flex items-center gap-2">
-              <Zap className="w-4 h-4 text-[#21F1A8]" />
+            <h2 className="font-heading text-lg font-bold text-primary uppercase tracking-wide flex items-center gap-2">
+              <Zap className="w-4 h-4 text-accent" />
               INSTANT CLUSTER CONNECTIONS
             </h2>
-            <span className="text-[10px] font-mono text-gray-400">1-Click Live Setup</span>
+            <span className="text-[10px] font-mono text-secondary">1-Click Live Setup</span>
           </div>
 
           <div className="space-y-3">
@@ -380,8 +380,8 @@ export const LiveServerConnectorView: React.FC = () => {
                   onClick={() => handleApplyTemplate(tmpl)}
                   className={`p-4 rounded-2xl border cursor-pointer transition-all ${
                     isSelected 
-                      ? 'bg-[#222222] border-[#21F1A8] shadow-md shadow-[#21F1A8]/10' 
-                      : 'bg-[#191919] border-[#2d2d2d] hover:border-[#3e3e3e] hover:bg-[#202020]'
+                      ? 'bg-elevated border-teal-500/40 shadow-md shadow-lg/10' 
+                      : 'bg-card border-subtle hover:border-teal-500/40 hover:bg-elevated'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -390,22 +390,22 @@ export const LiveServerConnectorView: React.FC = () => {
                         <Database className="w-4 h-4" />
                       </div>
                       <div>
-                        <h4 className="font-bold text-white text-xs sm:text-sm">{tmpl.name}</h4>
-                        <div className="text-[11px] font-mono text-gray-400">{tmpl.typeLabel}</div>
+                        <h4 className="font-bold text-primary text-xs sm:text-sm">{tmpl.name}</h4>
+                        <div className="text-[11px] font-mono text-secondary">{tmpl.typeLabel}</div>
                       </div>
                     </div>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#121212] border border-[#333] text-[#21F1A8]">
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-app border border-subtle text-accent">
                       {tmpl.badge}
                     </span>
                   </div>
 
-                  <p className="text-xs text-gray-400 mt-2.5 line-clamp-2">
+                  <p className="text-xs text-secondary mt-2.5 line-clamp-2">
                     {tmpl.description}
                   </p>
 
-                  <div className="mt-3 pt-2.5 border-t border-[#262626] flex items-center justify-between text-[11px] font-mono text-gray-500">
+                  <div className="mt-3 pt-2.5 border-t border-subtle flex items-center justify-between text-[11px] font-mono text-muted">
                     <span>Host: {tmpl.host.substring(0, 24)}...</span>
-                    <span className="text-[#21F1A8] flex items-center gap-1 font-semibold">
+                    <span className="text-accent flex items-center gap-1 font-semibold">
                       Use Profile <ArrowRight className="w-3 h-3" />
                     </span>
                   </div>
@@ -417,14 +417,14 @@ export const LiveServerConnectorView: React.FC = () => {
 
         {/* Right Column: Connection Credentials & Query Editor */}
         <div className="lg:col-span-7 space-y-5">
-          <div className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-3xl p-6 space-y-5">
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#2d2d2d] pb-4">
+          <div className="bg-card border border-subtle rounded-3xl p-6 space-y-5">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-subtle pb-4">
               <div>
-                <h3 className="font-heading text-lg font-bold text-white uppercase tracking-wide flex items-center gap-2">
-                  <Server className="w-4 h-4 text-[#21F1A8]" />
+                <h3 className="font-heading text-lg font-bold text-primary uppercase tracking-wide flex items-center gap-2">
+                  <Server className="w-4 h-4 text-accent" />
                   SERVER AUTHENTICATION & CREDENTIALS
                 </h3>
-                <p className="text-xs text-gray-400">Specify connection parameters to authenticate and stream live tables.</p>
+                <p className="text-xs text-secondary">Specify connection parameters to authenticate and stream live tables.</p>
               </div>
 
               {/* Server Engine Selector */}
@@ -442,8 +442,8 @@ export const LiveServerConnectorView: React.FC = () => {
                     onClick={() => handleServerTypeChange(item.id)}
                     className={`px-2.5 py-1 rounded-lg text-xs font-mono transition-colors ${
                       serverType === item.id 
-                        ? 'bg-[#21F1A8] text-black font-bold' 
-                        : 'bg-[#141414] text-gray-400 hover:text-white border border-[#2d2d2d]'
+                        ? 'bg-accent text-black font-bold' 
+                        : 'bg-card text-secondary hover:text-primary border border-subtle'
                     }`}
                   >
                     {item.label}
@@ -456,18 +456,18 @@ export const LiveServerConnectorView: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Host / URL */}
               <div className="sm:col-span-2 space-y-1.5">
-                <label className="text-xs font-semibold text-gray-300 font-mono flex items-center justify-between">
+                <label className="text-xs font-semibold text-secondary font-mono flex items-center justify-between">
                   <span>{serverType === 'rest_api' ? 'REST API Endpoint URL' : 'Server Host / IP'}</span>
-                  <span className="text-[10px] text-gray-500">e.g. {serverType === 'rest_api' ? 'https://api.domain.com/v1/orders' : '10.0.4.12 or db.domain.net'}</span>
+                  <span className="text-[10px] text-muted">e.g. {serverType === 'rest_api' ? 'https://api.domain.com/v1/orders' : '10.0.4.12 or db.domain.net'}</span>
                 </label>
                 <div className="relative">
-                  <Globe className="w-4 h-4 text-gray-500 absolute left-3 top-3" />
+                  <Globe className="w-4 h-4 text-muted absolute left-3 top-3" />
                   <input
                     type="text"
                     value={host}
                     onChange={(e) => setHost(e.target.value)}
                     placeholder="hostname or url..."
-                    className="w-full bg-[#141414] text-xs font-mono text-white pl-9 pr-3 py-2.5 rounded-xl border border-[#333] focus:border-[#21F1A8] focus:outline-none"
+                    className="w-full bg-card text-xs font-mono text-primary pl-9 pr-3 py-2.5 rounded-xl border border-subtle focus:border-teal-500/40 focus:outline-none"
                   />
                 </div>
               </div>
@@ -476,55 +476,55 @@ export const LiveServerConnectorView: React.FC = () => {
                 <>
                   {/* Port */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-gray-300 font-mono">Port</label>
+                    <label className="text-xs font-semibold text-secondary font-mono">Port</label>
                     <input
                       type="text"
                       value={port}
                       onChange={(e) => setPort(e.target.value)}
                       placeholder="5432"
-                      className="w-full bg-[#141414] text-xs font-mono text-white px-3 py-2.5 rounded-xl border border-[#333] focus:border-[#21F1A8] focus:outline-none"
+                      className="w-full bg-card text-xs font-mono text-primary px-3 py-2.5 rounded-xl border border-subtle focus:border-teal-500/40 focus:outline-none"
                     />
                   </div>
 
                   {/* Database Name */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-gray-300 font-mono">Database / Schema</label>
+                    <label className="text-xs font-semibold text-secondary font-mono">Database / Schema</label>
                     <input
                       type="text"
                       value={database}
                       onChange={(e) => setDatabase(e.target.value)}
                       placeholder="production_db"
-                      className="w-full bg-[#141414] text-xs font-mono text-white px-3 py-2.5 rounded-xl border border-[#333] focus:border-[#21F1A8] focus:outline-none"
+                      className="w-full bg-card text-xs font-mono text-primary px-3 py-2.5 rounded-xl border border-subtle focus:border-teal-500/40 focus:outline-none"
                     />
                   </div>
 
                   {/* Username */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-gray-300 font-mono">Username</label>
+                    <label className="text-xs font-semibold text-secondary font-mono">Username</label>
                     <input
                       type="text"
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
                       placeholder="db_user"
-                      className="w-full bg-[#141414] text-xs font-mono text-white px-3 py-2.5 rounded-xl border border-[#333] focus:border-[#21F1A8] focus:outline-none"
+                      className="w-full bg-card text-xs font-mono text-primary px-3 py-2.5 rounded-xl border border-subtle focus:border-teal-500/40 focus:outline-none"
                     />
                   </div>
 
                   {/* Password */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-gray-300 font-mono">Password / Secret Key</label>
+                    <label className="text-xs font-semibold text-secondary font-mono">Password / Secret Key</label>
                     <div className="relative">
                       <input
                         type={showPassword ? 'text' : 'password'}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="••••••••••••"
-                        className="w-full bg-[#141414] text-xs font-mono text-white px-3 pr-9 py-2.5 rounded-xl border border-[#333] focus:border-[#21F1A8] focus:outline-none"
+                        className="w-full bg-card text-xs font-mono text-primary px-3 pr-9 py-2.5 rounded-xl border border-subtle focus:border-teal-500/40 focus:outline-none"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-2.5 text-gray-500 hover:text-gray-300"
+                        className="absolute right-3 top-2.5 text-muted hover:text-secondary"
                       >
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
@@ -535,28 +535,28 @@ export const LiveServerConnectorView: React.FC = () => {
 
               {/* Table / Extraction Source */}
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-gray-300 font-mono">Target Table / Resource</label>
+                <label className="text-xs font-semibold text-secondary font-mono">Target Table / Resource</label>
                 <input
                   type="text"
                   value={tableName}
                   onChange={(e) => setTableName(e.target.value)}
                   placeholder="orders"
-                  className="w-full bg-[#141414] text-xs font-mono text-white px-3 py-2.5 rounded-xl border border-[#333] focus:border-[#21F1A8] focus:outline-none"
+                  className="w-full bg-card text-xs font-mono text-primary px-3 py-2.5 rounded-xl border border-subtle focus:border-teal-500/40 focus:outline-none"
                 />
               </div>
 
               {/* Auto-Refresh Polling */}
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-gray-300 font-mono flex items-center justify-between">
+                <label className="text-xs font-semibold text-secondary font-mono flex items-center justify-between">
                   <span>Auto-Refresh Polling</span>
-                  <span className="text-[10px] text-[#21F1A8]">
+                  <span className="text-[10px] text-accent">
                     {refreshInterval === 0 ? 'Manual Sync' : `Every ${refreshInterval}s`}
                   </span>
                 </label>
                 <select
                   value={refreshInterval}
                   onChange={(e) => setRefreshInterval(Number(e.target.value))}
-                  className="w-full bg-[#141414] text-xs font-mono text-white px-3 py-2.5 rounded-xl border border-[#333] focus:border-[#21F1A8] focus:outline-none"
+                  className="w-full bg-card text-xs font-mono text-primary px-3 py-2.5 rounded-xl border border-subtle focus:border-teal-500/40 focus:outline-none"
                 >
                   <option value={0}>Manual On-Demand Sync</option>
                   <option value={5}>Live Real-Time Stream (Every 5 seconds)</option>
@@ -568,18 +568,18 @@ export const LiveServerConnectorView: React.FC = () => {
 
               {/* SSL & Max Records */}
               <div className="sm:col-span-2 flex flex-wrap items-center justify-between gap-4 pt-1">
-                <label className="flex items-center gap-2 cursor-pointer text-xs text-gray-300">
+                <label className="flex items-center gap-2 cursor-pointer text-xs text-secondary">
                   <input
                     type="checkbox"
                     checked={sslEnabled}
                     onChange={(e) => setSslEnabled(e.target.checked)}
-                    className="w-4 h-4 rounded text-[#21F1A8] bg-[#141414] border-[#333] focus:ring-0"
+                    className="w-4 h-4 rounded text-accent bg-card border-subtle focus:ring-0"
                   />
-                  <ShieldCheck className="w-3.5 h-3.5 text-[#21F1A8]" />
+                  <ShieldCheck className="w-3.5 h-3.5 text-accent" />
                   <span>Enforce SSL/TLS Encryption in Transit</span>
                 </label>
 
-                <div className="flex items-center gap-2 text-xs font-mono text-gray-400">
+                <div className="flex items-center gap-2 text-xs font-mono text-secondary">
                   <span>Limit Rows:</span>
                   <input
                     type="number"
@@ -587,7 +587,7 @@ export const LiveServerConnectorView: React.FC = () => {
                     onChange={(e) => setLimit(Number(e.target.value))}
                     min={10}
                     max={500}
-                    className="w-20 bg-[#141414] text-white px-2 py-1 rounded-lg border border-[#333] text-center"
+                    className="w-20 bg-card text-primary px-2 py-1 rounded-lg border border-subtle text-center"
                   />
                 </div>
               </div>
@@ -596,18 +596,18 @@ export const LiveServerConnectorView: React.FC = () => {
             {/* Custom SQL Extraction Query */}
             <div className="space-y-1.5 pt-2">
               <div className="flex items-center justify-between text-xs">
-                <span className="font-semibold text-gray-300 font-mono flex items-center gap-1.5">
-                  <FileCode className="w-3.5 h-3.5 text-[#21F1A8]" />
+                <span className="font-semibold text-secondary font-mono flex items-center gap-1.5">
+                  <FileCode className="w-3.5 h-3.5 text-accent" />
                   Custom SQL Query Extraction (Optional)
                 </span>
-                <span className="text-[10px] text-gray-500 font-mono">Overrides default SELECT *</span>
+                <span className="text-[10px] text-muted font-mono">Overrides default SELECT *</span>
               </div>
               <textarea
                 value={customQuery}
                 onChange={(e) => setCustomQuery(e.target.value)}
                 rows={3}
                 placeholder="SELECT * FROM table WHERE ... ORDER BY timestamp DESC LIMIT 100;"
-                className="w-full bg-[#121212] text-xs font-mono text-[#21F1A8] p-3 rounded-xl border border-[#2d2d2d] focus:border-[#21F1A8] focus:outline-none"
+                className="w-full bg-app text-xs font-mono text-accent p-3 rounded-xl border border-subtle focus:border-teal-500/40 focus:outline-none"
               />
             </div>
 
@@ -632,7 +632,7 @@ export const LiveServerConnectorView: React.FC = () => {
                 <p className="text-[11px] opacity-90">{testResult.message}</p>
                 {testResult.tables && testResult.tables.length > 0 && (
                   <div className="pt-2 border-t border-emerald-500/20 flex flex-wrap items-center gap-1.5">
-                    <span className="text-gray-400 text-[10px]">Detected Schema Tables:</span>
+                    <span className="text-secondary text-[10px]">Detected Schema Tables:</span>
                     {testResult.tables.map((t, idx) => (
                       <button
                         key={idx}
@@ -659,14 +659,14 @@ export const LiveServerConnectorView: React.FC = () => {
             )}
 
             {/* Action Buttons */}
-            <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-[#2d2d2d]">
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-subtle">
               <button
                 type="button"
                 onClick={handleTestConnection}
                 disabled={testing || fetching}
-                className="px-5 py-2.5 rounded-xl bg-[#262626] hover:bg-[#333] text-gray-200 text-xs font-semibold border border-[#3e3e3e] transition-colors flex items-center gap-2 disabled:opacity-50"
+                className="px-5 py-2.5 rounded-xl bg-elevated hover:bg-elevated text-primary text-xs font-semibold border border-teal-500/40 transition-colors flex items-center gap-2 disabled:opacity-50"
               >
-                {testing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Lock className="w-3.5 h-3.5 text-[#21F1A8]" />}
+                {testing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Lock className="w-3.5 h-3.5 text-accent" />}
                 <span>{testing ? 'Testing Handshake...' : 'Test Connection'}</span>
               </button>
 
@@ -675,7 +675,7 @@ export const LiveServerConnectorView: React.FC = () => {
                   type="button"
                   onClick={handleFetchLiveData}
                   disabled={fetching}
-                  className="px-6 py-2.5 rounded-xl bg-[#21F1A8] text-black font-heading text-sm font-bold tracking-wide uppercase hover:bg-[#1cdb97] transition-all flex items-center gap-2 shadow-lg shadow-[#21F1A8]/20 disabled:opacity-50"
+                  className="px-6 py-2.5 rounded-xl bg-accent text-black font-heading text-sm font-bold tracking-wide uppercase hover:bg-accent transition-all flex items-center gap-2 shadow-lg shadow-lg/20 disabled:opacity-50"
                 >
                   {fetching ? (
                     <>
@@ -698,30 +698,30 @@ export const LiveServerConnectorView: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div 
               onClick={() => setCurrentTab('sql_lab')}
-              className="p-4 rounded-2xl bg-[#191919] border border-[#2d2d2d] hover:border-[#21F1A8]/60 transition-all cursor-pointer group"
+              className="p-4 rounded-2xl bg-card border border-subtle hover:border-teal-500/40 transition-all cursor-pointer group"
             >
               <div className="flex items-center justify-between mb-1.5">
-                <span className="text-xs font-bold text-white group-hover:text-[#21F1A8] transition-colors flex items-center gap-1.5">
-                  <Database className="w-4 h-4 text-[#21F1A8]" /> Step 2: Clean via SQL Lab
+                <span className="text-xs font-bold text-primary group-hover:text-accent transition-colors flex items-center gap-1.5">
+                  <Database className="w-4 h-4 text-accent" /> Step 2: Clean via SQL Lab
                 </span>
-                <ArrowRight className="w-3.5 h-3.5 text-gray-500 group-hover:text-[#21F1A8] transition-colors" />
+                <ArrowRight className="w-3.5 h-3.5 text-muted group-hover:text-accent transition-colors" />
               </div>
-              <p className="text-[11px] text-gray-400">
+              <p className="text-[11px] text-secondary">
                 Filter nulls, deduplicate records, group dimensions, and generate verified SQL executive reports.
               </p>
             </div>
 
             <div 
               onClick={() => setCurrentTab('python_lab')}
-              className="p-4 rounded-2xl bg-[#191919] border border-[#2d2d2d] hover:border-[#21F1A8]/60 transition-all cursor-pointer group"
+              className="p-4 rounded-2xl bg-card border border-subtle hover:border-teal-500/40 transition-all cursor-pointer group"
             >
               <div className="flex items-center justify-between mb-1.5">
-                <span className="text-xs font-bold text-white group-hover:text-[#21F1A8] transition-colors flex items-center gap-1.5">
-                  <FileCode className="w-4 h-4 text-[#21F1A8]" /> Step 3: Python Cleaning & Instant Dashboards
+                <span className="text-xs font-bold text-primary group-hover:text-accent transition-colors flex items-center gap-1.5">
+                  <FileCode className="w-4 h-4 text-accent" /> Step 3: Python Cleaning & Instant Dashboards
                 </span>
-                <ArrowRight className="w-3.5 h-3.5 text-gray-500 group-hover:text-[#21F1A8] transition-colors" />
+                <ArrowRight className="w-3.5 h-3.5 text-muted group-hover:text-accent transition-colors" />
               </div>
-              <p className="text-[11px] text-gray-400">
+              <p className="text-[11px] text-secondary">
                 Write Pandas queries, transform live rows, and watch real-time visual dashboards render right on the spot!
               </p>
             </div>

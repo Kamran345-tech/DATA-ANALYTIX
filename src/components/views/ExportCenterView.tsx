@@ -17,20 +17,11 @@ import {
   SlidersHorizontal
 } from 'lucide-react';
 import { usePlatform } from '../../store/usePlatformStore';
-import { 
-  createCompleteProjectZip, 
-  buildExcelWorkbook, 
-  generateModelBimJSON, 
-  generatePowerBIMSemanticModel, 
-  generatePowerBIThemeJSON,
-  generateEnterpriseReportPDF,
-  downloadDashboardAndReportBundle,
-  downloadChartGuidePDF,
-  ExportDataPayload
-} from '../../engine/exportEngine';
+import type { ExportDataPayload } from '../../engine/exportEngine';
 import { EditableDashboardTitle } from '../common/EditableDashboardTitle';
 import { ColabNotebookModal } from '../common/ColabNotebookModal';
 import { useToast } from '../../store/useToast';
+import { DownloadMenu } from '../common/DownloadMenu';
 
 export const ExportCenterView: React.FC = () => {
   const { 
@@ -76,6 +67,7 @@ export const ExportCenterView: React.FC = () => {
   const handleDownloadDashboardAndReportBundle = async () => {
     setIsBundleGenerating(true);
     try {
+      const { downloadDashboardAndReportBundle } = await import('../../engine/exportEngine');
       await downloadDashboardAndReportBundle(payload, {
         customVisuals,
         categoryPerformance: analytics.categoryPerformance,
@@ -94,9 +86,10 @@ export const ExportCenterView: React.FC = () => {
     }
   };
 
-  const handleDownloadReportPDF = () => {
+  const handleDownloadReportPDF = async () => {
     setIsPdfGenerating(true);
     try {
+      const { generateEnterpriseReportPDF } = await import('../../engine/exportEngine');
       const doc = generateEnterpriseReportPDF(payload, {
         customVisuals,
         categoryPerformance: analytics.categoryPerformance,
@@ -118,9 +111,10 @@ export const ExportCenterView: React.FC = () => {
     }
   };
 
-  const handleDownloadChartGuidePDF = () => {
+  const handleDownloadChartGuidePDF = async () => {
     setIsGuidePdfGenerating(true);
     try {
+      const { downloadChartGuidePDF } = await import('../../engine/exportEngine');
       const { filename, pageCount } = downloadChartGuidePDF({
         datasetName: project?.name || project?.sourceFileName || undefined,
         columns,
@@ -143,6 +137,7 @@ export const ExportCenterView: React.FC = () => {
   const handleDownloadZip = async () => {
     setIsZipping(true);
     try {
+      const { createCompleteProjectZip } = await import('../../engine/exportEngine');
       const blob = await createCompleteProjectZip(payload);
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -161,7 +156,8 @@ export const ExportCenterView: React.FC = () => {
     }
   };
 
-  const handleDownloadExcel = () => {
+  const handleDownloadExcel = async () => {
+    const { buildExcelWorkbook } = await import('../../engine/exportEngine');
     const buf = buildExcelWorkbook(payload);
     const blob = new Blob([buf as any], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const url = URL.createObjectURL(blob);
@@ -172,7 +168,8 @@ export const ExportCenterView: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
-  const handleDownloadPBIPModel = () => {
+  const handleDownloadPBIPModel = async () => {
+    const { generateModelBimJSON } = await import('../../engine/exportEngine');
     const json = generateModelBimJSON(payload);
     const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -183,7 +180,8 @@ export const ExportCenterView: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
-  const handleDownloadPowerQueryM = () => {
+  const handleDownloadPowerQueryM = async () => {
+    const { generatePowerBIMSemanticModel } = await import('../../engine/exportEngine');
     const m = generatePowerBIMSemanticModel(payload);
     const blob = new Blob([m], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
@@ -194,7 +192,8 @@ export const ExportCenterView: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
-  const handleDownloadTheme = () => {
+  const handleDownloadTheme = async () => {
+    const { generatePowerBIThemeJSON } = await import('../../engine/exportEngine');
     const theme = generatePowerBIThemeJSON(brand);
     const blob = new Blob([theme], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -225,6 +224,7 @@ export const ExportCenterView: React.FC = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          <DownloadMenu context="export_center" />
           {/* Download Dashboard + Executive Report Bundle */}
           <button
             onClick={handleDownloadDashboardAndReportBundle}
@@ -529,7 +529,7 @@ export const ExportCenterView: React.FC = () => {
             <div className="space-y-2 pt-2 border-t border-subtle">
               <button
                 onClick={() => setIsColabModalOpen(true)}
-                className="w-full py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-bold transition-colors flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+                className="w-full py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-primary text-xs font-bold transition-colors flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
               >
                 <Sparkles className="w-4 h-4" /> Open in Google Colab
               </button>

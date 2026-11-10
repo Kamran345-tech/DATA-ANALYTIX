@@ -104,33 +104,33 @@ export const AskDataAIView: React.FC = () => {
   return (
     <div className="space-y-6 pb-12 animate-fadeIn max-w-4xl mx-auto">
       {/* Header */}
-      <div className="bg-[#1c1c1c] border border-[#2d2d2d] rounded-2xl p-6 flex flex-wrap items-center justify-between gap-4">
+      <div className="bg-card border border-subtle rounded-2xl p-6 flex flex-wrap items-center justify-between gap-4">
         <div className="space-y-1">
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#21F1A8] font-mono">
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-accent font-mono">
             <Sparkles className="w-4 h-4" /> Grounded Analytical Reasoning
           </div>
-          <h1 className="font-heading text-3xl sm:text-4xl font-bold text-white tracking-wide uppercase">
+          <h1 className="font-heading text-3xl sm:text-4xl font-bold text-primary tracking-wide uppercase">
             ASK YOUR DATA AI
           </h1>
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-secondary">
             Ask complex business questions. Responses strictly cite verified numbers from the semantic calculation engine.
           </p>
         </div>
 
-        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#21F1A8]/10 text-[#21F1A8] border border-[#21F1A8]/30 text-xs font-mono">
+        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-accent text-accent border border-teal-500/40 text-xs font-mono">
           <ShieldCheck className="w-3.5 h-3.5" /> Anti-Hallucination Active
         </div>
       </div>
 
       {/* Suggested Starter Prompts */}
       <div className="space-y-2">
-        <span className="text-[11px] font-mono text-gray-400 uppercase">Suggested Analytical Queries:</span>
+        <span className="text-[11px] font-mono text-secondary uppercase">Suggested Analytical Queries:</span>
         <div className="flex flex-wrap gap-2">
           {starterQuestions.map((q, idx) => (
             <button
               key={idx}
               onClick={() => handleSend(q)}
-              className="text-xs text-gray-300 bg-[#1c1c1c] hover:bg-[#252525] border border-[#2e2e2e] hover:border-[#21F1A8]/40 px-3 py-1.5 rounded-xl transition-colors text-left"
+              className="text-xs text-secondary bg-card hover:bg-elevated border border-subtle hover:border-teal-500/40 px-3 py-1.5 rounded-xl transition-colors text-left"
             >
               {q}
             </button>
@@ -139,7 +139,7 @@ export const AskDataAIView: React.FC = () => {
       </div>
 
       {/* Chat Thread */}
-      <div className="bg-[#141414] border border-[#262626] rounded-3xl p-5 min-h-[420px] max-h-[550px] overflow-y-auto space-y-4">
+      <div className="bg-card border border-subtle rounded-3xl p-5 min-h-[420px] max-h-[550px] overflow-y-auto space-y-4">
         {messages.map(msg => (
           <div
             key={msg.id}
@@ -148,7 +148,7 @@ export const AskDataAIView: React.FC = () => {
             }`}
           >
             {msg.sender === 'assistant' && (
-              <div className="w-7 h-7 rounded-lg bg-[#21F1A8]/10 border border-[#21F1A8]/30 text-[#21F1A8] flex items-center justify-center shrink-0 mt-1">
+              <div className="w-7 h-7 rounded-lg bg-accent border border-teal-500/40 text-accent flex items-center justify-center shrink-0 mt-1">
                 <Bot className="w-4 h-4" />
               </div>
             )}
@@ -156,22 +156,22 @@ export const AskDataAIView: React.FC = () => {
             <div
               className={`p-4 rounded-2xl max-w-xl space-y-2 ${
                 msg.sender === 'user' 
-                  ? 'bg-[#21F1A8] text-black font-medium' 
-                  : 'bg-[#1c1c1c] text-gray-200 border border-[#2d2d2d]'
+                  ? 'bg-accent text-black font-medium' 
+                  : 'bg-card text-primary border border-subtle'
               }`}
             >
               <div className="whitespace-pre-wrap">{msg.text}</div>
 
               {msg.grounded && msg.sender === 'assistant' && (
-                <div className="pt-2 border-t border-[#262626] flex items-center gap-1.5 text-[10px] text-gray-400 font-mono">
-                  <CheckCircle2 className="w-3 h-3 text-[#21F1A8]" />
+                <div className="pt-2 border-t border-subtle flex items-center gap-1.5 text-[10px] text-secondary font-mono">
+                  <CheckCircle2 className="w-3 h-3 text-accent" />
                   <span>Verified from data engine (Source: {project.name})</span>
                 </div>
               )}
             </div>
 
             {msg.sender === 'user' && (
-              <div className="w-7 h-7 rounded-lg bg-[#282828] text-gray-300 flex items-center justify-center shrink-0 mt-1">
+              <div className="w-7 h-7 rounded-lg bg-elevated text-secondary flex items-center justify-center shrink-0 mt-1">
                 <User className="w-4 h-4" />
               </div>
             )}
@@ -179,7 +179,7 @@ export const AskDataAIView: React.FC = () => {
         ))}
 
         {loading && (
-          <div className="flex items-center gap-2 text-xs font-mono text-[#21F1A8] p-3">
+          <div className="flex items-center gap-2 text-xs font-mono text-accent p-3">
             <Loader2 className="w-4 h-4 animate-spin" />
             <span>Querying verified semantic model & formulating management explanation...</span>
           </div>
@@ -194,12 +194,12 @@ export const AskDataAIView: React.FC = () => {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-          className="flex-1 bg-[#1c1c1c] text-xs text-white px-4 py-3 rounded-2xl border border-[#333] focus:border-[#21F1A8] focus:outline-none"
+          className="flex-1 bg-card text-xs text-primary px-4 py-3 rounded-2xl border border-subtle focus:border-teal-500/40 focus:outline-none"
         />
         <button
           onClick={() => handleSend()}
           disabled={loading || !input.trim()}
-          className="px-6 py-3 rounded-2xl bg-[#21F1A8] text-black font-semibold text-xs hover:bg-[#1cdb97] transition-all disabled:opacity-40 flex items-center gap-1.5"
+          className="px-6 py-3 rounded-2xl bg-accent text-black font-semibold text-xs hover:bg-accent transition-all disabled:opacity-40 flex items-center gap-1.5"
         >
           <Send className="w-4 h-4" />
           <span>Ask</span>

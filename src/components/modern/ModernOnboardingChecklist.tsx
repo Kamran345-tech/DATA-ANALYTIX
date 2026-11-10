@@ -31,9 +31,12 @@ export const ModernOnboardingChecklist: React.FC = () => {
     };
   });
 
-  const [isMinimized, setIsMinimized] = useState(false);
+  const [isMinimized, setIsMinimized] = useState<boolean>(() => {
+    const initialHasData = Boolean((cleanRows && cleanRows.length > 0) || state.hasLoadedData);
+    return initialHasData;
+  });
 
-  // Auto-advance checklist based on user activity
+  // Auto-advance checklist based on user activity and collapse once step 1 is complete
   useEffect(() => {
     let updated = false;
     const next = { ...state };
@@ -41,6 +44,7 @@ export const ModernOnboardingChecklist: React.FC = () => {
     if (!next.hasLoadedData && cleanRows && cleanRows.length > 0) {
       next.hasLoadedData = true;
       updated = true;
+      setIsMinimized(true);
     }
     if (!next.hasCheckedQuality && (currentTab === 'quality' || currentTab === 'cleaning')) {
       next.hasCheckedQuality = true;
@@ -92,7 +96,7 @@ export const ModernOnboardingChecklist: React.FC = () => {
           <button
             onClick={() => setIsMinimized(!isMinimized)}
             className="p-1 text-[var(--modern-text-muted)] hover:text-[var(--modern-text)]"
-            aria-label={isMinimized ? 'Expand checklist' : 'Minimize checklist'}
+            aria-label={isMinimized ? 'Expand Getting Started checklist' : 'Minimize Getting Started checklist'}
           >
             {isMinimized ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
           </button>

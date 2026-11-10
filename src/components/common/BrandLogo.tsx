@@ -29,19 +29,17 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
         <img 
           src={brand.logoUrl} 
           alt={brand.companyName || 'Company Logo'} 
-          className="rounded-lg object-contain border border-border-subtle bg-white/5 p-0.5 shadow-xs shrink-0"
+          className="rounded-lg object-contain border border-subtle bg-elevated p-0.5 shadow-xs shrink-0"
           style={{ width: dimensions.icon, height: dimensions.icon }}
         />
         <div className="flex flex-col leading-none">
           <div className={`font-heading font-black tracking-tight ${dimensions.text} flex items-center truncate max-w-[180px]`}>
-            <span className={isLight ? 'text-slate-900' : 'text-white'}>
+            <span className="text-primary">
               {brand.companyName || 'ENTERPRISE'}
             </span>
           </div>
           {showSubtitle && (
-            <span className={`font-mono uppercase tracking-widest font-semibold ${dimensions.sub} mt-1 truncate max-w-[180px] ${
-              isLight ? 'text-slate-500' : 'text-slate-400'
-            }`}>
+            <span className={`font-mono uppercase tracking-widest font-semibold ${dimensions.sub} mt-1 truncate max-w-[180px] text-muted`}>
               {brand.department || 'BI Platform'}
             </span>
           )}
@@ -139,17 +137,15 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
       {/* Typography Lockup */}
       <div className="flex flex-col leading-none">
         <div className={`font-heading font-black tracking-tight ${dimensions.text} flex items-center`}>
-          <span className={isLight ? 'text-slate-900' : 'text-white'}>
+          <span className="text-primary">
             DATA
           </span>
-          <span className={`ml-1.5 ${isLight ? 'text-cyan-700 font-extrabold' : 'text-[#22D3EE]'}`}>
+          <span className="ml-1.5 text-accent font-extrabold">
             ANALYTIX
           </span>
         </div>
         {showSubtitle && (
-          <span className={`font-mono uppercase tracking-widest font-semibold ${dimensions.sub} mt-1 ${
-            isLight ? 'text-slate-500' : 'text-slate-400'
-          }`}>
+          <span className={`font-mono uppercase tracking-widest font-semibold ${dimensions.sub} mt-1 text-muted`}>
             Data Analytics & Engineering
           </span>
         )}

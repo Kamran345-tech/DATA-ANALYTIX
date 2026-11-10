@@ -25,6 +25,7 @@ import {
   Database
 } from 'lucide-react';
 import { usePlatform } from '../../store/usePlatformStore';
+import { DownloadMenu } from '../common/DownloadMenu';
 
 type Density = 'compact' | 'comfortable' | 'spacious';
 type SortDirection = 'asc' | 'desc';
@@ -228,17 +229,17 @@ export const DataPreviewView: React.FC = () => {
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="space-y-1.5">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-cyan-500/15 text-cyan-500 dark:text-cyan-400 border border-cyan-400/30 flex items-center justify-center shadow-[0_0_16px_rgba(34,211,238,0.25)] shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-cyan-500/15 text-cyan-500 dark:text-cyan-400 border border-cyan-400/30 flex items-center justify-center shadow-lg shrink-0">
                 <Table2 className="w-5 h-5 text-cyan-500 dark:text-cyan-400" />
               </div>
               <div>
                 <h1 className={`font-heading text-2xl sm:text-3xl font-extrabold tracking-tight uppercase flex items-center gap-2.5 ${
-                  isLight ? 'text-slate-900' : 'text-white'
+                  isLight ? 'text-primary' : 'text-primary'
                 }`}>
                   DATA PROFILING & PREVIEW
                 </h1>
-                <p className={`text-xs font-mono ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
-                  <strong className={isLight ? 'text-slate-900' : 'text-slate-200'}>{cleanRows.length.toLocaleString()}</strong> verified rows • <strong className={isLight ? 'text-slate-900' : 'text-slate-200'}>{columns.length}</strong> audited columns • Ingested from <span className={`font-semibold underline decoration-cyan-500/40 ${isLight ? 'text-sky-700' : 'text-cyan-300'}`}>{project.sourceFileName || 'Dataset Source'}</span>
+                <p className={`text-xs font-mono ${isLight ? 'text-muted' : 'text-secondary'}`}>
+                  <strong className={isLight ? 'text-primary' : 'text-primary'}>{cleanRows.length.toLocaleString()}</strong> verified rows • <strong className={isLight ? 'text-primary' : 'text-primary'}>{columns.length}</strong> audited columns • Ingested from <span className={`font-semibold underline decoration-cyan-500/40 ${isLight ? 'text-sky-700' : 'text-cyan-300'}`}>{project.sourceFileName || 'Dataset Source'}</span>
                 </p>
               </div>
             </div>
@@ -246,7 +247,7 @@ export const DataPreviewView: React.FC = () => {
 
           {/* View Switcher Tabs */}
           <div className={`flex items-center p-1 rounded-xl border text-xs font-medium self-start lg:self-auto ${
-            isLight ? 'bg-slate-100 border-slate-200 shadow-inner' : 'bg-surface-panel border-border-subtle'
+            isLight ? 'bg-elevated border-slate-200 shadow-inner' : 'bg-surface-panel border-border-subtle'
           }`}>
             <button
               type="button"
@@ -256,7 +257,7 @@ export const DataPreviewView: React.FC = () => {
                   ? isLight
                     ? 'bg-white text-sky-700 shadow-sm border border-slate-200'
                     : 'bg-cyan-500/20 text-cyan-300 shadow-sm border border-cyan-500/40'
-                  : isLight ? 'text-slate-600 hover:text-slate-900' : 'text-slate-400 hover:text-white'
+                  : isLight ? 'text-muted hover:text-primary' : 'text-secondary hover:text-primary'
               }`}
             >
               <Table2 className="w-3.5 h-3.5" />
@@ -270,13 +271,14 @@ export const DataPreviewView: React.FC = () => {
                   ? isLight
                     ? 'bg-white text-sky-700 shadow-sm border border-slate-200'
                     : 'bg-cyan-500/20 text-cyan-300 shadow-sm border border-cyan-500/40'
-                  : isLight ? 'text-slate-600 hover:text-slate-900' : 'text-slate-400 hover:text-white'
+                  : isLight ? 'text-muted hover:text-primary' : 'text-secondary hover:text-primary'
               }`}
             >
               <BarChart2 className="w-3.5 h-3.5" />
               <span>Column Profiles ({columns.length})</span>
             </button>
           </div>
+          <DownloadMenu context="preview" />
         </div>
       </div>
 
@@ -293,7 +295,7 @@ export const DataPreviewView: React.FC = () => {
               <div className="flex flex-wrap items-center gap-2 flex-1 max-w-2xl">
                 <div className="relative flex-1 min-w-[220px]">
                   <Search className={`w-4 h-4 absolute left-3 top-2.5 pointer-events-none ${
-                    isLight ? 'text-slate-400' : 'text-slate-500'
+                    isLight ? 'text-secondary' : 'text-muted'
                   }`} />
                   <input
                     type="text"
@@ -302,15 +304,15 @@ export const DataPreviewView: React.FC = () => {
                     onChange={(e) => { setSearch(e.target.value); setPage(0); }}
                     className={`w-full text-xs pl-9 pr-8 py-2 rounded-xl border focus:outline-none transition-all ${
                       isLight 
-                        ? 'bg-white text-slate-900 border-slate-300 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 shadow-xs' 
-                        : 'bg-surface-panel/90 text-white border-border-subtle focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20'
+                        ? 'bg-white text-primary border-slate-300 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 shadow-xs' 
+                        : 'bg-surface-panel/90 text-primary border-border-subtle focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20'
                     }`}
                   />
                   {search && (
                     <button
                       type="button"
                       onClick={() => { setSearch(''); setPage(0); }}
-                      className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-200 cursor-pointer"
+                      className="absolute right-2.5 top-2.5 text-secondary hover:text-primary cursor-pointer"
                       title="Clear search"
                     >
                       <X className="w-3.5 h-3.5" />
@@ -324,8 +326,8 @@ export const DataPreviewView: React.FC = () => {
                   onChange={(e) => { setSearchColumn(e.target.value); setPage(0); }}
                   className={`text-xs font-mono px-3 py-2 rounded-xl border focus:outline-none cursor-pointer ${
                     isLight 
-                      ? 'bg-white text-slate-800 border-slate-300 shadow-xs' 
-                      : 'bg-surface-panel text-slate-200 border-border-subtle'
+                      ? 'bg-white text-primary border-slate-300 shadow-xs' 
+                      : 'bg-surface-panel text-primary border-border-subtle'
                   }`}
                   title="Search Target Column"
                 >
@@ -337,7 +339,7 @@ export const DataPreviewView: React.FC = () => {
 
                 {/* Column Type Filter */}
                 <div className={`hidden sm:flex items-center p-0.5 rounded-xl border text-xs ${
-                  isLight ? 'bg-slate-100 border-slate-200' : 'bg-surface-panel border-border-subtle'
+                  isLight ? 'bg-elevated border-slate-200' : 'bg-surface-panel border-border-subtle'
                 }`}>
                   {(['all', 'number', 'date', 'string'] as const).map(type => (
                     <button
@@ -347,7 +349,7 @@ export const DataPreviewView: React.FC = () => {
                       className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all capitalize cursor-pointer ${
                         columnTypeFilter === type
                           ? isLight ? 'bg-white text-sky-700 shadow-xs font-bold' : 'bg-cyan-500/20 text-cyan-300 font-bold'
-                          : isLight ? 'text-slate-600 hover:text-slate-900' : 'text-slate-400 hover:text-white'
+                          : isLight ? 'text-muted hover:text-primary' : 'text-secondary hover:text-primary'
                       }`}
                     >
                       {type === 'all' ? 'All Types' : type === 'number' ? '# Numbers' : type === 'date' ? 'Dates' : 'Strings'}
@@ -360,7 +362,7 @@ export const DataPreviewView: React.FC = () => {
               <div className="flex flex-wrap items-center gap-2 shrink-0">
                 {/* Density Switcher */}
                 <div className={`flex items-center p-0.5 rounded-xl border text-xs ${
-                  isLight ? 'bg-slate-100 border-slate-200' : 'bg-surface-panel border-border-subtle'
+                  isLight ? 'bg-elevated border-slate-200' : 'bg-surface-panel border-border-subtle'
                 }`} title="Row display density">
                   {(['compact', 'comfortable', 'spacious'] as const).map(d => (
                     <button
@@ -370,7 +372,7 @@ export const DataPreviewView: React.FC = () => {
                       className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold capitalize transition-all cursor-pointer ${
                         density === d
                           ? isLight ? 'bg-white text-sky-700 shadow-xs font-bold' : 'bg-cyan-500/20 text-cyan-300 font-bold'
-                          : isLight ? 'text-slate-600 hover:text-slate-900' : 'text-slate-400 hover:text-white'
+                          : isLight ? 'text-muted hover:text-primary' : 'text-secondary hover:text-primary'
                       }`}
                     >
                       {d}
@@ -384,8 +386,8 @@ export const DataPreviewView: React.FC = () => {
                   onChange={(e) => { setPageSize(Number(e.target.value)); setPage(0); }}
                   className={`text-xs font-mono px-2.5 py-1.5 rounded-xl border focus:outline-none cursor-pointer ${
                     isLight 
-                      ? 'bg-white text-slate-800 border-slate-300 shadow-xs' 
-                      : 'bg-surface-panel text-slate-200 border-border-subtle'
+                      ? 'bg-white text-primary border-slate-300 shadow-xs' 
+                      : 'bg-surface-panel text-primary border-border-subtle'
                   }`}
                   title="Rows per page"
                 >
@@ -403,7 +405,7 @@ export const DataPreviewView: React.FC = () => {
                   disabled={filteredAndSortedRows.length === 0}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
                     isLight
-                      ? 'bg-sky-600 hover:bg-sky-700 text-white shadow-sky-600/20'
+                      ? 'bg-sky-600 hover:bg-sky-700 text-primary shadow-sky-600/20'
                       : 'bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 shadow-cyan-500/10'
                   }`}
                   title="Export filtered records as CSV"
@@ -416,11 +418,11 @@ export const DataPreviewView: React.FC = () => {
 
             {/* Active Sort / Filter Chips Bar */}
             <div className={`flex flex-wrap items-center justify-between gap-2 pt-2 border-t text-[11px] font-mono ${
-              isLight ? 'border-slate-200/80 text-slate-600' : 'border-white/5 text-slate-400'
+              isLight ? 'border-slate-200/80 text-muted' : 'border-white/5 text-secondary'
             }`}>
               <div className="flex flex-wrap items-center gap-2">
                 <span>
-                  Showing <strong className={isLight ? 'text-slate-900' : 'text-slate-100'}>{startRow} - {endRow}</strong> of <strong className={isLight ? 'text-slate-900' : 'text-slate-100'}>{totalRecords.toLocaleString()}</strong> rows
+                  Showing <strong className={isLight ? 'text-primary' : 'text-primary'}>{startRow} - {endRow}</strong> of <strong className={isLight ? 'text-primary' : 'text-primary'}>{totalRecords.toLocaleString()}</strong> rows
                   {search && ` (filtered from ${cleanRows.length.toLocaleString()})`}
                 </span>
 
@@ -444,7 +446,7 @@ export const DataPreviewView: React.FC = () => {
 
                 {columnTypeFilter !== 'all' && (
                   <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border font-mono text-[10px] ${
-                    isLight ? 'bg-slate-100 text-slate-800 border-slate-300' : 'bg-surface-elevated text-slate-300 border-border-subtle'
+                    isLight ? 'bg-elevated text-primary border-slate-300' : 'bg-surface-elevated text-secondary border-border-subtle'
                   }`}>
                     <span>Type: {columnTypeFilter}</span>
                     <button
@@ -462,7 +464,7 @@ export const DataPreviewView: React.FC = () => {
               <div className="flex items-center gap-3">
                 <span className="hidden md:inline">Click any column header to sort • Click again to reverse</span>
                 <span className={`px-2 py-0.5 rounded border text-[10px] ${
-                  isLight ? 'bg-slate-100 text-slate-700 border-slate-200' : 'bg-surface-panel text-slate-300 border-border-subtle'
+                  isLight ? 'bg-elevated text-muted border-slate-200' : 'bg-surface-panel text-secondary border-border-subtle'
                 }`}>
                   {visibleColumns.length} of {columns.length} columns visible
                 </span>
@@ -481,7 +483,7 @@ export const DataPreviewView: React.FC = () => {
                   <tr>
                     {/* Row Index Column */}
                     <th className={`w-12 text-center font-mono font-bold tracking-wider uppercase border-r ${
-                      isLight ? 'border-slate-200/80 text-slate-500' : 'border-white/5 text-slate-500'
+                      isLight ? 'border-slate-200/80 text-muted' : 'border-white/5 text-muted'
                     } ${densityStyles[density].header}`}>
                       #
                     </th>
@@ -504,7 +506,7 @@ export const DataPreviewView: React.FC = () => {
                               ? isLight 
                                 ? 'bg-sky-100/90 text-sky-900 border-b-2 border-b-sky-600' 
                                 : 'bg-cyan-500/15 text-cyan-300 border-b-2 border-b-cyan-400'
-                              : isLight ? 'hover:bg-slate-200/70 hover:text-slate-900' : 'hover:bg-surface-elevated/80 hover:text-white'
+                              : isLight ? 'hover:bg-input hover:text-primary' : 'hover:bg-surface-elevated/80 hover:text-primary'
                           }`}
                           title={`Click to sort by ${col.name} (${col.dataType})`}
                         >
@@ -532,7 +534,7 @@ export const DataPreviewView: React.FC = () => {
 
                           {/* Sub-header mini stats: Null percentage & Distinct count */}
                           <div className={`flex items-center justify-between gap-1 mt-1 text-[9px] font-mono normal-case tracking-normal ${
-                            isLight ? 'text-slate-500' : 'text-slate-400'
+                            isLight ? 'text-muted' : 'text-secondary'
                           }`}>
                             <span className="truncate">{col.distinctCount} uniq</span>
                             {col.nullCount > 0 ? (
@@ -554,8 +556,8 @@ export const DataPreviewView: React.FC = () => {
                   {pagedRows.length === 0 ? (
                     <tr>
                       <td colSpan={visibleColumns.length + 1} className="py-12 text-center">
-                        <div className="flex flex-col items-center justify-center gap-2 text-slate-500 font-mono text-xs">
-                          <Table2 className="w-8 h-8 opacity-40 text-slate-400" />
+                        <div className="flex flex-col items-center justify-center gap-2 text-muted font-mono text-xs">
+                          <Table2 className="w-8 h-8 opacity-40 text-secondary" />
                           <span>No matching data records found.</span>
                           {search && (
                             <button
@@ -582,17 +584,17 @@ export const DataPreviewView: React.FC = () => {
                           key={rowIdx}
                           className={`transition-colors font-mono group ${
                             isLight
-                              ? isEven ? 'bg-slate-50/75' : 'bg-white'
+                              ? isEven ? 'bg-elevated' : 'bg-white'
                               : isEven ? 'bg-white/[0.025]' : 'bg-transparent'
                           } ${
                             isLight
-                              ? 'hover:bg-sky-50/90 text-slate-800'
-                              : 'hover:bg-cyan-500/10 text-slate-200'
+                              ? 'hover:bg-sky-50/90 text-primary'
+                              : 'hover:bg-cyan-500/10 text-primary'
                           }`}
                         >
                           {/* Row Number Column */}
                           <td className={`w-12 text-center font-bold tracking-tight border-r ${
-                            isLight ? 'border-slate-200/80 text-slate-500 bg-slate-100/50' : 'border-white/5 text-slate-500 bg-black/10'
+                            isLight ? 'border-slate-200/80 text-muted bg-elevated' : 'border-white/5 text-muted bg-black/10'
                           } ${densityStyles[density].index}`}>
                             {absoluteIndex}
                           </td>
@@ -617,7 +619,7 @@ export const DataPreviewView: React.FC = () => {
                               >
                                 {isNull ? (
                                   <span className={`inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-mono italic ${
-                                    isLight ? 'bg-slate-100 text-slate-400 border border-slate-200' : 'bg-white/5 text-slate-500 border border-white/5'
+                                    isLight ? 'bg-elevated text-secondary border border-slate-200' : 'bg-white/5 text-muted border border-white/5'
                                   }`}>
                                     null
                                   </span>
@@ -634,8 +636,8 @@ export const DataPreviewView: React.FC = () => {
                                     title={String(val)}
                                     className={`${
                                       isNum 
-                                        ? isLight ? 'text-slate-900 font-semibold' : 'text-cyan-200/90 font-medium' 
-                                        : isLight ? 'text-slate-800' : 'text-slate-200'
+                                        ? isLight ? 'text-primary font-semibold' : 'text-cyan-200/90 font-medium' 
+                                        : isLight ? 'text-primary' : 'text-primary'
                                     }`}
                                   >
                                     {String(val)}
@@ -655,11 +657,11 @@ export const DataPreviewView: React.FC = () => {
             {/* Pagination Controls Footer: glass-panel bottom bar */}
             <div className="p-4 border-t border-subtle bg-elevated text-secondary flex flex-col sm:flex-row items-center justify-between gap-4 font-mono text-xs">
               <div className="flex items-center gap-2">
-                <span className={isLight ? 'text-slate-600' : 'text-slate-400'}>
-                  Page <strong className={isLight ? 'text-slate-900' : 'text-white'}>{currentPage + 1}</strong> of <strong className={isLight ? 'text-slate-900' : 'text-white'}>{totalPages}</strong>
+                <span className={isLight ? 'text-muted' : 'text-secondary'}>
+                  Page <strong className={isLight ? 'text-primary' : 'text-primary'}>{currentPage + 1}</strong> of <strong className={isLight ? 'text-primary' : 'text-primary'}>{totalPages}</strong>
                 </span>
-                <span className="text-slate-400 dark:text-slate-600">•</span>
-                <span className={isLight ? 'text-slate-600' : 'text-slate-400'}>
+                <span className="text-secondary dark:text-muted">•</span>
+                <span className={isLight ? 'text-muted' : 'text-secondary'}>
                   {totalRecords.toLocaleString()} total rows
                 </span>
               </div>
@@ -673,8 +675,8 @@ export const DataPreviewView: React.FC = () => {
                   disabled={currentPage === 0}
                   className={`p-2 rounded-xl border transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${
                     isLight
-                      ? 'bg-white hover:bg-slate-100 text-slate-700 border-slate-300 shadow-xs'
-                      : 'bg-surface-panel hover:bg-surface-elevated text-slate-300 border-border-subtle'
+                      ? 'bg-white hover:bg-elevated text-muted border-slate-300 shadow-xs'
+                      : 'bg-surface-panel hover:bg-surface-elevated text-secondary border-border-subtle'
                   }`}
                   title="First Page"
                 >
@@ -688,8 +690,8 @@ export const DataPreviewView: React.FC = () => {
                   disabled={currentPage === 0}
                   className={`p-2 rounded-xl border transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${
                     isLight
-                      ? 'bg-white hover:bg-slate-100 text-slate-700 border-slate-300 shadow-xs'
-                      : 'bg-surface-panel hover:bg-surface-elevated text-slate-300 border-border-subtle'
+                      ? 'bg-white hover:bg-elevated text-muted border-slate-300 shadow-xs'
+                      : 'bg-surface-panel hover:bg-surface-elevated text-secondary border-border-subtle'
                   }`}
                   title="Previous Page"
                 >
@@ -701,7 +703,7 @@ export const DataPreviewView: React.FC = () => {
                   {getPaginationPages().map((item, idx) => {
                     if (typeof item === 'string') {
                       return (
-                        <span key={`ell-${idx}`} className="px-2 text-slate-500 select-none">
+                        <span key={`ell-${idx}`} className="px-2 text-muted select-none">
                           •••
                         </span>
                       );
@@ -715,11 +717,11 @@ export const DataPreviewView: React.FC = () => {
                         className={`min-w-8 h-8 px-2 rounded-xl text-xs font-bold font-mono transition-all cursor-pointer ${
                           isCurrent
                             ? isLight
-                              ? 'bg-sky-600 text-white shadow-xs border border-sky-600'
+                              ? 'bg-sky-600 text-primary shadow-xs border border-sky-600'
                               : 'bg-cyan-500/25 text-cyan-300 shadow-xs border border-cyan-400/50'
                             : isLight
-                              ? 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-300'
-                              : 'bg-surface-panel hover:bg-surface-elevated text-slate-300 border border-border-subtle'
+                              ? 'bg-white hover:bg-elevated text-muted border border-slate-300'
+                              : 'bg-surface-panel hover:bg-surface-elevated text-secondary border border-border-subtle'
                         }`}
                       >
                         {item + 1}
@@ -735,8 +737,8 @@ export const DataPreviewView: React.FC = () => {
                   disabled={currentPage >= totalPages - 1}
                   className={`p-2 rounded-xl border transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${
                     isLight
-                      ? 'bg-white hover:bg-slate-100 text-slate-700 border-slate-300 shadow-xs'
-                      : 'bg-surface-panel hover:bg-surface-elevated text-slate-300 border-border-subtle'
+                      ? 'bg-white hover:bg-elevated text-muted border-slate-300 shadow-xs'
+                      : 'bg-surface-panel hover:bg-surface-elevated text-secondary border-border-subtle'
                   }`}
                   title="Next Page"
                 >
@@ -750,8 +752,8 @@ export const DataPreviewView: React.FC = () => {
                   disabled={currentPage >= totalPages - 1}
                   className={`p-2 rounded-xl border transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${
                     isLight
-                      ? 'bg-white hover:bg-slate-100 text-slate-700 border-slate-300 shadow-xs'
-                      : 'bg-surface-panel hover:bg-surface-elevated text-slate-300 border-border-subtle'
+                      ? 'bg-white hover:bg-elevated text-muted border-slate-300 shadow-xs'
+                      : 'bg-surface-panel hover:bg-surface-elevated text-secondary border-border-subtle'
                   }`}
                   title="Last Page"
                 >
@@ -784,7 +786,7 @@ export const DataPreviewView: React.FC = () => {
                       <div className="p-1.5 rounded-lg bg-cyan-500/10 border border-cyan-400/20 text-cyan-400">
                         {renderTypeIcon(col.dataType, col.isPrimaryKeyCandidate)}
                       </div>
-                      <h3 className={`font-bold text-base truncate ${isLight ? 'text-slate-900' : 'text-white'}`} title={col.name}>
+                      <h3 className={`font-bold text-base truncate ${isLight ? 'text-primary' : 'text-primary'}`} title={col.name}>
                         {col.name}
                       </h3>
                     </div>
@@ -805,7 +807,7 @@ export const DataPreviewView: React.FC = () => {
                   </div>
 
                   <span className={`text-xs font-mono px-2 py-1 rounded-lg border ${
-                    isLight ? 'bg-slate-100 border-slate-200 text-slate-600' : 'bg-surface-panel border-border-subtle text-slate-400'
+                    isLight ? 'bg-elevated border-slate-200 text-muted' : 'bg-surface-panel border-border-subtle text-secondary'
                   }`}>
                     {col.distinctCount.toLocaleString()} distinct
                   </span>
@@ -814,42 +816,42 @@ export const DataPreviewView: React.FC = () => {
                 {/* Metrics Matrix */}
                 <div className="grid grid-cols-2 gap-2 text-xs font-mono">
                   <div className={`p-2.5 rounded-xl border ${
-                    isLight ? 'bg-slate-50 border-slate-200' : 'bg-surface-panel/80 border-white/5'
+                    isLight ? 'bg-elevated border-slate-200' : 'bg-surface-panel/80 border-white/5'
                   }`}>
-                    <span className={`text-[10px] block ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Null Rate:</span>
-                    <span className={col.nullPercentage > 0 ? (isLight ? 'text-amber-700 font-bold' : 'text-amber-400 font-bold') : (isLight ? 'text-slate-800' : 'text-slate-300')}>
+                    <span className={`text-[10px] block ${isLight ? 'text-muted' : 'text-secondary'}`}>Null Rate:</span>
+                    <span className={col.nullPercentage > 0 ? (isLight ? 'text-amber-700 font-bold' : 'text-amber-400 font-bold') : (isLight ? 'text-primary' : 'text-secondary')}>
                       {col.nullPercentage}% ({col.nullCount.toLocaleString()})
                     </span>
                   </div>
                   <div className={`p-2.5 rounded-xl border ${
-                    isLight ? 'bg-slate-50 border-slate-200' : 'bg-surface-panel/80 border-white/5'
+                    isLight ? 'bg-elevated border-slate-200' : 'bg-surface-panel/80 border-white/5'
                   }`}>
-                    <span className={`text-[10px] block ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Cardinality:</span>
-                    <span className={`font-semibold ${isLight ? 'text-slate-800' : 'text-slate-300'}`}>{col.uniquePercentage}%</span>
+                    <span className={`text-[10px] block ${isLight ? 'text-muted' : 'text-secondary'}`}>Cardinality:</span>
+                    <span className={`font-semibold ${isLight ? 'text-primary' : 'text-secondary'}`}>{col.uniquePercentage}%</span>
                   </div>
 
                   {isNum && (
                     <>
                       <div className={`p-2.5 rounded-xl border ${
-                        isLight ? 'bg-slate-50 border-slate-200' : 'bg-surface-panel/80 border-white/5'
+                        isLight ? 'bg-elevated border-slate-200' : 'bg-surface-panel/80 border-white/5'
                       }`}>
-                        <span className={`text-[10px] block ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Mean / Median:</span>
+                        <span className={`text-[10px] block ${isLight ? 'text-muted' : 'text-secondary'}`}>Mean / Median:</span>
                         <span className={isLight ? 'text-sky-700 font-bold' : 'text-cyan-300 font-semibold'}>{col.mean ?? 'N/A'} / {col.median ?? 'N/A'}</span>
                       </div>
                       <div className={`p-2.5 rounded-xl border ${
-                        isLight ? 'bg-slate-50 border-slate-200' : 'bg-surface-panel/80 border-white/5'
+                        isLight ? 'bg-elevated border-slate-200' : 'bg-surface-panel/80 border-white/5'
                       }`}>
-                        <span className={`text-[10px] block ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Min - Max:</span>
-                        <span className={`font-semibold ${isLight ? 'text-slate-900' : 'text-white'}`}>{col.min} - {col.max}</span>
+                        <span className={`text-[10px] block ${isLight ? 'text-muted' : 'text-secondary'}`}>Min - Max:</span>
+                        <span className={`font-semibold ${isLight ? 'text-primary' : 'text-primary'}`}>{col.min} - {col.max}</span>
                       </div>
                     </>
                   )}
 
                   {isDate && (
                     <div className={`col-span-2 p-2.5 rounded-xl border ${
-                      isLight ? 'bg-slate-50 border-slate-200' : 'bg-surface-panel/80 border-white/5'
+                      isLight ? 'bg-elevated border-slate-200' : 'bg-surface-panel/80 border-white/5'
                     }`}>
-                      <span className={`text-[10px] block ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Date Span:</span>
+                      <span className={`text-[10px] block ${isLight ? 'text-muted' : 'text-secondary'}`}>Date Span:</span>
                       <span className={isLight ? 'text-purple-700 font-semibold' : 'text-purple-300 font-semibold'}>{col.min} → {col.max}</span>
                     </div>
                   )}
@@ -859,17 +861,17 @@ export const DataPreviewView: React.FC = () => {
                 {col.topValues.length > 0 && (
                   <div className={`space-y-2 pt-3 border-t ${isLight ? 'border-slate-200' : 'border-white/5'}`}>
                     <div className={`text-[10px] uppercase font-mono tracking-wider font-semibold ${
-                      isLight ? 'text-slate-500' : 'text-slate-400'
+                      isLight ? 'text-muted' : 'text-secondary'
                     }`}>
                       Top Frequent Values
                     </div>
                     <div className="space-y-1.5">
                       {col.topValues.slice(0, 3).map((v, i) => (
                         <div key={i} className="flex justify-between items-center text-xs">
-                          <span className={`truncate max-w-[190px] font-mono ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
+                          <span className={`truncate max-w-[190px] font-mono ${isLight ? 'text-muted' : 'text-secondary'}`}>
                             {String(v.value)}
                           </span>
-                          <span className={`font-mono text-[11px] ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                          <span className={`font-mono text-[11px] ${isLight ? 'text-muted' : 'text-secondary'}`}>
                             {v.percentage.toFixed(1)}%
                           </span>
                         </div>

@@ -124,7 +124,7 @@ export const GroupedSidebar: React.FC = () => {
       {/* Brand Header */}
       <div className="p-4 border-b border-subtle flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm shadow-md">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-primary font-bold text-sm shadow-md">
             DA
           </div>
           <div>

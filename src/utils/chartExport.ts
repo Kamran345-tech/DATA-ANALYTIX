@@ -8,19 +8,23 @@ import {
   computeHeatmapMatrixData,
   computeBoxplotSummary,
 } from '../engine/chartRecommendationEngine';
+import { buildSopFileName, DESIGN_TOKENS } from '../config/designTokens';
 
 export interface PlottedCSVData {
   headers: string[];
   rows: (string | number)[][];
 }
 
-export function sanitizeExportFilename(raw: string, ext: 'csv' | 'png'): string {
-  const base = (raw || 'chart-export')
+export function sanitizeExportFilename(raw: string, ext: 'csv' | 'png', datasetName?: string): string {
+  const cleaned = (raw || 'chart')
+    .replace(/\.(csv|png)$/i, '')
     .toLowerCase()
     .replace(/[^a-z0-9-_]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 64) || 'chart-export';
-  return base.endsWith(`.${ext}`) ? base : `${base}.${ext}`;
+    .replace(/^-+|-+$/g, '');
+  if (cleaned.startsWith('data-analytix-') && /\d{4}-\d{2}-\d{2}$/.test(cleaned)) {
+    return `${cleaned}.${ext}`;
+  }
+  return buildSopFileName(`chart-${cleaned || 'visual'}`, datasetName || 'dataset', ext);
 }
 
 export function formatCSVContent(headers: string[], rows: (string | number)[][]): string {
@@ -201,23 +205,25 @@ export async function exportChartContainerPNG(
 
   ctx.scale(scale, scale);
 
+  const tokens = isLight ? DESIGN_TOKENS.light : DESIGN_TOKENS.dark;
+
   // Background
-  ctx.fillStyle = isLight ? '#FFFFFF' : '#0F172A';
+  ctx.fillStyle = tokens['--bg-card'];
   ctx.fillRect(0, 0, width, height);
 
   // Border
-  ctx.strokeStyle = isLight ? '#E2E8F0' : '#1E293B';
+  ctx.strokeStyle = tokens['--border-strong'];
   ctx.lineWidth = 1;
   ctx.strokeRect(0.5, 0.5, width - 1, height - 1);
 
   // Header Brand + Title
-  ctx.fillStyle = '#2DD4BF';
+  ctx.fillStyle = tokens['--accent'];
   ctx.font = 'bold 10px monospace';
-  ctx.fillText('DATA ANALYTIX', 20, 24);
+  ctx.fillText(`DATA ANALYTIX • v${DESIGN_TOKENS.version} • ${new Date().toISOString().slice(0, 10)}`, 20, 22);
 
-  ctx.fillStyle = isLight ? '#0F172A' : '#F8FAFC';
+  ctx.fillStyle = tokens['--text-primary'];
   ctx.font = 'bold 15px sans-serif';
-  ctx.fillText(title.slice(0, 65), 20, 44);
+  ctx.fillText(title.slice(0, 65), 20, 42);
 
   const svgEl = containerEl?.querySelector('svg');
   let drewSvg = false;
@@ -238,7 +244,7 @@ export async function exportChartContainerPNG(
       await new Promise<void>((resolve, reject) => {
         const img = new Image();
         img.onload = () => {
-          ctx.drawImage(img, 20, 58, width - 40, height - 76);
+          ctx.drawImage(img, 20, 54, width - 40, height - 76);
           drewSvg = true;
           resolve();
         };
@@ -258,7 +264,7 @@ export async function exportChartContainerPNG(
       return Number.isFinite(num) ? Math.abs(num) : 0;
     });
     const maxV = Math.max(1, ...numericVals);
-    const startY = 66;
+    const startY = 62;
     const rowH = Math.min(24, Math.floor((height - 82) / Math.max(1, rowsToDraw.length)));
 
     rowsToDraw.forEach((r, idx) => {
@@ -268,14 +274,15 @@ export async function exportChartContainerPNG(
       const barMaxW = width - 240;
       const barW = Number.isFinite(val) ? Math.max(6, (Math.abs(val) / maxV) * barMaxW) : 12;
 
-      ctx.fillStyle = isLight ? '#334155' : '#CBD5E1';
+      ctx.fillStyle = tokens['--text-secondary'];
       ctx.font = '11px monospace';
       ctx.fillText(label, 20, y + 13);
 
-      ctx.fillStyle = idx === 0 ? '#2DD4BF' : idx === 1 ? '#818CF8' : '#64748B';
+      ctx.fillStyle =
+        idx === 0 ? tokens['--chart-1'] : idx === 1 ? tokens['--chart-2'] : tokens['--chart-3'];
       ctx.fillRect(165, y + 3, barW, Math.max(10, rowH - 8));
 
-      ctx.fillStyle = isLight ? '#0F172A' : '#F8FAFC';
+      ctx.fillStyle = tokens['--text-primary'];
       ctx.font = 'bold 11px monospace';
       ctx.fillText(Number.isFinite(val) ? val.toLocaleString() : String(r[1] ?? ''), 172 + barW, y + 13);
     });

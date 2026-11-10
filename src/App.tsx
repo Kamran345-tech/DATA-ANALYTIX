@@ -114,15 +114,15 @@ const MainContent: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="h-screen w-full bg-[#0B1120] flex flex-col items-center justify-center gap-4 text-white font-sans">
-        <div className="w-12 h-12 rounded-2xl bg-[#22D3EE]/10 border border-[#22D3EE]/30 flex items-center justify-center text-[#22D3EE]">
-          <span className="w-6 h-6 border-2 border-[#22D3EE] border-t-transparent rounded-full animate-spin" />
+      <div className="h-screen w-full bg-app flex flex-col items-center justify-center gap-4 text-primary font-sans">
+        <div className="w-12 h-12 rounded-2xl bg-card border border-subtle flex items-center justify-center text-primary">
+          <span className="w-6 h-6 border-2 border-subtle border-t-transparent rounded-full animate-spin" />
         </div>
         <div className="text-center space-y-1">
-          <div className="font-heading font-bold text-base tracking-wider uppercase text-white">
-            DATA<span className="text-[#22D3EE]"> ANALYTIX</span>
+          <div className="font-heading font-bold text-base tracking-wider uppercase text-primary">
+            DATA<span className="text-primary"> ANALYTIX</span>
           </div>
-          <p className="text-xs text-gray-400 font-mono">Initializing Governed Workspace & Security Engine...</p>
+          <p className="text-xs text-secondary font-mono">Initializing Governed Workspace & Security Engine...</p>
         </div>
       </div>
     );
@@ -208,9 +208,9 @@ const MainContent: React.FC = () => {
   const themeClasses = isModern
     ? `ui-modern ${isLight ? 'theme-light' : 'theme-dark dark'}`
     : flags.modernTheme
-    ? (isLight ? 'theme-modern bg-[#f8fafc] text-slate-900 theme-light' : 'theme-modern bg-[#0B1120] text-slate-100 theme-dark dark')
+    ? (isLight ? 'theme-modern bg-card text-primary theme-light' : 'theme-modern bg-app text-primary theme-dark dark')
     : isLight
-    ? 'bg-[#f8fafc] text-slate-900 theme-light'
+    ? 'bg-card text-primary theme-light'
     : 'bg-surface-base text-on-surface theme-dark dark';
 
   return (
@@ -244,9 +244,9 @@ const MainContent: React.FC = () => {
           className={`flex-1 overflow-y-auto min-h-0 w-full min-w-0 transition-[background-color,color,border-color,opacity] duration-300 ease-out ${
             isThemeTransitioning ? 'theme-crossfade-active' : ''
           } ${
-            isLight ? 'bg-[#f8fafc] text-slate-900' : 'bg-[#070D1B] text-slate-100'
+            flags.unifiedTheme ? 'bg-app text-primary' : isLight ? 'bg-card text-primary' : 'bg-app text-primary'
           } ${
-            isModern ? 'pb-16 md:pb-5 p-3 sm:p-5 lg:p-7' : isPresentationMode ? 'p-3 sm:p-6' : 'p-3 sm:p-5 lg:p-7'
+            isModern ? 'pb-24 md:pb-16 p-3 sm:p-5 lg:p-7' : isPresentationMode ? 'p-3 sm:p-6' : 'pb-20 p-3 sm:p-5 lg:p-7'
           }`}
         >
           <ErrorBoundary>

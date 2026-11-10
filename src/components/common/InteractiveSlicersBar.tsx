@@ -194,14 +194,14 @@ export const InteractiveSlicersBar: React.FC<{
     <div className={`rounded-2xl border transition-all duration-200 overflow-hidden ${
       isLight 
         ? 'bg-white border-slate-200/90 shadow-xs' 
-        : 'bg-[#151921] border-[#222938] shadow-lg'
+        : 'bg-card border-teal-500/40 shadow-lg'
     } ${className}`}>
       
       {/* =================================================================== */}
       {/* SLICER HEADER RIBBON                                                */}
       {/* =================================================================== */}
       <div className={`px-4 py-3 flex flex-wrap items-center justify-between gap-3 border-b ${
-        isLight ? 'bg-slate-50/70 border-slate-200' : 'bg-[#11141c] border-[#222938]'
+        isLight ? 'bg-elevated border-slate-200' : 'bg-elevated border-teal-500/40'
       }`}>
         <div className="flex items-center gap-3">
           <div className={`p-1.5 rounded-lg flex items-center justify-center ${
@@ -212,24 +212,24 @@ export const InteractiveSlicersBar: React.FC<{
           <div>
             <div className="flex items-center gap-2">
               <span className={`text-xs font-bold uppercase tracking-wider ${
-                isLight ? 'text-slate-900' : 'text-white'
+                isLight ? 'text-primary' : 'text-primary'
               }`}>
                 Interactive Slicers & Cross-Filters
               </span>
               <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold ${
                 activeSlicerCount > 0
                   ? isLight ? 'bg-sky-100 text-sky-800 border border-sky-300' : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                  : isLight ? 'bg-slate-200 text-slate-700' : 'bg-[#222938] text-gray-400'
+                  : isLight ? 'bg-input text-muted' : 'bg-input text-secondary'
               }`}>
                 {activeSlicerCount} Active
               </span>
               <span className={`px-1.5 py-0.2 rounded text-[10px] font-mono ${
-                isLight ? 'bg-slate-100 text-slate-600' : 'bg-[#1b2230] text-gray-400'
+                isLight ? 'bg-elevated text-muted' : 'bg-input text-secondary'
               }`}>
                 {slicerColumns.length} Slicers
               </span>
             </div>
-            <p className={`text-[11px] ${isLight ? 'text-slate-500' : 'text-gray-400'}`}>
+            <p className={`text-[11px] ${isLight ? 'text-muted' : 'text-secondary'}`}>
               Multi-select categorical dimensions, date windows, and numeric thresholds to filter all telemetry in real-time.
             </p>
           </div>
@@ -241,9 +241,9 @@ export const InteractiveSlicersBar: React.FC<{
           <div className={`px-3 py-1.5 rounded-xl border text-xs font-mono flex items-center gap-2 ${
             isFiltered
               ? isLight ? 'bg-sky-50 text-sky-900 border-sky-300 font-bold' : 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30 font-bold'
-              : isLight ? 'bg-slate-100 text-slate-600 border-slate-200' : 'bg-[#1a202c] text-gray-400 border-[#2d3748]'
+              : isLight ? 'bg-elevated text-muted border-slate-200' : 'bg-input text-secondary border-teal-500/40'
           }`}>
-            <span className={`w-2 h-2 rounded-full ${isFiltered ? (isLight ? 'bg-sky-600 animate-pulse' : 'bg-cyan-400 animate-pulse') : (isLight ? 'bg-slate-400' : 'bg-gray-500')}`} />
+            <span className={`w-2 h-2 rounded-full ${isFiltered ? (isLight ? 'bg-sky-600 animate-pulse' : 'bg-cyan-400 animate-pulse') : (isLight ? 'bg-input' : 'bg-gray-500')}`} />
             <span>
               {filteredRows.length.toLocaleString()} / {cleanRows.length.toLocaleString()} rows
               {isFiltered && ` (${Math.round((filteredRows.length / (cleanRows.length || 1)) * 100)}%)`}
@@ -285,8 +285,8 @@ export const InteractiveSlicersBar: React.FC<{
             onClick={handleResetToDefaultSlicers}
             className={`p-1.5 rounded-xl border transition-colors ${
               isLight 
-                ? 'bg-white border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-100' 
-                : 'bg-[#1b2230] border-[#2d3748] text-gray-400 hover:text-white hover:bg-[#252f44]'
+                ? 'bg-white border-slate-200 text-muted hover:text-primary hover:bg-elevated' 
+                : 'bg-input border-teal-500/40 text-secondary hover:text-primary hover:bg-card-hover'
             }`}
             title="Reset slicers to default columns"
           >
@@ -298,8 +298,8 @@ export const InteractiveSlicersBar: React.FC<{
             onClick={() => setIsExpanded(!isExpanded)}
             className={`p-1.5 rounded-xl border transition-colors ${
               isLight 
-                ? 'bg-white border-slate-200 text-slate-600 hover:bg-slate-100' 
-                : 'bg-[#1b2230] border-[#2d3748] text-gray-300 hover:bg-[#252f44]'
+                ? 'bg-white border-slate-200 text-muted hover:bg-elevated' 
+                : 'bg-input border-teal-500/40 text-secondary hover:bg-card-hover'
             }`}
             title={isExpanded ? 'Collapse Slicers Panel' : 'Expand Slicers Panel'}
             aria-label="Toggle Slicers Panel"
@@ -320,10 +320,10 @@ export const InteractiveSlicersBar: React.FC<{
             {/* Relative Date Slicer Pills */}
             {dateCol && (
               <div className={`flex flex-wrap items-center gap-1.5 p-1 rounded-xl border ${
-                isLight ? 'bg-slate-100 border-slate-200' : 'bg-[#11141c] border-[#222938]'
+                isLight ? 'bg-elevated border-slate-200' : 'bg-elevated border-teal-500/40'
               }`}>
                 <div className={`flex items-center gap-1 px-2 text-[11px] font-semibold uppercase ${
-                  isLight ? 'text-slate-600' : 'text-gray-400'
+                  isLight ? 'text-muted' : 'text-secondary'
                 }`}>
                   <Calendar className="w-3 h-3" />
                   <span>Timeline</span>
@@ -339,11 +339,11 @@ export const InteractiveSlicersBar: React.FC<{
                       className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
                         isActive
                           ? isLight 
-                            ? 'bg-sky-600 text-white font-bold shadow-xs hover:bg-sky-700' 
-                            : 'bg-cyan-400 text-slate-950 font-bold shadow-xs'
+                            ? 'bg-sky-600 text-primary font-bold shadow-xs hover:bg-sky-700' 
+                            : 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 font-bold shadow-xs'
                           : isLight 
-                            ? 'text-slate-700 hover:bg-white hover:text-slate-900' 
-                            : 'text-gray-300 hover:bg-[#1a202c]'
+                            ? 'text-muted hover:bg-white hover:text-primary' 
+                            : 'text-secondary hover:bg-card-hover'
                       }`}
                     >
                       {labels[preset]}
@@ -362,11 +362,11 @@ export const InteractiveSlicersBar: React.FC<{
                       dateRange: { ...prev.dateRange, start: e.target.value }
                     }))}
                     className={`text-[11px] px-1.5 py-1 rounded border bg-transparent focus:outline-none ${
-                      isLight ? 'border-slate-300 text-slate-800' : 'border-[#333] text-gray-200'
+                      isLight ? 'border-slate-300 text-primary' : 'border-subtle text-primary'
                     }`}
                     title="Start Date"
                   />
-                  <span className={`text-[10px] ${isLight ? 'text-slate-400' : 'text-gray-500'}`}>to</span>
+                  <span className={`text-[10px] ${isLight ? 'text-secondary' : 'text-muted'}`}>to</span>
                   <input
                     type="date"
                     value={filters.dateRange.end || ''}
@@ -376,7 +376,7 @@ export const InteractiveSlicersBar: React.FC<{
                       dateRange: { ...prev.dateRange, end: e.target.value }
                     }))}
                     className={`text-[11px] px-1.5 py-1 rounded border bg-transparent focus:outline-none ${
-                      isLight ? 'border-slate-300 text-slate-800' : 'border-[#333] text-gray-200'
+                      isLight ? 'border-slate-300 text-primary' : 'border-subtle text-primary'
                     }`}
                     title="End Date"
                   />
@@ -387,7 +387,7 @@ export const InteractiveSlicersBar: React.FC<{
             {/* Primary Numeric Measure Slicer */}
             {primaryMetricCol && metricBounds && (
               <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs ${
-                isLight ? 'bg-slate-100 border-slate-200 text-slate-800' : 'bg-[#11141c] border-[#222938] text-gray-300'
+                isLight ? 'bg-elevated border-slate-200 text-primary' : 'bg-elevated border-teal-500/40 text-secondary'
               }`}>
                 <div className="flex items-center gap-1 font-semibold uppercase text-[11px]">
                   <BarChart2 className={`w-3.5 h-3.5 ${isLight ? 'text-sky-600' : 'text-cyan-400'}`} />
@@ -396,30 +396,26 @@ export const InteractiveSlicersBar: React.FC<{
                 <div className="flex items-center gap-1.5">
                   <input
                     type="number"
-                    placeholder={`Min (${metricBounds.min.toLocaleString()})`}
+                    placeholder={`Min ${metricBounds.min.toLocaleString()}`}
                     value={filters.metricRange?.column === primaryMetricCol ? filters.metricRange.min : ''}
                     onChange={(e) => {
                       const val = e.target.value === '' ? metricBounds.min : Number(e.target.value);
                       const currentMax = filters.metricRange?.max ?? metricBounds.max;
                       setMetricRangeFilter(primaryMetricCol, val, currentMax);
                     }}
-                    className={`w-20 px-2 py-0.5 text-xs rounded border bg-transparent focus:outline-none font-mono ${
-                      isLight ? 'border-slate-300 text-slate-900 bg-white' : 'border-[#333] text-white bg-[#1a202c]'
-                    }`}
+                    className="min-w-[110px] w-28 px-2.5 py-1 text-xs rounded border border-subtle text-primary bg-input focus:outline-none font-mono tabular-nums"
                   />
-                  <span className={isLight ? 'text-slate-400' : 'text-gray-500'}>–</span>
+                  <span className="text-muted">–</span>
                   <input
                     type="number"
-                    placeholder={`Max (${metricBounds.max.toLocaleString()})`}
+                    placeholder={`Max ${metricBounds.max.toLocaleString()}`}
                     value={filters.metricRange?.column === primaryMetricCol ? filters.metricRange.max : ''}
                     onChange={(e) => {
                       const val = e.target.value === '' ? metricBounds.max : Number(e.target.value);
                       const currentMin = filters.metricRange?.min ?? metricBounds.min;
                       setMetricRangeFilter(primaryMetricCol, currentMin, val);
                     }}
-                    className={`w-20 px-2 py-0.5 text-xs rounded border bg-transparent focus:outline-none font-mono ${
-                      isLight ? 'border-slate-300 text-slate-900 bg-white' : 'border-[#333] text-white bg-[#1a202c]'
-                    }`}
+                    className="min-w-[110px] w-28 px-2.5 py-1 text-xs rounded border border-subtle text-primary bg-input focus:outline-none font-mono tabular-nums"
                   />
                   {filters.metricRange && (
                     <button
@@ -453,23 +449,23 @@ export const InteractiveSlicersBar: React.FC<{
                     activeValues.length > 0
                       ? isLight 
                         ? 'bg-sky-50/60 border-sky-300 ring-1 ring-sky-300/50 shadow-xs' 
-                        : 'bg-[#18212f] border-cyan-400/40 ring-1 ring-cyan-400/20'
+                        : 'bg-elevated border-cyan-400/40 ring-1 ring-cyan-400/20'
                       : isLight 
                         ? 'bg-white border-slate-200 shadow-xs' 
-                        : 'bg-[#11141c] border-[#222938]'
+                        : 'bg-elevated border-teal-500/40'
                   }`}
                 >
                   {/* Slicer Card Header */}
                   <div className="flex items-center justify-between pb-2 mb-2 border-b border-inherit">
                     <div className="flex items-center gap-1.5 min-w-0">
                       <span className={`text-xs font-bold truncate ${
-                        isLight ? 'text-slate-900' : 'text-gray-100'
+                        isLight ? 'text-primary' : 'text-primary'
                       }`}>
                         {slicer.columnName}
                       </span>
                       {activeValues.length > 0 && (
                         <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold ${
-                          isLight ? 'bg-sky-100 text-sky-800 border border-sky-200' : 'bg-cyan-400 text-slate-950'
+                          isLight ? 'bg-sky-100 text-sky-800 border border-sky-200' : 'bg-cyan-500/20 text-cyan-300'
                         }`}>
                           {activeValues.length}
                         </span>
@@ -484,7 +480,7 @@ export const InteractiveSlicersBar: React.FC<{
                           className={`p-1 rounded transition-colors ${
                             activeSearchCol === slicer.columnName
                               ? isLight ? 'bg-sky-100 text-sky-800' : 'bg-cyan-400/20 text-cyan-300'
-                              : isLight ? 'text-slate-400 hover:text-slate-700' : 'text-gray-500 hover:text-gray-300'
+                              : isLight ? 'text-secondary hover:text-muted' : 'text-muted hover:text-secondary'
                           }`}
                           title="Search within slicer options"
                         >
@@ -509,7 +505,7 @@ export const InteractiveSlicersBar: React.FC<{
                       <button
                         onClick={() => handleRemoveSlicerColumn(slicer.columnName)}
                         className={`p-1 rounded transition-colors ${
-                          isLight ? 'text-slate-400 hover:text-rose-600 hover:bg-rose-50' : 'text-gray-500 hover:text-rose-400 hover:bg-rose-500/10'
+                          isLight ? 'text-secondary hover:text-rose-600 hover:bg-rose-50' : 'text-muted hover:text-rose-400 hover:bg-rose-500/10'
                         }`}
                         title={`Remove ${slicer.columnName} slicer`}
                       >
@@ -528,8 +524,8 @@ export const InteractiveSlicersBar: React.FC<{
                         onChange={(e) => setSlicerSearchTerms(prev => ({ ...prev, [slicer.columnName]: e.target.value }))}
                         className={`w-full text-xs px-2 py-1 rounded-lg border focus:outline-none ${
                           isLight 
-                            ? 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400' 
-                            : 'bg-[#161c28] border-[#333] text-white placeholder:text-gray-500'
+                            ? 'bg-white border-slate-300 text-primary placeholder:text-secondary' 
+                            : 'bg-input border-subtle text-primary placeholder:text-muted'
                         }`}
                         autoFocus
                       />
@@ -547,8 +543,8 @@ export const InteractiveSlicersBar: React.FC<{
                             ? 'bg-sky-50 text-sky-700 border border-sky-300 font-semibold shadow-2xs hover:bg-sky-100' 
                             : 'bg-cyan-500/20 text-cyan-200 border border-cyan-400/40 font-semibold shadow-2xs hover:bg-cyan-500/30'
                           : isLight 
-                            ? 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-slate-900' 
-                            : 'bg-[#171d29] text-gray-400 border border-[#2b3547] hover:bg-[#202838] hover:text-white'
+                            ? 'bg-white text-muted border border-slate-200 hover:bg-elevated hover:text-primary' 
+                            : 'bg-input text-secondary border border-teal-500/40 hover:bg-card-hover hover:text-primary'
                       }`}
                     >
                       <span>(All)</span>
@@ -565,16 +561,16 @@ export const InteractiveSlicersBar: React.FC<{
                           className={`px-2 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
                             isSelected
                               ? isLight 
-                                ? 'bg-sky-600 text-white font-bold shadow-xs ring-1 ring-sky-600' 
-                                : 'bg-cyan-400 text-slate-950 font-bold shadow-xs ring-1 ring-cyan-400'
+                                ? 'bg-sky-600 text-primary font-bold shadow-xs ring-1 ring-sky-600' 
+                                : 'bg-cyan-500/20 text-cyan-300 font-bold shadow-xs ring-1 ring-cyan-400'
                               : isLight 
-                                ? 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100 hover:border-slate-300 hover:text-slate-900' 
-                                : 'bg-[#171d29] text-gray-300 border border-[#2b3547] hover:bg-[#202838] hover:border-gray-500'
+                                ? 'bg-white text-muted border border-slate-200 hover:bg-elevated hover:border-slate-300 hover:text-primary' 
+                                : 'bg-input text-secondary border border-teal-500/40 hover:bg-card-hover hover:border-gray-500'
                           }`}
                           title={`${value} (${count.toLocaleString()} occurrences)`}
                         >
                           <span className="truncate max-w-[120px]">{value}</span>
-                          <span className={`text-[10px] font-mono ${isSelected ? (isLight ? 'text-sky-100' : 'text-slate-950 font-bold') : (isLight ? 'text-slate-400' : 'text-gray-500')}`}>
+                          <span className={`text-[10px] font-mono ${isSelected ? (isLight ? 'text-sky-100' : 'text-primary font-bold') : (isLight ? 'text-secondary' : 'text-muted')}`}>
                             {count}
                           </span>
                         </button>
@@ -583,7 +579,7 @@ export const InteractiveSlicersBar: React.FC<{
                   </div>
 
                   {filteredValues.length > 15 && (
-                    <div className={`mt-1 text-[10px] font-mono text-right ${isLight ? 'text-slate-400' : 'text-gray-500'}`}>
+                    <div className={`mt-1 text-[10px] font-mono text-right ${isLight ? 'text-secondary' : 'text-muted'}`}>
                       +{filteredValues.length - 15} more values...
                     </div>
                   )}
@@ -595,7 +591,7 @@ export const InteractiveSlicersBar: React.FC<{
           {/* Active Slicers Chip Summary Bar */}
           {hasActiveFilters && (
             <div className={`pt-2 flex flex-wrap items-center gap-2 border-t ${
-              isLight ? 'border-slate-200 text-slate-700' : 'border-[#222938] text-gray-300'
+              isLight ? 'border-slate-200 text-muted' : 'border-teal-500/40 text-secondary'
             }`}>
               <span className="text-[11px] font-bold uppercase tracking-wider flex items-center gap-1">
                 <Filter className="w-3 h-3 text-sky-600 dark:text-cyan-400" />
@@ -663,7 +659,7 @@ export const InteractiveSlicersBar: React.FC<{
       {isAddSlicerModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className={`w-full max-w-lg rounded-2xl border p-5 shadow-2xl space-y-4 animate-scaleUp ${
-            isLight ? 'bg-white border-slate-200' : 'bg-[#111622] border-[#2a364f]'
+            isLight ? 'bg-white border-slate-200' : 'bg-card border-teal-500/40'
           }`}>
             <div className="flex items-center justify-between pb-3 border-b border-inherit">
               <div className="flex items-center gap-2">
@@ -671,10 +667,10 @@ export const InteractiveSlicersBar: React.FC<{
                   <Plus className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className={`text-sm font-bold uppercase tracking-wider ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                  <h3 className={`text-sm font-bold uppercase tracking-wider ${isLight ? 'text-primary' : 'text-primary'}`}>
                     Add Slicer Column
                   </h3>
-                  <p className={`text-xs ${isLight ? 'text-slate-500' : 'text-gray-400'}`}>
+                  <p className={`text-xs ${isLight ? 'text-muted' : 'text-secondary'}`}>
                     Select any dataset dimension to add as a live interactive slicer card
                   </p>
                 </div>
@@ -682,7 +678,7 @@ export const InteractiveSlicersBar: React.FC<{
               <button
                 onClick={() => setIsAddSlicerModalOpen(false)}
                 className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                  isLight ? 'text-slate-500 hover:bg-slate-100' : 'text-gray-400 hover:bg-white/10'
+                  isLight ? 'text-muted hover:bg-elevated' : 'text-secondary hover:bg-white/10'
                 }`}
               >
                 <X className="w-4 h-4" />
@@ -691,7 +687,7 @@ export const InteractiveSlicersBar: React.FC<{
 
             {/* Column search input */}
             <div className="relative">
-              <Search className={`w-4 h-4 absolute left-3 top-2.5 ${isLight ? 'text-slate-400' : 'text-gray-500'}`} />
+              <Search className={`w-4 h-4 absolute left-3 top-2.5 ${isLight ? 'text-secondary' : 'text-muted'}`} />
               <input
                 type="text"
                 value={addSlicerSearchQuery}
@@ -699,8 +695,8 @@ export const InteractiveSlicersBar: React.FC<{
                 placeholder="Search available columns..."
                 className={`w-full pl-9 pr-3 py-2 text-xs rounded-xl border focus:outline-none ${
                   isLight 
-                    ? 'bg-slate-50 border-slate-300 text-slate-900 placeholder:text-slate-400 focus:border-sky-500' 
-                    : 'bg-[#161c28] border-[#2b3547] text-white placeholder:text-gray-500 focus:border-cyan-400'
+                    ? 'bg-elevated border-slate-300 text-primary placeholder:text-secondary focus:border-sky-500' 
+                    : 'bg-input border-teal-500/40 text-primary placeholder:text-muted focus:border-cyan-400'
                 }`}
                 autoFocus
               />
@@ -714,22 +710,22 @@ export const InteractiveSlicersBar: React.FC<{
                     key={col.name}
                     className={`flex items-center justify-between p-2.5 rounded-xl border transition-all ${
                       isLight 
-                        ? 'bg-slate-50 border-slate-200 hover:bg-sky-50/70 hover:border-sky-200' 
-                        : 'bg-[#161d2a] border-[#263145] hover:bg-[#1f293b] hover:border-cyan-500/30'
+                        ? 'bg-elevated border-slate-200 hover:bg-sky-50/70 hover:border-sky-200' 
+                        : 'bg-elevated border-teal-500/40 hover:bg-card-hover hover:border-cyan-500/30'
                     }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <span className={`text-xs font-bold truncate ${isLight ? 'text-slate-800' : 'text-gray-100'}`}>
+                      <span className={`text-xs font-bold truncate ${isLight ? 'text-primary' : 'text-primary'}`}>
                         {col.name}
                       </span>
                       <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-semibold ${
                         col.dataType === 'number'
                           ? isLight ? 'bg-amber-100 text-amber-800' : 'bg-amber-500/20 text-amber-300'
-                          : isLight ? 'bg-slate-200 text-slate-700' : 'bg-gray-800 text-gray-300'
+                          : isLight ? 'bg-input text-muted' : 'bg-gray-800 text-secondary'
                       }`}>
                         {col.dataType}
                       </span>
-                      <span className={`text-[10px] font-mono ${isLight ? 'text-slate-500' : 'text-gray-400'}`}>
+                      <span className={`text-[10px] font-mono ${isLight ? 'text-muted' : 'text-secondary'}`}>
                         {col.distinctCount} distinct values
                       </span>
                     </div>
@@ -738,8 +734,8 @@ export const InteractiveSlicersBar: React.FC<{
                       onClick={() => handleAddSlicerColumn(col.name)}
                       className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${
                         isLight 
-                          ? 'bg-sky-600 hover:bg-sky-700 text-white shadow-xs' 
-                          : 'bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow-xs'
+                          ? 'bg-sky-600 hover:bg-sky-700 text-primary shadow-xs' 
+                          : 'bg-cyan-500 hover:bg-cyan-400 text-primary shadow-xs'
                       }`}
                     >
                       <Plus className="w-3 h-3" />
@@ -748,20 +744,20 @@ export const InteractiveSlicersBar: React.FC<{
                   </div>
                 ))
               ) : (
-                <div className={`p-6 text-center text-xs ${isLight ? 'text-slate-500' : 'text-gray-400'}`}>
+                <div className={`p-6 text-center text-xs ${isLight ? 'text-muted' : 'text-secondary'}`}>
                   {addSlicerSearchQuery ? 'No matching columns found.' : 'All eligible columns are already active as slicers.'}
                 </div>
               )}
             </div>
 
             <div className="flex items-center justify-between pt-2 border-t border-inherit text-xs">
-              <span className={isLight ? 'text-slate-500' : 'text-gray-400'}>
+              <span className={isLight ? 'text-muted' : 'text-secondary'}>
                 {activeSlicerColNames.length} active slicers currently
               </span>
               <button
                 onClick={() => setIsAddSlicerModalOpen(false)}
                 className={`px-3 py-1.5 rounded-lg font-semibold cursor-pointer ${
-                  isLight ? 'bg-slate-200 text-slate-800 hover:bg-slate-300' : 'bg-gray-800 text-gray-200 hover:bg-gray-700'
+                  isLight ? 'bg-input text-primary hover:bg-input' : 'bg-gray-800 text-primary hover:bg-gray-700'
                 }`}
               >
                 Close

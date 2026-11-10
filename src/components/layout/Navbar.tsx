@@ -48,8 +48,8 @@ export const Navbar: React.FC = () => {
           onClick={() => setIsSidebarOpen(!isSidebarOpen)}
           className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
             isLight 
-              ? 'text-slate-600 hover:text-cyan-700 hover:bg-slate-100' 
-              : 'text-gray-400 hover:text-cyan-400 hover:bg-white/5'
+              ? 'text-muted hover:text-cyan-700 hover:bg-elevated' 
+              : 'text-secondary hover:text-cyan-400 hover:bg-white/5'
           }`}
           title="Toggle Navigation Menu"
           aria-label="Toggle Navigation"
@@ -70,14 +70,14 @@ export const Navbar: React.FC = () => {
           isLight ? 'border-slate-200' : 'border-white/10'
         }`}>
           <EditableDashboardTitle className="text-xs max-w-[170px] lg:max-w-xs" iconSize="sm" />
-          <span className="text-slate-400 font-mono text-xs">/</span>
+          <span className="text-secondary font-mono text-xs">/</span>
           <span className={`text-xs font-medium flex items-center gap-1.5 shrink-0 ${
-            isLight ? 'text-cyan-800' : 'text-[#22D3EE]'
+            isLight ? 'text-cyan-800' : 'text-primary'
           }`}>
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
             Enterprise Model
           </span>
-          <span className={`text-xs font-mono ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>
+          <span className={`text-xs font-mono ${isLight ? 'text-secondary' : 'text-muted'}`}>
             · {project.version}
           </span>
         </div>
@@ -86,7 +86,7 @@ export const Navbar: React.FC = () => {
       {/* Center Search */}
       <div className="hidden lg:flex items-center relative w-64 xl:w-72">
         <Search className={`w-4 h-4 absolute left-3 pointer-events-none z-10 ${
-          isLight ? 'text-slate-400' : 'text-gray-400'
+          isLight ? 'text-secondary' : 'text-secondary'
         }`} />
         <input
           type="text"
@@ -99,7 +99,7 @@ export const Navbar: React.FC = () => {
           <button 
             onClick={() => setFilters(prev => ({ ...prev, searchQuery: '' }))}
             className={`absolute right-2 text-xs p-0.5 rounded transition-colors z-10 ${
-              isLight ? 'text-slate-400 hover:text-slate-700' : 'text-gray-500 hover:text-gray-300'
+              isLight ? 'text-secondary hover:text-muted' : 'text-muted hover:text-secondary'
             }`}
           >
             ×
@@ -123,13 +123,13 @@ export const Navbar: React.FC = () => {
             onClick={() => setThemeMode('light')}
             className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               isLight
-                ? 'glass-btn-primary shadow-xs font-bold text-white'
-                : 'text-gray-400 hover:text-gray-200 hover:bg-white/5'
+                ? 'glass-btn-primary shadow-xs font-bold text-primary'
+                : 'text-secondary hover:text-primary hover:bg-white/5'
             }`}
             title="Switch to Light Mode"
             aria-pressed={isLight}
           >
-            <Sun className={`w-3.5 h-3.5 ${isLight ? 'text-amber-300 fill-amber-300' : 'text-gray-400'}`} />
+            <Sun className={`w-3.5 h-3.5 ${isLight ? 'text-amber-300 fill-amber-300' : 'text-secondary'}`} />
             <span className="text-[11px] sm:text-xs">Light</span>
           </button>
 
@@ -139,13 +139,13 @@ export const Navbar: React.FC = () => {
             onClick={() => setThemeMode('dark')}
             className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               !isLight
-                ? 'glass-btn-primary shadow-xs font-bold text-white'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/70'
+                ? 'glass-btn-primary shadow-xs font-bold text-primary'
+                : 'text-muted hover:text-primary hover:bg-input'
             }`}
             title="Switch to Dark Mode"
             aria-pressed={!isLight}
           >
-            <Moon className={`w-3.5 h-3.5 ${!isLight ? 'text-cyan-300 fill-cyan-300' : 'text-slate-600'}`} />
+            <Moon className={`w-3.5 h-3.5 ${!isLight ? 'text-cyan-300 fill-cyan-300' : 'text-muted'}`} />
             <span className="text-[11px] sm:text-xs">Dark</span>
           </button>
         </div>
@@ -158,7 +158,7 @@ export const Navbar: React.FC = () => {
           title={`Switch interface to ${uiMode === 'modern' ? 'Classic' : 'Modern'} mode`}
           aria-label="Toggle Classic or Modern interface mode"
         >
-          <span className={`w-2 h-2 rounded-full ${uiMode === 'modern' ? 'bg-sky-400' : 'bg-slate-400'}`} />
+          <span className={`w-2 h-2 rounded-full ${uiMode === 'modern' ? 'bg-sky-400' : 'bg-input'}`} />
           <span className="hidden sm:inline">{uiMode === 'modern' ? 'Modern' : 'Classic'}</span>
         </button>
 
@@ -197,8 +197,8 @@ export const Navbar: React.FC = () => {
               className="glass-card flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs cursor-pointer"
             >
               <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
-              <span className={isLight ? 'text-slate-500' : 'text-gray-400'}>Quality:</span>
-              <span className={`font-semibold ${isLight ? 'text-slate-900' : 'text-white'}`}>
+              <span className={isLight ? 'text-muted' : 'text-secondary'}>Quality:</span>
+              <span className={`font-semibold ${isLight ? 'text-primary' : 'text-primary'}`}>
                 {qualityReport.overallScore}%
               </span>
             </button>

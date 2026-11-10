@@ -242,9 +242,9 @@ const defaultBrand: BrandConfig = {
   tagline: 'Autonomous AI Data Intelligence & Performance Center',
   department: 'Strategic Analytics & BI',
   author: getInitialAuthor(),
-  themeColor: '#0284C7',
-  backgroundColor: '#070D1B',
-  accentColor: '#22D3EE'
+  themeColor: 'var(--chart-3)',
+  backgroundColor: 'var(--bg-app)',
+  accentColor: 'var(--chart-3)'
 };
 
 const defaultProject: ProjectMetadata = {
@@ -525,9 +525,45 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return () => clearInterval(timer);
   }, [liveConnection.isConnected, liveConnection.autoRefreshInterval, liveConnection.serverType, liveConnection.host, liveConnection.database, liveConnection.tableName]);
 
-  // Load initial demo dataset on start
+  // Load initial demo dataset on start (unless start_empty session flag is set)
   useEffect(() => {
+    if (typeof window !== 'undefined' && sessionStorage.getItem('dataanalytix_start_empty') === 'true') {
+      return;
+    }
     loadDemoDataset('global-retail-sales');
+  }, []);
+
+  useEffect(() => {
+    const handleClearDataset = () => {
+      setRawRows([]);
+      setCleanRows([]);
+      setColumns([]);
+      setDetectedTypes({});
+      setTransformations([]);
+      setDataModel({ tables: [], relationships: [], schemaType: 'flat', validationWarnings: [] });
+      setAnalytics({
+        kpis: [],
+        trends: [],
+        anomalies: [],
+        opportunities: [],
+        forecasts: {},
+        insights: [],
+        visuals: [],
+        correlationMatrix: [],
+        categoryPerformance: {},
+      });
+      setDaxMeasures([]);
+      setCustomVisuals([]);
+      setProject(prev => ({
+        ...prev,
+        name: 'No Dataset Loaded',
+        sourceFileName: '',
+        rowCount: 0,
+        columnCount: 0,
+      }));
+    };
+    window.addEventListener('dataanalytix:clear-dataset', handleClearDataset);
+    return () => window.removeEventListener('dataanalytix:clear-dataset', handleClearDataset);
   }, []);
 
   function logAction(action: string, details: string) {

@@ -291,7 +291,7 @@ export const SettingsView: React.FC = () => {
                 />
                 <button
                   type="button"
-                  onClick={() => setThemeColor('#2DD4BF')}
+                  onClick={() => setThemeColor('var(--chart-1)')}
                   className="text-[11px] text-secondary hover:text-accent underline"
                 >
                   Reset Teal Accent
@@ -621,6 +621,20 @@ export const SettingsView: React.FC = () => {
           </div>
         </div>
 
+        {/* One-line banner showing which flags are ON for this session */}
+        <div
+          data-testid="session-flags-banner"
+          className="px-3.5 py-2 rounded-xl bg-input border border-subtle text-xs font-mono text-secondary flex items-center justify-between gap-3"
+        >
+          <span className="truncate">
+            <strong className="text-primary">Active flags in this session:</strong>{' '}
+            {FEATURE_METADATA.filter(m => features[m.key]).map(m => m.key).join(', ') || 'None (Classic Default)'}
+          </span>
+          <span className="text-accent font-bold shrink-0">
+            {FEATURE_METADATA.filter(m => features[m.key]).length}/{FEATURE_METADATA.length} ON
+          </span>
+        </div>
+
         <div className="divide-y divide-[var(--border-subtle)]">
           {FEATURE_METADATA.map((meta) => {
             const isEnabled = features[meta.key];
@@ -672,7 +686,7 @@ export const SettingsView: React.FC = () => {
                       setFeatures(updated);
                     }}
                     className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                      isEnabled ? 'bg-accent' : isLight ? 'bg-slate-300' : 'bg-slate-700'
+                      isEnabled ? 'bg-accent' : isLight ? 'bg-input' : 'bg-input'
                     }`}
                   >
                     <span

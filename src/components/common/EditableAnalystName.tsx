@@ -59,8 +59,8 @@ export const EditableAnalystName: React.FC<EditableAnalystNameProps> = ({ classN
           placeholder="Enter analyst name..."
           className={`px-2 py-0.5 text-xs font-semibold rounded-md border focus:outline-none transition-all ${
             isLight
-              ? 'bg-white text-slate-900 border-emerald-600 shadow-xs'
-              : 'bg-[#181818] text-white border-emerald-500 shadow-xs'
+              ? 'bg-white text-primary border-emerald-600 shadow-xs'
+              : 'bg-card text-primary border-emerald-500 shadow-xs'
           }`}
         />
         <button
@@ -69,7 +69,7 @@ export const EditableAnalystName: React.FC<EditableAnalystNameProps> = ({ classN
             e.preventDefault();
             handleSave();
           }}
-          className="p-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white transition-colors cursor-pointer"
+          className="p-1 rounded bg-emerald-600 hover:bg-emerald-500 text-primary transition-colors cursor-pointer"
           title="Save Name (Enter)"
         >
           <Check className="w-3 h-3 stroke-[3]" />
@@ -82,8 +82,8 @@ export const EditableAnalystName: React.FC<EditableAnalystNameProps> = ({ classN
           }}
           className={`p-1 rounded transition-colors cursor-pointer border ${
             isLight
-              ? 'bg-slate-100 hover:bg-slate-200 text-slate-600 border-slate-300'
-              : 'bg-[#252525] hover:bg-[#303030] text-gray-300 border-border-subtle'
+              ? 'bg-elevated hover:bg-input text-muted border-slate-300'
+              : 'bg-elevated hover:bg-elevated text-secondary border-border-subtle'
           }`}
           title="Cancel (Esc)"
         >
@@ -98,12 +98,12 @@ export const EditableAnalystName: React.FC<EditableAnalystNameProps> = ({ classN
       onClick={() => setIsEditing(true)}
       className={`group inline-flex items-center gap-1 cursor-pointer px-1.5 py-0.5 rounded-md border transition-all ${
         isLight
-          ? 'hover:bg-slate-100 hover:border-slate-300 border-transparent text-slate-800'
-          : 'hover:bg-[#252525] hover:border-[#383838] border-transparent text-on-surface'
+          ? 'hover:bg-elevated hover:border-slate-300 border-transparent text-primary'
+          : 'hover:bg-elevated hover:border-subtle border-transparent text-on-surface'
       } ${className}`}
       title="Click to change who prepared this report"
     >
-      <User className={`w-3 h-3 ${isLight ? 'text-slate-400 group-hover:text-emerald-700' : 'text-gray-500 group-hover:text-emerald-400'}`} />
+      <User className={`w-3 h-3 ${isLight ? 'text-secondary group-hover:text-emerald-700' : 'text-muted group-hover:text-emerald-400'}`} />
       <strong className="font-semibold underline decoration-dotted decoration-slate-400/60 underline-offset-2">
         {brand.author || 'Lead Data Analyst'}
       </strong>

@@ -106,8 +106,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
       <div 
         className={`relative w-full max-w-md rounded-3xl shadow-2xl overflow-hidden p-6 sm:p-8 space-y-6 transition-colors ${
           isLight 
-            ? 'glass-panel text-slate-900 border-slate-200/80 shadow-[0_16px_50px_rgba(0,0,0,0.12)]' 
-            : 'glass-panel text-[#F8FAFC] shadow-[0_16px_60px_rgba(0,0,0,0.5)]'
+            ? 'glass-panel text-primary border-slate-200/80 shadow-lg' 
+            : 'glass-panel text-primary shadow-lg'
         }`}
         onClick={(e) => e.stopPropagation()}
       >
@@ -119,16 +119,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
         }`} />
 
         {/* Header with Close */}
-        <div className={`flex items-center justify-between border-b pb-4 ${isLight ? 'border-slate-200' : 'border-[#273449]'}`}>
+        <div className={`flex items-center justify-between border-b pb-4 ${isLight ? 'border-slate-200' : 'border-subtle'}`}>
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center border border-cyan-500/20">
               <Database className="w-5 h-5" />
             </div>
             <div>
-              <h3 className={`text-base font-bold tracking-wide ${isLight ? 'text-slate-900' : 'text-white'}`}>
+              <h3 className={`text-base font-bold tracking-wide ${isLight ? 'text-primary' : 'text-primary'}`}>
                 {currentUser ? 'Data Analytix Account' : mode === 'signin' ? 'Sign In to Data Analytix' : mode === 'register' ? 'Create Analyst Account' : mode === 'forgot_password' ? 'Reset Password' : 'Cloud Setup Guide'}
               </h3>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[11px] text-secondary">
                 {currentUser ? 'Connected to Firebase Firestore & Auth' : 'Cloud sync, saved dashboards & verified exports'}
               </p>
             </div>
@@ -137,7 +137,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
           <button 
             onClick={onClose}
             className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-              isLight ? 'text-slate-400 hover:text-slate-900 hover:bg-slate-100' : 'text-slate-400 hover:text-white hover:bg-[#1E2D4A]'
+              isLight ? 'text-secondary hover:text-primary hover:bg-elevated' : 'text-secondary hover:text-primary hover:bg-elevated'
             }`}
           >
             <X className="w-5 h-5" />
@@ -157,13 +157,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
           <div className="p-3.5 bg-rose-500/15 border border-rose-500/30 rounded-2xl text-xs text-rose-300 space-y-2 animate-fadeIn">
             <div className="flex items-start gap-2">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-400" />
-              <span className="font-medium text-white">{authError}</span>
+              <span className="font-medium text-primary">{authError}</span>
             </div>
 
             {(authError.toLowerCase().includes('unauthorized-domain') || authError.toLowerCase().includes('authorized domain')) && (
-              <div className="p-2.5 rounded-xl bg-[#0B1120] border border-slate-700 space-y-1.5 text-[11px] font-mono text-slate-300">
+              <div className="p-2.5 rounded-xl bg-app border border-slate-700 space-y-1.5 text-[11px] font-mono text-secondary">
                 <div className="text-cyan-400 font-bold">Authorized Domain Setup:</div>
-                <p className="text-[10px] text-slate-400">
+                <p className="text-[10px] text-secondary">
                   Add this domain to Firebase Console &gt; Authentication &gt; Settings &gt; Authorized domains:
                 </p>
                 <div className="flex items-center justify-between p-1 bg-black/50 rounded border border-slate-800 text-cyan-300">
@@ -191,7 +191,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
         {currentUser ? (
           <div className="space-y-5">
             <div className={`p-4 rounded-2xl border flex items-center gap-4 ${
-              isLight ? 'bg-slate-50 border-slate-200' : 'bg-[#121C2F] border-[#273449]'
+              isLight ? 'bg-elevated border-slate-200' : 'bg-card border-subtle'
             }`}>
               {currentUser.photoURL ? (
                 <img 
@@ -205,10 +205,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                 </div>
               )}
               <div className="flex-1 min-w-0">
-                <h4 className={`text-sm font-bold truncate ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                <h4 className={`text-sm font-bold truncate ${isLight ? 'text-primary' : 'text-primary'}`}>
                   {currentUser.displayName || 'Enterprise Analyst'}
                 </h4>
-                <p className="text-xs text-slate-400 truncate">{currentUser.email}</p>
+                <p className="text-xs text-secondary truncate">{currentUser.email}</p>
                 <div className="flex items-center gap-1.5 mt-1 text-[10px] text-emerald-400 font-mono">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                   <span>Authenticated via Firebase</span>
@@ -217,13 +217,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
             </div>
 
             <div className={`p-3.5 rounded-xl border text-xs space-y-2 ${
-              isLight ? 'bg-slate-100 border-slate-200 text-slate-600' : 'bg-[#0B1120] border-[#273449] text-slate-300'
+              isLight ? 'bg-elevated border-slate-200 text-muted' : 'bg-app border-subtle text-secondary'
             }`}>
-              <div className="flex justify-between items-center text-slate-400">
+              <div className="flex justify-between items-center text-secondary">
                 <span>Firestore Cloud:</span>
                 <span className="font-mono text-[10px] text-emerald-400 font-bold">Synchronized</span>
               </div>
-              <div className="flex justify-between items-center text-slate-400">
+              <div className="flex justify-between items-center text-secondary">
                 <span>Security Engine:</span>
                 <span className="font-mono text-[10px] text-cyan-400 font-bold">Role-Based Access Active</span>
               </div>
@@ -234,47 +234,47 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                 await logout();
                 onClose();
               }}
-              className="w-full py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs transition-colors cursor-pointer"
+              className="w-full py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-primary font-bold text-xs transition-colors cursor-pointer"
             >
               Sign Out
             </button>
           </div>
         ) : mode === 'setup_guide' ? (
           /* Firebase Setup Guide Tab */
-          <div className="space-y-4 text-xs text-slate-300 max-h-96 overflow-y-auto pr-1">
+          <div className="space-y-4 text-xs text-secondary max-h-96 overflow-y-auto pr-1">
             <div className="p-3.5 rounded-xl bg-cyan-500/10 border border-cyan-500/30 space-y-1.5 text-cyan-300">
               <div className="flex items-center gap-1.5 font-bold text-cyan-400">
                 <ShieldCheck className="w-4 h-4" />
                 <span>Firebase Provisioned Successfully</span>
               </div>
-              <p className="text-[11px] leading-relaxed text-slate-300">
+              <p className="text-[11px] leading-relaxed text-secondary">
                 Firebase Firestore and Authentication are fully connected to your Cloud project. All dashboard data is backed up to Firestore.
               </p>
             </div>
 
             <div className="space-y-2.5">
-              <h5 className="font-bold text-white uppercase text-[11px] tracking-wider font-mono">
+              <h5 className="font-bold text-primary uppercase text-[11px] tracking-wider font-mono">
                 How to use Data Analytix Cloud:
               </h5>
               <div className="space-y-2">
-                <div className="p-2.5 bg-[#121C2F] rounded-lg border border-[#273449]">
-                  <strong className="text-white block mb-0.5">1. 1-Click Google Sign-In</strong>
-                  <span className="text-slate-400">Sign in using your Google account to create your personal cloud profile instantly.</span>
+                <div className="p-2.5 bg-card rounded-lg border border-subtle">
+                  <strong className="text-primary block mb-0.5">1. 1-Click Google Sign-In</strong>
+                  <span className="text-secondary">Sign in using your Google account to create your personal cloud profile instantly.</span>
                 </div>
-                <div className="p-2.5 bg-[#121C2F] rounded-lg border border-[#273449]">
-                  <strong className="text-white block mb-0.5">2. Save Dashboards to Cloud</strong>
-                  <span className="text-slate-400">Save custom visual cards and calculations directly to your isolated user partition.</span>
+                <div className="p-2.5 bg-card rounded-lg border border-subtle">
+                  <strong className="text-primary block mb-0.5">2. Save Dashboards to Cloud</strong>
+                  <span className="text-secondary">Save custom visual cards and calculations directly to your isolated user partition.</span>
                 </div>
-                <div className="p-2.5 bg-[#121C2F] rounded-lg border border-[#273449]">
-                  <strong className="text-white block mb-0.5">3. Multi-Device Access</strong>
-                  <span className="text-slate-400">Your reports and data models are securely stored under your isolated user UID.</span>
+                <div className="p-2.5 bg-card rounded-lg border border-subtle">
+                  <strong className="text-primary block mb-0.5">3. Multi-Device Access</strong>
+                  <span className="text-secondary">Your reports and data models are securely stored under your isolated user UID.</span>
                 </div>
               </div>
             </div>
 
             <button
               onClick={() => setMode('signin')}
-              className="w-full py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs transition-all cursor-pointer"
+              className="w-full py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-primary font-bold text-xs transition-all cursor-pointer"
             >
               Return to Sign In
             </button>
@@ -289,10 +289,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                   type="button"
                   onClick={handleGoogleSignIn}
                   disabled={submitting}
-                  className="w-full py-2.5 px-4 rounded-xl bg-white hover:bg-slate-50 text-slate-900 text-xs font-bold transition-all flex items-center justify-center gap-2.5 border border-slate-300 shadow-sm cursor-pointer disabled:opacity-50"
+                  className="w-full py-2.5 px-4 rounded-xl bg-white hover:bg-elevated text-primary text-xs font-bold transition-all flex items-center justify-center gap-2.5 border border-slate-300 shadow-sm cursor-pointer disabled:opacity-50"
                 >
                   {submitting ? (
-                    <Loader2 className="w-4 h-4 animate-spin text-slate-700" />
+                    <Loader2 className="w-4 h-4 animate-spin text-muted" />
                   ) : (
                     <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
                       <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -305,13 +305,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                 </button>
 
                 <div className="relative flex items-center justify-center pt-0.5">
-                  <div className={`border-t w-full ${isLight ? 'border-slate-200' : 'border-[#273449]'}`} />
+                  <div className={`border-t w-full ${isLight ? 'border-slate-200' : 'border-subtle'}`} />
                   <span className={`px-2.5 text-[10px] uppercase font-mono shrink-0 ${
-                    isLight ? 'bg-white text-slate-500' : 'bg-[#172338] text-slate-400'
+                    isLight ? 'bg-white text-muted' : 'bg-card text-secondary'
                   }`}>
                     Or Email &amp; Password
                   </span>
-                  <div className={`border-t w-full ${isLight ? 'border-slate-200' : 'border-[#273449]'}`} />
+                  <div className={`border-t w-full ${isLight ? 'border-slate-200' : 'border-subtle'}`} />
                 </div>
               </div>
             )}
@@ -320,9 +320,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
             <form onSubmit={handleEmailAuth} className="space-y-3">
               {mode === 'register' && (
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-400 mb-1">Analyst Full Name</label>
+                  <label className="block text-[11px] font-semibold text-secondary mb-1">Analyst Full Name</label>
                   <div className="relative">
-                    <UserIcon className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
+                    <UserIcon className="w-4 h-4 absolute left-3 top-2.5 text-secondary" />
                     <input
                       type="text"
                       required
@@ -336,9 +336,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
               )}
 
               <div>
-                <label className="block text-[11px] font-semibold text-slate-400 mb-1">Enterprise Email</label>
+                <label className="block text-[11px] font-semibold text-secondary mb-1">Enterprise Email</label>
                 <div className="relative">
-                  <Mail className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
+                  <Mail className="w-4 h-4 absolute left-3 top-2.5 text-secondary" />
                   <input
                     type="email"
                     required
@@ -353,7 +353,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
               {mode !== 'forgot_password' && (
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="text-[11px] font-semibold text-slate-400">Password</label>
+                    <label className="text-[11px] font-semibold text-secondary">Password</label>
                     {mode === 'signin' && (
                       <button
                         type="button"
@@ -365,7 +365,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                     )}
                   </div>
                   <div className="relative">
-                    <Lock className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
+                    <Lock className="w-4 h-4 absolute left-3 top-2.5 text-secondary" />
                     <input
                       type="password"
                       required
@@ -385,7 +385,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                 className="glass-btn-primary w-full py-2.5 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 mt-1 cursor-pointer uppercase font-heading shadow-md"
               >
                 {submitting ? (
-                  <Loader2 className="w-4 h-4 animate-spin text-white" />
+                  <Loader2 className="w-4 h-4 animate-spin text-primary" />
                 ) : mode === 'signin' ? (
                   <LogIn className="w-4 h-4" />
                 ) : mode === 'register' ? (
@@ -400,12 +400,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
             </form>
 
             {/* Toggle Modes */}
-            <div className={`flex items-center justify-between pt-2 border-t text-xs ${isLight ? 'border-slate-200' : 'border-[#273449]'}`}>
+            <div className={`flex items-center justify-between pt-2 border-t text-xs ${isLight ? 'border-slate-200' : 'border-subtle'}`}>
               {mode === 'signin' ? (
                 <button
                   type="button"
                   onClick={() => { setMode('register'); setAuthError(null); }}
-                  className="text-slate-400 hover:text-cyan-400 transition-colors cursor-pointer"
+                  className="text-secondary hover:text-cyan-400 transition-colors cursor-pointer"
                 >
                   Need an account? <strong className="text-cyan-400">Create one</strong>
                 </button>
@@ -413,7 +413,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                 <button
                   type="button"
                   onClick={() => { setMode('signin'); setAuthError(null); }}
-                  className="text-slate-400 hover:text-cyan-400 transition-colors cursor-pointer"
+                  className="text-secondary hover:text-cyan-400 transition-colors cursor-pointer"
                 >
                   Already have an account? <strong className="text-cyan-400">Sign In</strong>
                 </button>
@@ -429,7 +429,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
             </div>
 
             {isGuestMode && !currentUser && (
-              <div className={`pt-2 border-t ${isLight ? 'border-slate-200' : 'border-[#273449]'}`}>
+              <div className={`pt-2 border-t ${isLight ? 'border-slate-200' : 'border-subtle'}`}>
                 <button
                   type="button"
                   onClick={() => {

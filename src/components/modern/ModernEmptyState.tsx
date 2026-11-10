@@ -3,24 +3,58 @@ import { Database, Play, UploadCloud } from 'lucide-react';
 import { usePlatform } from '../../store/usePlatformStore';
 import { useFirebaseAuth } from '../../store/useFirebaseAuth';
 import { DEMO_DATASETS } from '../../data/demoDatasets';
+import { DownloadMenu, DownloadMenuContext } from '../common/DownloadMenu';
 
 export interface ModernEmptyStateProps {
   title?: string;
   message?: string;
   icon?: React.ComponentType<{ className?: string }>;
+  downloadContext?: DownloadMenuContext;
+}
+
+function mapTabToDownloadContext(tab: string): DownloadMenuContext {
+  switch (tab) {
+    case 'executive_dashboard':
+      return 'executive_dashboard';
+    case 'dashboard_builder':
+      return 'dashboard_builder';
+    case 'preview':
+      return 'preview';
+    case 'quality':
+      return 'quality';
+    case 'cleaning':
+      return 'cleaning';
+    case 'modeling':
+      return 'modeling';
+    case 'sql_lab':
+      return 'sql_lab';
+    case 'dax_lab':
+      return 'dax_lab';
+    case 'python_lab':
+      return 'python_lab';
+    case 'reports':
+      return 'reports';
+    case 'export_center':
+      return 'export_center';
+    default:
+      return 'executive_dashboard';
+  }
 }
 
 export const ModernEmptyState: React.FC<ModernEmptyStateProps> = ({
   title = 'No Data Ingested Yet',
   message = 'Load a curated enterprise benchmark dataset or upload your own file to start analyzing.',
-  icon: Icon = Database
+  icon: Icon = Database,
+  downloadContext,
 }) => {
-  const { setCurrentTab, loadDemoDataset } = usePlatform();
+  const { currentTab, setCurrentTab, loadDemoDataset } = usePlatform();
   const { enterAsGuest } = useFirebaseAuth();
+
+  const resolvedContext = downloadContext || mapTabToDownloadContext(currentTab);
 
   const handleLoadSample = () => {
     enterAsGuest();
-    loadDemoDataset(DEMO_DATASETS[0]?.id || 'sales_demo');
+    loadDemoDataset(DEMO_DATASETS[0]?.id || 'global_tech_sales');
     setCurrentTab('executive_dashboard');
   };
 
@@ -37,19 +71,22 @@ export const ModernEmptyState: React.FC<ModernEmptyStateProps> = ({
       </p>
       <div className="flex flex-wrap items-center justify-center gap-3">
         <button
+          type="button"
           onClick={handleLoadSample}
-          className="btn-primary text-xs shadow-xs"
+          className="btn-primary text-xs shadow-xs cursor-pointer"
         >
-          <Play className="w-3.5 h-3.5 fill-white" />
+          <Play className="w-3.5 h-3.5 fill-current" />
           Load Sample Data
         </button>
         <button
+          type="button"
           onClick={() => setCurrentTab('upload')}
-          className="btn-secondary text-xs"
+          className="btn-secondary text-xs cursor-pointer"
         >
           <UploadCloud className="w-3.5 h-3.5 text-[var(--modern-primary)]" />
           Upload Spreadsheet
         </button>
+        <DownloadMenu context={resolvedContext} label="Download Templates & Guides" />
       </div>
     </div>
   );

@@ -10,6 +10,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { usePlatform } from '../../store/usePlatformStore';
+import { DownloadMenu } from '../common/DownloadMenu';
 
 export const DataQualityView: React.FC = () => {
   const { qualityReport, setCurrentTab } = usePlatform();
@@ -41,6 +42,7 @@ export const DataQualityView: React.FC = () => {
           <div className="w-12 h-12 rounded-full border-4 border-sky-500 border-t-transparent flex items-center justify-center font-bold text-xs text-primary">
             {qualityReport.overallScore >= 90 ? 'A+' : qualityReport.overallScore >= 80 ? 'B' : 'C'}
           </div>
+          <DownloadMenu context="quality" />
         </div>
       </div>
 

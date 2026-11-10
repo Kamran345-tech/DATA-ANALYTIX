@@ -145,17 +145,17 @@ export const TaskModeSelector: React.FC<{ className?: string }> = ({ className =
             <Zap className="w-4 h-4 text-cyan-400" />
             <span>AUTOMATIC TASK DETECTION &amp; PROFESSIONAL MODES (SECTION 11)</span>
           </div>
-          <h3 className={`font-heading text-lg font-bold uppercase tracking-tight ${isLight ? 'text-slate-900' : 'text-white'}`}>
+          <h3 className={`font-heading text-lg font-bold uppercase tracking-tight ${isLight ? 'text-primary' : 'text-primary'}`}>
             Select Working Mode or State Your Task
           </h3>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-secondary">
             Tell the AI agent what you need to do or select any professional mode below. The platform immediately configures the optimal workspace and workflow.
           </p>
         </div>
 
         {/* Quick Search Input */}
         <div className="relative min-w-[240px]">
-          <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-400" />
+          <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-secondary" />
           <input
             type="text"
             placeholder="Type your task (e.g. 'Clean Excel', 'SQL')..."
@@ -179,18 +179,18 @@ export const TaskModeSelector: React.FC<{ className?: string }> = ({ className =
                   ? 'glass-btn-primary shadow-xs' 
                   : isLight
                     ? 'bg-white border-slate-200 hover:border-cyan-400 shadow-2xs'
-                    : 'glass-card border-white/10 hover:border-cyan-400/40 text-slate-300'
+                    : 'glass-card border-white/10 hover:border-cyan-400/40 text-secondary'
               }`}
             >
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <span className={`p-1.5 rounded-xl ${
-                    isActive ? 'bg-white/20 text-white' : 'bg-cyan-500/10 text-cyan-400 border border-cyan-400/20'
+                    isActive ? 'bg-white/20 text-primary' : 'bg-cyan-500/10 text-cyan-400 border border-cyan-400/20'
                   }`}>
                     <Icon className="w-4 h-4" />
                   </span>
                   <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded font-bold uppercase ${
-                    isActive ? 'bg-white/20 text-white' : 'bg-white/10 text-cyan-300'
+                    isActive ? 'bg-white/20 text-primary' : 'bg-white/10 text-cyan-300'
                   }`}>
                     {preset.badge}
                   </span>
@@ -200,20 +200,20 @@ export const TaskModeSelector: React.FC<{ className?: string }> = ({ className =
                   "{preset.userPrompt}"
                 </div>
 
-                <h4 className={`font-bold text-xs leading-snug mb-1 ${isActive ? 'text-white' : isLight ? 'text-slate-900' : 'text-slate-100'}`}>
+                <h4 className={`font-bold text-xs leading-snug mb-1 ${isActive ? 'text-primary' : isLight ? 'text-primary' : 'text-primary'}`}>
                   {preset.modeLabel}
                 </h4>
 
-                <p className={`text-[10px] leading-relaxed line-clamp-2 ${isActive ? 'text-slate-100' : 'text-slate-400'}`}>
+                <p className={`text-[10px] leading-relaxed line-clamp-2 ${isActive ? 'text-primary' : 'text-secondary'}`}>
                   {preset.description}
                 </p>
               </div>
 
               <div className="pt-2 mt-2 border-t border-inherit flex items-center justify-between text-[10px] font-semibold">
-                <span className={isActive ? 'text-white' : 'text-cyan-400'}>
+                <span className={isActive ? 'text-primary' : 'text-cyan-400'}>
                   {isActive ? 'Active Mode' : 'Activate Mode'}
                 </span>
-                <ArrowRight className={`w-3 h-3 group-hover:translate-x-0.5 transition-transform ${isActive ? 'text-white' : 'text-cyan-400'}`} />
+                <ArrowRight className={`w-3 h-3 group-hover:translate-x-0.5 transition-transform ${isActive ? 'text-primary' : 'text-cyan-400'}`} />
               </div>
             </button>
           );

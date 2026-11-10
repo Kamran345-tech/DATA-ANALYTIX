@@ -23,7 +23,6 @@ import {
   Calculator,
   RefreshCw
 } from 'lucide-react';
-import * as XLSX from 'xlsx';
 import { usePlatform } from '../../store/usePlatformStore';
 import { Tooltip } from '../common/Tooltip';
 import { toast } from '../../store/useToast';
@@ -252,6 +251,7 @@ export const ExcelAutomationView: React.FC = () => {
   const handleDownloadCompletedWorkbook = async () => {
     try {
       setIsExporting(true);
+      const XLSX = await import('xlsx');
       const wb = XLSX.utils.book_new();
 
       const taxRate = Number(assumptions.find(a => a.cell === '$M$2')?.value) || 0.15;
@@ -454,12 +454,12 @@ in
               <span>EXCEL AUTOMATION &amp; FORMULA ENGINEERING SPECIALIST (SECTION 5)</span>
             </div>
             <h1 className={`font-heading text-2xl sm:text-3xl font-extrabold uppercase tracking-tight ${
-              isLight ? 'text-slate-900' : 'text-white'
+              isLight ? 'text-primary' : 'text-primary'
             }`}>
               EXCEL FORMULA STUDIO &amp; WORKBOOK COMPLETION
             </h1>
             <p className={`text-xs sm:text-sm max-w-2xl leading-relaxed ${
-              isLight ? 'text-slate-600' : 'text-slate-300'
+              isLight ? 'text-muted' : 'text-secondary'
             }`}>
               Professional Excel engineering: auto-complete assignments, build dynamic arrays (FILTER/SORT/UNIQUE), XLOOKUP, nested IFS, cell-referenced assumptions, and download ready-to-run <strong>.xlsx</strong> workbooks.
             </p>
@@ -501,14 +501,14 @@ in
                 className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                   isActive 
                     ? 'glass-btn-primary shadow-xs' 
-                    : 'glass-btn-secondary text-slate-300'
+                    : 'glass-btn-secondary text-secondary'
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" />
                 <span>{tab.label}</span>
                 {tab.badge && (
                   <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono ${
-                    isActive ? 'bg-white/20 text-white' : 'bg-white/10 text-cyan-300'
+                    isActive ? 'bg-white/20 text-primary' : 'bg-white/10 text-cyan-300'
                   }`}>
                     {tab.badge}
                   </span>
@@ -534,7 +534,7 @@ in
                 <span className="text-xs font-bold uppercase tracking-wider font-mono">
                   Quality Audit: 100% Formula Integrity Checked
                 </span>
-                <p className="text-[11px] text-slate-400">
+                <p className="text-[11px] text-secondary">
                   Zero #N/A, #VALUE!, or #REF! errors across {cleanRows.length.toLocaleString()} active dataset records. All formulas use dynamic cell references.
                 </p>
               </div>
@@ -558,10 +558,10 @@ in
                   <Sliders className="w-4 h-4 text-cyan-400" />
                   <span>STEP 1: CONFIGURABLE ASSUMPTIONS (CELL REFERENCES)</span>
                 </div>
-                <h3 className={`font-heading text-lg font-bold uppercase ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                <h3 className={`font-heading text-lg font-bold uppercase ${isLight ? 'text-primary' : 'text-primary'}`}>
                   Assumptions &amp; Variables Matrix
                 </h3>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-secondary">
                   Per Section 5: Formulas use absolute cell references ($M$2, $M$3) so users can change variables without altering formula syntax.
                 </p>
               </div>
@@ -579,17 +579,17 @@ in
                     <span className="font-mono text-xs font-bold text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-400/20">
                       Cell {assump.cell}
                     </span>
-                    <span className="text-[10px] font-mono uppercase text-slate-400">
+                    <span className="text-[10px] font-mono uppercase text-secondary">
                       {assump.type}
                     </span>
                   </div>
-                  <div className="font-bold text-xs text-slate-200 mb-1 truncate" title={assump.name}>
+                  <div className="font-bold text-xs text-primary mb-1 truncate" title={assump.name}>
                     {assump.name}
                   </div>
                   <div className="text-xl font-extrabold text-cyan-300 font-mono mb-2">
                     {assump.type === 'percentage' ? `${Number(assump.value) * 100}%` : Number(assump.value).toLocaleString()}
                   </div>
-                  <p className="text-[11px] text-slate-400 leading-tight">
+                  <p className="text-[11px] text-secondary leading-tight">
                     {assump.description}
                   </p>
                 </div>
@@ -605,7 +605,7 @@ in
                   <Wand2 className="w-4 h-4 text-cyan-400" />
                   <span>STEP 2: FORMULA INVENTORY &amp; CALCULATION SPECS</span>
                 </div>
-                <h3 className={`font-heading text-lg font-bold uppercase ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                <h3 className={`font-heading text-lg font-bold uppercase ${isLight ? 'text-primary' : 'text-primary'}`}>
                   Assignment Output Columns
                 </h3>
               </div>
@@ -621,17 +621,17 @@ in
                 >
                   <div className="space-y-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-bold text-xs text-slate-100 font-mono">
+                      <span className="font-bold text-xs text-primary font-mono">
                         [{col.headerName}]
                       </span>
                       <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-cyan-500/15 text-cyan-300 border border-cyan-400/20">
                         {col.category}
                       </span>
                     </div>
-                    <code className="text-xs font-mono text-cyan-300 block bg-slate-950/60 p-2 rounded-lg border border-white/10 break-all select-all">
+                    <code className="text-xs font-mono text-cyan-300 block bg-card p-2 rounded-lg border border-white/10 break-all select-all">
                       {col.formulaTemplate}
                     </code>
-                    <p className="text-[11px] text-slate-400">
+                    <p className="text-[11px] text-secondary">
                       {col.description}
                     </p>
                   </div>
@@ -656,7 +656,7 @@ in
                   <Table2 className="w-4 h-4 text-cyan-400" />
                   <span>STEP 3: LIVE EVALUATION PREVIEW (SAMPLE 8 OF {cleanRows.length.toLocaleString()} ROWS)</span>
                 </div>
-                <h3 className={`font-heading text-lg font-bold uppercase ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                <h3 className={`font-heading text-lg font-bold uppercase ${isLight ? 'text-primary' : 'text-primary'}`}>
                   Completed Spreadsheet Preview
                 </h3>
               </div>
@@ -670,7 +670,7 @@ in
             <div className="overflow-x-auto rounded-2xl border border-white/10 no-scrollbar">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="bg-slate-900/80 text-slate-300 font-mono text-[11px] border-b border-white/10">
+                  <tr className="bg-card text-secondary font-mono text-[11px] border-b border-white/10">
                     <th className="p-3">#</th>
                     <th className="p-3">{idCol}</th>
                     <th className="p-3">{primaryText}</th>
@@ -685,10 +685,10 @@ in
                 <tbody className="divide-y divide-white/5 font-mono text-[11px]">
                   {sampleEvaluatedRows.map((r, idx) => (
                     <tr key={idx} className="hover:bg-white/[0.03] transition-colors">
-                      <td className="p-3 text-slate-500">{idx + 1}</td>
-                      <td className="p-3 text-slate-200">{String(r[idCol] || `REC-${idx+1}`)}</td>
-                      <td className="p-3 text-slate-300">{String(r[primaryText] || 'N/A')}</td>
-                      <td className="p-3 text-right text-slate-200">${Number(r[primaryNum] || 0).toLocaleString()}</td>
+                      <td className="p-3 text-muted">{idx + 1}</td>
+                      <td className="p-3 text-primary">{String(r[idCol] || `REC-${idx+1}`)}</td>
+                      <td className="p-3 text-secondary">{String(r[primaryText] || 'N/A')}</td>
+                      <td className="p-3 text-right text-primary">${Number(r[primaryNum] || 0).toLocaleString()}</td>
                       <td className="p-3 text-right text-cyan-300">${r._eval_Tax_Amount.toLocaleString()}</td>
                       <td className="p-3 text-right text-cyan-300">${r._eval_Discount_Applicable.toLocaleString()}</td>
                       <td className="p-3 text-right text-emerald-400 font-bold">${r._eval_Net_Settlement.toLocaleString()}</td>
@@ -698,19 +698,19 @@ in
                             ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
                             : r._eval_Performance_Tier === 'Gold Tier'
                             ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                            : 'bg-slate-500/20 text-slate-300 border border-slate-500/30'
+                            : 'bg-input text-secondary border border-slate-500/30'
                         }`}>
                           {r._eval_Performance_Tier}
                         </span>
                       </td>
-                      <td className="p-3 text-slate-400 text-[10px] truncate max-w-[150px]">{r._eval_Cleaned_Search_Key}</td>
+                      <td className="p-3 text-secondary text-[10px] truncate max-w-[150px]">{r._eval_Cleaned_Search_Key}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
 
-            <div className="pt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-400">
+            <div className="pt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-secondary">
               <span>Showing preview with calculated formula outputs applied across all records.</span>
               <button
                 onClick={handleDownloadCompletedWorkbook}
@@ -735,7 +735,7 @@ in
             <h3 className="font-heading text-sm font-bold uppercase text-cyan-400 tracking-wider">
               Formula Recipe Catalog
             </h3>
-            <p className="text-xs text-slate-400 mb-3">
+            <p className="text-xs text-secondary mb-3">
               Click any formula to inspect syntax, parameters, and live evaluated output.
             </p>
 
@@ -747,7 +747,7 @@ in
                   className={`w-full p-3 rounded-2xl text-left border transition-all cursor-pointer ${
                     selectedFormulaType === recipe.id
                       ? 'glass-btn-primary shadow-xs'
-                      : 'glass-card hover:border-cyan-400/40 text-slate-300'
+                      : 'glass-card hover:border-cyan-400/40 text-secondary'
                   }`}
                 >
                   <div className="flex items-center justify-between text-[10px] font-mono mb-1">
@@ -769,7 +769,7 @@ in
                 <span className="text-xs font-mono font-bold text-cyan-400 uppercase">
                   {activeRecipe.category}
                 </span>
-                <h3 className={`font-heading text-xl font-bold uppercase ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                <h3 className={`font-heading text-xl font-bold uppercase ${isLight ? 'text-primary' : 'text-primary'}`}>
                   {activeRecipe.title}
                 </h3>
               </div>
@@ -784,19 +784,19 @@ in
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-mono font-bold text-slate-300 uppercase">
+              <label className="text-xs font-mono font-bold text-secondary uppercase">
                 Validated Formula Syntax:
               </label>
-              <div className="p-4 rounded-2xl bg-slate-950/80 border border-white/15 font-mono text-xs text-cyan-300 select-all leading-relaxed break-all">
+              <div className="p-4 rounded-2xl bg-card border border-white/15 font-mono text-xs text-cyan-300 select-all leading-relaxed break-all">
                 {activeRecipe.syntax}
               </div>
             </div>
 
             <div className="p-4 rounded-2xl bg-white/[0.04] border border-white/10 space-y-2">
-              <h4 className="font-bold text-xs uppercase text-slate-200">
+              <h4 className="font-bold text-xs uppercase text-primary">
                 Technical Mechanism &amp; Rationale:
               </h4>
-              <p className="text-xs text-slate-300 leading-relaxed">
+              <p className="text-xs text-secondary leading-relaxed">
                 {activeRecipe.desc}
               </p>
               <div className="pt-2 border-t border-white/10 text-xs text-cyan-300 font-mono flex items-center gap-2">
@@ -807,20 +807,20 @@ in
 
             {/* Quick Interactive Parameter Test */}
             <div className="p-4 rounded-2xl border border-white/10 space-y-3">
-              <h4 className="font-bold text-xs uppercase text-slate-200 flex items-center gap-2">
+              <h4 className="font-bold text-xs uppercase text-primary flex items-center gap-2">
                 <Calculator className="w-4 h-4 text-cyan-400" />
                 <span>Dataset Attribute Binding</span>
               </h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div>
-                  <label className="block text-[11px] font-mono text-slate-400 mb-1">Target Dimension Column:</label>
+                  <label className="block text-[11px] font-mono text-secondary mb-1">Target Dimension Column:</label>
                   <select
                     value={lookupTargetCol}
                     onChange={(e) => setLookupTargetCol(e.target.value)}
                     className="glass-input w-full p-2 rounded-xl text-xs"
                   >
                     {columns.map(c => (
-                      <option key={c.name} value={c.name} className="bg-slate-900 text-white">
+                      <option key={c.name} value={c.name} className="bg-card text-primary">
                         {c.name} ({c.dataType})
                       </option>
                     ))}
@@ -828,14 +828,14 @@ in
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-mono text-slate-400 mb-1">Target Numeric Measure:</label>
+                  <label className="block text-[11px] font-mono text-secondary mb-1">Target Numeric Measure:</label>
                   <select
                     value={lookupValueCol}
                     onChange={(e) => setLookupValueCol(e.target.value)}
                     className="glass-input w-full p-2 rounded-xl text-xs"
                   >
                     {numericCols.map(c => (
-                      <option key={c.name} value={c.name} className="bg-slate-900 text-white">
+                      <option key={c.name} value={c.name} className="bg-card text-primary">
                         {c.name}
                       </option>
                     ))}
@@ -857,10 +857,10 @@ in
               <Sliders className="w-4 h-4 text-cyan-400" />
               <span>DYNAMIC ARRAYS &amp; MODERN REPLACEMENTS (EXCEL 365 / 2021+)</span>
             </div>
-            <h3 className={`font-heading text-xl font-bold uppercase ${isLight ? 'text-slate-900' : 'text-white'}`}>
+            <h3 className={`font-heading text-xl font-bold uppercase ${isLight ? 'text-primary' : 'text-primary'}`}>
               Spill Ranges &amp; Matrix Lookups
             </h3>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-secondary">
               Modern Excel functions that spill results into neighboring cells without Ctrl+Shift+Enter legacy array keystrokes.
             </p>
           </div>
@@ -869,13 +869,13 @@ in
             <div className="p-5 rounded-2xl glass-card border-white/10 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="font-mono text-xs font-bold text-cyan-400 uppercase">FILTER</span>
-                <span className="text-[10px] font-mono text-slate-400">Conditional Spill</span>
+                <span className="text-[10px] font-mono text-secondary">Conditional Spill</span>
               </div>
-              <h4 className="font-bold text-sm text-slate-100">Dynamic Multi-Criteria Slicing</h4>
-              <p className="text-xs text-slate-400 leading-relaxed">
+              <h4 className="font-bold text-sm text-primary">Dynamic Multi-Criteria Slicing</h4>
+              <p className="text-xs text-secondary leading-relaxed">
                 Extracts complete rows where conditions match, replacing complicated VBA extraction scripts.
               </p>
-              <code className="text-xs font-mono text-cyan-300 block bg-slate-950/60 p-2.5 rounded-xl border border-white/10 break-all select-all">
+              <code className="text-xs font-mono text-cyan-300 block bg-card p-2.5 rounded-xl border border-white/10 break-all select-all">
                 =FILTER(A2:D500, (B2:B500="Retail") * (D2:D500 &gt; 1000), "None")
               </code>
             </div>
@@ -883,13 +883,13 @@ in
             <div className="p-5 rounded-2xl glass-card border-white/10 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="font-mono text-xs font-bold text-cyan-400 uppercase">SORT &amp; UNIQUE</span>
-                <span className="text-[10px] font-mono text-slate-400">Deduplication</span>
+                <span className="text-[10px] font-mono text-secondary">Deduplication</span>
               </div>
-              <h4 className="font-bold text-sm text-slate-100">Automated Distinct Lists</h4>
-              <p className="text-xs text-slate-400 leading-relaxed">
+              <h4 className="font-bold text-sm text-primary">Automated Distinct Lists</h4>
+              <p className="text-xs text-secondary leading-relaxed">
                 Instantly generates clean, ordered distinct lists for Excel Data Validation dropdown pickers.
               </p>
-              <code className="text-xs font-mono text-cyan-300 block bg-slate-950/60 p-2.5 rounded-xl border border-white/10 break-all select-all">
+              <code className="text-xs font-mono text-cyan-300 block bg-card p-2.5 rounded-xl border border-white/10 break-all select-all">
                 =SORT(UNIQUE(Cleaned_Data[{primaryText}]))
               </code>
             </div>
@@ -897,13 +897,13 @@ in
             <div className="p-5 rounded-2xl glass-card border-white/10 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="font-mono text-xs font-bold text-cyan-400 uppercase">XLOOKUP 2-WAY</span>
-                <span className="text-[10px] font-mono text-slate-400">Cross-Tab Lookup</span>
+                <span className="text-[10px] font-mono text-secondary">Cross-Tab Lookup</span>
               </div>
-              <h4 className="font-bold text-sm text-slate-100">Row &amp; Column Intersection</h4>
-              <p className="text-xs text-slate-400 leading-relaxed">
+              <h4 className="font-bold text-sm text-primary">Row &amp; Column Intersection</h4>
+              <p className="text-xs text-secondary leading-relaxed">
                 Nests an XLOOKUP inside another XLOOKUP to extract matrix intersection values seamlessly.
               </p>
-              <code className="text-xs font-mono text-cyan-300 block bg-slate-950/60 p-2.5 rounded-xl border border-white/10 break-all select-all">
+              <code className="text-xs font-mono text-cyan-300 block bg-card p-2.5 rounded-xl border border-white/10 break-all select-all">
                 =XLOOKUP(G2, A2:A50, XLOOKUP(H1, B1:F1, B2:F50))
               </code>
             </div>
@@ -923,7 +923,7 @@ in
                 <span className="text-xs font-mono font-bold text-cyan-400 uppercase">
                   VBA SCRIPT MODULE
                 </span>
-                <h3 className={`font-heading text-lg font-bold uppercase ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                <h3 className={`font-heading text-lg font-bold uppercase ${isLight ? 'text-primary' : 'text-primary'}`}>
                   Visual Basic for Applications
                 </h3>
               </div>
@@ -937,11 +937,11 @@ in
               </button>
             </div>
 
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-secondary">
               Paste into Excel VBE (Alt + F11) to automatically format tables, freeze panes, format currency, and audit formula errors.
             </p>
 
-            <pre className="p-4 rounded-2xl bg-slate-950/90 border border-white/10 font-mono text-[11px] text-cyan-300 overflow-x-auto max-h-96 select-all">
+            <pre className="p-4 rounded-2xl bg-card border border-white/10 font-mono text-[11px] text-cyan-300 overflow-x-auto max-h-96 select-all">
               {vbaMacroCode}
             </pre>
           </div>
@@ -953,7 +953,7 @@ in
                 <span className="text-xs font-mono font-bold text-indigo-400 uppercase">
                   POWER QUERY (M LANGUAGE)
                 </span>
-                <h3 className={`font-heading text-lg font-bold uppercase ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                <h3 className={`font-heading text-lg font-bold uppercase ${isLight ? 'text-primary' : 'text-primary'}`}>
                   Advanced ETL Query Script
                 </h3>
               </div>
@@ -967,11 +967,11 @@ in
               </button>
             </div>
 
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-secondary">
               Paste into Power Query Advanced Editor (Data &gt; Get Data &gt; Launch Power Query &gt; Advanced Editor) for zero-click refreshes.
             </p>
 
-            <pre className="p-4 rounded-2xl bg-slate-950/90 border border-white/10 font-mono text-[11px] text-indigo-300 overflow-x-auto max-h-96 select-all">
+            <pre className="p-4 rounded-2xl bg-card border border-white/10 font-mono text-[11px] text-indigo-300 overflow-x-auto max-h-96 select-all">
               {powerQueryMCode}
             </pre>
           </div>

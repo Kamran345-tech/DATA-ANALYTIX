@@ -26,7 +26,7 @@ The application supports simultaneous execution on two deployment targets with i
 - Handlers in `/api/` (`health.ts`, `ai/interpret.ts`, `live-data/test-connection.ts`, `live-data/fetch.ts`) import the shared, standalone logic from `/server-lib/`.
 - Zero duplicated code between Express and Vercel functions.
 
-### Environment Variables
+### Environment Variables (Local & Vercel)
 | Variable | Required In | Description |
 |---|---|---|
 | `GEMINI_API_KEY` | Optional | API key for Gemini 2.5 Flash model grounding |
@@ -34,7 +34,18 @@ The application supports simultaneous execution on two deployment targets with i
 | `FIREBASE_PROJECT_ID` | Vercel / Local | Firebase project ID (`mercurial-amphora-3lxdt`) |
 | `FIREBASE_DATABASE_ID` | Vercel / Local | Firestore database instance name |
 | `REQUIRE_AUTH_FOR_AI` | Optional | When `true`, enforces Firebase bearer tokens on `/api/ai/interpret` |
-| `VITE_FEATURE_*` | Optional | Environment overrides for feature flags (e.g. `VITE_FEATURE_MODERN_THEME=true`) |
+| `VITE_FEATURE_DEPTH_UI` | Vercel / Local | Set to `true` to enable 20px depth cards, top highlight, and hover lift |
+| `VITE_FEATURE_HERO_SCENE_3D` | Vercel / Local | Set to `true` to enable the pure-CSS 3D 5-pillar hero scene |
+| `VITE_FEATURE_CHART_GUIDE` | Vercel / Local | Set to `true` to enable the 8-chart selection guide and PDF download |
+| `VITE_FEATURE_UNIFIED_THEME` | Vercel / Local | Set to `true` to enable the WCAG AA unified semantic theme token system |
+
+To enable the new look on Vercel, configure these four variables in **Vercel Project Settings → Environment Variables**:
+```env
+VITE_FEATURE_DEPTH_UI=true
+VITE_FEATURE_HERO_SCENE_3D=true
+VITE_FEATURE_CHART_GUIDE=true
+VITE_FEATURE_UNIFIED_THEME=true
+```
 
 ---
 
@@ -61,6 +72,8 @@ All feature flags can be toggled through the **Settings -> "Experiments & Altern
 | `selfHostedFonts` | UI | External Google Fonts | Self-hosted WOFF2 fonts (Space Grotesk, Inter, JetBrains Mono) |
 | `depthUI` | UI | Standard card borders | 20px depth cards, top specular highlight, 4px hover lift |
 | `heroScene3D` | UI | Classic hero layout | Pure-CSS 3D isometric 5-pillar hero scene |
+| `chartGuide` | Engine | Standard chart recommendations | 8-chart decision guide, rules engine, and PDF guide |
+| `unifiedTheme` | UI | Classic theme CSS rules | Single semantic token system across Dark & Light |
 
 ---
 

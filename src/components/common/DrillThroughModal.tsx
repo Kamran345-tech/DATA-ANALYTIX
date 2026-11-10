@@ -232,7 +232,7 @@ export const DrillThroughModal: React.FC = () => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
       <div 
-        className={`bg-[#141414] border border-[#2e2e2e] shadow-2xl rounded-2xl flex flex-col overflow-hidden transition-all duration-300 ${
+        className={`bg-card border border-subtle shadow-2xl rounded-2xl flex flex-col overflow-hidden transition-all duration-300 ${
           isFullscreen 
             ? 'w-full h-full rounded-none' 
             : 'w-full max-w-7xl max-h-[92vh] h-[92vh]'
@@ -241,7 +241,7 @@ export const DrillThroughModal: React.FC = () => {
         {/* ==================================================================== */}
         {/* 1. TOP HEADER & BREADCRUMBS BAR */}
         {/* ==================================================================== */}
-        <div className="bg-[#1a1a1a] border-b border-[#282828] p-4 space-y-3 shrink-0">
+        <div className="bg-card border-b border-subtle p-4 space-y-3 shrink-0">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="w-8 h-8 rounded-xl bg-cyan-500/15 border border-cyan-500/40 flex items-center justify-center text-cyan-400 shrink-0">
@@ -249,14 +249,14 @@ export const DrillThroughModal: React.FC = () => {
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <h2 className="font-heading text-lg sm:text-xl font-bold text-white uppercase tracking-wide truncate">
+                  <h2 className="font-heading text-lg sm:text-xl font-bold text-primary uppercase tracking-wide truncate">
                     DRILL-THROUGH GRANULAR AUDIT
                   </h2>
                   <span className="px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 font-mono text-[10px] font-bold shrink-0">
                     Depth L{depthLevel} ({activeTrail.length} Layers)
                   </span>
                 </div>
-                <p className="text-xs text-gray-400 truncate">
+                <p className="text-xs text-secondary truncate">
                   Granular row-level provenance and underlying transactional records.
                 </p>
               </div>
@@ -266,14 +266,14 @@ export const DrillThroughModal: React.FC = () => {
             <div className="flex items-center gap-1.5 shrink-0">
               <button
                 onClick={() => setIsFullscreen(!isFullscreen)}
-                className="p-2 rounded-xl text-gray-400 hover:text-white hover:bg-[#252525] border border-[#333] transition-colors"
+                className="p-2 rounded-xl text-secondary hover:text-primary hover:bg-elevated border border-subtle transition-colors"
                 title={isFullscreen ? 'Restore Window' : 'Full Screen'}
               >
                 {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
               </button>
               <button
                 onClick={closeDrillThrough}
-                className="p-2 rounded-xl text-gray-400 hover:text-white hover:bg-red-500/20 hover:border-red-500/40 border border-[#333] transition-colors"
+                className="p-2 rounded-xl text-secondary hover:text-primary hover:bg-red-500/20 hover:border-red-500/40 border border-subtle transition-colors"
                 title="Close Drill-Through (ESC)"
               >
                 <X className="w-4 h-4" />
@@ -282,9 +282,9 @@ export const DrillThroughModal: React.FC = () => {
           </div>
 
           {/* BREADCRUMB NAVIGATION WITH DEPTH TRACKING */}
-          <div className="flex items-center justify-between gap-2 pt-2 border-t border-[#262626]">
+          <div className="flex items-center justify-between gap-2 pt-2 border-t border-subtle">
             <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 text-xs">
-              <span className="text-[10px] text-gray-500 font-mono uppercase shrink-0 mr-1 flex items-center gap-1">
+              <span className="text-[10px] text-muted font-mono uppercase shrink-0 mr-1 flex items-center gap-1">
                 <Filter className="w-3 h-3 text-cyan-400" /> Breadcrumb Trail:
               </span>
 
@@ -295,27 +295,27 @@ export const DrillThroughModal: React.FC = () => {
                 return (
                   <React.Fragment key={crumb.id}>
                     {idx > 0 && (
-                      <ChevronRight className="w-3.5 h-3.5 text-gray-600 shrink-0" />
+                      <ChevronRight className="w-3.5 h-3.5 text-muted shrink-0" />
                     )}
 
                     <button
                       onClick={() => navigateBreadcrumb(idx)}
                       className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-mono transition-all shrink-0 ${
                         isActive
-                          ? 'bg-sky-600 text-white font-bold shadow-md shadow-sky-600/20'
+                          ? 'bg-sky-600 text-primary font-bold shadow-md shadow-sky-600/20'
                           : isPast
-                          ? 'bg-[#222] text-gray-300 hover:bg-[#2d2d2d] hover:text-white border border-[#383838]'
-                          : 'bg-[#181818] text-gray-500 hover:text-gray-400 border border-[#262626]'
+                          ? 'bg-elevated text-secondary hover:bg-elevated hover:text-primary border border-subtle'
+                          : 'bg-card text-muted hover:text-secondary border border-subtle'
                       }`}
                     >
                       <span className={`w-4 h-4 rounded text-[9px] font-bold flex items-center justify-center shrink-0 ${
-                        isActive ? 'bg-black/30 text-cyan-300' : 'bg-[#333] text-gray-300'
+                        isActive ? 'bg-black/30 text-cyan-300' : 'bg-elevated text-secondary'
                       }`}>
                         L{crumb.depth}
                       </span>
                       <span className="truncate max-w-[150px]">{crumb.label}</span>
                       <span className={`text-[10px] px-1 rounded ${
-                        isActive ? 'bg-black/30 text-white' : 'bg-[#141414] text-gray-400'
+                        isActive ? 'bg-black/30 text-primary' : 'bg-card text-secondary'
                       }`}>
                         {crumb.rowCount.toLocaleString()}
                       </span>
@@ -330,7 +330,7 @@ export const DrillThroughModal: React.FC = () => {
               {depthLevel > 0 && (
                 <button
                   onClick={() => navigateBreadcrumb(depthLevel - 1)}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#222] hover:bg-[#2b2b2b] text-gray-300 hover:text-white text-xs border border-[#333] transition-colors"
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-elevated hover:bg-accent text-secondary hover:text-primary text-xs border border-subtle transition-colors"
                   title="Go back one depth layer"
                 >
                   <ArrowLeft className="w-3 h-3 text-cyan-400" />
@@ -340,7 +340,7 @@ export const DrillThroughModal: React.FC = () => {
               {depthLevel > 0 && (
                 <button
                   onClick={() => navigateBreadcrumb(0)}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#222] hover:bg-[#2b2b2b] text-gray-300 hover:text-white text-xs border border-[#333] transition-colors"
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-elevated hover:bg-accent text-secondary hover:text-primary text-xs border border-subtle transition-colors"
                   title="Reset to root level"
                 >
                   <RotateCcw className="w-3 h-3 text-amber-400" />
@@ -354,16 +354,16 @@ export const DrillThroughModal: React.FC = () => {
         {/* ==================================================================== */}
         {/* 2. CONTEXT INFO, METRICS BAR & DRILL DEEPER PICKER */}
         {/* ==================================================================== */}
-        <div className="p-4 space-y-4 overflow-y-auto shrink-0 bg-[#161616] border-b border-[#262626]">
+        <div className="p-4 space-y-4 overflow-y-auto shrink-0 bg-card border-b border-subtle">
           {/* KPI OR CHART SPECIFIC LINEAGE BANNER */}
           {drillThrough.kpi && (
-            <div className="bg-[#132238] border border-cyan-500/30 rounded-xl p-3.5 space-y-2">
+            <div className="bg-accent border border-cyan-500/30 rounded-xl p-3.5 space-y-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <span className="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-400 font-bold text-xs uppercase font-mono">
                     Audited KPI
                   </span>
-                  <h4 className="text-white font-bold text-sm">{drillThrough.kpi.name}</h4>
+                  <h4 className="text-primary font-bold text-sm">{drillThrough.kpi.name}</h4>
                   <span className={`px-2 py-0.2 rounded text-[10px] font-bold ${
                     drillThrough.kpi.status === 'Above Target' ? 'bg-cyan-500/15 text-cyan-400' :
                     drillThrough.kpi.status === 'At Risk' ? 'bg-red-500/15 text-red-400' :
@@ -373,21 +373,21 @@ export const DrillThroughModal: React.FC = () => {
                   </span>
                 </div>
                 <div className="flex items-center gap-3 text-xs font-mono">
-                  <span className="text-gray-400">Current Value: <strong className="text-white">{drillThrough.kpi.formattedValue}</strong></span>
-                  <span className="text-gray-400">Traceable Column: <code className="text-cyan-400">{drillThrough.kpi.traceableSource}</code></span>
+                  <span className="text-secondary">Current Value: <strong className="text-primary">{drillThrough.kpi.formattedValue}</strong></span>
+                  <span className="text-secondary">Traceable Column: <code className="text-cyan-400">{drillThrough.kpi.traceableSource}</code></span>
                 </div>
               </div>
 
               {drillThrough.kpi.formulaExpression && (
-                <div className="text-xs text-gray-300 font-mono bg-[#141414] p-2 rounded-lg border border-[#282828] flex flex-wrap items-center justify-between gap-2">
-                  <span><strong className="text-gray-400">Formula Rule:</strong> {drillThrough.kpi.formulaExpression}</span>
-                  <span className="text-[11px] text-gray-500">DAX: {drillThrough.kpi.calculation}</span>
+                <div className="text-xs text-secondary font-mono bg-card p-2 rounded-lg border border-subtle flex flex-wrap items-center justify-between gap-2">
+                  <span><strong className="text-secondary">Formula Rule:</strong> {drillThrough.kpi.formulaExpression}</span>
+                  <span className="text-[11px] text-muted">DAX: {drillThrough.kpi.calculation}</span>
                 </div>
               )}
 
               {drillThrough.kpi.businessImpact && (
-                <p className="text-[11px] text-gray-400">
-                  <strong className="text-gray-300">Strategic Impact:</strong> {drillThrough.kpi.businessImpact}
+                <p className="text-[11px] text-secondary">
+                  <strong className="text-secondary">Strategic Impact:</strong> {drillThrough.kpi.businessImpact}
                 </p>
               )}
             </div>
@@ -395,19 +395,19 @@ export const DrillThroughModal: React.FC = () => {
 
           {/* ACTIVE SLICE KEY METRICS TILES */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono">
-            <div className="bg-[#1b1b1b] border border-[#2d2d2d] rounded-xl p-3 space-y-1">
-              <span className="text-[10px] text-gray-400 uppercase">Filtered Records</span>
-              <div className="text-lg font-bold text-white flex items-baseline gap-1.5">
+            <div className="bg-card border border-subtle rounded-xl p-3 space-y-1">
+              <span className="text-[10px] text-secondary uppercase">Filtered Records</span>
+              <div className="text-lg font-bold text-primary flex items-baseline gap-1.5">
                 {sliceRows.length.toLocaleString()}
                 <span className="text-[10px] text-cyan-400">
                   ({cleanRows.length > 0 ? Math.round((sliceRows.length / cleanRows.length) * 100) : 0}%)
                 </span>
               </div>
-              <span className="text-[10px] text-gray-500 block truncate">of {cleanRows.length.toLocaleString()} total rows</span>
+              <span className="text-[10px] text-muted block truncate">of {cleanRows.length.toLocaleString()} total rows</span>
             </div>
 
-            <div className="bg-[#1b1b1b] border border-[#2d2d2d] rounded-xl p-3 space-y-1">
-              <span className="text-[10px] text-gray-400 uppercase">Slice Metric Sum</span>
+            <div className="bg-card border border-subtle rounded-xl p-3 space-y-1">
+              <span className="text-[10px] text-secondary uppercase">Slice Metric Sum</span>
               <div className="text-lg font-bold text-cyan-400">
                 ${sliceMetrics.sum >= 1_000_000 
                   ? `${(sliceMetrics.sum / 1_000_000).toFixed(2)}M` 
@@ -415,46 +415,46 @@ export const DrillThroughModal: React.FC = () => {
                   ? `${(sliceMetrics.sum / 1_000).toFixed(1)}K` 
                   : sliceMetrics.sum.toLocaleString()}
               </div>
-              <span className="text-[10px] text-gray-500 block truncate">{primaryMetricCol || 'Primary Metric'}</span>
+              <span className="text-[10px] text-muted block truncate">{primaryMetricCol || 'Primary Metric'}</span>
             </div>
 
-            <div className="bg-[#1b1b1b] border border-[#2d2d2d] rounded-xl p-3 space-y-1">
-              <span className="text-[10px] text-gray-400 uppercase">Average per Record</span>
+            <div className="bg-card border border-subtle rounded-xl p-3 space-y-1">
+              <span className="text-[10px] text-secondary uppercase">Average per Record</span>
               <div className="text-lg font-bold text-cyan-400">
                 ${sliceMetrics.avg.toLocaleString()}
               </div>
-              <span className="text-[10px] text-gray-500 block truncate">Normalized Unit Avg</span>
+              <span className="text-[10px] text-muted block truncate">Normalized Unit Avg</span>
             </div>
 
-            <div className="bg-[#1b1b1b] border border-[#2d2d2d] rounded-xl p-3 space-y-1">
-              <span className="text-[10px] text-gray-400 uppercase">Record Spread (Min - Max)</span>
+            <div className="bg-card border border-subtle rounded-xl p-3 space-y-1">
+              <span className="text-[10px] text-secondary uppercase">Record Spread (Min - Max)</span>
               <div className="text-sm font-bold text-amber-400 truncate">
                 ${sliceMetrics.min.toLocaleString()} - ${sliceMetrics.max.toLocaleString()}
               </div>
-              <span className="text-[10px] text-gray-500 block truncate">Range: ${(sliceMetrics.max - sliceMetrics.min).toLocaleString()}</span>
+              <span className="text-[10px] text-muted block truncate">Range: ${(sliceMetrics.max - sliceMetrics.min).toLocaleString()}</span>
             </div>
           </div>
 
           {/* DRILL DEEPER SUB-DIMENSION EXPLORER */}
           {availableSubDimensions.length > 0 && (
-            <div className="bg-[#141414] border border-[#282828] rounded-xl p-3 space-y-2.5">
+            <div className="bg-card border border-subtle rounded-xl p-3 space-y-2.5">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-white flex items-center gap-1.5">
+                  <span className="text-xs font-semibold text-primary flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
                     Drill Deeper Into This Slice By Dimension:
                   </span>
                   <select
                     value={selectedSubDimension}
                     onChange={(e) => setSelectedSubDimension(e.target.value)}
-                    className="bg-[#202020] text-xs text-cyan-400 font-mono px-2.5 py-1 rounded-lg border border-[#383838] focus:border-cyan-400 focus:outline-none"
+                    className="bg-elevated text-xs text-cyan-400 font-mono px-2.5 py-1 rounded-lg border border-subtle focus:border-cyan-400 focus:outline-none"
                   >
                     {availableSubDimensions.map(c => (
                       <option key={c.name} value={c.name}>{c.name}</option>
                     ))}
                   </select>
                 </div>
-                <span className="text-[10px] text-gray-500 font-mono">
+                <span className="text-[10px] text-muted font-mono">
                   Click any segment bar below to drill into that sub-category
                 </span>
               </div>
@@ -472,17 +472,17 @@ export const DrillThroughModal: React.FC = () => {
                         subLabel: `${item.count} records (${item.share}%)`
                       });
                     }}
-                    className="bg-[#1c1c1c] hover:bg-[#252525] border border-[#2f2f2f] hover:border-cyan-500/60 rounded-lg p-2 text-left group transition-all"
+                    className="bg-card hover:bg-elevated border border-teal-500/40 hover:border-cyan-500/60 rounded-lg p-2 text-left group transition-all"
                   >
-                    <div className="text-[10px] text-gray-400 font-medium truncate group-hover:text-white">
+                    <div className="text-[10px] text-secondary font-medium truncate group-hover:text-primary">
                       {item.value}
                     </div>
                     <div className="flex items-baseline justify-between gap-1 pt-1 font-mono">
                       <span className="text-xs font-bold text-cyan-400">{item.count} rows</span>
-                      <span className="text-[9px] text-gray-500">{item.share}%</span>
+                      <span className="text-[9px] text-muted">{item.share}%</span>
                     </div>
                     {/* Small visual bar */}
-                    <div className="w-full bg-[#2a2a2a] h-1 rounded-full mt-1.5 overflow-hidden">
+                    <div className="w-full bg-elevated h-1 rounded-full mt-1.5 overflow-hidden">
                       <div 
                         className="bg-cyan-400 h-full rounded-full transition-all group-hover:bg-cyan-300"
                         style={{ width: `${Math.min(100, Math.max(8, item.share))}%` }}
@@ -498,24 +498,24 @@ export const DrillThroughModal: React.FC = () => {
         {/* ==================================================================== */}
         {/* 3. ROW-LEVEL DATA SOURCE TABLE */}
         {/* ==================================================================== */}
-        <div className="flex-1 flex flex-col min-h-0 bg-[#121212] overflow-hidden">
+        <div className="flex-1 flex flex-col min-h-0 bg-app overflow-hidden">
           {/* Table Toolbar */}
-          <div className="p-3 border-b border-[#242424] flex flex-wrap items-center justify-between gap-3 shrink-0 bg-[#171717]">
+          <div className="p-3 border-b border-subtle flex flex-wrap items-center justify-between gap-3 shrink-0 bg-card">
             <div className="flex items-center gap-2 flex-1 max-w-md">
               <div className="relative w-full">
-                <Search className="w-3.5 h-3.5 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Search className="w-3.5 h-3.5 text-muted absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   placeholder={`Search ${sliceRows.length.toLocaleString()} rows in this slice...`}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full bg-[#1e1e1e] text-xs text-white pl-8 pr-3 py-1.5 rounded-xl border border-[#333] focus:border-[#21F1A8] focus:outline-none"
+                  className="w-full bg-card text-xs text-primary pl-8 pr-3 py-1.5 rounded-xl border border-subtle focus:border-teal-500/40 focus:outline-none"
                 />
               </div>
               {searchTerm && (
                 <button
                   onClick={() => setSearchTerm('')}
-                  className="text-xs text-gray-400 hover:text-white"
+                  className="text-xs text-secondary hover:text-primary"
                 >
                   Clear
                 </button>
@@ -523,12 +523,12 @@ export const DrillThroughModal: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1.5 text-xs text-gray-400 font-mono">
+              <div className="flex items-center gap-1.5 text-xs text-secondary font-mono">
                 <span>Page size:</span>
                 <select
                   value={pageSize}
                   onChange={(e) => setPageSize(Number(e.target.value))}
-                  className="bg-[#1e1e1e] text-xs text-white px-2 py-1 rounded border border-[#333] focus:outline-none"
+                  className="bg-card text-xs text-primary px-2 py-1 rounded border border-subtle focus:outline-none"
                 >
                   <option value={10}>10</option>
                   <option value={15}>15</option>
@@ -540,7 +540,7 @@ export const DrillThroughModal: React.FC = () => {
 
               <button
                 onClick={handleExportCSV}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#222] hover:bg-[#2c2c2c] text-white text-xs font-medium border border-[#333] hover:border-cyan-500/50 transition-colors"
+                className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-elevated hover:bg-elevated text-primary text-xs font-medium border border-subtle hover:border-cyan-500/50 transition-colors"
                 title="Download CSV of this exact slice"
               >
                 <FileSpreadsheet className="w-3.5 h-3.5 text-cyan-400" />
@@ -549,7 +549,7 @@ export const DrillThroughModal: React.FC = () => {
 
               <button
                 onClick={handleExportJSON}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#222] hover:bg-[#2c2c2c] text-white text-xs font-medium border border-[#333] hover:border-cyan-400/50 transition-colors"
+                className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-elevated hover:bg-elevated text-primary text-xs font-medium border border-subtle hover:border-cyan-400/50 transition-colors"
                 title="Download JSON array"
               >
                 <Download className="w-3.5 h-3.5 text-cyan-400" />
@@ -561,7 +561,7 @@ export const DrillThroughModal: React.FC = () => {
           {/* Table Container */}
           <div className="flex-1 overflow-auto">
             {paginatedRows.length === 0 ? (
-              <div className="h-64 flex flex-col items-center justify-center space-y-2 text-gray-500 text-xs">
+              <div className="h-64 flex flex-col items-center justify-center space-y-2 text-muted text-xs">
                 <Search className="w-8 h-8 opacity-40" />
                 <span>No records match the current filter or search criteria.</span>
                 {searchTerm && (
@@ -575,20 +575,20 @@ export const DrillThroughModal: React.FC = () => {
               </div>
             ) : (
               <table className="w-full text-left text-xs border-collapse">
-                <thead className="bg-[#191919] sticky top-0 z-10 border-b border-[#282828] text-gray-400 font-mono text-[11px]">
+                <thead className="bg-card sticky top-0 z-10 border-b border-subtle text-secondary font-mono text-[11px]">
                   <tr>
-                    <th className="py-2.5 px-3 w-12 text-center text-gray-600">#</th>
+                    <th className="py-2.5 px-3 w-12 text-center text-muted">#</th>
                     {columns.map(col => {
                       const isSorted = sortColumn === col.name;
                       return (
                         <th
                           key={col.name}
                           onClick={() => handleSort(col.name)}
-                          className="py-2.5 px-3 cursor-pointer hover:bg-[#222] hover:text-white transition-colors whitespace-nowrap select-none"
+                          className="py-2.5 px-3 cursor-pointer hover:bg-elevated hover:text-primary transition-colors whitespace-nowrap select-none"
                         >
                           <div className="flex items-center gap-1.5">
                             <span>{col.name}</span>
-                            <span className="text-gray-600">
+                            <span className="text-muted">
                               {isSorted ? (
                                 sortDirection === 'asc' ? <ArrowUp className="w-3 h-3 text-cyan-400" /> : <ArrowDown className="w-3 h-3 text-cyan-400" />
                               ) : (
@@ -602,16 +602,16 @@ export const DrillThroughModal: React.FC = () => {
                     <th className="py-2.5 px-3 text-right">Inspect</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#222]">
+                <tbody className="divide-y divide-[var(--border-subtle)]">
                   {paginatedRows.map((row, rIdx) => {
                     const absIndex = (currentPage - 1) * pageSize + rIdx + 1;
                     return (
                       <tr 
                         key={rIdx}
-                        className="hover:bg-[#1c1c1c] transition-colors group cursor-pointer"
+                        className="hover:bg-card transition-colors group cursor-pointer"
                         onClick={() => setInspectedRow(row)}
                       >
-                        <td className="py-2.5 px-3 text-center text-gray-600 font-mono text-[10px]">
+                        <td className="py-2.5 px-3 text-center text-muted font-mono text-[10px]">
                           {absIndex}
                         </td>
                         {columns.map(col => {
@@ -622,18 +622,18 @@ export const DrillThroughModal: React.FC = () => {
                           return (
                             <td 
                               key={col.name} 
-                              className={`py-2.5 px-3 font-mono text-gray-300 whitespace-nowrap ${
+                              className={`py-2.5 px-3 font-mono text-secondary whitespace-nowrap ${
                                 isNumeric ? 'text-right' : ''
                               }`}
                             >
                               {val === null || val === undefined ? (
-                                <span className="text-gray-600 italic">null</span>
+                                <span className="text-muted italic">null</span>
                               ) : isCurrency ? (
-                                <span className="text-white font-medium">
+                                <span className="text-primary font-medium">
                                   ${Number(val).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                 </span>
                               ) : isNumeric ? (
-                                <span className="text-gray-200">
+                                <span className="text-primary">
                                   {Number(val).toLocaleString()}
                                 </span>
                               ) : col.dataType === 'date' ? (
@@ -654,7 +654,7 @@ export const DrillThroughModal: React.FC = () => {
                               e.stopPropagation();
                               setInspectedRow(row);
                             }}
-                            className="p-1 rounded text-gray-500 group-hover:text-cyan-400 hover:bg-[#252525] transition-colors"
+                            className="p-1 rounded text-muted group-hover:text-cyan-400 hover:bg-elevated transition-colors"
                             title="Inspect full record details"
                           >
                             <Eye className="w-3.5 h-3.5" />
@@ -669,30 +669,30 @@ export const DrillThroughModal: React.FC = () => {
           </div>
 
           {/* Pagination Footer */}
-          <div className="p-3 border-t border-[#242424] bg-[#171717] flex flex-wrap items-center justify-between gap-3 text-xs shrink-0 font-mono">
-            <span className="text-gray-400">
-              Showing <strong className="text-white">{sortedRows.length > 0 ? (currentPage - 1) * pageSize + 1 : 0}</strong> to{' '}
-              <strong className="text-white">{Math.min(currentPage * pageSize, sortedRows.length)}</strong> of{' '}
-              <strong className="text-white">{sortedRows.length.toLocaleString()}</strong> audited rows
+          <div className="p-3 border-t border-subtle bg-card flex flex-wrap items-center justify-between gap-3 text-xs shrink-0 font-mono">
+            <span className="text-secondary">
+              Showing <strong className="text-primary">{sortedRows.length > 0 ? (currentPage - 1) * pageSize + 1 : 0}</strong> to{' '}
+              <strong className="text-primary">{Math.min(currentPage * pageSize, sortedRows.length)}</strong> of{' '}
+              <strong className="text-primary">{sortedRows.length.toLocaleString()}</strong> audited rows
             </span>
 
             <div className="flex items-center gap-1.5">
               <button
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="px-2.5 py-1 rounded bg-[#222] hover:bg-[#2c2c2c] disabled:opacity-40 disabled:hover:bg-[#222] text-white border border-[#333] transition-colors"
+                className="px-2.5 py-1 rounded bg-elevated hover:bg-elevated disabled:opacity-40 disabled:hover:bg-elevated text-primary border border-subtle transition-colors"
               >
                 Previous
               </button>
 
-              <span className="px-2 text-gray-400">
-                Page <strong className="text-white">{currentPage}</strong> of <strong className="text-white">{totalPages}</strong>
+              <span className="px-2 text-secondary">
+                Page <strong className="text-primary">{currentPage}</strong> of <strong className="text-primary">{totalPages}</strong>
               </span>
 
               <button
                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className="px-2.5 py-1 rounded bg-[#222] hover:bg-[#2c2c2c] disabled:opacity-40 disabled:hover:bg-[#222] text-white border border-[#333] transition-colors"
+                className="px-2.5 py-1 rounded bg-elevated hover:bg-elevated disabled:opacity-40 disabled:hover:bg-elevated text-primary border border-subtle transition-colors"
               >
                 Next
               </button>
@@ -703,8 +703,8 @@ export const DrillThroughModal: React.FC = () => {
         {/* ==================================================================== */}
         {/* 4. MODAL FOOTER ACTIONS */}
         {/* ==================================================================== */}
-        <div className="bg-[#181818] border-t border-[#262626] p-3.5 px-4 flex flex-wrap items-center justify-between gap-3 shrink-0">
-          <div className="flex items-center gap-2 text-xs text-gray-400">
+        <div className="bg-card border-t border-subtle p-3.5 px-4 flex flex-wrap items-center justify-between gap-3 shrink-0">
+          <div className="flex items-center gap-2 text-xs text-secondary">
             <Info className="w-3.5 h-3.5 text-cyan-400" />
             <span>
               All row-level calculations reflect verified data warehouse records.
@@ -725,7 +725,7 @@ export const DrillThroughModal: React.FC = () => {
 
             <button
               onClick={closeDrillThrough}
-              className="px-4 py-2 rounded-xl bg-[#252525] hover:bg-[#2f2f2f] text-white text-xs font-semibold border border-[#383838] transition-colors"
+              className="px-4 py-2 rounded-xl bg-elevated hover:bg-accent text-primary text-xs font-semibold border border-subtle transition-colors"
             >
               Close
             </button>
@@ -738,25 +738,25 @@ export const DrillThroughModal: React.FC = () => {
       {/* ==================================================================== */}
       {inspectedRow && (
         <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="bg-[#181818] border border-[#333] rounded-2xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
-            <div className="p-4 border-b border-[#262626] flex items-center justify-between bg-[#1f1f1f]">
+          <div className="bg-card border border-subtle rounded-2xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+            <div className="p-4 border-b border-subtle flex items-center justify-between bg-card">
               <div className="flex items-center gap-2">
                 <Eye className="w-4 h-4 text-cyan-400" />
-                <h3 className="font-heading text-base font-bold text-white uppercase">
+                <h3 className="font-heading text-base font-bold text-primary uppercase">
                   Transaction Record Provenance
                 </h3>
               </div>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => handleCopyJSON(inspectedRow)}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded bg-[#262626] text-gray-300 hover:text-white text-xs border border-[#383838]"
+                  className="flex items-center gap-1 px-2.5 py-1 rounded bg-elevated text-secondary hover:text-primary text-xs border border-subtle"
                 >
                   {copiedJson ? <Check className="w-3.5 h-3.5 text-cyan-400" /> : <Copy className="w-3.5 h-3.5" />}
                   {copiedJson ? 'Copied' : 'Copy JSON'}
                 </button>
                 <button
                   onClick={() => setInspectedRow(null)}
-                  className="p-1 rounded text-gray-400 hover:text-white"
+                  className="p-1 rounded text-secondary hover:text-primary"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -766,27 +766,27 @@ export const DrillThroughModal: React.FC = () => {
             <div className="p-4 overflow-y-auto space-y-3 font-mono text-xs flex-1">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {Object.entries(inspectedRow).map(([key, val]) => (
-                  <div key={key} className="bg-[#131313] p-2.5 rounded-lg border border-[#262626] space-y-0.5">
-                    <span className="text-[10px] text-gray-500 uppercase block truncate">{key}</span>
-                    <span className="text-white font-medium block truncate">
-                      {val !== null && val !== undefined ? String(val) : <em className="text-gray-600">null</em>}
+                  <div key={key} className="bg-app p-2.5 rounded-lg border border-subtle space-y-0.5">
+                    <span className="text-[10px] text-muted uppercase block truncate">{key}</span>
+                    <span className="text-primary font-medium block truncate">
+                      {val !== null && val !== undefined ? String(val) : <em className="text-muted">null</em>}
                     </span>
                   </div>
                 ))}
               </div>
 
               <div className="pt-2">
-                <span className="text-[10px] text-gray-500 uppercase block mb-1">Raw JSON Payload</span>
-                <pre className="bg-[#101010] p-3 rounded-lg border border-[#222] text-[11px] text-cyan-300 overflow-x-auto">
+                <span className="text-[10px] text-muted uppercase block mb-1">Raw JSON Payload</span>
+                <pre className="bg-app p-3 rounded-lg border border-subtle text-[11px] text-cyan-300 overflow-x-auto">
                   {JSON.stringify(inspectedRow, null, 2)}
                 </pre>
               </div>
             </div>
 
-            <div className="p-3 border-t border-[#262626] bg-[#1a1a1a] flex justify-end">
+            <div className="p-3 border-t border-subtle bg-card flex justify-end">
               <button
                 onClick={() => setInspectedRow(null)}
-                className="px-4 py-1.5 rounded-lg bg-[#262626] hover:bg-[#333] text-white text-xs font-semibold"
+                className="px-4 py-1.5 rounded-lg bg-elevated hover:bg-elevated text-primary text-xs font-semibold"
               >
                 Close Inspector
               </button>

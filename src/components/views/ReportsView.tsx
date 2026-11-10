@@ -27,11 +27,12 @@ import {
 } from 'lucide-react';
 import { KPI, VisualConfig } from '../../types';
 import { usePlatform, ReportHeadings } from '../../store/usePlatformStore';
-import { generateEnterpriseReportPDF, downloadDashboardAndReportBundle, ExportDataPayload } from '../../engine/exportEngine';
+import type { ExportDataPayload } from '../../engine/exportEngine';
 import { EditableDashboardTitle } from '../common/EditableDashboardTitle';
 import { KpiCardEditorModal } from '../common/KpiCardEditorModal';
 import { parseRobustNumber } from '../../engine/dataParser';
 import { InteractiveSlicersBar } from '../common/InteractiveSlicersBar';
+import { DownloadMenu } from '../common/DownloadMenu';
 
 export const ReportsView: React.FC = () => {
   const { 
@@ -183,9 +184,10 @@ export const ReportsView: React.FC = () => {
     });
   }, [analytics.kpis, effectiveRows, isFiltered]);
 
-  const handleDownloadPDF = () => {
+  const handleDownloadPDF = async () => {
     setIsPdfGenerating(true);
     try {
+      const { generateEnterpriseReportPDF } = await import('../../engine/exportEngine');
       const payload: ExportDataPayload = {
         project,
         brand,
@@ -236,6 +238,7 @@ export const ReportsView: React.FC = () => {
         qualityReport,
         reportHeadings
       };
+      const { downloadDashboardAndReportBundle } = await import('../../engine/exportEngine');
       await downloadDashboardAndReportBundle(payload, {
         customVisuals,
         categoryPerformance: analytics.categoryPerformance,
@@ -309,7 +312,7 @@ export const ReportsView: React.FC = () => {
       categoryField: cat,
       valueField: val,
       aggregation: newChartAgg,
-      color: '#0284C7',
+      color: 'var(--chart-3)',
       description: `${newChartAgg.toUpperCase()}(${val}) by ${cat}`,
       isCustomRenamed: true
     };
@@ -342,7 +345,7 @@ export const ReportsView: React.FC = () => {
         categoryField: dateCol,
         valueField: primaryVal,
         aggregation: 'sum',
-        color: '#0284C7'
+        color: 'var(--chart-3)'
       });
     }
     generated.push({
@@ -352,7 +355,7 @@ export const ReportsView: React.FC = () => {
       categoryField: primaryCat,
       valueField: primaryVal,
       aggregation: 'sum',
-      color: '#00D8F6'
+      color: 'var(--chart-3)'
     });
     if (secondaryCat && secondaryCat !== primaryCat) {
       generated.push({
@@ -362,7 +365,7 @@ export const ReportsView: React.FC = () => {
         categoryField: secondaryCat,
         valueField: primaryVal,
         aggregation: 'sum',
-        color: '#38BDF8'
+        color: 'var(--chart-3)'
       });
     }
     if (secondaryVal) {
@@ -373,7 +376,7 @@ export const ReportsView: React.FC = () => {
         categoryField: primaryCat,
         valueField: secondaryVal,
         aggregation: 'sum',
-        color: '#0284C7'
+        color: 'var(--chart-3)'
       });
     }
 
@@ -455,6 +458,8 @@ export const ReportsView: React.FC = () => {
           >
             <Printer className="w-4 h-4 text-muted" /> Print Preview
           </button>
+
+          <DownloadMenu context="reports" />
         </div>
       </div>
 
@@ -526,12 +531,12 @@ export const ReportsView: React.FC = () => {
             <div className="print:hidden py-1">
               <EditableDashboardTitle className="text-base font-semibold" showLabelPrefix={true} />
             </div>
-            <p className="text-xs text-secondary print:text-gray-600">
+            <p className="text-xs text-secondary print:text-muted">
               Project: <span className="text-primary print:text-black font-medium">{project.name}</span> • Dataset: <span className="font-mono text-secondary print:text-black">{project.sourceFileName}</span>
             </p>
           </div>
 
-          <div className="text-right text-xs text-secondary print:text-gray-600 space-y-1">
+          <div className="text-right text-xs text-secondary print:text-muted space-y-1">
             <div>Date: <strong className="text-primary print:text-black font-mono">{new Date().toLocaleDateString()}</strong></div>
             <div>Author: <strong className="text-primary print:text-black">{brand.author}</strong></div>
             <div>Version: <span className="font-mono">{project.version}</span></div>
@@ -576,7 +581,7 @@ export const ReportsView: React.FC = () => {
             )}
           </div>
 
-          <div className="p-5 rounded-2xl bg-input border border-subtle text-secondary print:bg-gray-50 print:border-gray-200 text-xs print:text-gray-800 leading-relaxed space-y-2">
+          <div className="p-5 rounded-2xl bg-input border border-subtle text-secondary print:bg-gray-50 print:border-gray-200 text-xs print:text-primary leading-relaxed space-y-2">
             <p>
               This report provides a verified assessment based on <strong className="text-primary">{effectiveRows.length.toLocaleString()}</strong>
               {isFiltered && ` (filtered from ${cleanRows.length.toLocaleString()} total)`} audited transaction records. Overall data health scored <strong className="text-primary">{qualityReport.overallScore}%</strong> on completeness, validity, and uniqueness.
@@ -669,7 +674,7 @@ export const ReportsView: React.FC = () => {
                         </span>
                       )}
                     </td>
-                    <td className="p-3 text-secondary print:text-gray-600">{k.formattedPreviousValue || 'N/A'}</td>
+                    <td className="p-3 text-secondary print:text-muted">{k.formattedPreviousValue || 'N/A'}</td>
                     <td className="p-3">
                       {k.changePercent !== undefined ? (
                         <span className={k.changePercent >= 0 ? 'text-accent font-bold' : 'text-danger font-bold'}>
@@ -819,7 +824,7 @@ export const ReportsView: React.FC = () => {
                   <span>Auto-Adapt to Dataset</span>
                 </button>
 
-                <span className="text-xs font-mono text-secondary print:text-gray-600 pl-1">
+                <span className="text-xs font-mono text-secondary print:text-muted pl-1">
                   ({attachedVisuals.length} Visuals)
                 </span>
               </div>
@@ -867,7 +872,7 @@ export const ReportsView: React.FC = () => {
                           <span className="text-xs font-mono font-bold text-accent print:text-sky-700 uppercase">
                             Widget 4.{vIdx + 1}
                           </span>
-                          <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-card text-secondary border border-subtle print:bg-gray-200 print:text-gray-800">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-card text-secondary border border-subtle print:bg-gray-200 print:text-primary">
                             {vis.type || 'bar'}
                           </span>
                         </div>
@@ -916,12 +921,12 @@ export const ReportsView: React.FC = () => {
                           </div>
                         )}
 
-                        <p className="text-[11px] text-secondary print:text-gray-600">
+                        <p className="text-[11px] text-secondary print:text-muted">
                           Metric: <span className="font-mono text-primary font-bold print:text-black">{agg.toUpperCase()}({validVal})</span> grouped by <span className="font-mono text-primary font-bold print:text-black">{validCat}</span>
                         </p>
                       </div>
                       <div className="text-right">
-                        <span className="text-[10px] uppercase font-mono text-muted print:text-gray-600">
+                        <span className="text-[10px] uppercase font-mono text-muted print:text-muted">
                           {agg === 'avg' ? 'Overall Average' : 'Grand Total'}
                         </span>
                         <div className="text-lg font-bold text-accent print:text-sky-800 font-mono">
@@ -956,12 +961,12 @@ export const ReportsView: React.FC = () => {
                                       style={{ width: `${Math.min(100, Math.max(4, it.share))}%` }} 
                                     />
                                   </div>
-                                  <span className="text-[10px] text-secondary print:text-gray-600 shrink-0 w-10 text-right">
+                                  <span className="text-[10px] text-secondary print:text-muted shrink-0 w-10 text-right">
                                     {it.share.toFixed(1)}%
                                   </span>
                                 </div>
                               </td>
-                              <td className="p-2.5 text-right text-secondary print:text-gray-600">{it.count.toLocaleString()}</td>
+                              <td className="p-2.5 text-right text-secondary print:text-muted">{it.count.toLocaleString()}</td>
                             </tr>
                           ))}
                           <tr className="bg-input font-bold text-primary print:bg-gray-100 print:text-black">
@@ -1032,20 +1037,20 @@ export const ReportsView: React.FC = () => {
                 <tr>
                   <td className="p-2.5 text-primary font-bold print:text-black font-sans">Completeness</td>
                   <td className="p-2.5 text-accent print:text-sky-700 font-bold">{qualityReport.completenessScore}%</td>
-                  <td className="p-2.5 text-secondary print:text-gray-600">{qualityReport.issues.filter(i => i.type === 'missing_values').length} missing indicators</td>
-                  <td className="p-2.5 text-secondary print:text-gray-600 font-sans">Verify source data entry validation</td>
+                  <td className="p-2.5 text-secondary print:text-muted">{qualityReport.issues.filter(i => i.type === 'missing_values').length} missing indicators</td>
+                  <td className="p-2.5 text-secondary print:text-muted font-sans">Verify source data entry validation</td>
                 </tr>
                 <tr>
                   <td className="p-2.5 text-primary font-bold print:text-black font-sans">Uniqueness</td>
                   <td className="p-2.5 text-accent print:text-sky-700 font-bold">{qualityReport.uniquenessScore}%</td>
-                  <td className="p-2.5 text-secondary print:text-gray-600">{qualityReport.issues.filter(i => i.type === 'duplicates').length} duplicate flags</td>
-                  <td className="p-2.5 text-secondary print:text-gray-600 font-sans">Auto-deduplicated in clean data layer</td>
+                  <td className="p-2.5 text-secondary print:text-muted">{qualityReport.issues.filter(i => i.type === 'duplicates').length} duplicate flags</td>
+                  <td className="p-2.5 text-secondary print:text-muted font-sans">Auto-deduplicated in clean data layer</td>
                 </tr>
                 <tr>
                   <td className="p-2.5 text-primary font-bold print:text-black font-sans">Validity & Consistency</td>
                   <td className="p-2.5 text-accent print:text-sky-700 font-bold">{qualityReport.validityScore}%</td>
-                  <td className="p-2.5 text-secondary print:text-gray-600">{qualityReport.issues.filter(i => i.type === 'type_mismatch' || i.type === 'formatting').length} format warnings</td>
-                  <td className="p-2.5 text-secondary print:text-gray-600 font-sans">Schema data types enforced</td>
+                  <td className="p-2.5 text-secondary print:text-muted">{qualityReport.issues.filter(i => i.type === 'type_mismatch' || i.type === 'formatting').length} format warnings</td>
+                  <td className="p-2.5 text-secondary print:text-muted font-sans">Schema data types enforced</td>
                 </tr>
                 <tr className="bg-input font-bold text-primary print:bg-gray-100 print:text-black">
                   <td className="p-2.5 font-sans">Overall Quality Score</td>
@@ -1059,8 +1064,8 @@ export const ReportsView: React.FC = () => {
         </section>
 
         {/* 6. Methodology & Lineage */}
-        <section className="border-t border-subtle print:border-gray-300 pt-6 text-[11px] text-muted print:text-gray-600 space-y-1">
-          <div className="font-bold text-secondary print:text-gray-800 uppercase font-mono">Governed Methodology:</div>
+        <section className="border-t border-subtle print:border-gray-300 pt-6 text-[11px] text-muted print:text-muted space-y-1">
+          <div className="font-bold text-secondary print:text-primary uppercase font-mono">Governed Methodology:</div>
           <p>
             All metrics calculated via Data Analytix in-memory deterministic engine. No generative AI hallucination of numbers. Power BI semantic model compatible.
           </p>

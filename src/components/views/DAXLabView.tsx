@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { usePlatform } from '../../store/usePlatformStore';
 import { generateDAXFromNaturalLanguage } from '../../engine/daxEngine';
+import { DownloadMenu } from '../common/DownloadMenu';
 
 export const DAXLabView: React.FC = () => {
   const { daxMeasures, columns, dataModel, project, themeMode } = usePlatform();
@@ -75,12 +76,15 @@ export const DAXLabView: React.FC = () => {
           </p>
         </div>
 
-        <button
-          onClick={downloadAllDAX}
-          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[var(--accent-2)] text-white font-bold text-xs transition-colors cursor-pointer shadow-md"
-        >
-          <Download className="w-3.5 h-3.5" /> Download .DAX Package
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={downloadAllDAX}
+            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[var(--accent-2)] text-primary font-bold text-xs transition-colors cursor-pointer shadow-md"
+          >
+            <Download className="w-3.5 h-3.5" /> Download .DAX Package
+          </button>
+          <DownloadMenu context="dax_lab" />
+        </div>
       </div>
 
       {/* Workbench Split Grid: Left Tables & Measures Tree (4 cols) + Right Formula Chrome & Output (8 cols) */}
@@ -146,7 +150,7 @@ export const DAXLabView: React.FC = () => {
                     onClick={() => setCategoryFilter(cat)}
                     className={`px-2.5 py-1 rounded-lg border text-[11px] font-mono transition-colors cursor-pointer ${
                       categoryFilter === cat 
-                        ? 'bg-[var(--accent-2)] text-white border-transparent font-bold' 
+                        ? 'bg-[var(--accent-2)] text-primary border-transparent font-bold' 
                         : 'bg-elevated text-secondary border-subtle hover:text-primary'
                     }`}
                   >
@@ -180,7 +184,7 @@ export const DAXLabView: React.FC = () => {
               />
               <button
                 onClick={handleGenerateNL}
-                className="px-5 py-2.5 rounded-xl bg-[var(--accent-2)] text-white font-bold text-xs transition-colors shrink-0 cursor-pointer"
+                className="px-5 py-2.5 rounded-xl bg-[var(--accent-2)] text-primary font-bold text-xs transition-colors shrink-0 cursor-pointer"
               >
                 Generate DAX
               </button>

@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { DataModel, TableSchema, Relationship, ColumnProfile } from '../../types';
 import { toast } from '../../store/useToast';
+import { readRuntimeThemeTokens, colorWithAlpha, buildSopFileName } from '../../config/designTokens';
 
 interface D3TableNode extends d3.SimulationNodeDatum {
   id: string;
@@ -195,7 +196,7 @@ export const D3SchemaGraph: React.FC<D3SchemaGraphProps> = ({
       .attr('orient', 'auto')
       .append('path')
       .attr('d', 'M0,-4L10,0L0,4')
-      .attr('fill', isLight ? '#0284C7' : '#22D3EE');
+      .attr('fill', isLight ? 'var(--chart-3)' : 'var(--chart-3)');
 
     // Arrowhead marker: Bi-directional start
     defs.append('marker')
@@ -208,7 +209,7 @@ export const D3SchemaGraph: React.FC<D3SchemaGraphProps> = ({
       .attr('orient', 'auto')
       .append('path')
       .attr('d', 'M10,-4L0,0L10,4')
-      .attr('fill', isLight ? '#0284C7' : '#22D3EE');
+      .attr('fill', isLight ? 'var(--chart-3)' : 'var(--chart-3)');
 
     // Soft drop shadow filter for table cards
     const filter = defs.append('filter')
@@ -222,7 +223,7 @@ export const D3SchemaGraph: React.FC<D3SchemaGraphProps> = ({
       .attr('dx', 0)
       .attr('dy', isLight ? 3 : 6)
       .attr('stdDeviation', isLight ? 4 : 8)
-      .attr('flood-color', isLight ? 'rgba(15, 23, 42, 0.08)' : 'rgba(0, 0, 0, 0.6)');
+      .attr('flood-color', isLight ? 'color-mix(in srgb, var(--bg-app) 8%, transparent)' : 'color-mix(in srgb, var(--bg-app) 60%, transparent)');
 
     // Glowing border filter on focus
     const glowFilter = defs.append('filter')
@@ -250,7 +251,7 @@ export const D3SchemaGraph: React.FC<D3SchemaGraphProps> = ({
     pattern.append('path')
       .attr('d', 'M 32 0 L 0 0 0 32')
       .attr('fill', 'none')
-      .attr('stroke', isLight ? 'rgba(226, 232, 240, 0.7)' : 'rgba(255, 255, 255, 0.04)')
+      .attr('stroke', isLight ? 'color-mix(in srgb, var(--text-primary) 70%, transparent)' : 'var(--border-subtle)')
       .attr('stroke-width', 1);
 
     // Root zoom container
@@ -432,9 +433,9 @@ export const D3SchemaGraph: React.FC<D3SchemaGraphProps> = ({
       .append('path')
       .attr('class', 'erd-link transition-all duration-150 cursor-pointer')
       .attr('stroke', d => {
-        if (d.id === selectedLinkId) return isLight ? '#0284C7' : '#22D3EE';
-        if (d.id === hoveredLinkId) return isLight ? '#0369A1' : '#38BDF8';
-        return isLight ? 'rgba(14, 165, 233, 0.45)' : 'rgba(34, 211, 238, 0.35)';
+        if (d.id === selectedLinkId) return isLight ? 'var(--chart-3)' : 'var(--chart-3)';
+        if (d.id === hoveredLinkId) return isLight ? 'var(--chart-3)' : 'var(--chart-3)';
+        return isLight ? 'color-mix(in srgb, var(--chart-3) 45%, transparent)' : 'color-mix(in srgb, var(--chart-1) 35%, transparent)';
       })
       .attr('stroke-width', d => (d.id === selectedLinkId || d.id === hoveredLinkId ? 3.5 : 2))
       .attr('stroke-dasharray', d => (d.isActive ? 'none' : '4,4'))
@@ -445,13 +446,13 @@ export const D3SchemaGraph: React.FC<D3SchemaGraphProps> = ({
         setHoveredLinkId(d.id);
         d3.select(event.currentTarget as SVGPathElement)
           .attr('stroke-width', 4)
-          .attr('stroke', isLight ? '#0284C7' : '#22D3EE');
+          .attr('stroke', isLight ? 'var(--chart-3)' : 'var(--chart-3)');
       })
       .on('mouseleave', (event, d) => {
         setHoveredLinkId(null);
         d3.select(event.currentTarget as SVGPathElement)
           .attr('stroke-width', d.id === selectedLinkId ? 3.5 : 2)
-          .attr('stroke', d.id === selectedLinkId ? (isLight ? '#0284C7' : '#22D3EE') : (isLight ? 'rgba(14, 165, 233, 0.45)' : 'rgba(34, 211, 238, 0.35)'));
+          .attr('stroke', d.id === selectedLinkId ? (isLight ? 'var(--chart-3)' : 'var(--chart-3)') : (isLight ? 'color-mix(in srgb, var(--chart-3) 45%, transparent)' : 'color-mix(in srgb, var(--chart-1) 35%, transparent)'));
       })
       .on('click', (event, d) => {
         event.stopPropagation();
@@ -483,15 +484,15 @@ export const D3SchemaGraph: React.FC<D3SchemaGraphProps> = ({
       .attr('x', -26)
       .attr('y', -10)
       .attr('fill', d => {
-        if (d.id === selectedLinkId) return isLight ? '#0284C7' : '#0369A1';
-        return isLight ? '#FFFFFF' : '#111A2E';
+        if (d.id === selectedLinkId) return isLight ? 'var(--chart-3)' : 'var(--chart-3)';
+        return isLight ? 'var(--text-primary)' : 'var(--bg-card)';
       })
       .attr('stroke', d => {
-        if (d.id === selectedLinkId) return isLight ? '#0284C7' : '#38BDF8';
-        return isLight ? '#CBD5E1' : '#334155';
+        if (d.id === selectedLinkId) return isLight ? 'var(--chart-3)' : 'var(--chart-3)';
+        return isLight ? 'var(--text-secondary)' : 'var(--border-subtle)';
       })
       .attr('stroke-width', 1.2)
-      .style('filter', isLight ? 'drop-shadow(0 1px 2px rgba(0,0,0,0.06))' : 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))');
+      .style('filter', isLight ? 'drop-shadow(0 1px 2px color-mix(in srgb, var(--bg-app) 6%, transparent))' : 'drop-shadow(0 2px 4px color-mix(in srgb, var(--bg-app) 40%, transparent))');
 
     // Badge text: Cardinality label (1:N, 1:1, etc.)
     linkBadgeGroups.append('text')
@@ -501,8 +502,8 @@ export const D3SchemaGraph: React.FC<D3SchemaGraphProps> = ({
       .attr('font-weight', '700')
       .attr('font-family', 'JetBrains Mono, monospace')
       .attr('fill', d => {
-        if (d.id === selectedLinkId) return '#FFFFFF';
-        return isLight ? '#0F172A' : '#E2E8F0';
+        if (d.id === selectedLinkId) return 'var(--text-primary)';
+        return isLight ? 'var(--bg-app)' : 'var(--text-primary)';
       })
       .text(d => d.cardinality);
 
@@ -557,18 +558,18 @@ export const D3SchemaGraph: React.FC<D3SchemaGraphProps> = ({
       .attr('filter', 'url(#node-shadow)')
       .attr('fill', d => {
         if (d.type === 'fact') {
-          return isLight ? '#FFFFFF' : '#111A2E';
+          return isLight ? 'var(--text-primary)' : 'var(--bg-card)';
         }
-        return isLight ? '#FFFFFF' : '#0F172A';
+        return isLight ? 'var(--text-primary)' : 'var(--bg-app)';
       })
       .attr('stroke', d => {
         if (d.id === hoveredNodeId || (selectedTable && selectedTable.name === d.id)) {
-          return isLight ? '#0284C7' : '#38BDF8';
+          return isLight ? 'var(--chart-3)' : 'var(--chart-3)';
         }
         if (d.type === 'fact') {
-          return isLight ? '#10B981' : '#059669';
+          return isLight ? 'var(--chart-6)' : 'var(--chart-6)';
         }
-        return isLight ? '#E2E8F0' : '#1E293B';
+        return isLight ? 'var(--text-primary)' : 'var(--bg-card)';
       })
       .attr('stroke-width', d => {
         if (d.id === hoveredNodeId || (selectedTable && selectedTable.name === d.id)) return 2.5;
@@ -586,9 +587,9 @@ export const D3SchemaGraph: React.FC<D3SchemaGraphProps> = ({
       .attr('clip-path', 'inset(0 0 50% 0)')
       .attr('fill', d => {
         if (d.type === 'fact') {
-          return isLight ? 'rgba(16, 185, 129, 0.12)' : 'rgba(5, 150, 105, 0.25)';
+          return isLight ? 'color-mix(in srgb, var(--success) 12%, transparent)' : 'color-mix(in srgb, var(--border-strong) 25%, transparent)';
         }
-        return isLight ? 'rgba(2, 132, 199, 0.08)' : 'rgba(30, 41, 59, 0.8)';
+        return isLight ? 'color-mix(in srgb, var(--border-strong) 8%, transparent)' : 'var(--bg-card)';
       });
 
     // Table Header Divider Line
@@ -597,7 +598,7 @@ export const D3SchemaGraph: React.FC<D3SchemaGraphProps> = ({
       .attr('y1', d => -d.height / 2 + 36)
       .attr('x2', d => d.width / 2)
       .attr('y2', d => -d.height / 2 + 36)
-      .attr('stroke', isLight ? '#E2E8F0' : '#1E293B')
+      .attr('stroke', isLight ? 'var(--text-primary)' : 'var(--bg-card)')
       .attr('stroke-width', 1);
 
     // Table Icon Indicator Circle
@@ -605,7 +606,7 @@ export const D3SchemaGraph: React.FC<D3SchemaGraphProps> = ({
       .attr('cx', d => -d.width / 2 + 18)
       .attr('cy', d => -d.height / 2 + 18)
       .attr('r', 5)
-      .attr('fill', d => (d.type === 'fact' ? '#10B981' : isLight ? '#0284C7' : '#38BDF8'));
+      .attr('fill', d => (d.type === 'fact' ? 'var(--chart-6)' : isLight ? 'var(--chart-3)' : 'var(--chart-3)'));
 
     // Table Title Text
     nodeGroups.append('text')
@@ -614,7 +615,7 @@ export const D3SchemaGraph: React.FC<D3SchemaGraphProps> = ({
       .attr('font-size', '12px')
       .attr('font-weight', '700')
       .attr('font-family', 'JetBrains Mono, monospace')
-      .attr('fill', isLight ? '#0F172A' : '#F8FAFC')
+      .attr('fill', isLight ? 'var(--bg-app)' : 'var(--text-primary)')
       .text(d => {
         const maxLen = d.type === 'fact' ? 18 : 15;
         return d.name.length > maxLen ? `${d.name.slice(0, maxLen)}…` : d.name;
@@ -630,8 +631,8 @@ export const D3SchemaGraph: React.FC<D3SchemaGraphProps> = ({
       .attr('font-family', 'Inter, sans-serif')
       .attr('letter-spacing', '0.05em')
       .attr('fill', d => {
-        if (d.type === 'fact') return isLight ? '#059669' : '#34D399';
-        return isLight ? '#0284C7' : '#38BDF8';
+        if (d.type === 'fact') return isLight ? 'var(--chart-6)' : 'var(--chart-6)';
+        return isLight ? 'var(--chart-3)' : 'var(--chart-3)';
       })
       .text(d => d.type.toUpperCase());
 
@@ -641,7 +642,7 @@ export const D3SchemaGraph: React.FC<D3SchemaGraphProps> = ({
       .attr('y', d => -d.height / 2 + 52)
       .attr('font-size', '10px')
       .attr('font-family', 'Inter, sans-serif')
-      .attr('fill', isLight ? '#64748B' : '#94A3B8')
+      .attr('fill', isLight ? 'var(--text-muted)' : 'var(--text-secondary)')
       .text(d => `${d.rowCount.toLocaleString()} rows · ${d.columns.length} cols`);
 
     // Render Column Preview Rows inside the card
@@ -659,7 +660,7 @@ export const D3SchemaGraph: React.FC<D3SchemaGraphProps> = ({
           .attr('cx', -node.width / 2 + 16)
           .attr('cy', rowY - 4)
           .attr('r', isPk || isFk ? 3 : 1.5)
-          .attr('fill', isPk ? '#F59E0B' : isFk ? (isLight ? '#0284C7' : '#38BDF8') : (isLight ? '#94A3B8' : '#64748B'));
+          .attr('fill', isPk ? 'var(--chart-4)' : isFk ? (isLight ? 'var(--chart-3)' : 'var(--chart-3)') : (isLight ? 'var(--text-secondary)' : 'var(--text-muted)'));
 
         // Column Name Text
         nodeG.append('text')
@@ -668,7 +669,7 @@ export const D3SchemaGraph: React.FC<D3SchemaGraphProps> = ({
           .attr('font-size', '10px')
           .attr('font-weight', isPk ? '700' : '500')
           .attr('font-family', 'JetBrains Mono, monospace')
-          .attr('fill', isPk ? (isLight ? '#B45309' : '#FBBF24') : (isLight ? '#1E293B' : '#E2E8F0'))
+          .attr('fill', isPk ? (isLight ? 'var(--chart-4)' : 'var(--chart-4)') : (isLight ? 'var(--bg-card)' : 'var(--text-primary)'))
           .text(() => {
             const maxW = isPk ? 14 : 16;
             return col.name.length > maxW ? `${col.name.slice(0, maxW)}…` : col.name;
@@ -681,7 +682,7 @@ export const D3SchemaGraph: React.FC<D3SchemaGraphProps> = ({
           .attr('text-anchor', 'end')
           .attr('font-size', '9px')
           .attr('font-family', 'Inter, sans-serif')
-          .attr('fill', isLight ? '#64748B' : '#94A3B8')
+          .attr('fill', isLight ? 'var(--text-muted)' : 'var(--text-secondary)')
           .text(col.dataType);
       });
 
@@ -693,7 +694,7 @@ export const D3SchemaGraph: React.FC<D3SchemaGraphProps> = ({
           .attr('font-size', '9px')
           .attr('font-style', 'italic')
           .attr('font-family', 'Inter, sans-serif')
-          .attr('fill', isLight ? '#94A3B8' : '#64748B')
+          .attr('fill', isLight ? 'var(--text-secondary)' : 'var(--text-muted)')
           .text(`+${node.columns.length - colsToRender.length} more columns…`);
       }
     });
@@ -847,12 +848,12 @@ export const D3SchemaGraph: React.FC<D3SchemaGraphProps> = ({
       isFullscreen ? 'fixed inset-4 z-50 shadow-2xl' : 'w-full'
     } ${
       isLight 
-        ? 'bg-white border-slate-200 text-slate-900 shadow-sm' 
-        : 'bg-[#0B1120] border-slate-800 text-slate-100 shadow-xl'
+        ? 'bg-white border-slate-200 text-primary shadow-sm' 
+        : 'bg-app border-slate-800 text-primary shadow-xl'
     }`}>
       {/* Top Controls Toolbar */}
       <div className={`p-4 border-b flex flex-wrap items-center justify-between gap-3 ${
-        isLight ? 'bg-slate-50/80 border-slate-200' : 'bg-[#111A2E]/90 border-slate-800'
+        isLight ? 'bg-elevated border-slate-200' : 'bg-card border-slate-800'
       }`}>
         <div className="flex flex-wrap items-center gap-3">
           {/* Header Title with Schema Badge */}
@@ -875,7 +876,7 @@ export const D3SchemaGraph: React.FC<D3SchemaGraphProps> = ({
                   {dataModel.schemaType} schema
                 </span>
               </div>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              <p className="text-[11px] text-muted dark:text-secondary">
                 {dataModel.tables.length} tables · {dataModel.relationships.length} active relationships · 100% referential integrity
               </p>
             </div>
@@ -883,7 +884,7 @@ export const D3SchemaGraph: React.FC<D3SchemaGraphProps> = ({
 
           {/* Quick Search Input */}
           <div className="relative">
-            <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-secondary pointer-events-none" />
             <input
               type="text"
               placeholder="Search table or column…"
@@ -891,14 +892,14 @@ export const D3SchemaGraph: React.FC<D3SchemaGraphProps> = ({
               onChange={e => setSearchQuery(e.target.value)}
               className={`pl-8 pr-3 py-1.5 rounded-xl text-xs font-mono w-44 sm:w-52 border transition-all focus:outline-none ${
                 isLight 
-                  ? 'bg-white border-slate-300 text-slate-900 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500' 
-                  : 'bg-slate-900 border-slate-700 text-slate-100 focus:border-emerald-400'
+                  ? 'bg-white border-slate-300 text-primary focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500' 
+                  : 'bg-card border-slate-700 text-primary focus:border-emerald-400'
               }`}
             />
             {searchQuery && (
               <button 
                 onClick={() => setSearchQuery('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-secondary hover:text-muted"
               >
                 <X className="w-3 h-3" />
               </button>
@@ -910,14 +911,14 @@ export const D3SchemaGraph: React.FC<D3SchemaGraphProps> = ({
         <div className="flex flex-wrap items-center gap-2">
           {/* Topology Layout Mode Segmented Control */}
           <div className={`p-1 rounded-xl border flex items-center gap-1 ${
-            isLight ? 'bg-white border-slate-300' : 'bg-slate-900 border-slate-800'
+            isLight ? 'bg-white border-slate-300' : 'bg-card border-slate-800'
           }`}>
             <button
               onClick={() => { setLayoutMode('star'); renderGraph(); }}
               className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer ${
                 layoutMode === 'star'
-                  ? isLight ? 'bg-emerald-600 text-white shadow-xs' : 'bg-emerald-500 text-slate-950 font-extrabold'
-                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                  ? isLight ? 'bg-emerald-600 text-primary shadow-xs' : 'bg-emerald-500 text-primary font-extrabold'
+                  : 'text-muted hover:text-primary dark:hover:text-primary'
               }`}
               title="Radial Star Schema Layout (Fact in center with dimensional satellites)"
             >
@@ -928,8 +929,8 @@ export const D3SchemaGraph: React.FC<D3SchemaGraphProps> = ({
               onClick={() => { setLayoutMode('snowflake'); renderGraph(); }}
               className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer ${
                 layoutMode === 'snowflake'
-                  ? isLight ? 'bg-emerald-600 text-white shadow-xs' : 'bg-emerald-500 text-slate-950 font-extrabold'
-                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                  ? isLight ? 'bg-emerald-600 text-primary shadow-xs' : 'bg-emerald-500 text-primary font-extrabold'
+                  : 'text-muted hover:text-primary dark:hover:text-primary'
               }`}
               title="Hierarchical Snowflake Layout (Fact -> Primary Dim -> Sub-Dimensions)"
             >
@@ -940,8 +941,8 @@ export const D3SchemaGraph: React.FC<D3SchemaGraphProps> = ({
               onClick={() => { setLayoutMode('force'); renderGraph(); }}
               className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer ${
                 layoutMode === 'force'
-                  ? isLight ? 'bg-emerald-600 text-white shadow-xs' : 'bg-emerald-500 text-slate-950 font-extrabold'
-                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                  ? isLight ? 'bg-emerald-600 text-primary shadow-xs' : 'bg-emerald-500 text-primary font-extrabold'
+                  : 'text-muted hover:text-primary dark:hover:text-primary'
               }`}
               title="Force-Directed Physics Simulation with Spring Dynamics"
             >
@@ -955,7 +956,7 @@ export const D3SchemaGraph: React.FC<D3SchemaGraphProps> = ({
             className={`p-2 rounded-xl border text-xs font-medium transition-colors cursor-pointer ${
               showColumnDetails 
                 ? isLight ? 'bg-emerald-50 text-emerald-800 border-emerald-300' : 'bg-emerald-950/40 text-emerald-300 border-emerald-500/40'
-                : isLight ? 'bg-white text-slate-600 border-slate-300 hover:bg-slate-100' : 'bg-slate-900 text-slate-400 border-slate-800'
+                : isLight ? 'bg-white text-muted border-slate-300 hover:bg-elevated' : 'bg-card text-secondary border-slate-800'
             }`}
             title={showColumnDetails ? 'Collapse column preview' : 'Expand column preview'}
           >
@@ -968,7 +969,7 @@ export const D3SchemaGraph: React.FC<D3SchemaGraphProps> = ({
             className={`p-2 rounded-xl border text-xs font-medium transition-colors cursor-pointer ${
               isPhysicsFrozen
                 ? isLight ? 'bg-amber-50 text-amber-800 border-amber-300' : 'bg-amber-950/40 text-amber-300 border-amber-500/40'
-                : isLight ? 'bg-white text-slate-600 border-slate-300 hover:bg-slate-100' : 'bg-slate-900 text-slate-400 border-slate-800'
+                : isLight ? 'bg-white text-muted border-slate-300 hover:bg-elevated' : 'bg-card text-secondary border-slate-800'
             }`}
             title={isPhysicsFrozen ? 'Unpin nodes (enable dynamic physics)' : 'Pin nodes in place (freeze simulation)'}
           >
@@ -979,7 +980,7 @@ export const D3SchemaGraph: React.FC<D3SchemaGraphProps> = ({
           <button
             onClick={handleZoomToFit}
             className={`p-2 rounded-xl border text-xs font-medium transition-colors cursor-pointer ${
-              isLight ? 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100' : 'bg-slate-900 text-slate-300 border-slate-800 hover:bg-slate-800'
+              isLight ? 'bg-white text-muted border-slate-300 hover:bg-elevated' : 'bg-card text-secondary border-slate-800 hover:bg-elevated'
             }`}
             title="Fit graph to canvas"
           >
@@ -990,7 +991,7 @@ export const D3SchemaGraph: React.FC<D3SchemaGraphProps> = ({
           <button
             onClick={handleExportSVG}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-mono font-bold transition-all cursor-pointer ${
-              isLight ? 'bg-white text-slate-800 border-slate-300 hover:bg-slate-100' : 'bg-slate-900 text-slate-200 border-slate-800 hover:bg-slate-800'
+              isLight ? 'bg-white text-primary border-slate-300 hover:bg-elevated' : 'bg-card text-primary border-slate-800 hover:bg-elevated'
             }`}
             title="Download vector SVG diagram"
           >
@@ -1002,7 +1003,7 @@ export const D3SchemaGraph: React.FC<D3SchemaGraphProps> = ({
           <button
             onClick={() => setIsFullscreen(prev => !prev)}
             className={`p-2 rounded-xl border text-xs font-medium transition-colors cursor-pointer ${
-              isLight ? 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100' : 'bg-slate-900 text-slate-300 border-slate-800 hover:bg-slate-800'
+              isLight ? 'bg-white text-muted border-slate-300 hover:bg-elevated' : 'bg-card text-secondary border-slate-800 hover:bg-elevated'
             }`}
             title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen ERD canvas'}
           >
@@ -1025,12 +1026,12 @@ export const D3SchemaGraph: React.FC<D3SchemaGraphProps> = ({
 
         {/* Floating Canvas Navigation Overlay Controls */}
         <div className={`absolute bottom-4 right-4 flex items-center gap-1 p-1 rounded-2xl border backdrop-blur-md shadow-lg ${
-          isLight ? 'bg-white/95 border-slate-300 text-slate-800' : 'bg-slate-900/90 border-slate-700 text-slate-200'
+          isLight ? 'bg-white/95 border-slate-300 text-primary' : 'bg-card border-slate-700 text-primary'
         }`}>
           <button 
             onClick={() => handleZoom(0.8)} 
             className={`p-2 rounded-xl transition-colors cursor-pointer ${
-              isLight ? 'hover:bg-slate-100 text-slate-700' : 'hover:bg-slate-800 text-slate-300'
+              isLight ? 'hover:bg-elevated text-muted' : 'hover:bg-elevated text-secondary'
             }`}
             title="Zoom out"
           >
@@ -1040,17 +1041,17 @@ export const D3SchemaGraph: React.FC<D3SchemaGraphProps> = ({
           <button 
             onClick={() => handleZoom(1.25)} 
             className={`p-2 rounded-xl transition-colors cursor-pointer ${
-              isLight ? 'hover:bg-slate-100 text-slate-700' : 'hover:bg-slate-800 text-slate-300'
+              isLight ? 'hover:bg-elevated text-muted' : 'hover:bg-elevated text-secondary'
             }`}
             title="Zoom in"
           >
             <ZoomIn className="w-4 h-4" />
           </button>
-          <div className="w-px h-4 bg-slate-300 dark:bg-slate-700 mx-1" />
+          <div className="w-px h-4 bg-input dark:bg-input mx-1" />
           <button 
             onClick={handleZoomToFit}
             className={`p-2 rounded-xl transition-colors cursor-pointer ${
-              isLight ? 'hover:bg-slate-100 text-slate-700' : 'hover:bg-slate-800 text-slate-300'
+              isLight ? 'hover:bg-elevated text-muted' : 'hover:bg-elevated text-secondary'
             }`}
             title="Center and fit to view"
           >
@@ -1060,9 +1061,9 @@ export const D3SchemaGraph: React.FC<D3SchemaGraphProps> = ({
 
         {/* Interactive Legend & Topology Indicators */}
         <div className={`absolute bottom-4 left-4 p-3 rounded-2xl border backdrop-blur-md shadow-sm max-w-xs text-xs font-mono ${
-          isLight ? 'bg-white/95 border-slate-200 text-slate-800' : 'bg-slate-900/90 border-slate-800 text-slate-200'
+          isLight ? 'bg-white/95 border-slate-200 text-primary' : 'bg-card border-slate-800 text-primary'
         }`}>
-          <div className="flex items-center gap-3 mb-2 font-bold uppercase tracking-wider text-[10px] text-slate-500 dark:text-slate-400">
+          <div className="flex items-center gap-3 mb-2 font-bold uppercase tracking-wider text-[10px] text-muted dark:text-secondary">
             <span>Topology Legend</span>
             <span className="text-emerald-500 font-extrabold">{layoutMode.toUpperCase()}</span>
           </div>
@@ -1085,7 +1086,7 @@ export const D3SchemaGraph: React.FC<D3SchemaGraphProps> = ({
         {/* Relationship Inspector Drawer / Card (when an edge or badge is clicked) */}
         {activeRelationship && (
           <div className={`absolute top-4 right-4 max-w-sm w-full p-4 rounded-2xl border shadow-2xl backdrop-blur-md animate-fadeIn z-30 ${
-            isLight ? 'bg-white border-slate-200 text-slate-900' : 'bg-slate-900 border-slate-700 text-slate-100'
+            isLight ? 'bg-white border-slate-200 text-primary' : 'bg-card border-slate-700 text-primary'
           }`}>
             <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
               <div className="flex items-center gap-1.5">
@@ -1096,35 +1097,35 @@ export const D3SchemaGraph: React.FC<D3SchemaGraphProps> = ({
               </div>
               <button 
                 onClick={() => setSelectedLinkId(null)}
-                className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600"
+                className="p-1 rounded-lg hover:bg-elevated dark:hover:bg-elevated text-secondary hover:text-muted"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
             </div>
 
             <div className="mt-3 space-y-2.5 text-xs font-mono">
-              <div className="p-2.5 rounded-xl border bg-slate-50 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800">
-                <div className="text-[10px] text-slate-500 uppercase">Primary Key (Source)</div>
+              <div className="p-2.5 rounded-xl border bg-elevated dark:bg-card border-slate-200 dark:border-slate-800">
+                <div className="text-[10px] text-muted uppercase">Primary Key (Source)</div>
                 <div className="font-bold text-emerald-600 dark:text-emerald-400">
                   {activeRelationship.sourceTable}.[{activeRelationship.sourceColumn}]
                 </div>
-                <div className="my-1 flex items-center justify-center gap-2 text-slate-400">
+                <div className="my-1 flex items-center justify-center gap-2 text-secondary">
                   <ArrowRight className="w-3.5 h-3.5 text-sky-500" />
                   <span className="text-[10px]">{activeRelationship.cardinality} cardinality</span>
                 </div>
-                <div className="text-[10px] text-slate-500 uppercase">Foreign Key (Target)</div>
+                <div className="text-[10px] text-muted uppercase">Foreign Key (Target)</div>
                 <div className="font-bold text-sky-600 dark:text-sky-400">
                   {activeRelationship.targetTable}.[{activeRelationship.targetColumn}]
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-2 text-[11px]">
-                <div className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800/60">
-                  <span className="text-[10px] text-slate-500 block">Direction</span>
+                <div className="p-2 rounded-xl bg-elevated dark:bg-elevated">
+                  <span className="text-[10px] text-muted block">Direction</span>
                   <span className="font-bold capitalize">{activeRelationship.crossFilterDirection}</span>
                 </div>
-                <div className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800/60">
-                  <span className="text-[10px] text-slate-500 block">Referential Health</span>
+                <div className="p-2 rounded-xl bg-elevated dark:bg-elevated">
+                  <span className="text-[10px] text-muted block">Referential Health</span>
                   <span className="font-bold text-emerald-600 dark:text-emerald-400">
                     {activeRelationship.integrityScore ?? 100}% Verified
                   </span>
@@ -1137,7 +1138,7 @@ export const D3SchemaGraph: React.FC<D3SchemaGraphProps> = ({
         {/* Selected Table Inspector Drawer / Card */}
         {selectedTable && !activeRelationship && (
           <div className={`absolute top-4 right-4 max-w-sm w-full p-4 rounded-2xl border shadow-2xl backdrop-blur-md animate-fadeIn z-30 max-h-[90%] overflow-y-auto ${
-            isLight ? 'bg-white border-slate-200 text-slate-900' : 'bg-slate-900 border-slate-700 text-slate-100'
+            isLight ? 'bg-white border-slate-200 text-primary' : 'bg-card border-slate-700 text-primary'
           }`}>
             <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
               <div className="flex items-center gap-2 truncate">
@@ -1148,7 +1149,7 @@ export const D3SchemaGraph: React.FC<D3SchemaGraphProps> = ({
               </div>
               <button 
                 onClick={() => setSelectedTable(null)}
-                className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600"
+                className="p-1 rounded-lg hover:bg-elevated dark:hover:bg-elevated text-secondary hover:text-muted"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -1156,16 +1157,16 @@ export const D3SchemaGraph: React.FC<D3SchemaGraphProps> = ({
 
             <div className="mt-3 space-y-3 text-xs font-mono">
               <div className="grid grid-cols-3 gap-2 text-center">
-                <div className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800/60">
-                  <span className="text-[10px] text-slate-500 block">Type</span>
+                <div className="p-2 rounded-xl bg-elevated dark:bg-elevated">
+                  <span className="text-[10px] text-muted block">Type</span>
                   <span className="font-bold uppercase text-emerald-600 dark:text-emerald-400">{selectedTable.type}</span>
                 </div>
-                <div className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800/60">
-                  <span className="text-[10px] text-slate-500 block">Records</span>
+                <div className="p-2 rounded-xl bg-elevated dark:bg-elevated">
+                  <span className="text-[10px] text-muted block">Records</span>
                   <span className="font-bold">{selectedTable.rowCount.toLocaleString()}</span>
                 </div>
-                <div className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800/60">
-                  <span className="text-[10px] text-slate-500 block">Columns</span>
+                <div className="p-2 rounded-xl bg-elevated dark:bg-elevated">
+                  <span className="text-[10px] text-muted block">Columns</span>
                   <span className="font-bold">{selectedTable.columns.length}</span>
                 </div>
               </div>
@@ -1182,7 +1183,7 @@ export const D3SchemaGraph: React.FC<D3SchemaGraphProps> = ({
 
               {/* Columns Table */}
               <div>
-                <span className="text-[10px] uppercase font-bold text-slate-500 block mb-1.5">
+                <span className="text-[10px] uppercase font-bold text-muted block mb-1.5">
                   Schema Attributes ({selectedTable.columns.length})
                 </span>
                 <div className="space-y-1 max-h-48 overflow-y-auto">
@@ -1192,14 +1193,14 @@ export const D3SchemaGraph: React.FC<D3SchemaGraphProps> = ({
                       <div 
                         key={c.name}
                         className={`flex items-center justify-between p-1.5 rounded-lg border text-[11px] ${
-                          isLight ? 'bg-slate-50 border-slate-200 text-slate-800' : 'bg-slate-950 border-slate-800 text-slate-200'
+                          isLight ? 'bg-elevated border-slate-200 text-primary' : 'bg-card border-slate-800 text-primary'
                         }`}
                       >
                         <div className="flex items-center gap-1.5 truncate max-w-[170px]">
                           {isPk && <Key className="w-3 h-3 text-amber-500 shrink-0" />}
                           <span className={`truncate ${isPk ? 'font-bold' : ''}`}>{c.name}</span>
                         </div>
-                        <span className="text-[9px] text-slate-400 font-sans uppercase">{c.dataType}</span>
+                        <span className="text-[9px] text-secondary font-sans uppercase">{c.dataType}</span>
                       </div>
                     );
                   })}
@@ -1214,7 +1215,7 @@ export const D3SchemaGraph: React.FC<D3SchemaGraphProps> = ({
                       onAddRelationshipRequest();
                       setSelectedTable(null);
                     }}
-                    className="flex-1 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+                    className="flex-1 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-primary font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
                   >
                     <span>Connect Key</span>
                   </button>

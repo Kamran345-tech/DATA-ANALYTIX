@@ -41,11 +41,7 @@ import { EditableDashboardTitle } from '../common/EditableDashboardTitle';
 import { GlobalFilterBar } from '../common/GlobalFilterBar';
 import { InteractiveSlicersBar } from '../common/InteractiveSlicersBar';
 import { ModernEmptyState } from '../modern/ModernEmptyState';
-import {
-  generateEnterpriseReportPDF,
-  downloadDashboardAndReportBundle,
-  downloadChartGuidePDF
-} from '../../engine/exportEngine';
+import { DownloadMenu } from '../common/DownloadMenu';
 import { safeMax } from '../../utils/mathUtils';
 import { 
   recommendChartsForFields, 
@@ -78,87 +74,87 @@ const renderChartGuideIllustration = (id: ChartGuideId) => {
     case 'bar':
       return (
         <svg viewBox="0 0 64 40" className="w-16 h-10 shrink-0" aria-hidden="true">
-          <rect x="6" y="22" width="10" height="14" rx="2" fill="#2DD4BF" fillOpacity="0.45" />
-          <rect x="20" y="12" width="10" height="24" rx="2" fill="#2DD4BF" fillOpacity="0.75" />
-          <rect x="34" y="5" width="10" height="31" rx="2" fill="#2DD4BF" />
-          <rect x="48" y="16" width="10" height="20" rx="2" fill="#818CF8" fillOpacity="0.85" />
-          <line x1="4" y1="36" x2="60" y2="36" stroke="#64748B" strokeWidth="1.5" strokeLinecap="round" />
+          <rect x="6" y="22" width="10" height="14" rx="2" fill="var(--chart-1)" fillOpacity="0.45" />
+          <rect x="20" y="12" width="10" height="24" rx="2" fill="var(--chart-1)" fillOpacity="0.75" />
+          <rect x="34" y="5" width="10" height="31" rx="2" fill="var(--chart-1)" />
+          <rect x="48" y="16" width="10" height="20" rx="2" fill="var(--chart-2)" fillOpacity="0.85" />
+          <line x1="4" y1="36" x2="60" y2="36" stroke="var(--text-muted)" strokeWidth="1.5" strokeLinecap="round" />
         </svg>
       );
     case 'line':
       return (
         <svg viewBox="0 0 64 40" className="w-16 h-10 shrink-0" aria-hidden="true">
-          <path d="M 6 30 L 20 21 L 34 25 L 46 12 L 58 7 L 58 36 L 6 36 Z" fill="#2DD4BF" fillOpacity="0.16" />
-          <path d="M 6 30 L 20 21 L 34 25 L 46 12 L 58 7" fill="none" stroke="#2DD4BF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-          <circle cx="6" cy="30" r="2.5" fill="#2DD4BF" />
-          <circle cx="20" cy="21" r="2.5" fill="#2DD4BF" />
-          <circle cx="34" cy="25" r="2.5" fill="#2DD4BF" />
-          <circle cx="46" cy="12" r="2.5" fill="#818CF8" />
-          <circle cx="58" cy="7" r="3" fill="#2DD4BF" />
+          <path d="M 6 30 L 20 21 L 34 25 L 46 12 L 58 7 L 58 36 L 6 36 Z" fill="var(--chart-1)" fillOpacity="0.16" />
+          <path d="M 6 30 L 20 21 L 34 25 L 46 12 L 58 7" fill="none" stroke="var(--chart-1)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx="6" cy="30" r="2.5" fill="var(--chart-1)" />
+          <circle cx="20" cy="21" r="2.5" fill="var(--chart-1)" />
+          <circle cx="34" cy="25" r="2.5" fill="var(--chart-1)" />
+          <circle cx="46" cy="12" r="2.5" fill="var(--chart-2)" />
+          <circle cx="58" cy="7" r="3" fill="var(--chart-1)" />
         </svg>
       );
     case 'scatter':
       return (
         <svg viewBox="0 0 64 40" className="w-16 h-10 shrink-0" aria-hidden="true">
-          <line x1="8" y1="33" x2="56" y2="9" stroke="#818CF8" strokeWidth="1.2" strokeDasharray="3,3" />
-          <circle cx="12" cy="30" r="3" fill="#2DD4BF" />
-          <circle cx="21" cy="24" r="3" fill="#2DD4BF" fillOpacity="0.85" />
-          <circle cx="28" cy="27" r="2.5" fill="#818CF8" />
-          <circle cx="37" cy="18" r="3.2" fill="#2DD4BF" />
-          <circle cx="45" cy="15" r="2.8" fill="#818CF8" />
-          <circle cx="53" cy="10" r="3.2" fill="#2DD4BF" />
+          <line x1="8" y1="33" x2="56" y2="9" stroke="var(--chart-2)" strokeWidth="1.2" strokeDasharray="3,3" />
+          <circle cx="12" cy="30" r="3" fill="var(--chart-1)" />
+          <circle cx="21" cy="24" r="3" fill="var(--chart-1)" fillOpacity="0.85" />
+          <circle cx="28" cy="27" r="2.5" fill="var(--chart-2)" />
+          <circle cx="37" cy="18" r="3.2" fill="var(--chart-1)" />
+          <circle cx="45" cy="15" r="2.8" fill="var(--chart-2)" />
+          <circle cx="53" cy="10" r="3.2" fill="var(--chart-1)" />
         </svg>
       );
     case 'histogram':
       return (
         <svg viewBox="0 0 64 40" className="w-16 h-10 shrink-0" aria-hidden="true">
-          <rect x="6" y="27" width="9" height="9" rx="1" fill="#2DD4BF" fillOpacity="0.4" />
-          <rect x="16" y="17" width="9" height="19" rx="1" fill="#2DD4BF" fillOpacity="0.7" />
-          <rect x="26" y="7" width="9" height="29" rx="1" fill="#2DD4BF" />
-          <rect x="36" y="13" width="9" height="23" rx="1" fill="#818CF8" fillOpacity="0.85" />
-          <rect x="46" y="24" width="9" height="12" rx="1" fill="#818CF8" fillOpacity="0.5" />
-          <line x1="4" y1="36" x2="58" y2="36" stroke="#64748B" strokeWidth="1.5" />
+          <rect x="6" y="27" width="9" height="9" rx="1" fill="var(--chart-1)" fillOpacity="0.4" />
+          <rect x="16" y="17" width="9" height="19" rx="1" fill="var(--chart-1)" fillOpacity="0.7" />
+          <rect x="26" y="7" width="9" height="29" rx="1" fill="var(--chart-1)" />
+          <rect x="36" y="13" width="9" height="23" rx="1" fill="var(--chart-2)" fillOpacity="0.85" />
+          <rect x="46" y="24" width="9" height="12" rx="1" fill="var(--chart-2)" fillOpacity="0.5" />
+          <line x1="4" y1="36" x2="58" y2="36" stroke="var(--text-muted)" strokeWidth="1.5" />
         </svg>
       );
     case 'stacked_bar':
       return (
         <svg viewBox="0 0 64 40" className="w-16 h-10 shrink-0" aria-hidden="true">
-          <rect x="8" y="22" width="11" height="14" rx="1.5" fill="#2DD4BF" />
-          <rect x="8" y="12" width="11" height="9" rx="1.5" fill="#818CF8" />
-          <rect x="26" y="18" width="11" height="18" rx="1.5" fill="#2DD4BF" />
-          <rect x="26" y="6" width="11" height="11" rx="1.5" fill="#818CF8" />
-          <rect x="44" y="25" width="11" height="11" rx="1.5" fill="#2DD4BF" />
-          <rect x="44" y="14" width="11" height="10" rx="1.5" fill="#818CF8" />
+          <rect x="8" y="22" width="11" height="14" rx="1.5" fill="var(--chart-1)" />
+          <rect x="8" y="12" width="11" height="9" rx="1.5" fill="var(--chart-2)" />
+          <rect x="26" y="18" width="11" height="18" rx="1.5" fill="var(--chart-1)" />
+          <rect x="26" y="6" width="11" height="11" rx="1.5" fill="var(--chart-2)" />
+          <rect x="44" y="25" width="11" height="11" rx="1.5" fill="var(--chart-1)" />
+          <rect x="44" y="14" width="11" height="10" rx="1.5" fill="var(--chart-2)" />
         </svg>
       );
     case 'donut':
       return (
         <svg viewBox="0 0 64 40" className="w-16 h-10 shrink-0" aria-hidden="true">
-          <circle cx="32" cy="20" r="13" fill="none" stroke="#1E293B" strokeWidth="6" />
-          <circle cx="32" cy="20" r="13" fill="none" stroke="#2DD4BF" strokeWidth="6" strokeDasharray="48 82" strokeDashoffset="15" />
-          <circle cx="32" cy="20" r="13" fill="none" stroke="#818CF8" strokeWidth="6" strokeDasharray="24 82" strokeDashoffset="-33" />
+          <circle cx="32" cy="20" r="13" fill="none" stroke="var(--bg-card)" strokeWidth="6" />
+          <circle cx="32" cy="20" r="13" fill="none" stroke="var(--chart-1)" strokeWidth="6" strokeDasharray="48 82" strokeDashoffset="15" />
+          <circle cx="32" cy="20" r="13" fill="none" stroke="var(--chart-2)" strokeWidth="6" strokeDasharray="24 82" strokeDashoffset="-33" />
         </svg>
       );
     case 'heatmap':
       return (
         <svg viewBox="0 0 64 40" className="w-16 h-10 shrink-0" aria-hidden="true">
-          <rect x="8" y="6" width="13" height="12" rx="2" fill="#2DD4BF" fillOpacity="0.3" />
-          <rect x="24" y="6" width="13" height="12" rx="2" fill="#2DD4BF" fillOpacity="0.95" />
-          <rect x="40" y="6" width="13" height="12" rx="2" fill="#818CF8" fillOpacity="0.65" />
-          <rect x="8" y="21" width="13" height="12" rx="2" fill="#818CF8" fillOpacity="0.85" />
-          <rect x="24" y="21" width="13" height="12" rx="2" fill="#2DD4BF" fillOpacity="0.45" />
-          <rect x="40" y="21" width="13" height="12" rx="2" fill="#2DD4BF" />
+          <rect x="8" y="6" width="13" height="12" rx="2" fill="var(--chart-1)" fillOpacity="0.3" />
+          <rect x="24" y="6" width="13" height="12" rx="2" fill="var(--chart-1)" fillOpacity="0.95" />
+          <rect x="40" y="6" width="13" height="12" rx="2" fill="var(--chart-2)" fillOpacity="0.65" />
+          <rect x="8" y="21" width="13" height="12" rx="2" fill="var(--chart-2)" fillOpacity="0.85" />
+          <rect x="24" y="21" width="13" height="12" rx="2" fill="var(--chart-1)" fillOpacity="0.45" />
+          <rect x="40" y="21" width="13" height="12" rx="2" fill="var(--chart-1)" />
         </svg>
       );
     case 'boxplot':
       return (
         <svg viewBox="0 0 64 40" className="w-16 h-10 shrink-0" aria-hidden="true">
-          <line x1="20" y1="6" x2="20" y2="34" stroke="#2DD4BF" strokeWidth="1.5" strokeDasharray="2,2" />
-          <rect x="13" y="13" width="14" height="14" rx="2" fill="#2DD4BF" fillOpacity="0.3" stroke="#2DD4BF" strokeWidth="1.5" />
-          <line x1="13" y1="20" x2="27" y2="20" stroke="#2DD4BF" strokeWidth="2.2" />
-          <line x1="44" y1="8" x2="44" y2="32" stroke="#818CF8" strokeWidth="1.5" strokeDasharray="2,2" />
-          <rect x="37" y="14" width="14" height="11" rx="2" fill="#818CF8" fillOpacity="0.3" stroke="#818CF8" strokeWidth="1.5" />
-          <line x1="37" y1="19" x2="51" y2="19" stroke="#818CF8" strokeWidth="2.2" />
+          <line x1="20" y1="6" x2="20" y2="34" stroke="var(--chart-1)" strokeWidth="1.5" strokeDasharray="2,2" />
+          <rect x="13" y="13" width="14" height="14" rx="2" fill="var(--chart-1)" fillOpacity="0.3" stroke="var(--chart-1)" strokeWidth="1.5" />
+          <line x1="13" y1="20" x2="27" y2="20" stroke="var(--chart-1)" strokeWidth="2.2" />
+          <line x1="44" y1="8" x2="44" y2="32" stroke="var(--chart-2)" strokeWidth="1.5" strokeDasharray="2,2" />
+          <rect x="37" y="14" width="14" height="11" rx="2" fill="var(--chart-2)" fillOpacity="0.3" stroke="var(--chart-2)" strokeWidth="1.5" />
+          <line x1="37" y1="19" x2="51" y2="19" stroke="var(--chart-2)" strokeWidth="2.2" />
         </svg>
       );
   }
@@ -220,9 +216,10 @@ export const DashboardBuilderView: React.FC = () => {
   const [isGuidePdfGenerating, setIsGuidePdfGenerating] = useState<boolean>(false);
   const [includeDatasetRecsInPdf, setIncludeDatasetRecsInPdf] = useState<boolean>(true);
 
-  const handleDownloadCompleteGuidePDF = () => {
+  const handleDownloadCompleteGuidePDF = async () => {
     try {
       setIsGuidePdfGenerating(true);
+      const { downloadChartGuidePDF } = await import('../../engine/exportEngine');
       const { filename, pageCount } = downloadChartGuidePDF({
         datasetName: project?.name || project?.sourceFileName || undefined,
         columns,
@@ -274,7 +271,7 @@ export const DashboardBuilderView: React.FC = () => {
     columns.find(c => c.dataType === 'number')?.name || columns[0]?.name || ''
   );
   const [aggregation, setAggregation] = useState<VisualConfig['aggregation']>('sum');
-  const [colorTheme, setColorTheme] = useState('#0284C7');
+  const [colorTheme, setColorTheme] = useState('var(--chart-3)');
 
   // Local state to override chart types or metrics per card without losing chosen fields
   const [visualOverrides, setVisualOverrides] = useState<
@@ -414,7 +411,7 @@ export const DashboardBuilderView: React.FC = () => {
       categoryField: catCol,
       valueField: numCol,
       aggregation: lower.includes('average') || lower.includes('avg') ? 'avg' : 'sum',
-      color: chosenType === 'donut' ? '#00d8f6' : '#0284C7',
+      color: chosenType === 'donut' ? 'var(--chart-3)' : 'var(--chart-3)',
       description: `Synthesized: "${nlPrompt}"`
     };
 
@@ -438,7 +435,7 @@ export const DashboardBuilderView: React.FC = () => {
         categoryField: str1,
         valueField: num1,
         aggregation: 'sum',
-        color: '#0284C7'
+        color: 'var(--chart-3)'
       };
       const p2: VisualConfig = {
         id: `vis-p2-${Date.now()}`,
@@ -447,7 +444,7 @@ export const DashboardBuilderView: React.FC = () => {
         categoryField: str2,
         valueField: num2,
         aggregation: 'sum',
-        color: '#00d8f6'
+        color: 'var(--chart-3)'
       };
       const p3: VisualConfig = {
         id: `vis-p3-${Date.now()}`,
@@ -456,7 +453,7 @@ export const DashboardBuilderView: React.FC = () => {
         categoryField: columns.find(c => c.dataType === 'date')?.name || str1,
         valueField: num1,
         aggregation: 'sum',
-        color: '#f59e0b'
+        color: 'var(--chart-4)'
       };
       const p4: VisualConfig = {
         id: `vis-p4-${Date.now()}`,
@@ -465,7 +462,7 @@ export const DashboardBuilderView: React.FC = () => {
         categoryField: str1,
         valueField: num1,
         aggregation: 'avg',
-        color: '#a855f7'
+        color: 'var(--chart-7)'
       };
       [p1, p2, p3, p4].forEach(v => addCustomVisual(v));
     } else if (presetName === 'operations') {
@@ -476,7 +473,7 @@ export const DashboardBuilderView: React.FC = () => {
         categoryField: str1,
         valueField: num1,
         aggregation: 'count',
-        color: '#0284C7'
+        color: 'var(--chart-3)'
       };
       const p2: VisualConfig = {
         id: `vis-op2-${Date.now()}`,
@@ -485,7 +482,7 @@ export const DashboardBuilderView: React.FC = () => {
         categoryField: str2,
         valueField: num1,
         aggregation: 'sum',
-        color: '#ec4899'
+        color: 'var(--chart-5)'
       };
       [p1, p2].forEach(v => addCustomVisual(v));
     } else if (presetName === 'all_charts') {
@@ -498,7 +495,7 @@ export const DashboardBuilderView: React.FC = () => {
           valueField: num1,
           secondaryValueField: num2,
           aggregation: 'sum',
-          color: '#0284C7'
+          color: 'var(--chart-3)'
         },
         {
           id: `vis-heatmap-${Date.now()}`,
@@ -508,7 +505,7 @@ export const DashboardBuilderView: React.FC = () => {
           secondaryCategoryField: str2,
           valueField: num1,
           aggregation: 'sum',
-          color: '#00d8f6'
+          color: 'var(--chart-3)'
         },
         {
           id: `vis-bar-${Date.now()}`,
@@ -517,7 +514,7 @@ export const DashboardBuilderView: React.FC = () => {
           categoryField: str1,
           valueField: num1,
           aggregation: 'sum',
-          color: '#0284C7'
+          color: 'var(--chart-3)'
         },
         {
           id: `vis-hbar-${Date.now()}`,
@@ -526,7 +523,7 @@ export const DashboardBuilderView: React.FC = () => {
           categoryField: str2,
           valueField: num1,
           aggregation: 'sum',
-          color: '#00d8f6'
+          color: 'var(--chart-3)'
         },
         {
           id: `vis-line-${Date.now()}`,
@@ -535,7 +532,7 @@ export const DashboardBuilderView: React.FC = () => {
           categoryField: columns.find(c => c.dataType === 'date')?.name || str1,
           valueField: num1,
           aggregation: 'sum',
-          color: '#f59e0b'
+          color: 'var(--chart-4)'
         },
         {
           id: `vis-area-${Date.now()}`,
@@ -544,7 +541,7 @@ export const DashboardBuilderView: React.FC = () => {
           categoryField: str1,
           valueField: num1,
           aggregation: 'sum',
-          color: '#0284C7'
+          color: 'var(--chart-3)'
         },
         {
           id: `vis-donut-${Date.now()}`,
@@ -553,7 +550,7 @@ export const DashboardBuilderView: React.FC = () => {
           categoryField: str1,
           valueField: num2,
           aggregation: 'sum',
-          color: '#ec4899'
+          color: 'var(--chart-5)'
         },
         {
           id: `vis-pie-${Date.now()}`,
@@ -562,7 +559,7 @@ export const DashboardBuilderView: React.FC = () => {
           categoryField: str2,
           valueField: num1,
           aggregation: 'sum',
-          color: '#818cf8'
+          color: 'var(--chart-2)'
         },
         {
           id: `vis-radar-${Date.now()}`,
@@ -571,7 +568,7 @@ export const DashboardBuilderView: React.FC = () => {
           categoryField: str1,
           valueField: num1,
           aggregation: 'avg',
-          color: '#0284C7'
+          color: 'var(--chart-3)'
         },
         {
           id: `vis-funnel-${Date.now()}`,
@@ -580,7 +577,7 @@ export const DashboardBuilderView: React.FC = () => {
           categoryField: str1,
           valueField: num1,
           aggregation: 'sum',
-          color: '#00d8f6'
+          color: 'var(--chart-3)'
         },
         {
           id: `vis-waterfall-${Date.now()}`,
@@ -589,7 +586,7 @@ export const DashboardBuilderView: React.FC = () => {
           categoryField: str1,
           valueField: num1,
           aggregation: 'sum',
-          color: '#0284C7'
+          color: 'var(--chart-3)'
         },
         {
           id: `vis-treemap-${Date.now()}`,
@@ -598,7 +595,7 @@ export const DashboardBuilderView: React.FC = () => {
           categoryField: str1,
           valueField: num1,
           aggregation: 'sum',
-          color: '#f59e0b'
+          color: 'var(--chart-4)'
         },
         {
           id: `vis-gauge-${Date.now()}`,
@@ -607,7 +604,7 @@ export const DashboardBuilderView: React.FC = () => {
           categoryField: str1,
           valueField: num1,
           aggregation: 'sum',
-          color: '#0284C7'
+          color: 'var(--chart-3)'
         },
         {
           id: `vis-table-${Date.now()}`,
@@ -616,7 +613,7 @@ export const DashboardBuilderView: React.FC = () => {
           categoryField: str1,
           valueField: num1,
           aggregation: 'sum',
-          color: '#64748b'
+          color: 'var(--text-muted)'
         }
       ];
       suite.forEach(v => addCustomVisual(v));
@@ -787,9 +784,10 @@ export const DashboardBuilderView: React.FC = () => {
   };
 
   // 2. Download Executive Report as PDF
-  const handleDownloadExecutivePDF = () => {
+  const handleDownloadExecutivePDF = async () => {
     try {
       setIsPdfGenerating(true);
+      const { generateEnterpriseReportPDF } = await import('../../engine/exportEngine');
       const payload = {
         project,
         brand,
@@ -850,28 +848,28 @@ export const DashboardBuilderView: React.FC = () => {
     });
 
     const kpiCardsHtml = analytics.kpis.slice(0, 4).map(k => `
-      <div style="background:#1c1c1c; border:1px solid #333; border-radius:14px; padding:16px;">
-        <div style="font-size:11px; color:#888; text-transform:uppercase;">${k.name}</div>
-        <div style="font-size:24px; font-weight:800; color:#fff; margin:6px 0;">${k.formattedValue}</div>
-        <div style="font-size:11px; color:#0284C7;">Status: ${k.status}</div>
+      <div style="background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:14px; padding:16px;">
+        <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">${k.name}</div>
+        <div style="font-size:24px; font-weight:800; color:var(--text-primary); margin:6px 0;">${k.formattedValue}</div>
+        <div style="font-size:11px; color:var(--chart-3);">Status: ${k.status}</div>
       </div>
     `).join('');
 
     const visualCardsHtml = visualsExport.map(v => `
-      <div style="background:#1c1c1c; border:1px solid #333; border-radius:16px; padding:20px; margin-bottom:20px;">
+      <div style="background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:16px; padding:20px; margin-bottom:20px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-          <h3 style="margin:0; font-size:16px; text-transform:uppercase; color:#fff;">${v.title}</h3>
-          <span style="font-size:11px; background:#141414; color:#0284C7; padding:3px 8px; border-radius:6px; font-family:monospace;">${v.agg.toUpperCase()}(${v.val}) by ${v.cat}</span>
+          <h3 style="margin:0; font-size:16px; text-transform:uppercase; color:var(--text-primary);">${v.title}</h3>
+          <span style="font-size:11px; background:var(--bg-card); color:var(--chart-3); padding:3px 8px; border-radius:6px; font-family:monospace;">${v.agg.toUpperCase()}(${v.val}) by ${v.cat}</span>
         </div>
         <div>
           ${v.items.map(it => `
             <div style="margin-bottom:8px;">
               <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px;">
-                <span style="color:#ccc;">${it.category}</span>
-                <span style="color:#fff; font-family:monospace; font-weight:600;">${it.value.toLocaleString()} (${it.share}%)</span>
+                <span style="color:var(--text-secondary);">${it.category}</span>
+                <span style="color:var(--text-primary); font-family:monospace; font-weight:600;">${it.value.toLocaleString()} (${it.share}%)</span>
               </div>
-              <div style="background:#141414; height:8px; border-radius:4px; overflow:hidden;">
-                <div style="background:#0284C7; width:${Math.min(100, Math.max(5, it.share))}%; height:100%; border-radius:4px;"></div>
+              <div style="background:var(--bg-card); height:8px; border-radius:4px; overflow:hidden;">
+                <div style="background:var(--chart-3); width:${Math.min(100, Math.max(5, it.share))}%; height:100%; border-radius:4px;"></div>
               </div>
             </div>
           `).join('')}
@@ -885,9 +883,9 @@ export const DashboardBuilderView: React.FC = () => {
   <meta charset="UTF-8">
   <title>${project.name} - Executive Dashboard</title>
   <style>
-    body { margin:0; padding:30px; background:#121212; color:#eee; font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { margin:0; padding:30px; background:var(--bg-app); color:var(--text-primary); font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     .container { max-width:1100px; margin:0 auto; }
-    .header { background:#1a1a1a; border:1px solid #2e2e2e; border-radius:18px; padding:24px; margin-bottom:24px; }
+    .header { background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:18px; padding:24px; margin-bottom:24px; }
     .grid-kpis { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:16px; margin-bottom:24px; }
     .grid-visuals { display:grid; grid-template-columns:repeat(auto-fit, minmax(480px, 1fr)); gap:20px; }
   </style>
@@ -895,9 +893,9 @@ export const DashboardBuilderView: React.FC = () => {
 <body>
   <div class="container">
     <div class="header">
-      <div style="color:#0284C7; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1px;">${brand.companyName} • ${brand.department}</div>
-      <h1 style="font-size:28px; margin:8px 0; color:#fff; text-transform:uppercase;">${project.name}</h1>
-      <div style="color:#888; font-size:12px;">Exported on: ${new Date().toLocaleString()} | Verified Enterprise Data Model (${cleanRows.length} rows)</div>
+      <div style="color:var(--chart-3); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1px;">${brand.companyName} • ${brand.department}</div>
+      <h1 style="font-size:28px; margin:8px 0; color:var(--text-primary); text-transform:uppercase;">${project.name}</h1>
+      <div style="color:var(--text-muted); font-size:12px;">Exported on: ${new Date().toLocaleString()} | Verified Enterprise Data Model (${cleanRows.length} rows)</div>
     </div>
     <div class="grid-kpis">${kpiCardsHtml}</div>
     <div class="grid-visuals">${visualCardsHtml}</div>
@@ -1015,6 +1013,7 @@ export const DashboardBuilderView: React.FC = () => {
         qualityReport
       };
 
+      const { downloadDashboardAndReportBundle } = await import('../../engine/exportEngine');
       await downloadDashboardAndReportBundle(payload, {
         customVisuals: visualsExport,
         categoryPerformance: analytics.categoryPerformance,
@@ -1057,23 +1056,23 @@ export const DashboardBuilderView: React.FC = () => {
               <EditableDashboardTitle className="text-2xl sm:text-3xl font-extrabold uppercase" showLabelPrefix={false} />
             </div>
 
-            <p className={`text-xs ${isLight ? 'text-slate-600' : 'text-gray-400'}`}>
+            <p className={`text-xs ${isLight ? 'text-muted' : 'text-secondary'}`}>
               Build, customize, and download your analytical dashboard. Switch between Bar, Line, Donut, and Table views in real time.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
             {/* Quick Presets */}
-            <div className={`hidden sm:flex items-center border rounded-xl p-1 text-xs ${isLight ? 'bg-slate-100 border-slate-200' : 'bg-[#141414] border-[#333]'}`}>
+            <div className={`hidden sm:flex items-center border rounded-xl p-1 text-xs ${isLight ? 'bg-elevated border-slate-200' : 'bg-card border-subtle'}`}>
               <button
                 onClick={() => loadPreset('financial')}
-                className={`px-2.5 py-1 rounded-lg transition-colors ${isLight ? 'text-slate-700 hover:text-slate-900 hover:bg-white' : 'text-gray-300 hover:text-white hover:bg-[#252525]'}`}
+                className={`px-2.5 py-1 rounded-lg transition-colors ${isLight ? 'text-muted hover:text-primary hover:bg-white' : 'text-secondary hover:text-primary hover:bg-elevated'}`}
               >
                 Executive Pack
               </button>
               <button
                 onClick={() => loadPreset('operations')}
-                className={`px-2.5 py-1 rounded-lg transition-colors ${isLight ? 'text-slate-700 hover:text-slate-900 hover:bg-white' : 'text-gray-300 hover:text-white hover:bg-[#252525]'}`}
+                className={`px-2.5 py-1 rounded-lg transition-colors ${isLight ? 'text-muted hover:text-primary hover:bg-white' : 'text-secondary hover:text-primary hover:bg-elevated'}`}
               >
                 Operations Pack
               </button>
@@ -1099,7 +1098,7 @@ export const DashboardBuilderView: React.FC = () => {
               className={`flex items-center gap-1.5 px-3.5 py-2 sm:py-2.5 rounded-xl border font-bold text-xs transition-all cursor-pointer ${
                 isLight
                   ? 'bg-sky-100 hover:bg-sky-200 text-sky-900 border-sky-400 shadow-xs'
-                  : 'bg-sky-500/20 hover:bg-sky-500/30 text-cyan-300 border-cyan-400/50 shadow-[0_0_12px_rgba(34,211,238,0.2)]'
+                  : 'bg-sky-500/20 hover:bg-sky-500/30 text-cyan-300 border-cyan-400/50 shadow-lg'
               }`}
               title="View intelligent multi-type visualization recommendations tailored to your dataset schema"
             >
@@ -1109,7 +1108,7 @@ export const DashboardBuilderView: React.FC = () => {
 
             <button
               onClick={() => setIsModalOpen(true)}
-              className="flex items-center gap-1.5 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-sky-600 text-white font-bold text-xs hover:bg-sky-500 shadow-md shadow-sky-600/20 transition-all cursor-pointer"
+              className="flex items-center gap-1.5 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-sky-600 text-primary font-bold text-xs hover:bg-sky-500 shadow-md shadow-sky-600/20 transition-all cursor-pointer"
             >
               <Plus className="w-4 h-4" /> Add Custom Visual
             </button>
@@ -1117,10 +1116,10 @@ export const DashboardBuilderView: React.FC = () => {
         </div>
 
         {/* DOWNLOAD ACTION TOOLBAR (RULE: Download created dashboard & executive report) */}
-        <div className={`pt-3 border-t flex flex-wrap items-center justify-between gap-3 ${isLight ? 'border-slate-200' : 'border-[#262626]'}`}>
-          <div className={`flex items-center gap-2 text-xs font-mono ${isLight ? 'text-slate-600' : 'text-gray-400'}`}>
+        <div className={`pt-3 border-t flex flex-wrap items-center justify-between gap-3 ${isLight ? 'border-slate-200' : 'border-subtle'}`}>
+          <div className={`flex items-center gap-2 text-xs font-mono ${isLight ? 'text-muted' : 'text-secondary'}`}>
             <Layers className={`w-3.5 h-3.5 ${isLight ? 'text-sky-700' : 'text-cyan-400'}`} />
-            <span>Active Visuals: <strong className={isLight ? 'text-slate-900' : 'text-white'}>{customVisuals.length} widgets</strong></span>
+            <span>Active Visuals: <strong className={isLight ? 'text-primary' : 'text-primary'}>{customVisuals.length} widgets</strong></span>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -1128,11 +1127,11 @@ export const DashboardBuilderView: React.FC = () => {
             <button
               onClick={handleDownloadBundleZip}
               disabled={isBundleGenerating}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-700 hover:bg-sky-600 text-white text-xs font-semibold transition-all shadow-md shrink-0 whitespace-nowrap disabled:opacity-50 cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-700 hover:bg-sky-600 text-primary text-xs font-semibold transition-all shadow-md shrink-0 whitespace-nowrap disabled:opacity-50 cursor-pointer"
               title="Download both the created dashboard and executive report in a single ZIP package"
             >
               {isBundleGenerating ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-white shrink-0" />
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-primary shrink-0" />
               ) : (
                 <Package className="w-3.5 h-3.5 stroke-[2.5] shrink-0" />
               )}
@@ -1144,8 +1143,8 @@ export const DashboardBuilderView: React.FC = () => {
               onClick={handleDownloadDashboardJSON}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors ${
                 isLight
-                  ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300'
-                  : 'bg-[#222] hover:bg-[#2a2a2a] text-white border-[#333] hover:border-cyan-400/50'
+                  ? 'bg-elevated hover:bg-input text-primary border-slate-300'
+                  : 'bg-elevated hover:bg-elevated text-primary border-subtle hover:border-cyan-400/50'
               }`}
               title="Download full created dashboard specification & data as JSON"
             >
@@ -1159,8 +1158,8 @@ export const DashboardBuilderView: React.FC = () => {
               disabled={isPdfGenerating}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors disabled:opacity-50 ${
                 isLight
-                  ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300'
-                  : 'bg-[#222] hover:bg-[#2a2a2a] text-white border-[#333] hover:border-cyan-400/50'
+                  ? 'bg-elevated hover:bg-input text-primary border-slate-300'
+                  : 'bg-elevated hover:bg-elevated text-primary border-subtle hover:border-cyan-400/50'
               }`}
               title="Download verified Executive PDF Report"
             >
@@ -1177,14 +1176,16 @@ export const DashboardBuilderView: React.FC = () => {
               onClick={handleDownloadDashboardHTML}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors ${
                 isLight
-                  ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300 hover:border-amber-500/50'
-                  : 'bg-[#222] hover:bg-[#2a2a2a] text-white border-[#333] hover:border-amber-400/50'
+                  ? 'bg-elevated hover:bg-input text-primary border-slate-300 hover:border-amber-500/50'
+                  : 'bg-elevated hover:bg-elevated text-primary border-subtle hover:border-amber-400/50'
               }`}
               title="Export standalone offline HTML dashboard"
             >
               <FileSpreadsheet className="w-3.5 h-3.5 text-amber-500" />
               <span>Offline HTML</span>
             </button>
+
+            <DownloadMenu context="dashboard_builder" label="Download" />
           </div>
         </div>
       </div>
@@ -1445,7 +1446,7 @@ export const DashboardBuilderView: React.FC = () => {
                         secondaryCategoryField: effectiveSecCat,
                         secondaryValueField: effectiveSecVal,
                         aggregation: activeRule.id === 'histogram' ? 'count' : 'sum',
-                        color: '#2DD4BF',
+                        color: 'var(--chart-1)',
                         description: formatChartGuideReason(activeRule.id)
                       };
                       addCustomVisual(newVis);
@@ -1464,7 +1465,7 @@ export const DashboardBuilderView: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
                 {activeRule.id !== 'histogram' && (
                   <label className="space-y-1 block">
-                    <span className={`font-mono text-[11px] block ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                    <span className={`font-mono text-[11px] block ${isLight ? 'text-muted' : 'text-secondary'}`}>
                       {activeRule.id === 'line' ? 'Date / Time Column' : 'Category Column'}
                     </span>
                     <select
@@ -1472,7 +1473,7 @@ export const DashboardBuilderView: React.FC = () => {
                       value={guideCatField}
                       onChange={(e) => setGuideCatField(e.target.value)}
                       className={`w-full p-2 rounded-xl border font-mono text-xs focus:outline-none ${
-                        isLight ? 'bg-white border-slate-200 text-slate-900' : 'bg-slate-900 border-slate-800 text-white'
+                        isLight ? 'bg-white border-slate-200 text-primary' : 'bg-card border-slate-800 text-primary'
                       }`}
                     >
                       {(compatibleCategoryCols.length > 0 ? compatibleCategoryCols : columns).map(c => (
@@ -1486,7 +1487,7 @@ export const DashboardBuilderView: React.FC = () => {
 
                 {(activeRule.id === 'stacked_bar' || activeRule.id === 'heatmap') && (
                   <label className="space-y-1 block">
-                    <span className={`font-mono text-[11px] block ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                    <span className={`font-mono text-[11px] block ${isLight ? 'text-muted' : 'text-secondary'}`}>
                       Second Category / Series Column
                     </span>
                     <select
@@ -1494,7 +1495,7 @@ export const DashboardBuilderView: React.FC = () => {
                       value={guideSecondCatField}
                       onChange={(e) => setGuideSecondCatField(e.target.value)}
                       className={`w-full p-2 rounded-xl border font-mono text-xs focus:outline-none ${
-                        isLight ? 'bg-white border-slate-200 text-slate-900' : 'bg-slate-900 border-slate-800 text-white'
+                        isLight ? 'bg-white border-slate-200 text-primary' : 'bg-card border-slate-800 text-primary'
                       }`}
                     >
                       {(pureCategoryCols.length > 0 && !showAllGuideFields ? pureCategoryCols : columns).map(c => (
@@ -1507,7 +1508,7 @@ export const DashboardBuilderView: React.FC = () => {
                 )}
 
                 <label className="space-y-1 block">
-                  <span className={`font-mono text-[11px] block ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                  <span className={`font-mono text-[11px] block ${isLight ? 'text-muted' : 'text-secondary'}`}>
                     {activeRule.id === 'histogram' ? 'Numeric Column (Binned)' : 'Primary Measure (Numeric)'}
                   </span>
                   <select
@@ -1515,7 +1516,7 @@ export const DashboardBuilderView: React.FC = () => {
                     value={guideValField}
                     onChange={(e) => setGuideValField(e.target.value)}
                     className={`w-full p-2 rounded-xl border font-mono text-xs focus:outline-none ${
-                      isLight ? 'bg-white border-slate-200 text-slate-900' : 'bg-slate-900 border-slate-800 text-[#2DD4BF]'
+                      isLight ? 'bg-white border-slate-200 text-primary' : 'bg-card border-slate-800 text-accent'
                     }`}
                   >
                     {(compatibleNumericCols.length > 0 ? compatibleNumericCols : columns).map(c => (
@@ -1528,7 +1529,7 @@ export const DashboardBuilderView: React.FC = () => {
 
                 {activeRule.id === 'scatter' && (
                   <label className="space-y-1 block">
-                    <span className={`font-mono text-[11px] block ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                    <span className={`font-mono text-[11px] block ${isLight ? 'text-muted' : 'text-secondary'}`}>
                       Second Measure (Numeric Y-Axis)
                     </span>
                     <select
@@ -1536,7 +1537,7 @@ export const DashboardBuilderView: React.FC = () => {
                       value={guideSecondValField}
                       onChange={(e) => setGuideSecondValField(e.target.value)}
                       className={`w-full p-2 rounded-xl border font-mono text-xs focus:outline-none ${
-                        isLight ? 'bg-white border-slate-200 text-slate-900' : 'bg-slate-900 border-slate-800 text-[#818CF8]'
+                        isLight ? 'bg-white border-slate-200 text-primary' : 'bg-card border-slate-800 text-primary'
                       }`}
                     >
                       {(compatibleNumericCols.length > 0 ? compatibleNumericCols : columns).map(c => (
@@ -1679,18 +1680,18 @@ export const DashboardBuilderView: React.FC = () => {
 
       {/* 3. Visuals Canvas Grid */}
       {customVisuals.length === 0 ? (
-        <div className={`${isLight ? 'bg-white border-slate-200 text-slate-900 shadow-sm' : 'bg-[#1c1c1c] border-[#2d2d2d] text-white'} border rounded-2xl p-12 text-center space-y-4`}>
+        <div className={`${isLight ? 'bg-white border-slate-200 text-primary shadow-sm' : 'bg-card border-subtle text-primary'} border rounded-2xl p-12 text-center space-y-4`}>
           <Layers className={`w-12 h-12 mx-auto opacity-70 ${isLight ? 'text-sky-700' : 'text-cyan-400'}`} />
           <div className="space-y-1">
-            <h3 className={`text-base font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>Canvas Ready for Custom Analytics</h3>
-            <p className={`text-xs max-w-md mx-auto ${isLight ? 'text-slate-600' : 'text-gray-400'}`}>
+            <h3 className={`text-base font-bold ${isLight ? 'text-primary' : 'text-primary'}`}>Canvas Ready for Custom Analytics</h3>
+            <p className={`text-xs max-w-md mx-auto ${isLight ? 'text-muted' : 'text-secondary'}`}>
               Add custom visualizations using the button above, or click below to load pre-built executive analytical widgets.
             </p>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <button
               onClick={() => loadPreset('all_charts')}
-              className="px-4 py-2.5 rounded-xl bg-sky-600 text-white font-semibold text-xs hover:bg-sky-500 shadow-lg shadow-sky-600/20 transition-all flex items-center gap-1.5"
+              className="px-4 py-2.5 rounded-xl bg-sky-600 text-primary font-semibold text-xs hover:bg-sky-500 shadow-lg shadow-sky-600/20 transition-all flex items-center gap-1.5"
             >
               <Sparkles className="w-3.5 h-3.5" />
               <span>Load Complete Chart Suite (Scatter, Heatmap & All 14 Chart Types)</span>
@@ -1698,7 +1699,7 @@ export const DashboardBuilderView: React.FC = () => {
             <button
               onClick={() => loadPreset('financial')}
               className={`px-4 py-2.5 rounded-xl font-medium text-xs border transition-all ${
-                isLight ? 'bg-slate-100 text-slate-800 hover:bg-slate-200 border-slate-300' : 'bg-[#222] text-white hover:bg-[#2a2a2a] border-[#333]'
+                isLight ? 'bg-elevated text-primary hover:bg-input border-slate-300' : 'bg-elevated text-primary hover:bg-elevated border-subtle'
               }`}
             >
               Load Financial Essentials
@@ -1735,7 +1736,7 @@ export const DashboardBuilderView: React.FC = () => {
             const shouldCapWithOther = Boolean(flags.chartGuide && (activeType === 'bar' || activeType === 'stacked_bar'));
             const { items, grandTotal } = computeGroupedData(resolvedCat, resolvedVal, vis.aggregation, shouldCapWithOther);
             const maxVal = Math.max(safeMax(items.map(i => Math.abs(i.value)), 1), 1);
-            const primaryColor = vis.color && vis.color !== '#21F1A8' ? vis.color : '#0284C7';
+            const primaryColor = vis.color && vis.color !== 'var(--chart-1)' ? vis.color : 'var(--chart-3)';
             const cardGuideRule = flags.chartGuide ? getChartGuideRule(activeType) : undefined;
 
             return (
@@ -1762,12 +1763,12 @@ export const DashboardBuilderView: React.FC = () => {
                             autoFocus
                             placeholder="Chart Title..."
                             className={`px-2.5 py-1 rounded-lg border font-bold text-sm focus:outline-none w-full max-w-xs ${
-                              isLight ? 'bg-slate-50 border-sky-500 text-slate-900' : 'bg-[#121212] border-cyan-400 text-white'
+                              isLight ? 'bg-elevated border-sky-500 text-primary' : 'bg-app border-cyan-400 text-primary'
                             }`}
                           />
                           <button
                             onClick={() => handleSaveChartTitle(vis.id)}
-                            className="p-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white shrink-0 cursor-pointer shadow-xs"
+                            className="p-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-primary shrink-0 cursor-pointer shadow-xs"
                             title="Save chart title"
                           >
                             <Check className="w-3.5 h-3.5 stroke-[2.5]" />
@@ -1775,7 +1776,7 @@ export const DashboardBuilderView: React.FC = () => {
                           <button
                             onClick={() => setEditingVisId(null)}
                             className={`p-1.5 rounded-lg shrink-0 cursor-pointer ${
-                              isLight ? 'bg-slate-100 text-slate-600 hover:text-slate-900' : 'bg-[#282828] text-gray-400 hover:text-white'
+                              isLight ? 'bg-elevated text-muted hover:text-primary' : 'bg-elevated text-secondary hover:text-primary'
                             }`}
                             title="Cancel"
                           >
@@ -1784,7 +1785,7 @@ export const DashboardBuilderView: React.FC = () => {
                         </div>
                       ) : (
                         <div className="flex items-center gap-2 group/title">
-                          <h3 className={`font-heading text-lg font-bold uppercase truncate ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                          <h3 className={`font-heading text-lg font-bold uppercase truncate ${isLight ? 'text-primary' : 'text-primary'}`}>
                             {vis.title}
                           </h3>
                           <button
@@ -1804,15 +1805,15 @@ export const DashboardBuilderView: React.FC = () => {
                           </button>
                         </div>
                       )}
-                      <div className={`flex flex-wrap items-center gap-1.5 text-[10px] font-mono pt-0.5 ${isLight ? 'text-slate-500' : 'text-gray-400'}`}>
+                      <div className={`flex flex-wrap items-center gap-1.5 text-[10px] font-mono pt-0.5 ${isLight ? 'text-muted' : 'text-secondary'}`}>
                         <span className={`px-1.5 py-0.5 rounded border uppercase ${
-                          isLight ? 'bg-sky-50 text-sky-800 border-sky-200' : 'bg-[#141414] text-cyan-400 border-[#2d2d2d]'
+                          isLight ? 'bg-sky-50 text-sky-800 border-sky-200' : 'bg-card text-cyan-400 border-subtle'
                         }`}>
                           {vis.aggregation}({resolvedVal})
                         </span>
                         <span>by</span>
                         <span className={`px-1.5 py-0.5 rounded border ${
-                          isLight ? 'bg-slate-100 text-slate-800 border-slate-200' : 'bg-[#141414] text-white border-[#2d2d2d]'
+                          isLight ? 'bg-elevated text-primary border-slate-200' : 'bg-card text-primary border-subtle'
                         }`}>
                           {resolvedCat}
                         </span>
@@ -1836,13 +1837,13 @@ export const DashboardBuilderView: React.FC = () => {
                         }))}
                         className={`px-2 py-1 rounded-lg border text-[11px] font-mono font-bold focus:outline-none uppercase cursor-pointer ${
                           isLight
-                            ? 'bg-slate-100 text-sky-800 border-slate-300 hover:border-sky-500'
-                            : 'bg-[#141414] border-[#333] hover:border-cyan-400/50 text-cyan-400'
+                            ? 'bg-elevated text-sky-800 border-slate-300 hover:border-sky-500'
+                            : 'bg-card border-subtle hover:border-cyan-400/50 text-cyan-400'
                         }`}
                         title="Select Chart Representation"
                       >
                         {ALL_CHART_TYPES.map(t => (
-                          <option key={t.type} value={t.type} className={isLight ? 'bg-white text-slate-900' : 'bg-[#181818] text-white'}>
+                          <option key={t.type} value={t.type} className={isLight ? 'bg-white text-primary' : 'bg-card text-primary'}>
                             {t.label}
                           </option>
                         ))}
@@ -1864,8 +1865,8 @@ export const DashboardBuilderView: React.FC = () => {
                         }
                         className={`px-2 py-1 rounded-lg border font-mono text-[10px] font-semibold transition-colors cursor-pointer ${
                           isLight
-                            ? 'text-slate-700 border-slate-200 hover:bg-slate-100'
-                            : 'text-gray-300 border-[#333] hover:text-white hover:bg-[#252525]'
+                            ? 'text-muted border-slate-200 hover:bg-elevated'
+                            : 'text-secondary border-subtle hover:text-primary hover:bg-elevated'
                         }`}
                         title="Export Chart as PNG"
                       >
@@ -1888,19 +1889,36 @@ export const DashboardBuilderView: React.FC = () => {
                         }
                         className={`px-2 py-1 rounded-lg border font-mono text-[10px] font-semibold transition-colors cursor-pointer ${
                           isLight
-                            ? 'text-slate-700 border-slate-200 hover:bg-slate-100'
-                            : 'text-gray-300 border-[#333] hover:text-white hover:bg-[#252525]'
+                            ? 'text-muted border-slate-200 hover:bg-elevated'
+                            : 'text-secondary border-subtle hover:text-primary hover:bg-elevated'
                         }`}
                         title="Export Plotted Chart Data as CSV"
                       >
                         CSV
                       </button>
 
+                      <DownloadMenu
+                        context="chart"
+                        compact
+                        chartPayload={{
+                          chartId: vis.id,
+                          chartTitle: vis.title,
+                          containerSelector: `[data-chart-card-body="${vis.id}"]`,
+                          chartType: activeType,
+                          categoryField: resolvedCat,
+                          secondaryCategoryField: resolvedSecCat,
+                          valueField: resolvedVal,
+                          secondaryValueField: resolvedSecVal,
+                          aggregation: vis.aggregation,
+                          fallbackItems: items,
+                        }}
+                      />
+
                       {/* Remove Visual */}
                       <button
                         onClick={() => removeCustomVisual(vis.id)}
                         className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                          isLight ? 'text-slate-600 hover:text-red-600 hover:bg-red-50' : 'text-gray-400 hover:text-red-400 hover:bg-[#252525]'
+                          isLight ? 'text-muted hover:text-red-600 hover:bg-red-50' : 'text-secondary hover:text-red-400 hover:bg-elevated'
                         }`}
                         title="Remove Visual"
                       >
@@ -1910,9 +1928,9 @@ export const DashboardBuilderView: React.FC = () => {
                   </div>
 
                   {/* Field Selectors */}
-                  <div className={`flex flex-wrap items-center gap-2 pt-1 border-t ${isLight ? 'border-slate-100' : 'border-[#262626]'}`}>
+                  <div className={`flex flex-wrap items-center gap-2 pt-1 border-t ${isLight ? 'border-slate-100' : 'border-subtle'}`}>
                     <div className="flex items-center gap-1 text-[11px]">
-                      <span className={`font-mono ${isLight ? 'text-slate-500' : 'text-gray-500'}`}>Axis:</span>
+                      <span className={`font-mono ${isLight ? 'text-muted' : 'text-muted'}`}>Axis:</span>
                       <select
                         value={resolvedCat}
                         onChange={(e) => setVisualOverrides(prev => ({
@@ -1921,17 +1939,17 @@ export const DashboardBuilderView: React.FC = () => {
                         }))}
                         className={`text-xs px-2 py-0.5 rounded border focus:outline-none ${
                           isLight
-                            ? 'bg-slate-50 text-slate-800 border-slate-200 focus:border-sky-500'
-                            : 'bg-[#141414] text-gray-300 border-[#2e2e2e] focus:border-cyan-400'
+                            ? 'bg-elevated text-primary border-slate-200 focus:border-sky-500'
+                            : 'bg-card text-secondary border-subtle focus:border-cyan-400'
                         }`}
                       >
-                        {columns.map(c => <option key={c.name} value={c.name} className={isLight ? 'bg-white text-slate-900' : 'bg-[#181818] text-white'}>{c.name}</option>)}
+                        {columns.map(c => <option key={c.name} value={c.name} className={isLight ? 'bg-white text-primary' : 'bg-card text-primary'}>{c.name}</option>)}
                       </select>
                     </div>
 
                     {(activeType === 'stacked_bar' || activeType === 'heatmap') && (
                       <div className="flex items-center gap-1 text-[11px]">
-                        <span className={`font-mono ${isLight ? 'text-slate-500' : 'text-gray-500'}`}>Split:</span>
+                        <span className={`font-mono ${isLight ? 'text-muted' : 'text-muted'}`}>Split:</span>
                         <select
                           value={resolvedSecCat}
                           onChange={(e) => setVisualOverrides(prev => ({
@@ -1940,17 +1958,17 @@ export const DashboardBuilderView: React.FC = () => {
                           }))}
                           className={`text-xs px-2 py-0.5 rounded border focus:outline-none ${
                             isLight
-                              ? 'bg-slate-50 text-slate-800 border-slate-200 focus:border-sky-500'
-                              : 'bg-[#141414] text-gray-300 border-[#2e2e2e] focus:border-cyan-400'
+                              ? 'bg-elevated text-primary border-slate-200 focus:border-sky-500'
+                              : 'bg-card text-secondary border-subtle focus:border-cyan-400'
                           }`}
                         >
-                          {columns.map(c => <option key={c.name} value={c.name} className={isLight ? 'bg-white text-slate-900' : 'bg-[#181818] text-white'}>{c.name}</option>)}
+                          {columns.map(c => <option key={c.name} value={c.name} className={isLight ? 'bg-white text-primary' : 'bg-card text-primary'}>{c.name}</option>)}
                         </select>
                       </div>
                     )}
 
                     <div className="flex items-center gap-1 text-[11px]">
-                      <span className={`font-mono ${isLight ? 'text-slate-500' : 'text-gray-500'}`}>Metric:</span>
+                      <span className={`font-mono ${isLight ? 'text-muted' : 'text-muted'}`}>Metric:</span>
                       <select
                         value={resolvedVal}
                         onChange={(e) => setVisualOverrides(prev => ({
@@ -1960,16 +1978,16 @@ export const DashboardBuilderView: React.FC = () => {
                         className={`text-xs font-mono px-2 py-0.5 rounded border focus:outline-none ${
                           isLight
                             ? 'bg-sky-50 text-sky-800 border-sky-200 focus:border-sky-500'
-                            : 'bg-[#141414] text-cyan-400 border-[#2e2e2e] focus:border-cyan-400'
+                            : 'bg-card text-cyan-400 border-subtle focus:border-cyan-400'
                         }`}
                       >
-                        {numericCols.map(c => <option key={c.name} value={c.name} className={isLight ? 'bg-white text-slate-900' : 'bg-[#181818] text-white'}>{c.name}</option>)}
+                        {numericCols.map(c => <option key={c.name} value={c.name} className={isLight ? 'bg-white text-primary' : 'bg-card text-primary'}>{c.name}</option>)}
                       </select>
                     </div>
 
                     {activeType === 'scatter' && (
                       <div className="flex items-center gap-1 text-[11px]">
-                        <span className={`font-mono ${isLight ? 'text-slate-500' : 'text-gray-500'}`}>Y-Metric:</span>
+                        <span className={`font-mono ${isLight ? 'text-muted' : 'text-muted'}`}>Y-Metric:</span>
                         <select
                           value={resolvedSecVal}
                           onChange={(e) => setVisualOverrides(prev => ({
@@ -1979,10 +1997,10 @@ export const DashboardBuilderView: React.FC = () => {
                           className={`text-xs font-mono px-2 py-0.5 rounded border focus:outline-none ${
                             isLight
                               ? 'bg-sky-50 text-sky-800 border-sky-200 focus:border-sky-500'
-                              : 'bg-[#141414] text-[#818CF8] border-[#2e2e2e] focus:border-[#818CF8]'
+                              : 'bg-card text-primary border-subtle focus:border-subtle'
                           }`}
                         >
-                          {numericCols.map(c => <option key={c.name} value={c.name} className={isLight ? 'bg-white text-slate-900' : 'bg-[#181818] text-white'}>{c.name}</option>)}
+                          {numericCols.map(c => <option key={c.name} value={c.name} className={isLight ? 'bg-white text-primary' : 'bg-card text-primary'}>{c.name}</option>)}
                         </select>
                       </div>
                     )}
@@ -2052,7 +2070,7 @@ export const DashboardBuilderView: React.FC = () => {
                         {topRec && topRec.type !== activeType && (
                           <div className={`p-2 rounded-xl text-xs flex items-center justify-between gap-2 border transition-all ${
                             isLight 
-                              ? 'bg-sky-50/90 border-sky-200 text-slate-800' 
+                              ? 'bg-sky-50/90 border-sky-200 text-primary' 
                               : 'bg-sky-950/40 border-sky-800/60 text-sky-200'
                           }`}>
                             <div className="flex items-center gap-1.5 min-w-0">
@@ -2060,7 +2078,7 @@ export const DashboardBuilderView: React.FC = () => {
                               <span className="font-bold text-[11px] shrink-0 text-sky-700 dark:text-cyan-400">
                                 {flags.chartGuide ? 'Recommended:' : 'AI Suggestion:'}
                               </span>
-                              <span className="truncate text-[11px] text-slate-600 dark:text-slate-300">
+                              <span className="truncate text-[11px] text-muted dark:text-secondary">
                                 {topRec.label} ({topRec.score}% fit) — {topRec.reason}
                               </span>
                             </div>
@@ -2080,7 +2098,7 @@ export const DashboardBuilderView: React.FC = () => {
                                   updateCustomVisual(vis.id, { title: topRec.suggestedTitle });
                                 }
                               }}
-                              className="px-2.5 py-1 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold text-[11px] whitespace-nowrap shrink-0 transition-colors shadow-2xs cursor-pointer flex items-center gap-1"
+                              className="px-2.5 py-1 rounded-lg bg-sky-600 hover:bg-sky-500 text-primary font-bold text-[11px] whitespace-nowrap shrink-0 transition-colors shadow-2xs cursor-pointer flex items-center gap-1"
                               title={`Switch visualization to ${topRec.label}`}
                             >
                               <Sparkles className="w-3 h-3" />
@@ -2134,25 +2152,25 @@ export const DashboardBuilderView: React.FC = () => {
                               filterValue: item.category,
                               sourceContext: 'chart_bar'
                             })}
-                            className="space-y-1 group cursor-pointer p-1 -m-1 rounded-lg hover:bg-[#141414] transition-colors"
+                            className="space-y-1 group cursor-pointer p-1 -m-1 rounded-lg hover:bg-card transition-colors"
                             title="Click bar to drill-through to granular records"
                           >
                             <div className="flex justify-between items-center text-xs">
-                              <span className="text-gray-300 font-medium truncate max-w-[200px] group-hover:text-cyan-400 transition-colors flex items-center gap-1">
+                              <span className="text-secondary font-medium truncate max-w-[200px] group-hover:text-cyan-400 transition-colors flex items-center gap-1">
                                 {item.category}
                                 <span className="opacity-0 group-hover:opacity-100 text-[10px] text-cyan-400 font-mono">↗</span>
                               </span>
                               <div className="flex items-center gap-2 font-mono">
-                                <span className="text-white font-semibold">{item.value.toLocaleString()}</span>
-                                <span className="text-[10px] text-gray-500">({item.share}%)</span>
+                                <span className="text-primary font-semibold">{item.value.toLocaleString()}</span>
+                                <span className="text-[10px] text-muted">({item.share}%)</span>
                               </div>
                             </div>
-                            <div className="w-full bg-[#141414] h-3 rounded-full overflow-hidden border border-[#282828] p-0.5">
+                            <div className="w-full bg-card h-3 rounded-full overflow-hidden border border-subtle p-0.5">
                               <div 
                                 className="h-full rounded-full transition-all duration-500 group-hover:brightness-125"
                                 style={{ 
                                   width: `${pct}%`,
-                                  backgroundColor: idx === 0 ? primaryColor : idx === 1 ? '#00d8f6' : idx === 2 ? '#f59e0b' : '#6b7280'
+                                  backgroundColor: idx === 0 ? primaryColor : idx === 1 ? 'var(--chart-3)' : idx === 2 ? 'var(--chart-4)' : 'var(--text-muted)'
                                 }}
                               />
                             </div>
@@ -2183,7 +2201,7 @@ export const DashboardBuilderView: React.FC = () => {
                                 y1={20 + 150 * (1 - pct)} 
                                 x2="480" 
                                 y2={20 + 150 * (1 - pct)} 
-                                stroke="#282828" 
+                                stroke="var(--border-subtle)" 
                                 strokeDasharray="3,3" 
                               />
                             ))}
@@ -2202,7 +2220,7 @@ export const DashboardBuilderView: React.FC = () => {
                                   <path d={areaD} fill={`url(#grad-${vis.id})`} />
                                   <path d={pathD} fill="none" stroke={primaryColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                                   {coords.map((c, i) => (
-                                    <circle key={i} cx={c.x} cy={c.y} r="4" fill="#171717" stroke={primaryColor} strokeWidth="2" />
+                                    <circle key={i} cx={c.x} cy={c.y} r="4" fill="var(--bg-card)" stroke={primaryColor} strokeWidth="2" />
                                   ))}
                                 </>
                               );
@@ -2210,14 +2228,14 @@ export const DashboardBuilderView: React.FC = () => {
                           </svg>
 
                           {/* X-axis Labels */}
-                          <div className="flex justify-between text-[10px] text-gray-400 font-mono pt-1">
+                          <div className="flex justify-between text-[10px] text-secondary font-mono pt-1">
                             <span className="truncate max-w-[100px]">{items[0]?.category}</span>
                             <span className="truncate max-w-[100px]">{items[Math.floor(items.length / 2)]?.category}</span>
                             <span className="truncate max-w-[100px]">{items[items.length - 1]?.category}</span>
                           </div>
                         </div>
                       ) : (
-                        <div className="p-8 text-center text-xs text-gray-500">Need at least 2 points to render line chart.</div>
+                        <div className="p-8 text-center text-xs text-muted">Need at least 2 points to render line chart.</div>
                       )}
                     </div>
                   )}
@@ -2229,7 +2247,7 @@ export const DashboardBuilderView: React.FC = () => {
                         <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
                           {(() => {
                             let cumulativePct = 0;
-                            const colors = ['#0284C7', '#00d8f6', '#f59e0b', '#ec4899', '#a855f7', '#64748b'];
+                            const colors = ['var(--chart-3)', 'var(--chart-3)', 'var(--chart-4)', 'var(--chart-5)', 'var(--chart-7)', 'var(--text-muted)'];
                             return items.slice(0, 6).map((item, idx) => {
                               const strokeDasharray = `${item.share * 2.512} 251.2`;
                               const strokeDashoffset = -cumulativePct * 2.512;
@@ -2252,15 +2270,15 @@ export const DashboardBuilderView: React.FC = () => {
                           })()}
                         </svg>
                         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                          <span className={`text-[10px] uppercase font-mono ${isLight ? 'text-slate-500' : 'text-gray-400'}`}>Total</span>
-                          <span className={`text-xs font-bold font-mono ${isLight ? 'text-slate-900' : 'text-white'}`}>{grandTotal.toLocaleString()}</span>
+                          <span className={`text-[10px] uppercase font-mono ${isLight ? 'text-muted' : 'text-secondary'}`}>Total</span>
+                          <span className={`text-xs font-bold font-mono ${isLight ? 'text-primary' : 'text-primary'}`}>{grandTotal.toLocaleString()}</span>
                         </div>
                       </div>
 
                       {/* Legend */}
                       <div className="space-y-1.5 text-xs w-full max-w-[200px]">
                         {items.slice(0, 5).map((item, idx) => {
-                          const colors = ['#0284C7', '#00d8f6', '#f59e0b', '#ec4899', '#a855f7', '#64748b'];
+                          const colors = ['var(--chart-3)', 'var(--chart-3)', 'var(--chart-4)', 'var(--chart-5)', 'var(--chart-7)', 'var(--text-muted)'];
                           return (
                             <div 
                               key={idx} 
@@ -2272,18 +2290,18 @@ export const DashboardBuilderView: React.FC = () => {
                                 sourceContext: 'donut_slice'
                               })}
                               className={`flex items-center justify-between cursor-pointer p-1 -m-1 rounded group transition-colors ${
-                                isLight ? 'hover:bg-slate-100' : 'hover:bg-[#1f1f1f]'
+                                isLight ? 'hover:bg-elevated' : 'hover:bg-card'
                               }`}
                               title="Click to drill-through"
                             >
                               <div className="flex items-center gap-1.5 truncate">
                                 <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: colors[idx % colors.length] }} />
                                 <span className={`transition-colors truncate ${
-                                  isLight ? 'text-slate-700 group-hover:text-sky-700' : 'text-gray-300 group-hover:text-cyan-400'
+                                  isLight ? 'text-muted group-hover:text-sky-700' : 'text-secondary group-hover:text-cyan-400'
                                 }`}>{item.category}</span>
                               </div>
                               <span className={`font-mono text-[11px] ${
-                                isLight ? 'text-slate-500 group-hover:text-slate-900' : 'text-gray-400 group-hover:text-white'
+                                isLight ? 'text-muted group-hover:text-primary' : 'text-secondary group-hover:text-primary'
                               }`}>{item.share}%</span>
                             </div>
                           );
@@ -2307,18 +2325,18 @@ export const DashboardBuilderView: React.FC = () => {
                               filterValue: item.category,
                               sourceContext: 'chart_bar'
                             })}
-                            className="space-y-1 group cursor-pointer p-1 -m-1 rounded-lg hover:bg-[#141414] transition-colors"
+                            className="space-y-1 group cursor-pointer p-1 -m-1 rounded-lg hover:bg-card transition-colors"
                           >
                             <div className="flex justify-between items-center text-xs">
-                              <span className="text-gray-300 font-medium truncate max-w-[200px] group-hover:text-cyan-400 transition-colors">
+                              <span className="text-secondary font-medium truncate max-w-[200px] group-hover:text-cyan-400 transition-colors">
                                 {item.category}
                               </span>
                               <div className="flex items-center gap-2 font-mono">
-                                <span className="text-white font-semibold">{item.value.toLocaleString()}</span>
-                                <span className="text-[10px] text-gray-500">({item.share}%)</span>
+                                <span className="text-primary font-semibold">{item.value.toLocaleString()}</span>
+                                <span className="text-[10px] text-muted">({item.share}%)</span>
                               </div>
                             </div>
-                            <div className="w-full bg-[#141414] h-3 rounded-full overflow-hidden border border-[#282828] p-0.5">
+                            <div className="w-full bg-card h-3 rounded-full overflow-hidden border border-subtle p-0.5">
                               <div 
                                 className="h-full rounded-full transition-all duration-500 group-hover:brightness-125"
                                 style={{ 
@@ -2352,7 +2370,7 @@ export const DashboardBuilderView: React.FC = () => {
                                 y1={20 + 150 * (1 - pct)} 
                                 x2="480" 
                                 y2={20 + 150 * (1 - pct)} 
-                                stroke="#282828" 
+                                stroke="var(--border-subtle)" 
                                 strokeDasharray="3,3" 
                               />
                             ))}
@@ -2368,19 +2386,19 @@ export const DashboardBuilderView: React.FC = () => {
                                   <path d={areaD} fill={`url(#grad-area-${vis.id})`} />
                                   <path d={pathD} fill="none" stroke={primaryColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                                   {coords.map((c, i) => (
-                                    <circle key={i} cx={c.x} cy={c.y} r="4" fill="#171717" stroke={primaryColor} strokeWidth="2" />
+                                    <circle key={i} cx={c.x} cy={c.y} r="4" fill="var(--bg-card)" stroke={primaryColor} strokeWidth="2" />
                                   ))}
                                 </>
                               );
                             })()}
                           </svg>
-                          <div className="flex justify-between text-[10px] text-gray-400 font-mono pt-1">
+                          <div className="flex justify-between text-[10px] text-secondary font-mono pt-1">
                             <span className="truncate max-w-[100px]">{items[0]?.category}</span>
                             <span className="truncate max-w-[100px]">{items[items.length - 1]?.category}</span>
                           </div>
                         </div>
                       ) : (
-                        <div className="p-8 text-center text-xs text-gray-500">Need at least 2 points to render area chart.</div>
+                        <div className="p-8 text-center text-xs text-muted">Need at least 2 points to render area chart.</div>
                       )}
                     </div>
                   )}
@@ -2392,7 +2410,7 @@ export const DashboardBuilderView: React.FC = () => {
                         <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
                           {(() => {
                             let cumulativePct = 0;
-                            const colors = ['#0284C7', '#00d8f6', '#f59e0b', '#ec4899', '#a855f7', '#64748b'];
+                            const colors = ['var(--chart-3)', 'var(--chart-3)', 'var(--chart-4)', 'var(--chart-5)', 'var(--chart-7)', 'var(--text-muted)'];
                             return items.slice(0, 6).map((item, idx) => {
                               const strokeDasharray = `${item.share * 1.57} 157`;
                               const strokeDashoffset = -cumulativePct * 1.57;
@@ -2417,14 +2435,14 @@ export const DashboardBuilderView: React.FC = () => {
                       </div>
                       <div className="space-y-1.5 text-xs w-full max-w-[200px] font-mono">
                         {items.slice(0, 5).map((it, idx) => {
-                          const colors = ['#0284C7', '#00d8f6', '#f59e0b', '#ec4899', '#a855f7', '#64748b'];
+                          const colors = ['var(--chart-3)', 'var(--chart-3)', 'var(--chart-4)', 'var(--chart-5)', 'var(--chart-7)', 'var(--text-muted)'];
                           return (
                             <div key={idx} className="flex justify-between items-center text-[11px]">
-                              <span className="flex items-center gap-1.5 text-gray-300 truncate max-w-[120px]">
+                              <span className="flex items-center gap-1.5 text-secondary truncate max-w-[120px]">
                                 <span className="w-2 h-2 rounded-full" style={{ backgroundColor: colors[idx % colors.length] }}></span>
                                 {it.category}
                               </span>
-                              <span className="text-white font-bold">{it.share}%</span>
+                              <span className="text-primary font-bold">{it.share}%</span>
                             </div>
                           );
                         })}
@@ -2438,9 +2456,9 @@ export const DashboardBuilderView: React.FC = () => {
                       <div className="relative w-full">
                         <svg viewBox="0 0 460 180" className="w-full h-44 overflow-visible select-none">
                           {[0, 0.5, 1].map((pct, i) => (
-                            <line key={i} x1="35" y1={15 + 130 * (1 - pct)} x2="445" y2={15 + 130 * (1 - pct)} stroke="#262626" strokeDasharray="3,3" />
+                            <line key={i} x1="35" y1={15 + 130 * (1 - pct)} x2="445" y2={15 + 130 * (1 - pct)} stroke="var(--border-subtle)" strokeDasharray="3,3" />
                           ))}
-                          <line x1="35" y1="135" x2="445" y2="25" stroke="#fbbf24" strokeWidth="1.5" strokeDasharray="4,4" opacity="0.7" />
+                          <line x1="35" y1="135" x2="445" y2="25" stroke="var(--chart-4)" strokeWidth="1.5" strokeDasharray="4,4" opacity="0.7" />
                           {items.map((it, idx) => {
                             const cx = 45 + (idx / Math.max(1, items.length - 1)) * 390;
                             const cy = 145 - (it.value / maxVal) * 125;
@@ -2456,15 +2474,15 @@ export const DashboardBuilderView: React.FC = () => {
                                 })} 
                                 className="cursor-pointer group"
                               >
-                                <circle cx={cx} cy={cy} r="6" fill="#141414" stroke="#0284C7" strokeWidth="2" className="group-hover:scale-125 transition-transform" />
-                                <text x={cx} y={cy - 9} textAnchor="middle" fill="#ccc" fontSize="9" fontFamily="monospace" className="opacity-0 group-hover:opacity-100">
+                                <circle cx={cx} cy={cy} r="6" fill="var(--bg-card)" stroke="var(--chart-3)" strokeWidth="2" className="group-hover:scale-125 transition-transform" />
+                                <text x={cx} y={cy - 9} textAnchor="middle" fill="var(--text-secondary)" fontSize="9" fontFamily="monospace" className="opacity-0 group-hover:opacity-100">
                                   {it.value.toLocaleString()}
                                 </text>
                               </g>
                             );
                           })}
                         </svg>
-                        <div className="flex justify-between text-[10px] text-gray-400 font-mono pt-1">
+                        <div className="flex justify-between text-[10px] text-secondary font-mono pt-1">
                           <span className="text-amber-400">Linear Trendline Fit</span>
                           <span className="text-cyan-400">Click coordinate to drilldown</span>
                         </div>
@@ -2477,7 +2495,7 @@ export const DashboardBuilderView: React.FC = () => {
                     const boxplotData = computeBoxplotSummary(activeRows, resolvedCat, resolvedVal);
                     if (boxplotData.length === 0) {
                       return (
-                        <div className="p-8 text-center text-xs text-slate-500">
+                        <div className="p-8 text-center text-xs text-muted">
                           Insufficient numerical variance to compute quartile distributions.
                         </div>
                       );
@@ -2502,8 +2520,8 @@ export const DashboardBuilderView: React.FC = () => {
                               const valLabel = globalMin + range * pct;
                               return (
                                 <g key={idx}>
-                                  <line x1="35" y1={yPos} x2="465" y2={yPos} stroke={isLight ? '#e2e8f0' : '#282828'} strokeDasharray="3,3" />
-                                  <text x="30" y={yPos + 3} textAnchor="end" fill={isLight ? '#64748b' : '#6b7280'} fontSize="9" fontFamily="monospace">
+                                  <line x1="35" y1={yPos} x2="465" y2={yPos} stroke={isLight ? 'var(--text-primary)' : 'var(--border-subtle)'} strokeDasharray="3,3" />
+                                  <text x="30" y={yPos + 3} textAnchor="end" fill={isLight ? 'var(--text-muted)' : 'var(--text-muted)'} fontSize="9" fontFamily="monospace">
                                     {valLabel >= 1000 ? `${(valLabel / 1000).toFixed(1)}k` : Math.round(valLabel)}
                                   </text>
                                 </g>
@@ -2559,7 +2577,7 @@ export const DashboardBuilderView: React.FC = () => {
                                     y1={yMedian} 
                                     x2={centerX + boxWidth / 2} 
                                     y2={yMedian} 
-                                    stroke={isLight ? '#0284c7' : '#38bdf8'} 
+                                    stroke={isLight ? 'var(--chart-3)' : 'var(--chart-3)'} 
                                     strokeWidth="2.5" 
                                     strokeLinecap="round" 
                                   />
@@ -2567,7 +2585,7 @@ export const DashboardBuilderView: React.FC = () => {
                                   {/* Mean Diamond */}
                                   <polygon 
                                     points={`${centerX},${yMean - 3} ${centerX + 3},${yMean} ${centerX},${yMean + 3} ${centerX - 3},${yMean}`}
-                                    fill="#f59e0b"
+                                    fill="var(--chart-4)"
                                   />
 
                                   {/* Outliers */}
@@ -2579,8 +2597,8 @@ export const DashboardBuilderView: React.FC = () => {
                                         cx={centerX} 
                                         cy={yOutlier} 
                                         r="3.5" 
-                                        fill="#ef4444" 
-                                        stroke="#fff" 
+                                        fill="var(--danger)" 
+                                        stroke="var(--text-primary)" 
                                         strokeWidth="1"
                                       />
                                     );
@@ -2591,7 +2609,7 @@ export const DashboardBuilderView: React.FC = () => {
                                     x={centerX} 
                                     y="172" 
                                     textAnchor="middle" 
-                                    fill={isLight ? '#1e293b' : '#cbd5e1'} 
+                                    fill={isLight ? 'var(--bg-card)' : 'var(--text-secondary)'} 
                                     fontSize="10" 
                                     fontWeight="600"
                                     fontFamily="sans-serif"
@@ -2606,7 +2624,7 @@ export const DashboardBuilderView: React.FC = () => {
 
                         {/* Boxplot Metrics Ribbon */}
                         <div className={`p-2 rounded-xl border text-[11px] font-mono grid grid-cols-2 sm:grid-cols-4 gap-2 ${
-                          isLight ? 'bg-slate-50 border-slate-200 text-slate-700' : 'bg-[#151515] border-[#292929] text-gray-300'
+                          isLight ? 'bg-elevated border-slate-200 text-muted' : 'bg-card border-teal-500/40 text-secondary'
                         }`}>
                           <div className="flex items-center gap-1.5 truncate">
                             <span className="w-2 h-2 rounded-full bg-sky-500 shrink-0"></span>
@@ -2643,19 +2661,19 @@ export const DashboardBuilderView: React.FC = () => {
                                 filterValue: it.category,
                                 sourceContext: 'table_row'
                               })}
-                              className="p-2 rounded-lg border border-[#282828] cursor-pointer hover:border-white transition-all flex flex-col justify-between"
-                              style={{ backgroundColor: `rgba(2, 132, 199, ${intensity})` }}
+                              className="p-2 rounded-lg border border-subtle cursor-pointer hover:border-white transition-all flex flex-col justify-between"
+                              style={{ backgroundColor: `color-mix(in srgb, var(--border-strong) 25%, transparent)` }}
                               title={`${it.category}: ${it.value.toLocaleString()}`}
                             >
-                              <span className="text-[10px] text-white font-extrabold truncate">{it.category}</span>
-                              <span className="text-[9px] text-white font-bold font-mono">
+                              <span className="text-[10px] text-primary font-extrabold truncate">{it.category}</span>
+                              <span className="text-[9px] text-primary font-bold font-mono">
                                 {it.value >= 1000 ? `${(it.value / 1000).toFixed(1)}k` : it.value}
                               </span>
                             </div>
                           );
                         })}
                       </div>
-                      <div className="flex justify-between text-[10px] text-gray-400 font-mono pt-1">
+                      <div className="flex justify-between text-[10px] text-secondary font-mono pt-1">
                         <span>Intensity Scale: 0 to {maxVal.toLocaleString()}</span>
                         <span className="text-cyan-400">2D Heat Density Grid</span>
                       </div>
@@ -2672,7 +2690,7 @@ export const DashboardBuilderView: React.FC = () => {
                             const r = lvl * 75;
                             return `${100 + r * Math.cos(angle)},${100 + r * Math.sin(angle)}`;
                           }).join(' ');
-                          return <polygon key={lIdx} points={pts} fill="none" stroke="#333" strokeWidth="1" strokeDasharray="2,2" />;
+                          return <polygon key={lIdx} points={pts} fill="none" stroke="var(--border-subtle)" strokeWidth="1" strokeDasharray="2,2" />;
                         })}
                         {(() => {
                           const polyPts = items.slice(0, 6).map((it, i) => {
@@ -2680,7 +2698,7 @@ export const DashboardBuilderView: React.FC = () => {
                             const r = (it.value / maxVal) * 75;
                             return `${100 + r * Math.cos(angle)},${100 + r * Math.sin(angle)}`;
                           }).join(' ');
-                          return <polygon points={polyPts} fill="#0284C7" fillOpacity="0.25" stroke="#0284C7" strokeWidth="2" />;
+                          return <polygon points={polyPts} fill="var(--chart-3)" fillOpacity="0.25" stroke="var(--chart-3)" strokeWidth="2" />;
                         })()}
                       </svg>
                     </div>
@@ -2709,7 +2727,7 @@ export const DashboardBuilderView: React.FC = () => {
                             </div>
                             <div className="flex justify-center w-full">
                               <div 
-                                className="h-6 rounded-md bg-sky-600 text-white text-[10px] font-bold font-mono flex items-center justify-center transition-all group-hover:brightness-125" 
+                                className="h-6 rounded-md bg-sky-600 text-primary text-[10px] font-bold font-mono flex items-center justify-center transition-all group-hover:brightness-125" 
                                 style={{ width: `${w}%` }}
                               >
                                 {it.value.toLocaleString()}
@@ -2757,7 +2775,7 @@ export const DashboardBuilderView: React.FC = () => {
                   {activeType === 'treemap' && (
                     <div className="w-full grid grid-cols-2 sm:grid-cols-4 gap-2 font-mono">
                       {items.slice(0, 6).map((it, idx) => {
-                        const colors = ['#0284C7', '#0F766E', '#4F46E5', '#D97706', '#E11D48', '#7C3AED'];
+                        const colors = ['var(--chart-3)', 'var(--chart-1)', 'var(--chart-2)', 'var(--chart-4)', 'var(--danger)', 'var(--chart-7)'];
                         const c = colors[idx % colors.length];
                         const isBig = idx === 0 || idx === 1;
                         return (
@@ -2879,10 +2897,10 @@ export const DashboardBuilderView: React.FC = () => {
 
                 {/* Accessible Text Summary & Footer Insight */}
                 <div className={`pt-2 border-t space-y-1 text-[10px] font-mono ${
-                  isLight ? 'border-slate-100 text-slate-500' : 'border-[#262626] text-gray-400'
+                  isLight ? 'border-slate-100 text-muted' : 'border-subtle text-secondary'
                 }`}>
                   {flags.chartGuide && items.length > 0 && activeType !== 'histogram' && activeType !== 'stacked_bar' && (
-                    <p className={isLight ? 'text-slate-600' : 'text-slate-400'}>
+                    <p className={isLight ? 'text-muted' : 'text-secondary'}>
                       Summary: {items[0]?.category} leads with {items[0]?.value.toLocaleString()} ({items[0]?.share}% share) across {items.length} displayed groups.
                     </p>
                   )}
@@ -2900,15 +2918,15 @@ export const DashboardBuilderView: React.FC = () => {
       {/* 4. Add Visual Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fadeIn">
-          <div className={`${isLight ? 'bg-white border-slate-200 text-slate-900 shadow-2xl' : 'bg-[#1c1c1c] border-[#333] text-white'} border rounded-3xl p-6 max-w-lg w-full space-y-5 animate-scaleUp`}>
-            <div className={`flex items-center justify-between border-b pb-3 ${isLight ? 'border-slate-200' : 'border-[#2d2d2d]'}`}>
-              <h3 className={`font-heading text-xl font-bold uppercase flex items-center gap-2 ${isLight ? 'text-slate-900' : 'text-white'}`}>
+          <div className={`${isLight ? 'bg-white border-slate-200 text-primary shadow-2xl' : 'bg-card border-subtle text-primary'} border rounded-3xl p-6 max-w-lg w-full space-y-5 animate-scaleUp`}>
+            <div className={`flex items-center justify-between border-b pb-3 ${isLight ? 'border-slate-200' : 'border-subtle'}`}>
+              <h3 className={`font-heading text-xl font-bold uppercase flex items-center gap-2 ${isLight ? 'text-primary' : 'text-primary'}`}>
                 <Plus className="w-5 h-5 text-sky-500" />
                 COMPOSE NEW VISUAL
               </h3>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className={`p-1 rounded-lg transition-colors ${isLight ? 'text-slate-400 hover:text-slate-900' : 'text-gray-400 hover:text-white'}`}
+                className={`p-1 rounded-lg transition-colors ${isLight ? 'text-secondary hover:text-primary' : 'text-secondary hover:text-primary'}`}
               >
                 ✕
               </button>
@@ -2916,7 +2934,7 @@ export const DashboardBuilderView: React.FC = () => {
 
             <form onSubmit={handleCreateVisual} className="space-y-4 text-xs">
               <div className="space-y-1.5">
-                <label className={isLight ? 'text-slate-700 font-semibold' : 'text-gray-300 font-medium'}>Visualization Title</label>
+                <label className={isLight ? 'text-muted font-semibold' : 'text-secondary font-medium'}>Visualization Title</label>
                 <input
                   type="text"
                   placeholder="e.g. Regional Sales Volume Breakdown"
@@ -2924,8 +2942,8 @@ export const DashboardBuilderView: React.FC = () => {
                   onChange={(e) => setTitle(e.target.value)}
                   className={`w-full p-2.5 rounded-xl border focus:outline-none ${
                     isLight
-                      ? 'bg-slate-50 text-slate-900 border-slate-200 focus:border-sky-500'
-                      : 'bg-[#141414] text-white border-[#333] focus:border-cyan-400'
+                      ? 'bg-elevated text-primary border-slate-200 focus:border-sky-500'
+                      : 'bg-card text-primary border-subtle focus:border-cyan-400'
                   }`}
                   required
                 />
@@ -2933,14 +2951,14 @@ export const DashboardBuilderView: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <label className={isLight ? 'text-slate-700 font-semibold' : 'text-gray-300 font-medium'}>Chart Representation</label>
+                  <label className={isLight ? 'text-muted font-semibold' : 'text-secondary font-medium'}>Chart Representation</label>
                   <select
                     value={type}
                     onChange={(e) => setType(e.target.value as any)}
                     className={`w-full p-2.5 rounded-xl border focus:outline-none ${
                       isLight
-                        ? 'bg-slate-50 text-slate-900 border-slate-200 focus:border-sky-500'
-                        : 'bg-[#141414] text-white border-[#333] focus:border-cyan-400'
+                        ? 'bg-elevated text-primary border-slate-200 focus:border-sky-500'
+                        : 'bg-card text-primary border-subtle focus:border-cyan-400'
                     }`}
                   >
                     <option value="bar">Vertical Bar Chart (Ranking & Comparison)</option>
@@ -2968,14 +2986,14 @@ export const DashboardBuilderView: React.FC = () => {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className={isLight ? 'text-slate-700 font-semibold' : 'text-gray-300 font-medium'}>Aggregation Function</label>
+                  <label className={isLight ? 'text-muted font-semibold' : 'text-secondary font-medium'}>Aggregation Function</label>
                   <select
                     value={aggregation}
                     onChange={(e) => setAggregation(e.target.value as any)}
                     className={`w-full p-2.5 rounded-xl border focus:outline-none ${
                       isLight
-                        ? 'bg-slate-50 text-slate-900 border-slate-200 focus:border-sky-500'
-                        : 'bg-[#141414] text-white border-[#333] focus:border-cyan-400'
+                        ? 'bg-elevated text-primary border-slate-200 focus:border-sky-500'
+                        : 'bg-card text-primary border-subtle focus:border-cyan-400'
                     }`}
                   >
                     <option value="sum">SUM (Total Aggregate)</option>
@@ -2989,14 +3007,14 @@ export const DashboardBuilderView: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <label className={isLight ? 'text-slate-700 font-semibold' : 'text-gray-300 font-medium'}>Dimension (Category Axis)</label>
+                  <label className={isLight ? 'text-muted font-semibold' : 'text-secondary font-medium'}>Dimension (Category Axis)</label>
                   <select
                     value={catField}
                     onChange={(e) => setCatField(e.target.value)}
                     className={`w-full p-2.5 rounded-xl border focus:outline-none ${
                       isLight
-                        ? 'bg-slate-50 text-slate-900 border-slate-200 focus:border-sky-500'
-                        : 'bg-[#141414] text-white border-[#333] focus:border-cyan-400'
+                        ? 'bg-elevated text-primary border-slate-200 focus:border-sky-500'
+                        : 'bg-card text-primary border-subtle focus:border-cyan-400'
                     }`}
                   >
                     {columns.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
@@ -3004,14 +3022,14 @@ export const DashboardBuilderView: React.FC = () => {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className={isLight ? 'text-slate-700 font-semibold' : 'text-gray-300 font-medium'}>Metric (Numerical Value)</label>
+                  <label className={isLight ? 'text-muted font-semibold' : 'text-secondary font-medium'}>Metric (Numerical Value)</label>
                   <select
                     value={valField}
                     onChange={(e) => setValField(e.target.value)}
                     className={`w-full font-mono p-2.5 rounded-xl border focus:outline-none ${
                       isLight
                         ? 'bg-sky-50 text-sky-800 border-sky-200 focus:border-sky-500'
-                        : 'bg-[#141414] text-cyan-400 border-[#333] focus:border-cyan-400'
+                        : 'bg-card text-cyan-400 border-subtle focus:border-cyan-400'
                     }`}
                   >
                     {numericCols.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
@@ -3052,7 +3070,7 @@ export const DashboardBuilderView: React.FC = () => {
 
                 return (
                   <div className={`p-3.5 rounded-2xl border space-y-2.5 ${
-                    isLight ? 'bg-sky-50/70 border-sky-200' : 'bg-[#141d26] border-sky-900/60'
+                    isLight ? 'bg-sky-50/70 border-sky-200' : 'bg-accent border-sky-900/60'
                   }`}>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5">
@@ -3067,7 +3085,7 @@ export const DashboardBuilderView: React.FC = () => {
                           setType(topFit.type);
                           setTitle(topFit.suggestedTitle);
                         }}
-                        className="px-2.5 py-1 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold text-[11px] shadow-xs cursor-pointer transition-all flex items-center gap-1"
+                        className="px-2.5 py-1 rounded-lg bg-sky-600 hover:bg-sky-500 text-primary font-bold text-[11px] shadow-xs cursor-pointer transition-all flex items-center gap-1"
                       >
                         <Zap className="w-3 h-3" />
                         <span>Apply Best Fit ({topFit.label})</span>
@@ -3114,22 +3132,22 @@ export const DashboardBuilderView: React.FC = () => {
                                   : 'bg-sky-950/80 border-cyan-400 ring-2 ring-cyan-400 shadow-md'
                                 : isLight
                                   ? 'bg-white/80 border-slate-200 hover:border-sky-300 hover:bg-white'
-                                  : 'bg-[#111720] border-[#202b38] hover:border-sky-700 hover:bg-[#15202b]'
+                                  : 'bg-accent border-teal-500/40 hover:border-sky-700 hover:bg-accent'
                             }`}
                           >
                             <div className="flex items-center justify-between gap-1 mb-1">
-                              <span className={`font-bold text-xs ${isSelected ? (isLight ? 'text-sky-900' : 'text-cyan-300') : (isLight ? 'text-slate-800' : 'text-white')}`}>
+                              <span className={`font-bold text-xs ${isSelected ? (isLight ? 'text-sky-900' : 'text-cyan-300') : (isLight ? 'text-primary' : 'text-primary')}`}>
                                 {rec.label}
                               </span>
                               <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold uppercase ${
                                 rec.badge === 'Best Fit' || idx === 0
                                   ? 'bg-sky-500/20 text-sky-600 dark:text-cyan-300 border border-sky-400/40'
-                                  : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                                  : 'bg-input dark:bg-input text-muted dark:text-secondary'
                               }`}>
                                 {flags.chartGuide && idx === 0 ? 'Recommended' : `${rec.score}% Match`}
                               </span>
                             </div>
-                            <p className={`text-[11px] line-clamp-2 leading-relaxed ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>
+                            <p className={`text-[11px] line-clamp-2 leading-relaxed ${isLight ? 'text-muted' : 'text-secondary'}`}>
                               {rec.reason}
                             </p>
                           </div>
@@ -3142,14 +3160,14 @@ export const DashboardBuilderView: React.FC = () => {
 
               {/* Color Theme Selector */}
               <div className="space-y-1.5">
-                <label className={isLight ? 'text-slate-700 font-semibold' : 'text-gray-300 font-medium'}>Accent Color Theme</label>
+                <label className={isLight ? 'text-muted font-semibold' : 'text-secondary font-medium'}>Accent Color Theme</label>
                 <div className="flex items-center gap-3 pt-1">
                   {[
-                    { color: '#0284C7', label: 'Azure Blue' },
-                    { color: '#00d8f6', label: 'Cyan' },
-                    { color: '#38bdf8', label: 'Sky' },
-                    { color: '#818cf8', label: 'Indigo' },
-                    { color: '#f59e0b', label: 'Amber' }
+                    { color: 'var(--chart-3)', label: 'Azure Blue' },
+                    { color: 'var(--chart-3)', label: 'Cyan' },
+                    { color: 'var(--chart-3)', label: 'Sky' },
+                    { color: 'var(--chart-2)', label: 'Indigo' },
+                    { color: 'var(--chart-4)', label: 'Amber' }
                   ].map(c => (
                     <button
                       type="button"
@@ -3159,25 +3177,25 @@ export const DashboardBuilderView: React.FC = () => {
                       style={{ backgroundColor: c.color }}
                       title={c.label}
                     >
-                      {colorTheme === c.color && <Check className="w-3.5 h-3.5 text-white" />}
+                      {colorTheme === c.color && <Check className="w-3.5 h-3.5 text-primary" />}
                     </button>
                   ))}
                 </div>
               </div>
 
-              <div className={`flex justify-end gap-2 pt-3 border-t ${isLight ? 'border-slate-200' : 'border-[#2d2d2d]'}`}>
+              <div className={`flex justify-end gap-2 pt-3 border-t ${isLight ? 'border-slate-200' : 'border-subtle'}`}>
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
                   className={`px-4 py-2 rounded-xl transition-colors cursor-pointer ${
-                    isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200' : 'bg-[#262626] text-gray-300 hover:bg-[#333]'
+                    isLight ? 'bg-elevated hover:bg-input text-muted border border-slate-200' : 'bg-elevated text-secondary hover:bg-elevated'
                   }`}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-sky-600 text-white font-semibold hover:bg-sky-500 transition-all cursor-pointer shadow-md shadow-sky-600/20"
+                  className="px-5 py-2 rounded-xl bg-sky-600 text-primary font-semibold hover:bg-sky-500 transition-all cursor-pointer shadow-md shadow-sky-600/20"
                 >
                   Create & Mount Visual
                 </button>
@@ -3192,24 +3210,24 @@ export const DashboardBuilderView: React.FC = () => {
         const recommendedSuite = recommendDatasetDashboard(columns, cleanRows);
         return (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fadeIn">
-            <div className={`${isLight ? 'bg-white border-slate-200 text-slate-900 shadow-2xl' : 'bg-[#181818] border-[#333] text-white'} border rounded-3xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto space-y-5 animate-scaleUp`}>
-              <div className={`flex items-start justify-between border-b pb-3 ${isLight ? 'border-slate-200' : 'border-[#2d2d2d]'}`}>
+            <div className={`${isLight ? 'bg-white border-slate-200 text-primary shadow-2xl' : 'bg-card border-subtle text-primary'} border rounded-3xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto space-y-5 animate-scaleUp`}>
+              <div className={`flex items-start justify-between border-b pb-3 ${isLight ? 'border-slate-200' : 'border-subtle'}`}>
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <span className="p-1.5 rounded-lg bg-sky-500/10 text-sky-600 dark:text-cyan-400 border border-sky-500/20">
                       <Lightbulb className="w-5 h-5 text-amber-500" />
                     </span>
-                    <h3 className={`font-heading text-xl font-bold uppercase tracking-tight ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                    <h3 className={`font-heading text-xl font-bold uppercase tracking-tight ${isLight ? 'text-primary' : 'text-primary'}`}>
                       AI Schema Recommendation Suite
                     </h3>
                   </div>
-                  <p className={`text-xs ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                  <p className={`text-xs ${isLight ? 'text-muted' : 'text-secondary'}`}>
                     Analyzed {columns.length} columns & {cleanRows.length.toLocaleString()} rows in <strong>{project.name}</strong>. The recommendation engine identified optimal visualization types based on temporal continuity, cardinality, and numerical dispersion.
                   </p>
                 </div>
                 <button
                   onClick={() => setIsRecModalOpen(false)}
-                  className={`p-1 rounded-lg transition-colors cursor-pointer ${isLight ? 'text-slate-400 hover:text-slate-900' : 'text-gray-400 hover:text-white'}`}
+                  className={`p-1 rounded-lg transition-colors cursor-pointer ${isLight ? 'text-secondary hover:text-primary' : 'text-secondary hover:text-primary'}`}
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -3224,7 +3242,7 @@ export const DashboardBuilderView: React.FC = () => {
                     <Sparkles className="w-4 h-4 text-sky-500" />
                     <span>Balanced 5-Chart Adaptive Suite</span>
                   </div>
-                  <p className={`text-xs ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>
+                  <p className={`text-xs ${isLight ? 'text-muted' : 'text-secondary'}`}>
                     Deploy a diverse ensemble of Heatmaps, Boxplots, Donut shares, Ranked Bars, and Scatter plots.
                   </p>
                 </div>
@@ -3237,7 +3255,7 @@ export const DashboardBuilderView: React.FC = () => {
                     setDownloadSuccess(`Deployed ${recommendedSuite.length} recommended schema charts!`);
                     setTimeout(() => setDownloadSuccess(null), 3000);
                   }}
-                  className="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs shadow-md shadow-sky-600/25 whitespace-nowrap cursor-pointer transition-all flex items-center gap-1.5"
+                  className="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-primary font-bold text-xs shadow-md shadow-sky-600/25 whitespace-nowrap cursor-pointer transition-all flex items-center gap-1.5"
                 >
                   <Zap className="w-3.5 h-3.5" />
                   <span>Deploy Complete Suite</span>
@@ -3246,7 +3264,7 @@ export const DashboardBuilderView: React.FC = () => {
 
               {/* Recommended Visuals List */}
               <div className="space-y-3">
-                <h4 className={`text-xs font-bold uppercase tracking-wider font-mono ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
+                <h4 className={`text-xs font-bold uppercase tracking-wider font-mono ${isLight ? 'text-muted' : 'text-secondary'}`}>
                   Recommended Visuals ({recommendedSuite.length})
                 </h4>
 
@@ -3256,23 +3274,23 @@ export const DashboardBuilderView: React.FC = () => {
                       key={recVis.id || idx}
                       className={`p-3.5 rounded-2xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 transition-all ${
                         isLight 
-                          ? 'bg-slate-50/80 border-slate-200 hover:border-sky-300 hover:bg-white' 
-                          : 'bg-[#141414] border-[#292929] hover:border-cyan-400/50 hover:bg-[#1a1a1a]'
+                          ? 'bg-elevated border-slate-200 hover:border-sky-300 hover:bg-white' 
+                          : 'bg-card border-teal-500/40 hover:border-cyan-400/50 hover:bg-card'
                       }`}
                     >
                       <div className="space-y-1 min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-bold text-xs text-slate-900 dark:text-white uppercase truncate">
+                          <span className="font-bold text-xs text-primary dark:text-primary uppercase truncate">
                             {recVis.title}
                           </span>
                           <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase bg-sky-500/10 text-sky-700 dark:text-cyan-300 border border-sky-500/20">
                             {recVis.type.replace('_', ' ')}
                           </span>
-                          <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">
+                          <span className="text-[10px] font-mono text-muted dark:text-secondary">
                             {recVis.aggregation.toUpperCase()}({recVis.valueField}) by {recVis.categoryField}
                           </span>
                         </div>
-                        <p className={`text-xs ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                        <p className={`text-xs ${isLight ? 'text-muted' : 'text-secondary'}`}>
                           {recVis.description || 'Analyzed data distribution and field semantics to maximize cognitive clarity.'}
                         </p>
                       </div>
@@ -3296,12 +3314,12 @@ export const DashboardBuilderView: React.FC = () => {
                 </div>
               </div>
 
-              <div className={`flex justify-end pt-3 border-t ${isLight ? 'border-slate-200' : 'border-[#2d2d2d]'}`}>
+              <div className={`flex justify-end pt-3 border-t ${isLight ? 'border-slate-200' : 'border-subtle'}`}>
                 <button
                   type="button"
                   onClick={() => setIsRecModalOpen(false)}
                   className={`px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer ${
-                    isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-700' : 'bg-[#252525] text-slate-300 hover:bg-[#303030]'
+                    isLight ? 'bg-elevated hover:bg-input text-muted' : 'bg-elevated text-secondary hover:bg-elevated'
                   }`}
                 >
                   Close

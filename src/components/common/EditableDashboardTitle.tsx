@@ -88,8 +88,8 @@ export const EditableDashboardTitle: React.FC<EditableDashboardTitleProps> = ({
             placeholder="Type custom dashboard name..."
             className={`px-3.5 py-1.5 rounded-xl border-2 focus:outline-none text-sm sm:text-lg font-bold min-w-[260px] sm:min-w-[340px] transition-all ${
               isLight
-                ? 'bg-white text-slate-900 border-sky-600 shadow-md shadow-sky-500/10'
-                : 'bg-[#121212] text-white border-cyan-400 shadow-xl shadow-cyan-400/15'
+                ? 'bg-white text-primary border-sky-600 shadow-md shadow-sky-500/10'
+                : 'bg-app text-primary border-cyan-400 shadow-xl shadow-cyan-400/15'
             } ${inputClassName}`}
           />
           <button
@@ -98,7 +98,7 @@ export const EditableDashboardTitle: React.FC<EditableDashboardTitleProps> = ({
               e.preventDefault();
               handleSave();
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-semibold text-xs transition-all shadow-md cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-primary font-semibold text-xs transition-all shadow-md cursor-pointer"
             title="Save dashboard name (Enter)"
           >
             <Check className="w-3.5 h-3.5 stroke-[3]" />
@@ -112,8 +112,8 @@ export const EditableDashboardTitle: React.FC<EditableDashboardTitleProps> = ({
             }}
             className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs transition-colors cursor-pointer border ${
               isLight
-                ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
-                : 'bg-[#252525] text-gray-300 hover:text-white hover:bg-red-500/20 hover:text-red-400 border-border-subtle'
+                ? 'bg-elevated hover:bg-input text-muted border-slate-300'
+                : 'bg-elevated text-secondary hover:text-primary hover:bg-red-500/20 hover:text-red-400 border-border-subtle'
             }`}
             title="Cancel (Esc)"
           >
@@ -124,11 +124,11 @@ export const EditableDashboardTitle: React.FC<EditableDashboardTitleProps> = ({
 
         {/* Quick suggestions & keyboard hint */}
         <div className="flex items-center gap-2 flex-wrap text-[11px]">
-          <span className={`font-mono text-[10px] ${isLight ? 'text-slate-500' : 'text-gray-500'}`}>
+          <span className={`font-mono text-[10px] ${isLight ? 'text-muted' : 'text-muted'}`}>
             Hint: Enter to save • Esc to cancel
           </span>
-          <span className={isLight ? 'text-slate-300' : 'text-gray-600'}>|</span>
-          <span className={`font-medium flex items-center gap-1 ${isLight ? 'text-slate-600' : 'text-gray-400'}`}>
+          <span className={isLight ? 'text-secondary' : 'text-muted'}>|</span>
+          <span className={`font-medium flex items-center gap-1 ${isLight ? 'text-muted' : 'text-secondary'}`}>
             <Sparkles className="w-3 h-3 text-sky-500" /> Quick ideas:
           </span>
           {PRESET_SUGGESTIONS.map((preset) => (
@@ -141,8 +141,8 @@ export const EditableDashboardTitle: React.FC<EditableDashboardTitleProps> = ({
               }}
               className={`px-2 py-0.5 rounded-md transition-colors text-[10px] border cursor-pointer ${
                 isLight
-                  ? 'bg-slate-100 hover:bg-sky-50 text-slate-700 hover:text-sky-700 border-slate-300 hover:border-sky-300'
-                  : 'bg-[#222] hover:bg-[#2e2e2e] text-gray-300 hover:text-cyan-400 border-[#333]'
+                  ? 'bg-elevated hover:bg-sky-50 text-muted hover:text-sky-700 border-slate-300 hover:border-sky-300'
+                  : 'bg-elevated hover:bg-elevated text-secondary hover:text-cyan-400 border-subtle'
               }`}
             >
               {preset}
@@ -159,22 +159,22 @@ export const EditableDashboardTitle: React.FC<EditableDashboardTitleProps> = ({
         onClick={() => setIsEditing(true)}
         className={`group inline-flex items-center gap-2 cursor-pointer rounded-xl px-2.5 py-1 -mx-2 border transition-all select-none ${
           isLight
-            ? 'hover:bg-slate-100/80 border-transparent hover:border-slate-300'
-            : 'hover:bg-[#252525]/70 border-transparent hover:border-[#383838]'
+            ? 'hover:bg-elevated border-transparent hover:border-slate-300'
+            : 'hover:bg-elevated border-transparent hover:border-subtle'
         } ${className}`}
         title="Double-click or click to rename this dashboard"
       >
         {showLabelPrefix && (
           <span className={`text-xs font-mono uppercase tracking-wider ${
-            isLight ? 'text-slate-500' : 'text-gray-400'
+            isLight ? 'text-muted' : 'text-secondary'
           }`}>
             Dashboard:
           </span>
         )}
         <span className={`font-heading font-extrabold transition-colors truncate ${
           isLight 
-            ? 'text-slate-900 group-hover:text-sky-700' 
-            : 'text-white group-hover:text-cyan-400'
+            ? 'text-primary group-hover:text-sky-700' 
+            : 'text-primary group-hover:text-cyan-400'
         }`}>
           {project.name}
         </span>
@@ -186,8 +186,8 @@ export const EditableDashboardTitle: React.FC<EditableDashboardTitleProps> = ({
           onClick={() => setIsEditing(true)}
           className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all shadow-2xs shrink-0 cursor-pointer border ${
             isLight
-              ? 'bg-slate-100 hover:bg-sky-50 text-slate-700 hover:text-sky-700 border-slate-300 hover:border-sky-300'
-              : 'bg-[#222222] hover:bg-[#2d2d2d] text-gray-300 hover:text-cyan-400 border-[#3a3a3a] hover:border-cyan-400/50'
+              ? 'bg-elevated hover:bg-sky-50 text-muted hover:text-sky-700 border-slate-300 hover:border-sky-300'
+              : 'bg-elevated hover:bg-elevated text-secondary hover:text-cyan-400 border-teal-500/40 hover:border-cyan-400/50'
           }`}
           title="Rename this dashboard"
         >

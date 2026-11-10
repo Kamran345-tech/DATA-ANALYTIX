@@ -54,7 +54,7 @@ export const ModernNavbar: React.FC<ModernNavbarProps> = ({
           aria-label="Go to Executive Dashboard"
           className="flex items-center gap-2.5 text-left focus-visible:ring-2 focus-visible:ring-sky-500 rounded-lg p-1"
         >
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center text-white font-extrabold text-xs shadow-xs shrink-0">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center text-primary font-extrabold text-xs shadow-xs shrink-0">
             DA
           </div>
           <div className="truncate">

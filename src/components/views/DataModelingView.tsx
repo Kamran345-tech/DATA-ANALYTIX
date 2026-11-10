@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, Suspense, lazy } from 'react';
 import { 
   Network, 
   Key, 
@@ -32,7 +32,11 @@ import {
 import { usePlatform } from '../../store/usePlatformStore';
 import { Relationship, TableSchema } from '../../types';
 import { toast } from '../../store/useToast';
-import { D3SchemaGraph } from '../modeling/D3SchemaGraph';
+import { DownloadMenu } from '../common/DownloadMenu';
+
+const D3SchemaGraph = lazy(() =>
+  import('../modeling/D3SchemaGraph').then((m) => ({ default: m.D3SchemaGraph }))
+);
 
 export const DataModelingView: React.FC = () => {
   const { 
@@ -418,6 +422,8 @@ export const DataModelingView: React.FC = () => {
               <Download className="w-3.5 h-3.5 text-[var(--info)]" />
               <span>Export JSON</span>
             </button>
+
+            <DownloadMenu context="modeling" />
           </div>
         </div>
 
@@ -555,12 +561,20 @@ export const DataModelingView: React.FC = () => {
           </div>
 
           {designerViewMode === 'd3-graph' ? (
-            <D3SchemaGraph
-              dataModel={dataModel}
-              isLight={isLight}
-              onTableSelect={(tableName) => setFocusedTable(tableName)}
-              onAddRelationshipRequest={openNewRelationshipModal}
-            />
+            <Suspense
+              fallback={
+                <div className="rounded-3xl border border-subtle bg-elevated min-h-[520px] flex items-center justify-center text-xs font-mono text-secondary">
+                  Loading D3 Schema Graph...
+                </div>
+              }
+            >
+              <D3SchemaGraph
+                dataModel={dataModel}
+                isLight={isLight}
+                onTableSelect={(tableName) => setFocusedTable(tableName)}
+                onAddRelationshipRequest={openNewRelationshipModal}
+              />
+            </Suspense>
           ) : (
             /* Interactive ERD Canvas (Classic Column Cards) */
             <div className="rounded-3xl border p-6 relative overflow-hidden min-h-[580px] bg-elevated border-subtle">

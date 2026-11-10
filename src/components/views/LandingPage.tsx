@@ -103,7 +103,7 @@ export const LandingPage: React.FC = () => {
         <section className={`depth-card relative overflow-hidden py-12 px-6 sm:px-10 rounded-[20px] border transition-colors duration-200 ${
           isLight
             ? 'bg-white border-slate-200/90 shadow-lg'
-            : 'bg-[#111A2E] border-[rgba(148,163,184,0.18)] shadow-2xl'
+            : 'bg-card border-[color-mix(in srgb, var(--border-strong) 18%, transparent)] shadow-2xl'
         }`}>
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center relative z-10">
             {/* Left Copy Column */}
@@ -116,14 +116,16 @@ export const LandingPage: React.FC = () => {
                 <span>POWER BI</span>
               </div>
 
-              <h1 className={`font-heading text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.08] ${
-                isLight ? 'text-slate-900' : 'text-[#F8FAFC]'
-              }`}>
-                Raw data in. Clear decisions out.
+              <h1
+                style={{ textWrap: 'balance' }}
+                className="font-heading text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.08] text-balance text-primary"
+              >
+                <span className="block">Raw data in.</span>
+                <span className="block">Clear decisions out.</span>
               </h1>
 
               <p className={`text-base sm:text-lg max-w-xl leading-relaxed ${
-                isLight ? 'text-slate-600' : 'text-slate-300'
+                isLight ? 'text-muted' : 'text-secondary'
               }`}>
                 Upload CSV or Excel files, audit data quality deterministically, model star schemas, run SQL and Python in-browser, and export native Power BI packages.
               </p>
@@ -149,7 +151,7 @@ export const LandingPage: React.FC = () => {
               </div>
 
               <div className={`pt-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs font-mono ${
-                isLight ? 'text-slate-600' : 'text-slate-400'
+                isLight ? 'text-muted' : 'text-secondary'
               }`}>
                 <span>Deterministic KPIs</span>
                 <span aria-hidden="true">·</span>
@@ -184,16 +186,16 @@ export const LandingPage: React.FC = () => {
               {/* Zero-Pill Typographic Kicker */}
               <div className="flex items-center gap-2 text-xs font-semibold tracking-wider font-mono">
                 <span className={isLight ? 'text-cyan-700 font-bold' : 'text-cyan-400 font-bold'}>DATA ANALYTICS</span>
-                <span className="text-slate-400">·</span>
+                <span className="text-secondary">·</span>
                 <span className={isLight ? 'text-indigo-700 font-bold' : 'text-indigo-400 font-bold'}>DATA ENGINEERING</span>
-                <span className="text-slate-400">·</span>
+                <span className="text-secondary">·</span>
                 <span className={isLight ? 'text-emerald-700 font-bold' : 'text-emerald-400 font-bold'}>BUSINESS INTELLIGENCE</span>
               </div>
             </div>
 
             {/* Main Hero Headline */}
             <h1 className="font-heading text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight uppercase leading-[1.08] select-none">
-              <span className={isLight ? 'text-slate-900' : 'text-[#F8FAFC]'}>
+              <span className={isLight ? 'text-primary' : 'text-primary'}>
                 ENGINEERING DATA.
               </span>
               <br className="hidden sm:inline" />
@@ -204,7 +206,7 @@ export const LandingPage: React.FC = () => {
 
             {/* Subtitle with High Readability */}
             <p className={`text-base sm:text-lg max-w-2xl mx-auto font-sans leading-relaxed ${
-              isLight ? 'text-slate-600' : 'text-slate-300'
+              isLight ? 'text-muted' : 'text-secondary'
             }`}>
               Transform raw data into reliable pipelines, interactive dashboards, and actionable business intelligence with practical data analytics and engineering solutions.
             </p>
@@ -253,28 +255,28 @@ export const LandingPage: React.FC = () => {
 
             {/* Clean Unboxed Value Proof Strip (Zero-Pill Discipline) */}
             <div className={`pt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs sm:text-sm font-medium border-t ${
-              isLight ? 'border-slate-200 text-slate-600' : 'border-[#273449] text-[#A8B3C7]'
+              isLight ? 'border-slate-200 text-muted' : 'border-subtle text-accent'
             }`}>
               <span className="flex items-center gap-1.5">
                 <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0" />
                 100% Deterministic Math
               </span>
-              <span className="text-slate-400">·</span>
+              <span className="text-secondary">·</span>
               <span className="flex items-center gap-1.5">
                 <CheckCircle2 className="w-4 h-4 text-indigo-400 shrink-0" />
                 Star Schema Modeling
               </span>
-              <span className="text-slate-400">·</span>
+              <span className="text-secondary">·</span>
               <span className="flex items-center gap-1.5">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
                 Power BI PBIP Native
               </span>
-              <span className="text-slate-400">·</span>
+              <span className="text-secondary">·</span>
               <span className="flex items-center gap-1.5">
                 <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0" />
                 In-Browser SQL & Python
               </span>
-              <span className="text-slate-400">·</span>
+              <span className="text-secondary">·</span>
               <span className="flex items-center gap-1.5">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
                 Zero Cloud Lock-In
@@ -298,11 +300,11 @@ export const LandingPage: React.FC = () => {
               <span>ARCHITECTURE & DATA LINEAGE</span>
             </div>
             <h2 className={`font-heading text-2xl sm:text-3xl font-bold tracking-tight uppercase ${
-              isLight ? 'text-slate-900' : 'text-[#F8FAFC]'
+              isLight ? 'text-primary' : 'text-primary'
             }`}>
               THE END-TO-END DATA ENGINE
             </h2>
-            <p className={`text-xs sm:text-sm max-w-xl ${isLight ? 'text-slate-600' : 'text-[#A8B3C7]'}`}>
+            <p className={`text-xs sm:text-sm max-w-xl ${isLight ? 'text-muted' : 'text-accent'}`}>
               Click any stage in the pipeline DAG to inspect data transformations or jump directly to the live workspace.
             </p>
           </div>
@@ -310,8 +312,8 @@ export const LandingPage: React.FC = () => {
             onClick={() => setCurrentTab('data_engineering')}
             className={`self-start md:self-auto px-4 py-2 rounded-xl text-xs font-mono font-semibold flex items-center gap-2 border transition-all cursor-pointer ${
               isLight 
-                ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300' 
-                : 'bg-[#172338] hover:bg-[#1E2D4A] text-cyan-300 border-[#273449]'
+                ? 'bg-elevated hover:bg-input text-primary border-slate-300' 
+                : 'bg-card hover:bg-elevated text-cyan-300 border-subtle'
             }`}
           >
             <span>LAUNCH FULL DAG WORKBENCH</span>
@@ -334,27 +336,27 @@ export const LandingPage: React.FC = () => {
                   isSelected 
                     ? isLight 
                       ? 'bg-white border-cyan-500 shadow-md ring-2 ring-cyan-500/20' 
-                      : 'bg-[#172338] border-cyan-400 shadow-lg shadow-cyan-500/10'
+                      : 'bg-card border-cyan-400 shadow-lg shadow-cyan-500/10'
                     : isLight 
                       ? 'bg-white border-slate-200 hover:border-slate-300' 
-                      : 'bg-[#121C2F] border-[#273449] hover:border-slate-600'
+                      : 'bg-card border-subtle hover:border-slate-600'
                 }`}
               >
                 <div className="flex items-center justify-between mb-2">
                   <span className="font-mono text-xs font-bold text-cyan-400">
                     STAGE {stage.step}
                   </span>
-                  <span className="text-[10px] font-mono text-slate-400">
+                  <span className="text-[10px] font-mono text-secondary">
                     {stage.metric}
                   </span>
                 </div>
                 <h3 className={`font-heading text-sm font-bold tracking-tight mb-1 ${
-                  isLight ? 'text-slate-900' : 'text-[#F8FAFC]'
+                  isLight ? 'text-primary' : 'text-primary'
                 }`}>
                   {stage.title}
                 </h3>
                 <p className={`text-[11px] leading-relaxed line-clamp-3 mb-3 ${
-                  isLight ? 'text-slate-600' : 'text-[#A8B3C7]'
+                  isLight ? 'text-muted' : 'text-accent'
                 }`}>
                   {stage.desc}
                 </p>
@@ -372,11 +374,11 @@ export const LandingPage: React.FC = () => {
       <section className="px-2 sm:px-4 space-y-8">
         <div className="text-center space-y-2 max-w-2xl mx-auto">
           <h2 className={`font-heading text-3xl sm:text-4xl font-extrabold tracking-tight uppercase ${
-            isLight ? 'text-slate-900' : 'text-[#F8FAFC]'
+            isLight ? 'text-primary' : 'text-primary'
           }`}>
             COMPLETE DATA ROLE COVERAGE
           </h2>
-          <p className={`text-xs sm:text-sm ${isLight ? 'text-slate-600' : 'text-[#A8B3C7]'}`}>
+          <p className={`text-xs sm:text-sm ${isLight ? 'text-muted' : 'text-accent'}`}>
             Built to professional standards for Senior Data Analysts, Analytics Engineers, and C-Suite decision makers.
           </p>
         </div>
@@ -386,7 +388,7 @@ export const LandingPage: React.FC = () => {
           <div className={`p-6 sm:p-8 rounded-3xl border space-y-6 transition-all ${
             isLight 
               ? 'bg-white border-slate-200 shadow-sm' 
-              : 'bg-[#172338] border-[#273449]'
+              : 'bg-card border-subtle'
           }`}>
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center shrink-0">
@@ -396,13 +398,13 @@ export const LandingPage: React.FC = () => {
                 <span className="text-[10px] font-mono font-bold tracking-wider text-cyan-400 uppercase">
                   DISCIPLINE 01
                 </span>
-                <h3 className={`font-heading text-xl font-bold ${isLight ? 'text-slate-900' : 'text-[#F8FAFC]'}`}>
+                <h3 className={`font-heading text-xl font-bold ${isLight ? 'text-primary' : 'text-primary'}`}>
                   Data Analytics & Business Intelligence
                 </h3>
               </div>
             </div>
 
-            <p className={`text-xs sm:text-sm leading-relaxed ${isLight ? 'text-slate-600' : 'text-[#A8B3C7]'}`}>
+            <p className={`text-xs sm:text-sm leading-relaxed ${isLight ? 'text-muted' : 'text-accent'}`}>
               Deliver boardroom-ready clarity with automated KPI calculations, interactive slicers, statistical driver discovery, and certified Power BI templates.
             </p>
 
@@ -416,8 +418,8 @@ export const LandingPage: React.FC = () => {
                 <div key={idx} className="flex items-start gap-2.5">
                   <Check className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
                   <div>
-                    <div className={`text-xs font-bold ${isLight ? 'text-slate-900' : 'text-[#F8FAFC]'}`}>{feat.title}</div>
-                    <div className={`text-[11px] ${isLight ? 'text-slate-600' : 'text-[#A8B3C7]'}`}>{feat.desc}</div>
+                    <div className={`text-xs font-bold ${isLight ? 'text-primary' : 'text-primary'}`}>{feat.title}</div>
+                    <div className={`text-[11px] ${isLight ? 'text-muted' : 'text-accent'}`}>{feat.desc}</div>
                   </div>
                 </div>
               ))}
@@ -426,7 +428,7 @@ export const LandingPage: React.FC = () => {
             <div className="pt-2 flex flex-wrap gap-2">
               <button
                 onClick={() => setCurrentTab('executive_dashboard')}
-                className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-primary text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
               >
                 <span>Executive Dashboard</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -434,7 +436,7 @@ export const LandingPage: React.FC = () => {
               <button
                 onClick={() => setCurrentTab('dax_lab')}
                 className={`px-4 py-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
-                  isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300' : 'bg-[#121C2F] hover:bg-[#1E2D4A] text-slate-200 border-[#273449]'
+                  isLight ? 'bg-elevated hover:bg-input text-primary border-slate-300' : 'bg-card hover:bg-elevated text-primary border-subtle'
                 }`}
               >
                 <span>DAX Studio</span>
@@ -446,7 +448,7 @@ export const LandingPage: React.FC = () => {
           <div className={`p-6 sm:p-8 rounded-3xl border space-y-6 transition-all ${
             isLight 
               ? 'bg-white border-slate-200 shadow-sm' 
-              : 'bg-[#172338] border-[#273449]'
+              : 'bg-card border-subtle'
           }`}>
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center shrink-0">
@@ -456,13 +458,13 @@ export const LandingPage: React.FC = () => {
                 <span className="text-[10px] font-mono font-bold tracking-wider text-indigo-400 uppercase">
                   DISCIPLINE 02
                 </span>
-                <h3 className={`font-heading text-xl font-bold ${isLight ? 'text-slate-900' : 'text-[#F8FAFC]'}`}>
+                <h3 className={`font-heading text-xl font-bold ${isLight ? 'text-primary' : 'text-primary'}`}>
                   Data Engineering & Architecture
                 </h3>
               </div>
             </div>
 
-            <p className={`text-xs sm:text-sm leading-relaxed ${isLight ? 'text-slate-600' : 'text-[#A8B3C7]'}`}>
+            <p className={`text-xs sm:text-sm leading-relaxed ${isLight ? 'text-muted' : 'text-accent'}`}>
               Construct durable analytics foundations with automated dimensional modeling, strict 1:N cardinality, data quality assertions, and live SQL/Python sandboxes.
             </p>
 
@@ -476,8 +478,8 @@ export const LandingPage: React.FC = () => {
                 <div key={idx} className="flex items-start gap-2.5">
                   <Check className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
                   <div>
-                    <div className={`text-xs font-bold ${isLight ? 'text-slate-900' : 'text-[#F8FAFC]'}`}>{feat.title}</div>
-                    <div className={`text-[11px] ${isLight ? 'text-slate-600' : 'text-[#A8B3C7]'}`}>{feat.desc}</div>
+                    <div className={`text-xs font-bold ${isLight ? 'text-primary' : 'text-primary'}`}>{feat.title}</div>
+                    <div className={`text-[11px] ${isLight ? 'text-muted' : 'text-accent'}`}>{feat.desc}</div>
                   </div>
                 </div>
               ))}
@@ -486,7 +488,7 @@ export const LandingPage: React.FC = () => {
             <div className="pt-2 flex flex-wrap gap-2">
               <button
                 onClick={() => setCurrentTab('data_engineering')}
-                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-primary text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
               >
                 <span>Pipeline DAG & Tests</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -494,7 +496,7 @@ export const LandingPage: React.FC = () => {
               <button
                 onClick={() => setCurrentTab('sql_lab')}
                 className={`px-4 py-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
-                  isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300' : 'bg-[#121C2F] hover:bg-[#1E2D4A] text-slate-200 border-[#273449]'
+                  isLight ? 'bg-elevated hover:bg-input text-primary border-slate-300' : 'bg-card hover:bg-elevated text-primary border-subtle'
                 }`}
               >
                 <span>SQL Workbench</span>
@@ -513,11 +515,11 @@ export const LandingPage: React.FC = () => {
               <span>TESTED ENTERPRISE SCHEMAS</span>
             </div>
             <h2 className={`font-heading text-2xl sm:text-3xl font-bold tracking-tight uppercase ${
-              isLight ? 'text-slate-900' : 'text-[#F8FAFC]'
+              isLight ? 'text-primary' : 'text-primary'
             }`}>
               REAL-WORLD PROJECT BENCHMARKS
             </h2>
-            <p className={`text-xs sm:text-sm max-w-xl ${isLight ? 'text-slate-600' : 'text-[#A8B3C7]'}`}>
+            <p className={`text-xs sm:text-sm max-w-xl ${isLight ? 'text-muted' : 'text-accent'}`}>
               Instantly load pre-built domain datasets to test data profiling, star schemas, DAX measures, and dashboards.
             </p>
           </div>
@@ -525,8 +527,8 @@ export const LandingPage: React.FC = () => {
             onClick={() => setCurrentTab('upload')}
             className={`self-start sm:self-auto px-4 py-2 rounded-xl text-xs font-mono font-semibold flex items-center gap-2 border transition-all cursor-pointer ${
               isLight 
-                ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300' 
-                : 'bg-[#172338] hover:bg-[#1E2D4A] text-emerald-300 border-[#273449]'
+                ? 'bg-elevated hover:bg-input text-primary border-slate-300' 
+                : 'bg-card hover:bg-elevated text-emerald-300 border-subtle'
             }`}
           >
             <span>UPLOAD CUSTOM FILE</span>
@@ -544,27 +546,27 @@ export const LandingPage: React.FC = () => {
                   isActive
                     ? isLight
                       ? 'bg-cyan-50/50 border-cyan-500 shadow-sm ring-1 ring-cyan-500/30'
-                      : 'bg-[#172338] border-cyan-400 shadow-md shadow-cyan-500/10'
+                      : 'bg-card border-cyan-400 shadow-md shadow-cyan-500/10'
                     : isLight
                       ? 'bg-white border-slate-200 hover:border-slate-300 shadow-xs'
-                      : 'bg-[#121C2F] border-[#273449] hover:border-slate-600'
+                      : 'bg-card border-subtle hover:border-slate-600'
                 }`}
               >
                 <div className="space-y-3">
                   <div className="flex items-center justify-between text-[11px] font-mono">
                     <span className="text-cyan-400 font-bold">{ds.category}</span>
-                    <span className="text-slate-400">{ds.rowsCount} Rows</span>
+                    <span className="text-secondary">{ds.rowsCount} Rows</span>
                   </div>
-                  <h3 className={`font-heading text-sm font-bold leading-snug ${isLight ? 'text-slate-900' : 'text-[#F8FAFC]'}`}>
+                  <h3 className={`font-heading text-sm font-bold leading-snug ${isLight ? 'text-primary' : 'text-primary'}`}>
                     {ds.name}
                   </h3>
-                  <p className={`text-[11px] leading-relaxed line-clamp-3 ${isLight ? 'text-slate-600' : 'text-[#A8B3C7]'}`}>
+                  <p className={`text-[11px] leading-relaxed line-clamp-3 ${isLight ? 'text-muted' : 'text-accent'}`}>
                     {ds.description}
                   </p>
                 </div>
 
-                <div className="pt-4 flex items-center justify-between border-t border-[#273449]/30 mt-4">
-                  <span className="text-[10px] font-mono text-slate-400 truncate max-w-[110px]">
+                <div className="pt-4 flex items-center justify-between border-t border-subtle mt-4">
+                  <span className="text-[10px] font-mono text-secondary truncate max-w-[110px]">
                     {ds.fileName}
                   </span>
                   <button
@@ -574,10 +576,10 @@ export const LandingPage: React.FC = () => {
                     }}
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
                       isActive
-                        ? 'bg-emerald-600 text-white'
+                        ? 'bg-emerald-600 text-primary'
                         : isLight
-                          ? 'bg-slate-900 hover:bg-slate-800 text-white'
-                          : 'bg-cyan-600 hover:bg-cyan-500 text-white'
+                          ? 'bg-card hover:bg-elevated text-primary'
+                          : 'bg-cyan-600 hover:bg-cyan-500 text-primary'
                     }`}
                   >
                     <span>{isActive ? 'Active' : 'Load Dataset'}</span>
@@ -594,7 +596,7 @@ export const LandingPage: React.FC = () => {
       <section className={`p-8 sm:p-10 rounded-3xl border transition-colors ${
         isLight 
           ? 'bg-gradient-to-r from-cyan-50/50 via-white to-indigo-50/50 border-slate-200' 
-          : 'bg-gradient-to-r from-[#172338] via-[#121C2F] to-[#172338] border-[#273449]'
+          : 'bg-gradient-to-r from-teal-500/20 via-indigo-500/10 to-transparent border-subtle'
       }`}>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center">
           <div className="lg:col-span-2 space-y-4">
@@ -603,17 +605,17 @@ export const LandingPage: React.FC = () => {
               <span>ENTERPRISE DELIVERABLES</span>
             </div>
             <h2 className={`font-heading text-2xl sm:text-4xl font-extrabold uppercase tracking-tight ${
-              isLight ? 'text-slate-900' : 'text-[#F8FAFC]'
+              isLight ? 'text-primary' : 'text-primary'
             }`}>
               COMPLETE PROJECT ZIP (14 FOLDERS)
             </h2>
             <p className={`text-xs sm:text-sm leading-relaxed max-w-2xl ${
-              isLight ? 'text-slate-600' : 'text-[#A8B3C7]'
+              isLight ? 'text-muted' : 'text-accent'
             }`}>
               Generate ready-to-run enterprise deliverables: structured multi-tab Excel workbooks, Microsoft Fabric & Power BI PBIP tabular projects, validated DAX libraries, production SQL queries, and Python data science notebooks.
             </p>
 
-            <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs font-mono text-slate-400 pt-2">
+            <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs font-mono text-secondary pt-2">
               <span>· 01_Original_Data</span>
               <span>· 02_Cleaned_Data</span>
               <span>· 03_Excel_Source</span>
@@ -630,7 +632,7 @@ export const LandingPage: React.FC = () => {
           <div className="flex flex-col gap-3 justify-center">
             <button
               onClick={() => setCurrentTab('export_center')}
-              className="w-full py-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-heading font-bold text-base tracking-wider uppercase flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition-all cursor-pointer"
+              className="w-full py-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-primary font-heading font-bold text-base tracking-wider uppercase flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition-all cursor-pointer"
             >
               <FolderDown className="w-5 h-5" />
               <span>DOWNLOAD PROJECT ZIP</span>
@@ -638,7 +640,7 @@ export const LandingPage: React.FC = () => {
             <button
               onClick={() => setCurrentTab('reports')}
               className={`w-full py-3 rounded-xl font-heading font-bold text-xs tracking-wider uppercase flex items-center justify-center gap-2 border transition-all cursor-pointer ${
-                isLight ? 'bg-white hover:bg-slate-50 text-slate-800 border-slate-300' : 'bg-[#0B1120] hover:bg-[#121C2F] text-slate-200 border-[#273449]'
+                isLight ? 'bg-white hover:bg-elevated text-primary border-slate-300' : 'bg-app hover:bg-card text-primary border-subtle'
               }`}
             >
               <MonitorPlay className="w-4 h-4 text-cyan-400" />
@@ -650,30 +652,30 @@ export const LandingPage: React.FC = () => {
 
       {/* 6. Technical Stack & Industry Standards */}
       <section className="px-2 sm:px-4 text-center space-y-4">
-        <div className="text-xs font-mono uppercase tracking-widest text-slate-400">
+        <div className="text-xs font-mono uppercase tracking-widest text-secondary">
           POWERED BY INDUSTRY-STANDARD ANALYTICS TECHNOLOGIES
         </div>
-        <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-10 text-xs sm:text-sm font-mono font-medium text-slate-400">
+        <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-10 text-xs sm:text-sm font-mono font-medium text-secondary">
           <span className="flex items-center gap-1.5 hover:text-cyan-400 transition-colors">
             <Database className="w-4 h-4 text-cyan-400" />
             ANSI SQL & PostgreSQL
           </span>
-          <span className="text-slate-600">/</span>
+          <span className="text-muted">/</span>
           <span className="flex items-center gap-1.5 hover:text-indigo-400 transition-colors">
             <Terminal className="w-4 h-4 text-indigo-400" />
             Python & Pandas
           </span>
-          <span className="text-slate-600">/</span>
+          <span className="text-muted">/</span>
           <span className="flex items-center gap-1.5 hover:text-emerald-400 transition-colors">
             <BarChart3 className="w-4 h-4 text-emerald-400" />
             Power BI PBIP & DAX
           </span>
-          <span className="text-slate-600">/</span>
+          <span className="text-muted">/</span>
           <span className="flex items-center gap-1.5 hover:text-purple-400 transition-colors">
             <Layers className="w-4 h-4 text-purple-400" />
             Kimball Star Schema
           </span>
-          <span className="text-slate-600">/</span>
+          <span className="text-muted">/</span>
           <span className="flex items-center gap-1.5 hover:text-cyan-400 transition-colors">
             <FileSpreadsheet className="w-4 h-4 text-cyan-400" />
             Excel tbl* Tables
@@ -683,11 +685,11 @@ export const LandingPage: React.FC = () => {
 
       {/* 7. Platform Attribution & SEO Footer */}
       <footer className={`pt-10 pb-6 border-t space-y-8 transition-colors ${
-        isLight ? 'border-slate-200 text-slate-600' : 'border-[#273449] text-[#A8B3C7]'
+        isLight ? 'border-slate-200 text-muted' : 'border-subtle text-accent'
       }`}>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 text-xs">
           <div>
-            <div className={`font-heading font-bold text-sm mb-3 ${isLight ? 'text-slate-900' : 'text-[#F8FAFC]'}`}>
+            <div className={`font-heading font-bold text-sm mb-3 ${isLight ? 'text-primary' : 'text-primary'}`}>
               Data Analytics
             </div>
             <ul className="space-y-2">
@@ -698,7 +700,7 @@ export const LandingPage: React.FC = () => {
             </ul>
           </div>
           <div>
-            <div className={`font-heading font-bold text-sm mb-3 ${isLight ? 'text-slate-900' : 'text-[#F8FAFC]'}`}>
+            <div className={`font-heading font-bold text-sm mb-3 ${isLight ? 'text-primary' : 'text-primary'}`}>
               Data Engineering
             </div>
             <ul className="space-y-2">
@@ -709,7 +711,7 @@ export const LandingPage: React.FC = () => {
             </ul>
           </div>
           <div>
-            <div className={`font-heading font-bold text-sm mb-3 ${isLight ? 'text-slate-900' : 'text-[#F8FAFC]'}`}>
+            <div className={`font-heading font-bold text-sm mb-3 ${isLight ? 'text-primary' : 'text-primary'}`}>
               Developer Labs
             </div>
             <ul className="space-y-2">
@@ -720,7 +722,7 @@ export const LandingPage: React.FC = () => {
             </ul>
           </div>
           <div>
-            <div className={`font-heading font-bold text-sm mb-3 ${isLight ? 'text-slate-900' : 'text-[#F8FAFC]'}`}>
+            <div className={`font-heading font-bold text-sm mb-3 ${isLight ? 'text-primary' : 'text-primary'}`}>
               Platform & Governance
             </div>
             <ul className="space-y-2">
@@ -732,15 +734,15 @@ export const LandingPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="pt-6 border-t border-[#273449]/40 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+        <div className="pt-6 border-t border-subtle flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-2">
-            <span className={`font-bold ${isLight ? 'text-slate-900' : 'text-[#F8FAFC]'}`}>Data Analytix</span>
+            <span className={`font-bold ${isLight ? 'text-primary' : 'text-primary'}`}>Data Analytix</span>
             <span>·</span>
             <span>Enterprise Data Analytics & Data Engineering Platform</span>
           </div>
           <div className="flex items-center gap-2 text-[11px] font-mono">
             <span>Engineering Architecture by <strong className="text-cyan-400 font-semibold">Kamran Badar</strong></span>
-            <span className="text-slate-500">|</span>
+            <span className="text-muted">|</span>
             <a 
               href="https://data-analytix-flax.vercel.app/" 
               target="_blank" 
