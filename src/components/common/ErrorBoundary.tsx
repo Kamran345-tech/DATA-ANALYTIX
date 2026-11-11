@@ -39,15 +39,15 @@ export class ErrorBoundary extends Component<Props, State> {
   public render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-app text-accent flex items-center justify-center p-6">
-          <div className="max-w-lg w-full bg-accent border border-subtle rounded-2xl p-6 sm:p-8 shadow-2xl space-y-5">
+        <div className="min-h-screen bg-app text-primary flex items-center justify-center p-6">
+          <div className="max-w-lg w-full bg-card border border-subtle rounded-2xl p-6 sm:p-8 shadow-2xl space-y-5">
             <div className="w-12 h-12 rounded-xl bg-red-500/10 border border-red-500/30 text-danger flex items-center justify-center">
               <AlertTriangle className="w-6 h-6" />
             </div>
 
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-accent bg-accent px-2 py-0.5 rounded">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-accent bg-accent-soft px-2 py-0.5 rounded">
                   Self-Healing Engine
                 </span>
                 <span className="text-xs text-secondary">Error Intercepted</span>
@@ -61,7 +61,7 @@ export class ErrorBoundary extends Component<Props, State> {
             </div>
 
             {this.state.error && (
-              <div className="bg-app border border-teal-500/40 p-3 rounded-lg text-xs font-mono text-red-300 overflow-x-auto max-h-32">
+              <div className="bg-app border border-subtle p-3 rounded-lg text-xs font-mono text-red-300 overflow-x-auto max-h-32">
                 {this.state.error.toString()}
               </div>
             )}
@@ -69,14 +69,14 @@ export class ErrorBoundary extends Component<Props, State> {
             <div className="flex items-center gap-3 pt-2">
               <button
                 onClick={this.handleReset}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent text-accent font-bold text-xs hover:bg-accent transition-all shadow-md shadow-lg/20"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent text-on-accent font-bold text-xs hover:opacity-90 transition-all shadow-md"
               >
                 <RefreshCw className="w-4 h-4" />
                 <span>Reload Platform</span>
               </button>
               <button
                 onClick={this.handleDismiss}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent text-primary hover:text-primary font-semibold text-xs border border-subtle hover:border-teal-500/40 transition-colors"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-elevated text-primary hover:bg-card-hover font-semibold text-xs border border-subtle transition-colors"
               >
                 <Home className="w-4 h-4" />
                 <span>Return to Dashboard</span>

@@ -131,14 +131,14 @@ export const Tooltip: React.FC<TooltipProps> = ({
             className={`rounded-xl p-3 text-xs backdrop-blur-md transition-colors ${
               isLight
                 ? 'bg-white/95 text-primary border border-slate-200 shadow-xl shadow-slate-900/10'
-                : 'bg-accent text-primary border border-teal-500/40 shadow-2xl shadow-black/60'
+                : 'bg-card text-primary border border-subtle shadow-2xl shadow-black/60'
             }`}
           >
             {/* Header */}
             {(title || tag) && (
               <div
                 className={`flex items-center justify-between gap-2 pb-1.5 mb-1.5 border-b ${
-                  isLight ? 'border-slate-100' : 'border-gray-700/60'
+                  isLight ? 'border-slate-100' : 'border-subtle'
                 }`}
               >
                 {title && (
@@ -155,7 +155,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
                     className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold tracking-wider uppercase shrink-0 ${
                       isLight
                         ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                        : 'bg-accent text-accent border border-teal-500/40'
+                        : 'bg-accent-soft text-accent border border-subtle'
                     }`}
                   >
                     {tag}
@@ -178,7 +178,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
               className={`absolute w-2 h-2 ${
                 isLight
                   ? 'bg-white border-slate-200'
-                  : 'bg-accent border-teal-500/40'
+                  : 'bg-card border-subtle'
               } ${
                 effectiveSide === 'right'
                   ? 'left-0 -translate-x-1/2 top-1/2 -translate-y-1/2 rotate-45 border-l border-b'

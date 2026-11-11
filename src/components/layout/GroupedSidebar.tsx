@@ -188,7 +188,7 @@ export const GroupedSidebar: React.FC = () => {
                         onClick={() => setCurrentTab(item.id)}
                         title={item.description}
                         aria-current={isActive ? 'page' : undefined}
-                        className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-medium transition-all text-left ${
+                        className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-medium text-left ${
                           isActive
                             ? 'bg-accent text-on-accent font-semibold shadow-xs'
                             : 'text-muted hover:text-primary hover:bg-card-hover'

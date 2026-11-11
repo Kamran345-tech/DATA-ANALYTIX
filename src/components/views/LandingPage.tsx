@@ -574,12 +574,12 @@ export const LandingPage: React.FC = () => {
                       loadDemoDataset(ds.id);
                       setCurrentTab('executive_dashboard');
                     }}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1 ${
                       isActive
-                        ? 'bg-emerald-600 text-primary'
+                        ? 'bg-accent text-on-accent'
                         : isLight
-                          ? 'bg-card hover:bg-elevated text-primary'
-                          : 'bg-cyan-600 hover:bg-cyan-500 text-primary'
+                          ? 'bg-card hover:bg-elevated text-primary border border-subtle'
+                          : 'bg-accent hover:opacity-90 text-on-accent'
                     }`}
                   >
                     <span>{isActive ? 'Active' : 'Load Dataset'}</span>
@@ -632,7 +632,7 @@ export const LandingPage: React.FC = () => {
           <div className="flex flex-col gap-3 justify-center">
             <button
               onClick={() => setCurrentTab('export_center')}
-              className="w-full py-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-primary font-heading font-bold text-base tracking-wider uppercase flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition-all cursor-pointer"
+              className="w-full py-4 rounded-xl bg-accent hover:opacity-90 text-on-accent font-heading font-bold text-base tracking-wider uppercase flex items-center justify-center gap-2 shadow-lg transition-opacity cursor-pointer"
             >
               <FolderDown className="w-5 h-5" />
               <span>DOWNLOAD PROJECT ZIP</span>

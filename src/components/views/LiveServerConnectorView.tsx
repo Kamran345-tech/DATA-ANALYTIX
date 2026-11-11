@@ -285,10 +285,10 @@ export const LiveServerConnectorView: React.FC = () => {
     <div className="max-w-6xl mx-auto space-y-8 pb-16 animate-fadeIn">
       {/* Header */}
       <div className="bg-card border border-subtle rounded-3xl p-6 sm:p-8 flex flex-wrap items-center justify-between gap-6 shadow-xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-accent rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-0 right-0 w-80 h-80 bg-accent-soft opacity-40 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="space-y-2 max-w-2xl relative">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent text-accent text-xs font-mono font-semibold border border-teal-500/40">
+        <div className="space-y-2 max-w-2xl relative z-10">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-mono font-semibold border border-subtle">
             <Radio className="w-3.5 h-3.5 animate-pulse text-accent" />
             UNIVERSAL DATABASE & LIVE SERVER CONNECTOR
           </div>
@@ -319,26 +319,26 @@ export const LiveServerConnectorView: React.FC = () => {
               <button
                 onClick={syncLiveStream}
                 disabled={liveConnection.isSyncing}
-                className="flex-1 py-1.5 px-3 rounded-lg bg-accent text-black font-bold text-xs hover:bg-accent transition-all flex items-center justify-center gap-1"
+                className="flex-1 py-1.5 px-3 rounded-lg bg-accent text-on-accent font-bold text-xs hover:opacity-90 transition-all flex items-center justify-center gap-1"
               >
                 <RefreshCw className={`w-3 h-3 ${liveConnection.isSyncing ? 'animate-spin' : ''}`} />
                 {liveConnection.isSyncing ? 'Syncing...' : 'Sync Now'}
               </button>
               <button
                 onClick={() => setCurrentTab('executive_dashboard')}
-                className="py-1.5 px-3 rounded-lg bg-elevated hover:bg-elevated text-primary text-xs border border-subtle"
+                className="py-1.5 px-3 rounded-lg bg-elevated hover:bg-card-hover text-primary text-xs border border-subtle"
               >
                 View Dashboard
               </button>
             </div>
           </div>
         ) : (
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 relative z-10">
             <button
               onClick={() => setActiveTab('templates')}
               className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
                 activeTab === 'templates' 
-                  ? 'bg-accent text-black shadow-lg shadow-lg/20' 
+                  ? 'bg-accent text-on-accent shadow-lg' 
                   : 'bg-elevated text-secondary hover:text-primary border border-subtle'
               }`}
             >
@@ -348,7 +348,7 @@ export const LiveServerConnectorView: React.FC = () => {
               onClick={() => setActiveTab('custom')}
               className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
                 activeTab === 'custom' 
-                  ? 'bg-accent text-black shadow-lg shadow-lg/20' 
+                  ? 'bg-accent text-on-accent shadow-lg' 
                   : 'bg-elevated text-secondary hover:text-primary border border-subtle'
               }`}
             >
@@ -442,7 +442,7 @@ export const LiveServerConnectorView: React.FC = () => {
                     onClick={() => handleServerTypeChange(item.id)}
                     className={`px-2.5 py-1 rounded-lg text-xs font-mono transition-colors ${
                       serverType === item.id 
-                        ? 'bg-accent text-black font-bold' 
+                        ? 'bg-accent text-on-accent font-bold' 
                         : 'bg-card text-secondary hover:text-primary border border-subtle'
                     }`}
                   >
@@ -675,7 +675,7 @@ export const LiveServerConnectorView: React.FC = () => {
                   type="button"
                   onClick={handleFetchLiveData}
                   disabled={fetching}
-                  className="px-6 py-2.5 rounded-xl bg-accent text-black font-heading text-sm font-bold tracking-wide uppercase hover:bg-accent transition-all flex items-center gap-2 shadow-lg shadow-lg/20 disabled:opacity-50"
+                  className="px-6 py-2.5 rounded-xl bg-accent text-on-accent font-heading text-sm font-bold tracking-wide uppercase hover:opacity-90 transition-all flex items-center gap-2 shadow-lg disabled:opacity-50"
                 >
                   {fetching ? (
                     <>
@@ -684,7 +684,7 @@ export const LiveServerConnectorView: React.FC = () => {
                     </>
                   ) : (
                     <>
-                      <Play className="w-4 h-4 fill-black" />
+                      <Play className="w-4 h-4 fill-current" />
                       <span>FETCH & INGEST LIVE DATA</span>
                     </>
                   )}

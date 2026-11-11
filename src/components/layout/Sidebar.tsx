@@ -342,7 +342,7 @@ export const Sidebar: React.FC = () => {
                     >
                       <button
                         onClick={() => handleSelectTab(item.id)}
-                        className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all group cursor-pointer ${
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-colors group cursor-pointer ${
                           isActive 
                             ? isLight
                               ? 'bg-cyan-50/90 text-cyan-950 border border-cyan-400/50 font-bold shadow-xs'

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 interface PillarSpec {
   id: string;
@@ -23,15 +23,68 @@ const LOGIN_PILLARS: PillarSpec[] = [
   { id: 'lp3', height: 200, x: 246, y: 98, isIndigo: true, tag: 'Power BI' },
 ];
 
+function usePause3DDrift(containerRef: React.RefObject<HTMLDivElement | null>): boolean {
+  const [paused, setPaused] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+    const saveData = Boolean((navigator as any)?.connection?.saveData);
+    return Boolean(reducedMotion || saveData);
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const reducedMotionQuery = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+    const saveData = Boolean((navigator as any)?.connection?.saveData);
+    let isIntersecting = true;
+
+    const updatePaused = () => {
+      const rm = Boolean(reducedMotionQuery?.matches);
+      setPaused(rm || saveData || !isIntersecting || document.hidden);
+    };
+
+    updatePaused();
+
+    const el = containerRef.current;
+    let observer: IntersectionObserver | null = null;
+    if (el && typeof IntersectionObserver !== 'undefined') {
+      observer = new IntersectionObserver(
+        (entries) => {
+          isIntersecting = entries.some((entry) => entry.isIntersecting);
+          updatePaused();
+        },
+        { threshold: 0.05 }
+      );
+      observer.observe(el);
+    }
+
+    const handleVisibility = () => updatePaused();
+    document.addEventListener('visibilitychange', handleVisibility);
+    reducedMotionQuery?.addEventListener?.('change', handleVisibility);
+
+    return () => {
+      observer?.disconnect();
+      document.removeEventListener('visibilitychange', handleVisibility);
+      reducedMotionQuery?.removeEventListener?.('change', handleVisibility);
+    };
+  }, [containerRef]);
+
+  return paused;
+}
+
 export const Hero3DScene: React.FC = () => {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const paused = usePause3DDrift(containerRef);
+
   return (
     <div
+      ref={containerRef}
       className="hero-3d-viewport"
       aria-hidden="true"
       style={{ perspective: '1400px' }}
     >
       <div
         className="hero-3d-platform"
+        data-paused={paused ? 'true' : 'false'}
         style={{
           width: '380px',
           height: '380px',
@@ -114,14 +167,19 @@ export const Hero3DScene: React.FC = () => {
 };
 
 export const Login3DPillarScene: React.FC = () => {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const paused = usePause3DDrift(containerRef);
+
   return (
     <div
+      ref={containerRef}
       className="hero-3d-viewport"
       aria-hidden="true"
       style={{ perspective: '1400px', minHeight: '360px' }}
     >
       <div
         className="hero-3d-platform"
+        data-paused={paused ? 'true' : 'false'}
         style={{
           width: '340px',
           height: '340px',

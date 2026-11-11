@@ -701,9 +701,9 @@ export const ExecutiveDashboard: React.FC = () => {
             onChange={handleLogoUpload}
           />
 
-          {/* Title row: Logo & Titles on Left, Telemetry Health Badges on Right */}
-          <div className="flex flex-col xl:flex-row xl:items-start justify-between gap-4">
-            <div className="flex items-start gap-4 min-w-0 flex-1">
+          {/* Title row: Logo & Titles on Left, Telemetry Health Badges on Right in normal wrapping flow */}
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="flex items-start gap-3 sm:gap-4 min-w-0 flex-1 basis-[280px] sm:basis-[400px]">
               {/* Company Logo Display & Uploader Button */}
               <div className="relative group shrink-0">
                 {brand.logoUrl ? (
@@ -733,7 +733,7 @@ export const ExecutiveDashboard: React.FC = () => {
                 ) : (
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl border-2 border-dashed border-cyan-500/40 hover:border-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/20 text-accent flex flex-col items-center justify-center gap-1 transition-all cursor-pointer shadow-xs group"
+                    className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl border-2 border-dashed border-cyan-500/40 hover:border-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/20 text-accent flex flex-col items-center justify-center gap-1 transition-colors cursor-pointer shadow-xs group"
                     title="Upload Company Logo (Appears on Dashboard, Top Bar, and PDF Reports)"
                   >
                     <UploadCloud className="w-5 h-5 group-hover:scale-110 transition-transform" />
@@ -752,9 +752,9 @@ export const ExecutiveDashboard: React.FC = () => {
                 </div>
 
                 {/* Title & Rename Control */}
-                <div className="flex items-center gap-2 flex-wrap mt-0.5 min-w-0">
-                  <h1 className="font-headline-xl text-headline-xl text-primary tracking-tight font-extrabold flex items-center gap-2 flex-wrap min-w-0">
-                    <EditableDashboardTitle className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight uppercase break-words" showLabelPrefix={false} />
+                <div className="flex items-center gap-2 flex-wrap mt-0.5 min-w-0 max-w-full">
+                  <h1 className="font-headline-xl text-headline-xl text-primary tracking-tight font-extrabold flex items-center gap-2 flex-wrap min-w-0 max-w-full">
+                    <EditableDashboardTitle className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight uppercase max-w-full" showLabelPrefix={false} />
                   </h1>
                 </div>
 
@@ -768,8 +768,8 @@ export const ExecutiveDashboard: React.FC = () => {
               </div>
             </div>
 
-            {/* Telemetry Health Summary (Non-overlapping, responsive flex item) */}
-            <div className="flex flex-wrap items-center gap-3 bg-input border border-subtle px-4 py-2.5 rounded-xl shadow-xs shrink-0 self-start">
+            {/* Telemetry Health Summary (In normal flex-wrap flow: wraps below title on narrow widths, right-aligned on wide) */}
+            <div className="flex flex-wrap items-center gap-3 bg-input border border-subtle px-4 py-2.5 rounded-xl shadow-xs shrink-0 self-start ml-auto">
               <button
                 type="button"
                 onClick={() => setCurrentTab('quality')}

@@ -838,7 +838,7 @@ export const StatisticalBoxplotInspector: React.FC<StatsInspectorProps> = ({ row
 
           {/* Interquartile Box (Q1 to Q3) */}
           <div 
-            className="absolute h-8 bg-accent border-2 border-teal-500/40 rounded"
+            className="absolute h-8 bg-accent-soft border-2 border-strong rounded"
             style={{
               left: `${getPct(stats.q1)}%`,
               width: `${Math.max(2, getPct(stats.q3) - getPct(stats.q1))}%`
@@ -1256,7 +1256,7 @@ export const MultiDimensionalPivotTable: React.FC<PivotProps> = ({ rows, columns
               {colHeaders.map(ch => (
                 <th key={ch} className="p-3 font-semibold text-right">{ch}</th>
               ))}
-              <th className="p-3 font-semibold text-right text-accent bg-accent">Total</th>
+              <th className="p-3 font-semibold text-right text-accent bg-elevated">Total</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--border-subtle)] font-mono">
@@ -1278,7 +1278,7 @@ export const MultiDimensionalPivotTable: React.FC<PivotProps> = ({ rows, columns
                     </td>
                   );
                 })}
-                <td className="p-3 text-right font-bold text-primary bg-accent">
+                <td className="p-3 text-right font-bold text-primary bg-elevated">
                   {(rowTotals[rh] || 0).toLocaleString()}
                 </td>
               </tr>
@@ -1292,7 +1292,7 @@ export const MultiDimensionalPivotTable: React.FC<PivotProps> = ({ rows, columns
                   {(colTotals[ch] || 0).toLocaleString()}
                 </td>
               ))}
-              <td className="p-3 text-right text-accent bg-accent text-sm">
+              <td className="p-3 text-right text-accent bg-elevated text-sm">
                 {grandTotal.toLocaleString()}
               </td>
             </tr>

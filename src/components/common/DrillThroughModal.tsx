@@ -330,7 +330,7 @@ export const DrillThroughModal: React.FC = () => {
               {depthLevel > 0 && (
                 <button
                   onClick={() => navigateBreadcrumb(depthLevel - 1)}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-elevated hover:bg-accent text-secondary hover:text-primary text-xs border border-subtle transition-colors"
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-elevated hover:bg-card-hover text-secondary hover:text-primary text-xs border border-subtle transition-colors"
                   title="Go back one depth layer"
                 >
                   <ArrowLeft className="w-3 h-3 text-cyan-400" />
@@ -340,7 +340,7 @@ export const DrillThroughModal: React.FC = () => {
               {depthLevel > 0 && (
                 <button
                   onClick={() => navigateBreadcrumb(0)}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-elevated hover:bg-accent text-secondary hover:text-primary text-xs border border-subtle transition-colors"
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-elevated hover:bg-card-hover text-secondary hover:text-primary text-xs border border-subtle transition-colors"
                   title="Reset to root level"
                 >
                   <RotateCcw className="w-3 h-3 text-amber-400" />
@@ -357,7 +357,7 @@ export const DrillThroughModal: React.FC = () => {
         <div className="p-4 space-y-4 overflow-y-auto shrink-0 bg-card border-b border-subtle">
           {/* KPI OR CHART SPECIFIC LINEAGE BANNER */}
           {drillThrough.kpi && (
-            <div className="bg-accent border border-cyan-500/30 rounded-xl p-3.5 space-y-2">
+            <div className="bg-elevated border border-cyan-500/30 rounded-xl p-3.5 space-y-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <span className="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-400 font-bold text-xs uppercase font-mono">
@@ -725,7 +725,7 @@ export const DrillThroughModal: React.FC = () => {
 
             <button
               onClick={closeDrillThrough}
-              className="px-4 py-2 rounded-xl bg-elevated hover:bg-accent text-primary text-xs font-semibold border border-subtle transition-colors"
+              className="px-4 py-2 rounded-xl bg-elevated hover:bg-card-hover text-primary text-xs font-semibold border border-subtle transition-colors"
             >
               Close
             </button>

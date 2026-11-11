@@ -96,8 +96,12 @@ export const DataCanvasAnimation: React.FC = () => {
     }
 
     let time = 0;
+    let isRunning = false;
+    let isVisible = true;
+    const reducedMotion = Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches);
+    const saveData = Boolean((navigator as any)?.connection?.saveData);
 
-    const render = () => {
+    const drawFrame = () => {
       time += 0.016;
       ctx.clearRect(0, 0, width, height);
 
@@ -214,13 +218,47 @@ export const DataCanvasAnimation: React.FC = () => {
         ctx.fillStyle = node.color;
         ctx.fill();
       });
-
-      animationFrameId = requestAnimationFrame(render);
     };
 
-    render();
+    const loop = () => {
+      if (!isRunning) return;
+      drawFrame();
+      animationFrameId = requestAnimationFrame(loop);
+    };
+
+    const updateAnimationState = () => {
+      const shouldRun = isVisible && !document.hidden && !reducedMotion && !saveData;
+      if (shouldRun && !isRunning) {
+        isRunning = true;
+        animationFrameId = requestAnimationFrame(loop);
+      } else if (!shouldRun && isRunning) {
+        isRunning = false;
+        cancelAnimationFrame(animationFrameId);
+      }
+    };
+
+    // Draw one static frame immediately so canvas is never blank under reduced motion / saveData
+    drawFrame();
+    updateAnimationState();
+
+    let observer: IntersectionObserver | null = null;
+    if (typeof IntersectionObserver !== 'undefined') {
+      observer = new IntersectionObserver(
+        (entries) => {
+          isVisible = entries.some((entry) => entry.isIntersecting);
+          updateAnimationState();
+        },
+        { threshold: 0.05 }
+      );
+      observer.observe(canvas);
+    }
+
+    document.addEventListener('visibilitychange', updateAnimationState);
 
     return () => {
+      isRunning = false;
+      observer?.disconnect();
+      document.removeEventListener('visibilitychange', updateAnimationState);
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseleave', handleMouseLeave);

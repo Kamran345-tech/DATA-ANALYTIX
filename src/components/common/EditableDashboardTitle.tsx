@@ -154,28 +154,31 @@ export const EditableDashboardTitle: React.FC<EditableDashboardTitleProps> = ({
   }
 
   return (
-    <div className="inline-flex items-center gap-2.5 flex-wrap">
+    <div className="inline-flex items-center gap-2 flex-wrap min-w-0 max-w-full">
       <div 
         onClick={() => setIsEditing(true)}
-        className={`group inline-flex items-center gap-2 cursor-pointer rounded-xl px-2.5 py-1 -mx-2 border transition-all select-none ${
+        className={`group inline-flex items-center gap-2 cursor-pointer rounded-xl px-1.5 py-0.5 border transition-colors select-none min-w-0 max-w-full ${
           isLight
             ? 'hover:bg-elevated border-transparent hover:border-slate-300'
             : 'hover:bg-elevated border-transparent hover:border-subtle'
         } ${className}`}
-        title="Double-click or click to rename this dashboard"
+        title={`${project.name} — Click to rename this dashboard`}
       >
         {showLabelPrefix && (
-          <span className={`text-xs font-mono uppercase tracking-wider ${
+          <span className={`text-xs font-mono uppercase tracking-wider shrink-0 ${
             isLight ? 'text-muted' : 'text-secondary'
           }`}>
             Dashboard:
           </span>
         )}
-        <span className={`font-heading font-extrabold transition-colors truncate ${
-          isLight 
-            ? 'text-primary group-hover:text-sky-700' 
-            : 'text-primary group-hover:text-cyan-400'
-        }`}>
+        <span
+          title={project.name}
+          className={`font-heading font-extrabold transition-colors truncate min-w-0 max-w-full ${
+            isLight 
+              ? 'text-primary group-hover:text-sky-700' 
+              : 'text-primary group-hover:text-cyan-400'
+          }`}
+        >
           {project.name}
         </span>
       </div>
@@ -184,14 +187,14 @@ export const EditableDashboardTitle: React.FC<EditableDashboardTitleProps> = ({
         <button
           type="button"
           onClick={() => setIsEditing(true)}
-          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all shadow-2xs shrink-0 cursor-pointer border ${
+          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors shadow-2xs shrink-0 cursor-pointer border whitespace-nowrap ${
             isLight
               ? 'bg-elevated hover:bg-sky-50 text-muted hover:text-sky-700 border-slate-300 hover:border-sky-300'
               : 'bg-elevated hover:bg-elevated text-secondary hover:text-cyan-400 border-teal-500/40 hover:border-cyan-400/50'
           }`}
           title="Rename this dashboard"
         >
-          <Pencil className={`w-3.5 h-3.5 ${isLight ? 'text-sky-600' : 'text-cyan-400'}`} />
+          <Pencil className={`w-3.5 h-3.5 shrink-0 ${isLight ? 'text-sky-600' : 'text-cyan-400'}`} />
           <span className="text-[11px] font-semibold">Rename</span>
         </button>
       )}

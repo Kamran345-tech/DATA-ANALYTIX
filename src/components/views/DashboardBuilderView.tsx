@@ -1045,15 +1045,15 @@ export const DashboardBuilderView: React.FC = () => {
 
       {/* 1. Header & Actions */}
       <div className="bg-card border-subtle text-primary shadow-sm border rounded-2xl p-4 sm:p-6 space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="space-y-1.5">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="space-y-1.5 min-w-0 flex-1 basis-[280px]">
             <div className={`flex items-center gap-2 text-xs font-semibold uppercase tracking-wider font-mono ${isLight ? 'text-sky-700' : 'text-cyan-400'}`}>
-              <SlidersHorizontal className="w-4 h-4" /> Custom Dashboard Composition Studio
+              <SlidersHorizontal className="w-4 h-4 shrink-0" /> Custom Dashboard Composition Studio
             </div>
             
             {/* EDITABLE DASHBOARD NAME */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <EditableDashboardTitle className="text-2xl sm:text-3xl font-extrabold uppercase" showLabelPrefix={false} />
+            <div className="flex items-center gap-2 flex-wrap min-w-0 max-w-full">
+              <EditableDashboardTitle className="text-2xl sm:text-3xl font-extrabold uppercase max-w-full" showLabelPrefix={false} />
             </div>
 
             <p className={`text-xs ${isLight ? 'text-muted' : 'text-secondary'}`}>
@@ -1061,7 +1061,7 @@ export const DashboardBuilderView: React.FC = () => {
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 shrink-0 ml-auto">
             {/* Quick Presets */}
             <div className={`hidden sm:flex items-center border rounded-xl p-1 text-xs ${isLight ? 'bg-elevated border-slate-200' : 'bg-card border-subtle'}`}>
               <button
@@ -3070,7 +3070,7 @@ export const DashboardBuilderView: React.FC = () => {
 
                 return (
                   <div className={`p-3.5 rounded-2xl border space-y-2.5 ${
-                    isLight ? 'bg-sky-50/70 border-sky-200' : 'bg-accent border-sky-900/60'
+                    isLight ? 'bg-sky-50/70 border-sky-200' : 'bg-elevated border-subtle'
                   }`}>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5">
@@ -3132,7 +3132,7 @@ export const DashboardBuilderView: React.FC = () => {
                                   : 'bg-sky-950/80 border-cyan-400 ring-2 ring-cyan-400 shadow-md'
                                 : isLight
                                   ? 'bg-white/80 border-slate-200 hover:border-sky-300 hover:bg-white'
-                                  : 'bg-accent border-teal-500/40 hover:border-sky-700 hover:bg-accent'
+                                  : 'bg-card border-subtle hover:border-strong hover:bg-card-hover'
                             }`}
                           >
                             <div className="flex items-center justify-between gap-1 mb-1">

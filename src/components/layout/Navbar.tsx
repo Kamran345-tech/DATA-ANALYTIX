@@ -41,12 +41,12 @@ export const Navbar: React.FC = () => {
   const isLight = themeMode === 'light';
 
   return (
-    <header className="sticky top-0 z-40 shrink-0 px-3 sm:px-4 py-2 sm:py-2.5 flex items-center justify-between glass-nav transition-colors duration-200">
+    <header className="sticky top-0 z-40 shrink-0 px-2.5 sm:px-4 py-2 flex items-center justify-between gap-2 glass-nav transition-colors duration-200 max-w-full overflow-x-clip">
       {/* Left branding & drawer trigger */}
-      <div className="flex items-center gap-2 sm:gap-3">
+      <div className="flex items-center gap-2 min-w-0 shrink">
         <button
           onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+          className={`p-1.5 rounded-lg transition-colors cursor-pointer shrink-0 ${
             isLight 
               ? 'text-muted hover:text-cyan-700 hover:bg-elevated' 
               : 'text-secondary hover:text-cyan-400 hover:bg-white/5'
@@ -59,38 +59,42 @@ export const Navbar: React.FC = () => {
 
         <div 
           onClick={() => setCurrentTab('landing')}
-          className="cursor-pointer group select-none flex items-center"
+          className="cursor-pointer group select-none flex items-center shrink-0"
           title="Return to Home Overview"
         >
           <BrandLogo size="sm" showSubtitle={false} />
         </div>
 
         {/* Project Title & Status Indicator */}
-        <div className={`hidden md:flex items-center gap-2 pl-3 border-l ${
+        <div className={`hidden lg:flex items-center gap-1.5 pl-2.5 border-l min-w-0 shrink ${
           isLight ? 'border-slate-200' : 'border-white/10'
         }`}>
-          <EditableDashboardTitle className="text-xs max-w-[170px] lg:max-w-xs" iconSize="sm" />
-          <span className="text-secondary font-mono text-xs">/</span>
-          <span className={`text-xs font-medium flex items-center gap-1.5 shrink-0 ${
+          <EditableDashboardTitle
+            className="text-xs max-w-[120px] xl:max-w-[160px] 2xl:max-w-[230px]"
+            iconSize="sm"
+            showEditButton={false}
+          />
+          <span className="hidden 2xl:inline text-secondary font-mono text-xs shrink-0">/</span>
+          <span className={`hidden 2xl:flex text-xs font-medium items-center gap-1.5 shrink-0 whitespace-nowrap ${
             isLight ? 'text-cyan-800' : 'text-primary'
           }`}>
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
             Enterprise Model
           </span>
-          <span className={`text-xs font-mono ${isLight ? 'text-secondary' : 'text-muted'}`}>
+          <span className={`text-xs font-mono shrink-0 whitespace-nowrap ${isLight ? 'text-secondary' : 'text-muted'}`}>
             · {project.version}
           </span>
         </div>
       </div>
 
       {/* Center Search */}
-      <div className="hidden lg:flex items-center relative w-64 xl:w-72">
+      <div className="hidden lg:flex items-center relative w-36 xl:w-48 2xl:w-64 shrink-0">
         <Search className={`w-4 h-4 absolute left-3 pointer-events-none z-10 ${
           isLight ? 'text-secondary' : 'text-secondary'
         }`} />
         <input
           type="text"
-          placeholder="Global filter or search data..."
+          placeholder="Search data..."
           value={filters.searchQuery}
           onChange={(e) => setFilters(prev => ({ ...prev, searchQuery: e.target.value }))}
           className="glass-input w-full text-xs pl-9 pr-7 py-1.5 rounded-lg transition-colors focus:outline-none"
@@ -108,12 +112,12 @@ export const Navbar: React.FC = () => {
       </div>
 
       {/* Right controls */}
-      <div className="flex items-center gap-1.5 sm:gap-2">
+      <div className="flex items-center gap-1 xl:gap-1.5 shrink-0">
         {/* ================================================================= */}
         {/* PROMINENT DARK & LIGHT MODE OPTION AT THE TOP                    */}
         {/* ================================================================= */}
         <div 
-          className="flex items-center p-1 rounded-xl glass-card"
+          className="flex items-center p-1 rounded-xl glass-card shrink-0"
           role="group"
           aria-label="Theme mode switcher"
         >
@@ -121,70 +125,78 @@ export const Navbar: React.FC = () => {
           <button
             type="button"
             onClick={() => setThemeMode('light')}
-            className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-2 xl:px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
               isLight
-                ? 'glass-btn-primary shadow-xs font-bold text-primary'
+                ? 'glass-btn-primary shadow-xs font-bold text-on-accent'
                 : 'text-secondary hover:text-primary hover:bg-white/5'
             }`}
             title="Switch to Light Mode"
+            aria-label="Switch to Light Mode"
             aria-pressed={isLight}
           >
-            <Sun className={`w-3.5 h-3.5 ${isLight ? 'text-amber-300 fill-amber-300' : 'text-secondary'}`} />
-            <span className="text-[11px] sm:text-xs">Light</span>
+            <Sun className={`w-3.5 h-3.5 shrink-0 ${isLight ? 'text-amber-300 fill-amber-300' : 'text-secondary'}`} />
+            <span className="hidden 2xl:inline text-[11px] sm:text-xs">Light</span>
           </button>
 
           {/* Dark Mode Button */}
           <button
             type="button"
             onClick={() => setThemeMode('dark')}
-            className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-2 xl:px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
               !isLight
-                ? 'glass-btn-primary shadow-xs font-bold text-primary'
+                ? 'glass-btn-primary shadow-xs font-bold text-on-accent'
                 : 'text-muted hover:text-primary hover:bg-input'
             }`}
             title="Switch to Dark Mode"
+            aria-label="Switch to Dark Mode"
             aria-pressed={!isLight}
           >
-            <Moon className={`w-3.5 h-3.5 ${!isLight ? 'text-cyan-300 fill-cyan-300' : 'text-muted'}`} />
-            <span className="text-[11px] sm:text-xs">Dark</span>
+            <Moon className={`w-3.5 h-3.5 shrink-0 ${!isLight ? 'text-on-accent' : 'text-muted'}`} />
+            <span className="hidden 2xl:inline text-[11px] sm:text-xs">Dark</span>
           </button>
         </div>
 
         {/* Small Classic / Modern Switcher Toggle */}
         <button
           type="button"
-          onClick={() => setUiMode(uiMode === 'modern' ? 'classic' : 'modern')}
-          className="glass-btn-secondary flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold cursor-pointer"
+          onClick={() => setUiMode(uiMode === 'modern' ? 'modern' : 'modern')}
+          onClickCapture={(e) => {
+            e.stopPropagation();
+            setUiMode(uiMode === 'modern' ? 'classic' : 'modern');
+          }}
+          className="hidden sm:flex glass-btn-secondary items-center gap-1.5 px-2 xl:px-2.5 py-1 rounded-lg text-xs font-semibold cursor-pointer whitespace-nowrap shrink-0"
           title={`Switch interface to ${uiMode === 'modern' ? 'Classic' : 'Modern'} mode`}
           aria-label="Toggle Classic or Modern interface mode"
         >
-          <span className={`w-2 h-2 rounded-full ${uiMode === 'modern' ? 'bg-sky-400' : 'bg-input'}`} />
-          <span className="hidden sm:inline">{uiMode === 'modern' ? 'Modern' : 'Classic'}</span>
+          <span className={`w-2 h-2 rounded-full shrink-0 ${uiMode === 'modern' ? 'bg-sky-400' : 'bg-emerald-400'}`} />
+          <span className="hidden xl:inline">{uiMode === 'modern' ? 'Modern' : 'Classic'}</span>
         </button>
 
         {/* How to Use Platform Guide Button */}
-        <Tooltip
-          side="bottom"
-          title="Platform Guide & Manual"
-          tag="Documentation"
-          className="w-auto"
-          content="Open the complete module directory, end-to-end data lifecycle steps, and enterprise best practices."
-        >
-          <button
-            onClick={() => setCurrentTab('how_to_use')}
-            className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-              currentTab === 'how_to_use'
-                ? 'glass-btn-primary'
-                : 'glass-btn-secondary'
-            }`}
+        <div className="hidden md:block shrink-0">
+          <Tooltip
+            side="bottom"
+            title="Platform Guide & Manual"
+            tag="Documentation"
+            className="w-auto"
+            content="Open the complete module directory, end-to-end data lifecycle steps, and enterprise best practices."
           >
-            <HelpCircle className="w-3.5 h-3.5 text-cyan-400" />
-            <span className="font-medium">How to Use</span>
-          </button>
-        </Tooltip>
+            <button
+              onClick={() => setCurrentTab('how_to_use')}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                currentTab === 'how_to_use'
+                  ? 'glass-btn-primary text-on-accent'
+                  : 'glass-btn-secondary'
+              }`}
+            >
+              <HelpCircle className="w-3.5 h-3.5 text-accent shrink-0" />
+              <span className="font-medium whitespace-nowrap">How to Use</span>
+            </button>
+          </Tooltip>
+        </div>
 
         {/* Quality Score Indicator */}
-        <div className="hidden sm:block">
+        <div className="hidden lg:block shrink-0">
           <Tooltip
             side="bottom"
             title="Data Quality Audit"
@@ -194,11 +206,11 @@ export const Navbar: React.FC = () => {
           >
             <button
               onClick={() => setCurrentTab('quality')}
-              className="glass-card flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs cursor-pointer"
+              className="glass-card flex items-center gap-1.5 px-2 xl:px-2.5 py-1 rounded-lg text-xs cursor-pointer whitespace-nowrap shrink-0"
             >
-              <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
-              <span className={isLight ? 'text-muted' : 'text-secondary'}>Quality:</span>
-              <span className={`font-semibold ${isLight ? 'text-primary' : 'text-primary'}`}>
+              <ShieldCheck className="w-3.5 h-3.5 text-accent shrink-0" />
+              <span className={`hidden 2xl:inline ${isLight ? 'text-muted' : 'text-secondary'}`}>Quality:</span>
+              <span className="font-semibold text-primary">
                 {qualityReport.overallScore}%
               </span>
             </button>
@@ -206,25 +218,27 @@ export const Navbar: React.FC = () => {
         </div>
 
         {/* Presentation Mode Toggle */}
-        <Tooltip
-          side="bottom"
-          title={isPresentationMode ? 'Exit Presentation View' : 'Full-Screen Presentation'}
-          tag="C-Suite View"
-          className="w-auto"
-          content="Expands telemetry dashboards to full viewport, hiding sidebars and headers for clean executive board presentations."
-        >
-          <button
-            onClick={() => setIsPresentationMode(!isPresentationMode)}
-            className={`p-1.5 sm:p-2 rounded-lg cursor-pointer ${
-              isPresentationMode 
-                ? 'glass-btn-primary' 
-                : 'glass-btn-secondary'
-            }`}
-            aria-label="Toggle Presentation Mode"
+        <div className="hidden sm:block shrink-0">
+          <Tooltip
+            side="bottom"
+            title={isPresentationMode ? 'Exit Presentation View' : 'Full-Screen Presentation'}
+            tag="C-Suite View"
+            className="w-auto"
+            content="Expands telemetry dashboards to full viewport, hiding sidebars and headers for clean executive board presentations."
           >
-            {isPresentationMode ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-          </button>
-        </Tooltip>
+            <button
+              onClick={() => setIsPresentationMode(!isPresentationMode)}
+              className={`p-1.5 rounded-lg cursor-pointer shrink-0 ${
+                isPresentationMode 
+                  ? 'glass-btn-primary text-on-accent' 
+                  : 'glass-btn-secondary'
+              }`}
+              aria-label="Toggle Presentation Mode"
+            >
+              {isPresentationMode ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+            </button>
+          </Tooltip>
+        </div>
 
         {/* Quick Upload CTA */}
         <Tooltip
@@ -236,15 +250,16 @@ export const Navbar: React.FC = () => {
         >
           <button
             onClick={() => setCurrentTab('upload')}
-            className="glass-btn-primary flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-xs cursor-pointer shadow-md"
+            className="glass-btn-primary flex items-center gap-1.5 px-2.5 xl:px-3 py-1.5 rounded-lg font-semibold text-xs cursor-pointer shadow-xs whitespace-nowrap shrink-0"
+            aria-label="Upload Data"
           >
-            <UploadCloud className="w-4 h-4" />
-            <span className="hidden sm:inline">Upload Data</span>
+            <UploadCloud className="w-4 h-4 shrink-0" />
+            <span className="hidden xl:inline whitespace-nowrap">Upload Data</span>
           </button>
         </Tooltip>
 
         {/* Export Center CTA */}
-        <div className="hidden md:block">
+        <div className="hidden md:block shrink-0">
           <Tooltip
             side="bottom"
             title="Production Export Center"
@@ -254,10 +269,11 @@ export const Navbar: React.FC = () => {
           >
             <button
               onClick={() => setCurrentTab('export_center')}
-              className="glass-btn-secondary flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs cursor-pointer"
+              className="glass-btn-secondary flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs cursor-pointer whitespace-nowrap shrink-0"
+              aria-label="Export"
             >
-              <DownloadCloud className="w-4 h-4 text-cyan-400" />
-              <span>Export</span>
+              <DownloadCloud className="w-4 h-4 text-accent shrink-0" />
+              <span className="hidden xl:inline whitespace-nowrap">Export</span>
             </button>
           </Tooltip>
         </div>
@@ -272,18 +288,19 @@ export const Navbar: React.FC = () => {
         >
           <button
             onClick={() => setIsAuthModalOpen(true)}
-            className="glass-btn-secondary flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold cursor-pointer"
+            className="glass-btn-secondary flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-xs font-semibold cursor-pointer whitespace-nowrap shrink-0"
+            aria-label={currentUser ? (currentUser.displayName?.split(' ')[0] || 'My Account') : isGuestMode ? 'Guest Demo' : 'Sign In'}
           >
             {currentUser?.photoURL ? (
               <img 
                 src={currentUser.photoURL} 
                 alt="Profile" 
-                className="w-4 h-4 rounded-full border border-cyan-400"
+                className="w-4 h-4 rounded-full border border-cyan-400 shrink-0"
               />
             ) : (
               <span className={`w-2 h-2 rounded-full ${currentUser ? 'bg-emerald-400' : isGuestMode ? 'bg-amber-400' : 'bg-cyan-400'} shrink-0`} />
             )}
-            <span className="max-w-[110px] truncate">
+            <span className="hidden sm:inline max-w-[96px] truncate whitespace-nowrap">
               {currentUser ? (currentUser.displayName?.split(' ')[0] || 'My Account') : isGuestMode ? 'Guest Demo' : 'Sign In'}
             </span>
           </button>

@@ -108,7 +108,7 @@ export const KpiCardEditorModal: React.FC<KpiCardEditorModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle bg-surface-panel/50">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-accent border border-teal-500/40 flex items-center justify-center text-accent">
+            <div className="w-8 h-8 rounded-lg bg-accent-soft border border-subtle flex items-center justify-center text-accent">
               <Sliders className="w-4 h-4" />
             </div>
             <div>

@@ -1625,6 +1625,11 @@ html[data-depth-ui="true"] textarea,
   }
 }
 
+.hero-3d-platform[data-paused="true"] {
+  animation-play-state: paused !important;
+  animation: none !important;
+}
+
 /* ========================================================================== */
 /* 15. SEMANTIC TOKEN UTILITY CLASSES & UNIFIED THEME ENGINE                  */
 /* ========================================================================== */
@@ -1671,6 +1676,17 @@ html[data-unified-theme="true"] .glass-sidebar {
   background-image: none !important;
   border-color: var(--border-subtle) !important;
   color: var(--text-primary) !important;
+}
+
+/* Reduce backdrop-blur to key surfaces (sidebar, modals) only */
+html[data-unified-theme="true"] .glass-card,
+html[data-unified-theme="true"] .glass-panel,
+html[data-unified-theme="true"] .glass-btn-primary,
+html[data-unified-theme="true"] .glass-btn-secondary,
+html[data-unified-theme="true"] .glass-input,
+html[data-unified-theme="true"] .depth-card {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 /* Unify all legacy dark/charcoal card surfaces to --bg-card in both Dark and Light */
@@ -1755,9 +1771,37 @@ html[data-unified-theme="true"] h3,
 html[data-unified-theme="true"] h4,
 html[data-unified-theme="true"] h5,
 html[data-unified-theme="true"] h6,
-html[data-unified-theme="true"] .font-heading,
+html[data-unified-theme="true"] :where(.font-heading:not(.bg-accent, .text-on-accent, .text-accent, .bg-accent-soft, .glass-btn-primary, .bg-sky-600, .bg-sky-700, .bg-cyan-500, .bg-cyan-600, .bg-emerald-600, .bg-teal-500, .bg-teal-600)),
 html[data-unified-theme="true"] .kpi-value {
   color: var(--text-primary) !important;
+}
+
+/* Guarantee --text-on-accent (#0B1120 in dark, #FFFFFF in light) on every solid accent fill */
+html[data-unified-theme="true"] .bg-accent,
+html[data-unified-theme="true"] .glass-btn-primary,
+html[data-unified-theme="true"] button.bg-sky-600,
+html[data-unified-theme="true"] button.bg-sky-700,
+html[data-unified-theme="true"] button.bg-cyan-500,
+html[data-unified-theme="true"] button.bg-cyan-600,
+html[data-unified-theme="true"] button.bg-emerald-600,
+html[data-unified-theme="true"] button.bg-teal-500,
+html[data-unified-theme="true"] button.bg-teal-600 {
+  background-color: var(--accent) !important;
+  background-image: none !important;
+  color: var(--text-on-accent) !important;
+}
+
+html[data-unified-theme="true"] .bg-accent *,
+html[data-unified-theme="true"] .text-on-accent,
+html[data-unified-theme="true"] .glass-btn-primary *,
+html[data-unified-theme="true"] button.bg-sky-600 *,
+html[data-unified-theme="true"] button.bg-sky-700 *,
+html[data-unified-theme="true"] button.bg-cyan-500 *,
+html[data-unified-theme="true"] button.bg-cyan-600 *,
+html[data-unified-theme="true"] button.bg-emerald-600 *,
+html[data-unified-theme="true"] button.bg-teal-500 *,
+html[data-unified-theme="true"] button.bg-teal-600 * {
+  color: var(--text-on-accent) !important;
 }
 
 html[data-unified-theme="true"] .text-gray-200,
@@ -1821,6 +1865,3 @@ html[data-unified-theme="true"] svg text {
 html[data-unified-theme="true"] .recharts-cartesian-grid line {
   stroke: var(--chart-grid) !important;
 }
-
-
-

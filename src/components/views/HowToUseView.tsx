@@ -728,7 +728,7 @@ export const HowToUseView: React.FC = () => {
                     className={`text-xs font-mono font-bold px-2 py-0.5 rounded-md ${
                       isLight
                         ? 'bg-elevated text-primary border border-slate-200'
-                        : 'bg-accent text-cyan-400 border border-cyan-500/30'
+                        : 'bg-accent-soft text-accent border border-subtle'
                     }`}
                   >
                     STEP {step.num}
@@ -960,7 +960,7 @@ export const HowToUseView: React.FC = () => {
                     className={`mt-3 p-2.5 rounded-lg border flex items-start gap-2 text-xs ${
                       isLight
                         ? 'bg-sky-50 border-sky-200 text-sky-950'
-                        : 'bg-accent border-cyan-500/30 text-cyan-200'
+                        : 'bg-elevated border-subtle text-cyan-200'
                     }`}
                   >
                     <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />

@@ -21,7 +21,7 @@ import {
   Terminal
 } from 'lucide-react';
 import { usePlatform } from '../../store/usePlatformStore';
-import { executeSQLQuery, generateStarterSQLQueries, translateNaturalLanguageToSQL, SQLQueryResult } from '../../engine/sqlEngine';
+import { executeSQLQueryAsync, generateStarterSQLQueries, translateNaturalLanguageToSQL, SQLQueryResult } from '../../engine/sqlEngine';
 import { DownloadMenu } from '../common/DownloadMenu';
 
 export const SQLLabView: React.FC = () => {
@@ -71,16 +71,22 @@ export const SQLLabView: React.FC = () => {
   }, [tableName, columns]);
 
   useEffect(() => {
+    let active = true;
     if (starters.length > 0 && !query) {
-      setQuery(starters[0].sql);
-      const initialRes = executeSQLQuery(starters[0].sql);
-      setResult(initialRes);
+      const sql = starters[0].sql;
+      setQuery(sql);
+      executeSQLQueryAsync(sql).then(initialRes => {
+        if (active) setResult(initialRes);
+      });
     }
+    return () => {
+      active = false;
+    };
   }, [starters]);
 
-  const handleRun = () => {
+  const handleRun = async () => {
     if (!query.trim()) return;
-    const res = executeSQLQuery(query);
+    const res = await executeSQLQueryAsync(query);
     setResult(res);
     setAppliedNotice(null);
   };
@@ -92,11 +98,11 @@ export const SQLLabView: React.FC = () => {
     setTimeout(() => setAppliedNotice(null), 5000);
   };
 
-  const handleNLTranslate = () => {
+  const handleNLTranslate = async () => {
     if (!nlInput.trim()) return;
     const translated = translateNaturalLanguageToSQL(nlInput, tableName, columns);
     setQuery(translated);
-    const res = executeSQLQuery(translated);
+    const res = await executeSQLQueryAsync(translated);
     setResult(res);
   };
 
@@ -222,9 +228,9 @@ export const SQLLabView: React.FC = () => {
                   <button
                     key={idx}
                     type="button"
-                    onClick={() => {
+                    onClick={async () => {
                       setQuery(preset.sql);
-                      const res = executeSQLQuery(preset.sql);
+                      const res = await executeSQLQueryAsync(preset.sql);
                       setResult(res);
                       setAppliedNotice(null);
                     }}

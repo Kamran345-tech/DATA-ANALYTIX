@@ -20,7 +20,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { usePlatform } from '../../store/usePlatformStore';
-import { executeSQLQuery } from '../../engine/sqlEngine';
+import { executeSQLQueryAsync } from '../../engine/sqlEngine';
 import { safeMin, safeMax } from '../../utils/mathUtils';
 
 export const DataEngineeringSuite: React.FC = () => {
@@ -52,9 +52,9 @@ export const DataEngineeringSuite: React.FC = () => {
   const [selectedDagNode, setSelectedDagNode] = useState<number>(2);
 
   // Run SQL
-  const handleExecuteSql = () => {
+  const handleExecuteSql = async () => {
     try {
-      const res = executeSQLQuery(sqlQuery);
+      const res = await executeSQLQueryAsync(sqlQuery);
       if (res.error) {
         setQueryError(res.error);
         setQueryResult(null);
@@ -73,7 +73,7 @@ export const DataEngineeringSuite: React.FC = () => {
 
   // Run on mount once
   React.useEffect(() => {
-    handleExecuteSql();
+    void handleExecuteSql();
   }, [tableName, primaryMetric, primaryDim]);
 
   const copyCode = (text: string, key: string) => {
@@ -252,34 +252,28 @@ DIVIDE([Total ${primaryMetric}] - SUM('${tableName}'[COGS]), [Total ${primaryMet
     <div className="space-y-6 animate-fadeIn">
       
       {/* Header Banner */}
-      <div className={`p-5 rounded-2xl border flex flex-wrap items-center justify-between gap-4 ${
-        isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-accent border-teal-500/40 shadow-md'
-      }`}>
+      <div className="p-5 rounded-2xl border bg-card border-subtle border-t-2 border-t-[var(--accent)] shadow-sm flex flex-wrap items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className={`p-1.5 rounded-lg ${isLight ? 'bg-emerald-100 text-emerald-800' : 'bg-accent text-accent'}`}>
+            <span className="p-1.5 rounded-lg bg-accent-soft text-accent">
               <Network className="w-5 h-5" />
             </span>
-            <h2 className={`text-lg font-bold tracking-tight uppercase ${isLight ? 'text-primary' : 'text-primary'}`}>
+            <h2 className="text-lg font-bold tracking-tight uppercase text-primary">
               Data Engineering & Semantic Architecture Suite
             </h2>
           </div>
-          <p className={`text-xs mt-1 ${isLight ? 'text-muted' : 'text-secondary'}`}>
+          <p className="text-xs mt-1 text-secondary">
             End-to-end lineage DAG, automated dbt/Great Expectations assertions, in-browser SQL execution sandbox, and production pipeline exports.
           </p>
         </div>
 
         <div className="flex items-center gap-2">
-          <div className={`px-3 py-1.5 rounded-xl border text-xs font-mono font-semibold flex items-center gap-1.5 ${
-            isLight ? 'bg-emerald-50 text-emerald-800 border-emerald-300' : 'bg-accent text-accent border-teal-500/40'
-          }`}>
+          <div className="px-3 py-1.5 rounded-xl border text-xs font-mono font-semibold flex items-center gap-1.5 bg-accent-soft text-accent border-subtle">
             <ShieldCheck className="w-4 h-4" />
             <span>Health: {qualityReport.overallScore}% Verified</span>
           </div>
 
-          <div className={`px-3 py-1.5 rounded-xl border text-xs font-mono ${
-            isLight ? 'bg-elevated text-muted border-slate-200' : 'bg-accent text-secondary border-teal-500/40'
-          }`}>
+          <div className="px-3 py-1.5 rounded-xl border text-xs font-mono bg-elevated text-secondary border-subtle">
             <span>Latency: 1.4ms</span>
           </div>
         </div>
@@ -288,13 +282,11 @@ DIVIDE([Total ${primaryMetric}] - SUM('${tableName}'[COGS]), [Total ${primaryMet
       {/* =================================================================== */}
       {/* 1. INTERACTIVE DATA LINEAGE DAG PIPELINE                            */}
       {/* =================================================================== */}
-      <div className={`p-6 rounded-2xl border ${
-        isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-accent border-teal-500/40'
-      }`}>
+      <div className="p-6 rounded-2xl border bg-card border-subtle shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <Cpu className="w-4 h-4 text-emerald-400" />
-            <h3 className="text-sm font-bold uppercase tracking-wider">
+            <Cpu className="w-4 h-4 text-accent" />
+            <h3 className="text-sm font-bold uppercase tracking-wider text-primary">
               Automated Data Pipeline Lineage (DAG)
             </h3>
           </div>
@@ -400,28 +392,24 @@ DIVIDE([Total ${primaryMetric}] - SUM('${tableName}'[COGS]), [Total ${primaryMet
             <div
               key={node.id}
               onClick={() => setSelectedDagNode(node.id)}
-              className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between ${
+              className={`p-3.5 rounded-2xl border transition-colors cursor-pointer flex flex-col justify-between bg-elevated ${
                 selectedDagNode === node.id
-                  ? isLight 
-                    ? 'bg-cyan-50 border-cyan-400 ring-2 ring-cyan-300 shadow-md' 
-                    : 'bg-accent border-cyan-400 ring-2 ring-cyan-400/30 shadow-lg shadow-cyan-500/10'
-                  : isLight 
-                    ? 'bg-white border-slate-200 hover:bg-elevated' 
-                    : 'glass-card border-white/10 hover:border-cyan-400/30'
+                  ? 'border-strong ring-2 ring-[var(--accent)] shadow-md'
+                  : 'border-subtle hover:border-strong'
               }`}
             >
               <div>
-                <div className="flex items-center justify-between text-[10px] font-mono font-bold text-cyan-400 mb-1">
+                <div className="flex items-center justify-between text-[10px] font-mono font-bold text-accent mb-1">
                   <span>{node.step}</span>
                   <span className="text-secondary">{node.latency}</span>
                 </div>
                 <div className="font-bold text-xs truncate mb-1 text-primary" title={node.title}>{node.title}</div>
-                <div className="text-[11px] font-semibold text-cyan-300">{node.metric}</div>
+                <div className="text-[11px] font-semibold text-primary">{node.metric}</div>
                 <p className="text-[10px] text-secondary mt-1 line-clamp-2 leading-tight">{node.desc}</p>
               </div>
 
-              <div className="pt-2.5 mt-2 border-t border-white/10 flex items-center justify-between text-[10px] font-semibold">
-                <span className="text-emerald-400 flex items-center gap-1">
+              <div className="pt-2.5 mt-2 border-t border-subtle flex items-center justify-between text-[10px] font-semibold">
+                <span className="text-success flex items-center gap-1">
                   <CheckCircle2 className="w-3 h-3" /> {node.status}
                 </span>
                 <span className="text-secondary font-mono">Stage {node.id + 1}</span>
@@ -434,16 +422,14 @@ DIVIDE([Total ${primaryMetric}] - SUM('${tableName}'[COGS]), [Total ${primaryMet
       {/* =================================================================== */}
       {/* 2. AUTOMATED DATA TESTS SUITE (dbt / Great Expectations)            */}
       {/* =================================================================== */}
-      <div className={`p-6 rounded-2xl border ${
-        isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-accent border-teal-500/40'
-      }`}>
+      <div className="p-6 rounded-2xl border bg-card border-subtle shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <div className="flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-emerald-400" />
-            <h3 className="text-sm font-bold uppercase tracking-wider">
+            <ShieldCheck className="w-4 h-4 text-accent" />
+            <h3 className="text-sm font-bold uppercase tracking-wider text-primary">
               Automated Data Quality & Schema Test Suite (dbt / Great Expectations)
             </h3>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-400">
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-accent-soft text-accent border border-subtle">
               5/5 Passed
             </span>
           </div>
@@ -451,11 +437,9 @@ DIVIDE([Total ${primaryMetric}] - SUM('${tableName}'[COGS]), [Total ${primaryMet
           <div className="flex items-center gap-2">
             <button
               onClick={() => copyCode(JSON.stringify(testSuite, null, 2), 'tests')}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
-                isLight ? 'bg-elevated border-slate-200 hover:bg-input' : 'bg-accent border-teal-500/40 hover:bg-accent'
-              }`}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors bg-elevated border-subtle hover:bg-card-hover text-primary cursor-pointer"
             >
-              {copiedKey === 'tests' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+              {copiedKey === 'tests' ? <Check className="w-3.5 h-3.5 text-success" /> : <Copy className="w-3.5 h-3.5" />}
               <span>{copiedKey === 'tests' ? 'Copied JSON' : 'Export Test Logs'}</span>
             </button>
           </div>
@@ -465,9 +449,7 @@ DIVIDE([Total ${primaryMetric}] - SUM('${tableName}'[COGS]), [Total ${primaryMet
         <div className="overflow-x-auto">
           <table className="w-full text-xs text-left">
             <thead>
-              <tr className={`border-b font-mono uppercase text-[10px] tracking-wider ${
-                isLight ? 'border-slate-200 text-muted' : 'border-teal-500/40 text-secondary'
-              }`}>
+              <tr className="border-b border-subtle font-mono uppercase text-[10px] tracking-wider text-secondary">
                 <th className="py-2.5 px-3">Test Assertion Name</th>
                 <th className="py-2.5 px-3">Category</th>
                 <th className="py-2.5 px-3">Audited Scope</th>
@@ -475,20 +457,20 @@ DIVIDE([Total ${primaryMetric}] - SUM('${tableName}'[COGS]), [Total ${primaryMet
                 <th className="py-2.5 px-3 text-right">Result</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-inherit">
+            <tbody className="divide-y divide-[var(--border-subtle)]">
               {testSuite.map(t => (
-                <tr key={t.id} className={isLight ? 'hover:bg-elevated' : 'hover:bg-accent'}>
-                  <td className="py-2.5 px-3 font-mono font-bold text-emerald-400">
+                <tr key={t.id} className="hover:bg-card-hover">
+                  <td className="py-2.5 px-3 font-mono font-bold text-primary">
                     {t.name}
                     <span className="block text-[10px] font-normal text-secondary font-sans mt-0.5">
                       {t.description}
                     </span>
                   </td>
-                  <td className="py-2.5 px-3 font-medium">{t.category}</td>
-                  <td className="py-2.5 px-3 font-mono">{t.recordsAudited.toLocaleString()} rows</td>
-                  <td className="py-2.5 px-3 font-mono">0 anomalies</td>
+                  <td className="py-2.5 px-3 font-medium text-primary">{t.category}</td>
+                  <td className="py-2.5 px-3 font-mono text-secondary">{t.recordsAudited.toLocaleString()} rows</td>
+                  <td className="py-2.5 px-3 font-mono text-secondary">0 anomalies</td>
                   <td className="py-2.5 px-3 text-right">
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-accent-soft text-accent border border-subtle">
                       <CheckCircle2 className="w-3 h-3" /> PASSED
                     </span>
                   </td>
@@ -503,7 +485,7 @@ DIVIDE([Total ${primaryMetric}] - SUM('${tableName}'[COGS]), [Total ${primaryMet
       {/* 3. IN-BROWSER SQL EXECUTION SANDBOX                                 */}
       {/* =================================================================== */}
       <div className={`p-6 rounded-2xl border ${
-        isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-accent border-teal-500/40'
+        isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-card border-subtle'
       }`}>
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <div className="flex items-center gap-2">
@@ -519,7 +501,7 @@ DIVIDE([Total ${primaryMetric}] - SUM('${tableName}'[COGS]), [Total ${primaryMet
           <div className="flex items-center gap-2">
             <button
               onClick={handleExecuteSql}
-              className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-accent text-primary font-bold text-xs hover:bg-accent transition-all cursor-pointer shadow-sm"
+              className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-accent text-on-accent font-bold text-xs hover:opacity-90 transition-all cursor-pointer shadow-sm"
             >
               <Play className="w-3.5 h-3.5 fill-current" />
               <span>Run Query</span>
@@ -537,7 +519,7 @@ DIVIDE([Total ${primaryMetric}] - SUM('${tableName}'[COGS]), [Total ${primaryMet
               className={`w-full font-mono text-xs p-3.5 rounded-xl border focus:outline-none leading-relaxed ${
                 isLight 
                   ? 'bg-elevated border-slate-300 text-primary focus:bg-white focus:border-emerald-500' 
-                  : 'bg-accent border-teal-500/40 text-emerald-300 focus:border-teal-500/40'
+                  : 'bg-input border-subtle text-primary focus:border-strong'
               }`}
               spellCheck={false}
             />
@@ -563,7 +545,7 @@ DIVIDE([Total ${primaryMetric}] - SUM('${tableName}'[COGS]), [Total ${primaryMet
             <div className="overflow-x-auto border rounded-xl max-h-60 border-inherit">
               <table className="w-full text-xs text-left">
                 <thead className={`border-b font-mono uppercase text-[10px] ${
-                  isLight ? 'bg-elevated border-slate-200 text-muted' : 'bg-accent border-teal-500/40 text-secondary'
+                  isLight ? 'bg-elevated border-slate-200 text-muted' : 'bg-elevated border-subtle text-secondary'
                 }`}>
                   <tr>
                     {Object.keys(queryResult[0]).map(col => (
@@ -573,7 +555,7 @@ DIVIDE([Total ${primaryMetric}] - SUM('${tableName}'[COGS]), [Total ${primaryMet
                 </thead>
                 <tbody className="divide-y divide-inherit">
                   {queryResult.map((row, rIdx) => (
-                    <tr key={rIdx} className={isLight ? 'hover:bg-elevated' : 'hover:bg-accent'}>
+                    <tr key={rIdx} className={isLight ? 'hover:bg-elevated' : 'hover:bg-card-hover'}>
                       {Object.values(row).map((val: any, cIdx) => (
                         <td key={cIdx} className="py-2 px-3 font-mono text-[11px]">
                           {typeof val === 'number' ? val.toLocaleString() : String(val ?? '')}
@@ -592,7 +574,7 @@ DIVIDE([Total ${primaryMetric}] - SUM('${tableName}'[COGS]), [Total ${primaryMet
       {/* 4. PRODUCTION CODE GENERATION & EXPORT STUDIO                       */}
       {/* =================================================================== */}
       <div className={`p-6 rounded-2xl border ${
-        isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-accent border-teal-500/40'
+        isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-card border-subtle'
       }`}>
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <div className="flex items-center gap-2">
@@ -613,10 +595,10 @@ DIVIDE([Total ${primaryMetric}] - SUM('${tableName}'[COGS]), [Total ${primaryMet
               <button
                 key={tab.id}
                 onClick={() => setActiveCodeTab(tab.id as any)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
                   activeCodeTab === tab.id
-                    ? isLight ? 'bg-emerald-600 text-primary shadow-xs font-bold' : 'bg-accent text-primary font-bold shadow-xs'
-                    : isLight ? 'bg-elevated text-muted hover:bg-input' : 'bg-accent text-secondary hover:bg-accent'
+                    ? 'bg-accent text-on-accent font-bold shadow-xs'
+                    : 'bg-elevated text-secondary hover:bg-card-hover'
                 }`}
               >
                 {tab.label}
@@ -628,7 +610,7 @@ DIVIDE([Total ${primaryMetric}] - SUM('${tableName}'[COGS]), [Total ${primaryMet
                 const codeMap = { dbt: dbtModelCode, airflow: airflowDagCode, ddl: ddlSqlCode, dax: daxMeasureCode };
                 copyCode(codeMap[activeCodeTab], activeCodeTab);
               }}
-              className="ml-2 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-primary text-xs font-bold transition-all shadow-sm"
+              className="ml-2 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent hover:opacity-90 text-on-accent text-xs font-bold transition-opacity shadow-sm cursor-pointer"
               title="Copy snippet to clipboard"
             >
               {copiedKey === activeCodeTab ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
@@ -639,7 +621,7 @@ DIVIDE([Total ${primaryMetric}] - SUM('${tableName}'[COGS]), [Total ${primaryMet
 
         {/* Code Display Area */}
         <div className={`p-4 rounded-xl border font-mono text-xs overflow-x-auto leading-relaxed ${
-          isLight ? 'bg-card text-primary border-slate-800' : 'bg-accent text-emerald-300 border-teal-500/40'
+          isLight ? 'bg-card text-primary border-slate-800' : 'bg-input text-primary border-subtle'
         }`}>
           <pre>
             {activeCodeTab === 'dbt' && dbtModelCode}

@@ -80,7 +80,7 @@ export const HowToModifyView: React.FC = () => {
             className="p-6 rounded-2xl bg-card border border-subtle space-y-3 hover:border-teal-500/40 transition-colors"
           >
             <div className="flex items-center gap-3">
-              <span className="w-8 h-8 rounded-xl bg-accent text-accent font-heading text-lg font-bold flex items-center justify-center border border-teal-500/40">
+              <span className="w-8 h-8 rounded-xl bg-accent text-on-accent font-heading text-lg font-bold flex items-center justify-center border border-subtle shrink-0">
                 {s.step}
               </span>
               <h3 className="font-heading text-xl font-bold text-primary uppercase tracking-wide">

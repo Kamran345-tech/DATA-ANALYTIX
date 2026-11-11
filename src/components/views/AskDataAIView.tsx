@@ -117,7 +117,7 @@ export const AskDataAIView: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-accent text-accent border border-teal-500/40 text-xs font-mono">
+        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-accent-soft text-accent border border-subtle text-xs font-mono">
           <ShieldCheck className="w-3.5 h-3.5" /> Anti-Hallucination Active
         </div>
       </div>
@@ -148,7 +148,7 @@ export const AskDataAIView: React.FC = () => {
             }`}
           >
             {msg.sender === 'assistant' && (
-              <div className="w-7 h-7 rounded-lg bg-accent border border-teal-500/40 text-accent flex items-center justify-center shrink-0 mt-1">
+              <div className="w-7 h-7 rounded-lg bg-accent-soft border border-subtle text-accent flex items-center justify-center shrink-0 mt-1">
                 <Bot className="w-4 h-4" />
               </div>
             )}
@@ -156,7 +156,7 @@ export const AskDataAIView: React.FC = () => {
             <div
               className={`p-4 rounded-2xl max-w-xl space-y-2 ${
                 msg.sender === 'user' 
-                  ? 'bg-accent text-black font-medium' 
+                  ? 'bg-accent text-on-accent font-medium' 
                   : 'bg-card text-primary border border-subtle'
               }`}
             >
@@ -199,7 +199,7 @@ export const AskDataAIView: React.FC = () => {
         <button
           onClick={() => handleSend()}
           disabled={loading || !input.trim()}
-          className="px-6 py-3 rounded-2xl bg-accent text-black font-semibold text-xs hover:bg-accent transition-all disabled:opacity-40 flex items-center gap-1.5"
+          className="px-6 py-3 rounded-2xl bg-accent text-on-accent font-semibold text-xs hover:opacity-90 transition-all disabled:opacity-40 flex items-center gap-1.5"
         >
           <Send className="w-4 h-4" />
           <span>Ask</span>

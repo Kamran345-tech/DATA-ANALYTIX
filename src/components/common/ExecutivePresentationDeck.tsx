@@ -259,14 +259,14 @@ export const ExecutivePresentationDeck: React.FC = () => {
     <div className={`fixed inset-0 z-50 flex flex-col font-sans select-none overflow-hidden transition-colors duration-300 ${
       isLight 
         ? 'bg-elevated text-primary' 
-        : 'bg-accent text-primary'
+        : 'bg-app text-primary'
     }`}>
       
       {/* =================================================================== */}
       {/* PRESENTATION TOP COMMAND BAR                                        */}
       {/* =================================================================== */}
       <div className={`px-6 py-3 flex items-center justify-between border-b backdrop-blur-md shrink-0 ${
-        isLight ? 'bg-white/95 border-slate-300 shadow-sm' : 'bg-accent border-subtle'
+        isLight ? 'bg-white/95 border-slate-300 shadow-sm' : 'bg-card border-subtle'
       }`}>
         {/* Left: Brand & Title */}
         <div className="flex items-center gap-4">
@@ -275,7 +275,7 @@ export const ExecutivePresentationDeck: React.FC = () => {
             <h1 className="text-sm font-bold tracking-tight uppercase flex items-center gap-2">
               <span>{project.name}</span>
               <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-semibold ${
-                isLight ? 'bg-emerald-100 text-emerald-800' : 'bg-accent text-accent'
+                isLight ? 'bg-emerald-100 text-emerald-800' : 'bg-accent-soft text-accent'
               }`}>
                 BOARDROOM DECK
               </span>
@@ -292,7 +292,7 @@ export const ExecutivePresentationDeck: React.FC = () => {
             <button
               onClick={() => setCurrentSlideIndex(prev => (prev - 1 + slides.length) % slides.length)}
               className={`p-2 rounded-xl border transition-all ${
-                isLight ? 'bg-elevated border-slate-300 hover:bg-input' : 'bg-accent border-teal-500/40 hover:bg-card'
+                isLight ? 'bg-elevated border-slate-300 hover:bg-input' : 'bg-elevated border-subtle hover:bg-card-hover'
               }`}
               title="Previous Slide (Left Arrow)"
             >
@@ -309,10 +309,10 @@ export const ExecutivePresentationDeck: React.FC = () => {
                     currentSlideIndex === idx
                       ? isLight 
                         ? 'bg-emerald-600 text-primary shadow-xs font-bold' 
-                        : 'bg-accent text-primary shadow-xs font-bold'
+                        : 'bg-accent text-on-accent shadow-xs font-bold'
                       : isLight 
                         ? 'bg-input text-muted hover:bg-input' 
-                        : 'bg-accent text-secondary hover:bg-card'
+                        : 'bg-elevated text-secondary hover:bg-card-hover'
                   }`}
                 >
                   <span>{idx + 1}. {s.id.toUpperCase()}</span>
@@ -323,7 +323,7 @@ export const ExecutivePresentationDeck: React.FC = () => {
             <button
               onClick={() => setCurrentSlideIndex(prev => (prev + 1) % slides.length)}
               className={`p-2 rounded-xl border transition-all ${
-                isLight ? 'bg-elevated border-slate-300 hover:bg-input' : 'bg-accent border-teal-500/40 hover:bg-card'
+                isLight ? 'bg-elevated border-slate-300 hover:bg-input' : 'bg-elevated border-subtle hover:bg-card-hover'
               }`}
               title="Next Slide (Right Arrow or Space)"
             >
@@ -336,7 +336,7 @@ export const ExecutivePresentationDeck: React.FC = () => {
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-medium transition-all ${
                 isPlaying
                   ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 animate-pulse'
-                  : isLight ? 'bg-elevated border-slate-300 text-muted' : 'bg-accent border-teal-500/40 text-secondary'
+                  : isLight ? 'bg-elevated border-slate-300 text-muted' : 'bg-elevated border-subtle text-secondary'
               }`}
               title={isPlaying ? 'Pause auto-slide timer' : 'Start 10s auto-slide carousel for wallboards'}
             >
@@ -358,7 +358,7 @@ export const ExecutivePresentationDeck: React.FC = () => {
                   : 'bg-cyan-500 text-primary font-bold border-cyan-400 shadow-lg'
                 : isLight 
                   ? 'bg-elevated border-slate-300 text-muted hover:bg-input' 
-                  : 'bg-accent border-teal-500/40 text-secondary hover:bg-card'
+                  : 'bg-elevated border-subtle text-secondary hover:bg-card-hover'
             }`}
             title="Toggle Slicers Ribbon in Boardroom Deck"
           >
@@ -381,7 +381,7 @@ export const ExecutivePresentationDeck: React.FC = () => {
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all ${
               isWallboardMode 
                 ? isLight ? 'bg-indigo-100 text-indigo-900 border-indigo-300' : 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40' 
-                : isLight ? 'bg-elevated border-slate-300 text-muted' : 'bg-accent border-teal-500/40 text-secondary'
+                : isLight ? 'bg-elevated border-slate-300 text-muted' : 'bg-elevated border-subtle text-secondary'
             }`}
             title="Switch between single 4K Wallboard and 5-Slide Presentation Deck"
           >
@@ -393,7 +393,7 @@ export const ExecutivePresentationDeck: React.FC = () => {
           <button
             onClick={() => setThemeMode(isLight ? 'dark' : 'light')}
             className={`p-2 rounded-xl border transition-colors ${
-              isLight ? 'bg-elevated border-slate-300 text-muted' : 'bg-accent border-teal-500/40 text-secondary'
+              isLight ? 'bg-elevated border-slate-300 text-muted' : 'bg-elevated border-subtle text-secondary'
             }`}
             title="Toggle Light / Dark Presentation"
           >
@@ -404,7 +404,7 @@ export const ExecutivePresentationDeck: React.FC = () => {
           <button
             onClick={toggleFullscreen}
             className={`p-2 rounded-xl border transition-colors ${
-              isLight ? 'bg-elevated border-slate-300 text-muted' : 'bg-accent border-teal-500/40 text-secondary'
+              isLight ? 'bg-elevated border-slate-300 text-muted' : 'bg-elevated border-subtle text-secondary'
             }`}
             title="Toggle True Fullscreen"
           >
@@ -413,7 +413,7 @@ export const ExecutivePresentationDeck: React.FC = () => {
 
           {/* Live Clock */}
           <div className={`hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border font-mono text-xs ${
-            isLight ? 'bg-elevated border-slate-300 text-muted' : 'bg-accent border-teal-500/40 text-secondary'
+            isLight ? 'bg-elevated border-slate-300 text-muted' : 'bg-elevated border-subtle text-secondary'
           }`}>
             <Clock className="w-3.5 h-3.5" />
             <span>{currentTime}</span>
@@ -438,7 +438,7 @@ export const ExecutivePresentationDeck: React.FC = () => {
       {/* COLLAPSIBLE SLICERS DRAWER */}
       {isSlicersDrawerOpen && (
         <div className={`px-6 py-3 border-b shrink-0 animate-fadeIn transition-colors ${
-          isLight ? 'bg-white/95 border-slate-300 shadow-md' : 'bg-accent border-subtle'
+          isLight ? 'bg-white/95 border-slate-300 shadow-md' : 'bg-card border-subtle'
         }`}>
           <InteractiveSlicersBar />
         </div>
@@ -462,7 +462,7 @@ export const ExecutivePresentationDeck: React.FC = () => {
                   <div 
                     key={kpi.id} 
                     className={`p-5 rounded-2xl border shadow-md flex flex-col justify-between ${
-                      isLight ? 'bg-white border-slate-200' : 'bg-accent border-subtle'
+                      isLight ? 'bg-white border-slate-200' : 'bg-card border-subtle'
                     }`}
                   >
                     <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-secondary">
@@ -498,7 +498,7 @@ export const ExecutivePresentationDeck: React.FC = () => {
 
             {/* 2-Column Visual Telemetry Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className={`p-6 rounded-2xl border ${isLight ? 'bg-white border-slate-200' : 'bg-accent border-subtle'}`}>
+              <div className={`p-6 rounded-2xl border ${isLight ? 'bg-white border-slate-200' : 'bg-card border-subtle'}`}>
                 <h3 className="text-sm font-bold uppercase tracking-wider mb-4 flex items-center gap-2">
                   <Activity className="w-4 h-4 text-emerald-400" />
                   Primary Trajectory: {currentTrend.metric}
@@ -506,7 +506,7 @@ export const ExecutivePresentationDeck: React.FC = () => {
                 <TimeSeriesAreaChart data={currentTrend.dataPoints || []} metricName={currentTrend.metric} />
               </div>
 
-              <div className={`p-6 rounded-2xl border ${isLight ? 'bg-white border-slate-200' : 'bg-accent border-subtle'}`}>
+              <div className={`p-6 rounded-2xl border ${isLight ? 'bg-white border-slate-200' : 'bg-card border-subtle'}`}>
                 <h3 className="text-sm font-bold uppercase tracking-wider mb-4 flex items-center gap-2">
                   <PieChart className="w-4 h-4 text-cyan-400" />
                   Portfolio Composition by {primaryDimension}
@@ -518,7 +518,7 @@ export const ExecutivePresentationDeck: React.FC = () => {
             {/* Action Directives Banner */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {activeDirectives.map((d, i) => (
-                <div key={i} className={`p-4 rounded-xl border ${isLight ? 'bg-white border-slate-200' : 'bg-accent border-subtle'}`}>
+                <div key={i} className={`p-4 rounded-xl border ${isLight ? 'bg-white border-slate-200' : 'bg-card border-subtle'}`}>
                   <div className="flex items-center gap-2 text-xs font-bold text-emerald-400 mb-1">
                     <Sparkles className="w-3.5 h-3.5" />
                     <span>{d.title}</span>
@@ -552,7 +552,7 @@ export const ExecutivePresentationDeck: React.FC = () => {
               </div>
 
               <div className={`px-4 py-2 rounded-xl border text-right font-mono text-xs ${
-                isLight ? 'bg-white border-slate-200 text-muted' : 'bg-accent border-subtle text-secondary'
+                isLight ? 'bg-white border-slate-200 text-muted' : 'bg-card border-subtle text-secondary'
               }`}>
                 <div>Data Source: <span className="font-bold">{cleanRows.length.toLocaleString()} rows</span></div>
                 <div className="text-[11px] text-emerald-400">Quality Score: {qualityReport.overallScore}% Verified</div>
@@ -571,7 +571,7 @@ export const ExecutivePresentationDeck: React.FC = () => {
                         className={`p-6 rounded-2xl border transition-all ${
                           isLight 
                             ? 'bg-white border-slate-200 shadow-md' 
-                            : 'bg-accent border-subtle hover:border-teal-500/40'
+                            : 'bg-card border-subtle hover:border-strong'
                         }`}
                       >
                         <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-secondary mb-2">
@@ -605,14 +605,14 @@ export const ExecutivePresentationDeck: React.FC = () => {
                 </div>
 
                 {/* Directives Banner */}
-                <div className={`p-6 rounded-2xl border ${isLight ? 'bg-white border-slate-200' : 'bg-accent border-subtle'}`}>
+                <div className={`p-6 rounded-2xl border ${isLight ? 'bg-white border-slate-200' : 'bg-card border-subtle'}`}>
                   <h3 className="text-base font-bold uppercase tracking-wider flex items-center gap-2 mb-4 text-emerald-400">
                     <Sparkles className="w-5 h-5" />
                     Automated Executive Directives & Action Items
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {activeDirectives.map((dir, idx) => (
-                      <div key={idx} className={`p-4 rounded-xl border ${isLight ? 'bg-elevated border-slate-200' : 'bg-accent border-teal-500/40'}`}>
+                      <div key={idx} className={`p-4 rounded-xl border ${isLight ? 'bg-elevated border-slate-200' : 'bg-elevated border-subtle'}`}>
                         <div className="font-bold text-sm mb-1">{dir.title}</div>
                         <p className="text-xs text-secondary mb-3">{dir.what}</p>
                         <div className="text-xs font-semibold text-emerald-400 flex items-center gap-1">
@@ -629,7 +629,7 @@ export const ExecutivePresentationDeck: React.FC = () => {
             {/* Slide 2: Trajectory & Pareto */}
             {slides[currentSlideIndex].id === 'trajectory' && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className={`p-6 rounded-2xl border ${isLight ? 'bg-white border-slate-200' : 'bg-accent border-subtle'}`}>
+                <div className={`p-6 rounded-2xl border ${isLight ? 'bg-white border-slate-200' : 'bg-card border-subtle'}`}>
                   <h3 className="text-sm font-bold uppercase tracking-wider mb-4 flex items-center gap-2">
                     <Activity className="w-4 h-4 text-emerald-400" />
                     Sequential Momentum: {currentTrend.metric}
@@ -637,7 +637,7 @@ export const ExecutivePresentationDeck: React.FC = () => {
                   <TimeSeriesAreaChart data={currentTrend.dataPoints || []} metricName={currentTrend.metric} />
                 </div>
 
-                <div className={`p-6 rounded-2xl border ${isLight ? 'bg-white border-slate-200' : 'bg-accent border-subtle'}`}>
+                <div className={`p-6 rounded-2xl border ${isLight ? 'bg-white border-slate-200' : 'bg-card border-subtle'}`}>
                   <h3 className="text-sm font-bold uppercase tracking-wider mb-4 flex items-center gap-2">
                     <BarChart3 className="w-4 h-4 text-cyan-400" />
                     Pareto 80/20 Concentration Analysis
@@ -650,7 +650,7 @@ export const ExecutivePresentationDeck: React.FC = () => {
             {/* Slide 3: Mix & Decomposition */}
             {slides[currentSlideIndex].id === 'mix' && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className={`p-6 rounded-2xl border ${isLight ? 'bg-white border-slate-200' : 'bg-accent border-subtle'}`}>
+                <div className={`p-6 rounded-2xl border ${isLight ? 'bg-white border-slate-200' : 'bg-card border-subtle'}`}>
                   <h3 className="text-sm font-bold uppercase tracking-wider mb-4 flex items-center gap-2">
                     <PieChart className="w-4 h-4 text-emerald-400" />
                     Category Decomposition ({primaryDimension})
@@ -658,7 +658,7 @@ export const ExecutivePresentationDeck: React.FC = () => {
                   <DonutCompositionChart data={currentCategoryData} metricName={primaryMetric} />
                 </div>
 
-                <div className={`p-6 rounded-2xl border ${isLight ? 'bg-white border-slate-200' : 'bg-accent border-subtle'}`}>
+                <div className={`p-6 rounded-2xl border ${isLight ? 'bg-white border-slate-200' : 'bg-card border-subtle'}`}>
                   <h3 className="text-sm font-bold uppercase tracking-wider mb-4 flex items-center gap-2">
                     <Award className="w-4 h-4 text-amber-400" />
                     Top Contributors & Share Ranking
@@ -689,7 +689,7 @@ export const ExecutivePresentationDeck: React.FC = () => {
             {/* Slide 4: Data Engineering & Lineage */}
             {slides[currentSlideIndex].id === 'lineage' && (
               <div className="space-y-6">
-                <div className={`p-6 rounded-2xl border ${isLight ? 'bg-white border-slate-200' : 'bg-accent border-subtle'}`}>
+                <div className={`p-6 rounded-2xl border ${isLight ? 'bg-white border-slate-200' : 'bg-card border-subtle'}`}>
                   <h3 className="text-sm font-bold uppercase tracking-wider mb-4 flex items-center gap-2">
                     <Network className="w-4 h-4 text-cyan-400" />
                     Enterprise Data Lineage & Star Schema Pipeline
@@ -705,7 +705,7 @@ export const ExecutivePresentationDeck: React.FC = () => {
                       { step: '05. Presentation', desc: 'Interactive Slicers & Deck', count: '60 FPS', status: 'Governed' }
                     ].map((node, i) => (
                       <div key={i} className={`p-4 rounded-xl border flex flex-col justify-between ${
-                        isLight ? 'bg-elevated border-slate-200' : 'bg-accent border-teal-500/40'
+                        isLight ? 'bg-elevated border-slate-200' : 'bg-elevated border-subtle'
                       }`}>
                         <div className="text-xs font-mono font-bold text-emerald-400">{node.step}</div>
                         <div className="my-2">
@@ -724,7 +724,7 @@ export const ExecutivePresentationDeck: React.FC = () => {
                 {/* Star Schema Entities Table summary */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {dataModel.tables.slice(0, 3).map(tbl => (
-                    <div key={tbl.name} className={`p-4 rounded-xl border ${isLight ? 'bg-white border-slate-200' : 'bg-accent border-subtle'}`}>
+                    <div key={tbl.name} className={`p-4 rounded-xl border ${isLight ? 'bg-white border-slate-200' : 'bg-card border-subtle'}`}>
                       <div className="flex items-center justify-between text-xs font-bold uppercase mb-2">
                         <span>{tbl.name}</span>
                         <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-mono">
@@ -747,7 +747,7 @@ export const ExecutivePresentationDeck: React.FC = () => {
 
             {/* Slide 5: What-If Decision Simulator */}
             {slides[currentSlideIndex].id === 'simulator' && (
-              <div className={`p-6 rounded-2xl border ${isLight ? 'bg-white border-slate-200' : 'bg-accent border-subtle'}`}>
+              <div className={`p-6 rounded-2xl border ${isLight ? 'bg-white border-slate-200' : 'bg-card border-subtle'}`}>
                 <h3 className="text-sm font-bold uppercase tracking-wider mb-4 flex items-center gap-2">
                   <Sliders className="w-4 h-4 text-emerald-400" />
                   Executive Scenario Levers: Pricing, Volume & Cost Directives

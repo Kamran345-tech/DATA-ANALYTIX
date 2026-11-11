@@ -4,13 +4,8 @@ import { AuthProvider, useFirebaseAuth } from './store/useFirebaseAuth';
 import { Navbar } from './components/layout/Navbar';
 import { Sidebar } from './components/layout/Sidebar';
 import { GroupedSidebar } from './components/layout/GroupedSidebar';
-import { LoginPage } from './components/views/LoginPage';
-import { PublicLandingView } from './components/views/PublicLandingView';
-import { DrillThroughModal } from './components/common/DrillThroughModal';
-import { AuthModal } from './components/common/AuthModal';
 import { ToastContainer } from './components/common/ToastContainer';
 import { ToastProvider } from './store/useToast';
-import { ExecutivePresentationDeck } from './components/common/ExecutivePresentationDeck';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { CookieBanner } from './components/common/CookieBanner';
 import { loadFeatureFlags, FeatureFlags } from './config/features';
@@ -20,12 +15,17 @@ import { useThemeTransition } from './hooks/useThemeTransition';
 import './styles/modern.css';
 import { ModernNavbar } from './components/modern/ModernNavbar';
 import { ModernSidebar } from './components/modern/ModernSidebar';
-import { ModernCommandPalette } from './components/modern/ModernCommandPalette';
-import { ModernWelcome } from './components/modern/ModernWelcome';
 import { ModernOnboardingChecklist } from './components/modern/ModernOnboardingChecklist';
 import { ModernMobileBottomNav } from './components/modern/ModernMobileBottomNav';
 
-// Code-split views using React.lazy for high performance
+// Code-split views and heavy overlays using React.lazy for fast initial load
+const LoginPage = lazy(() => import('./components/views/LoginPage').then(m => ({ default: m.LoginPage })));
+const PublicLandingView = lazy(() => import('./components/views/PublicLandingView').then(m => ({ default: m.PublicLandingView })));
+const DrillThroughModal = lazy(() => import('./components/common/DrillThroughModal').then(m => ({ default: m.DrillThroughModal })));
+const AuthModal = lazy(() => import('./components/common/AuthModal').then(m => ({ default: m.AuthModal })));
+const ExecutivePresentationDeck = lazy(() => import('./components/common/ExecutivePresentationDeck').then(m => ({ default: m.ExecutivePresentationDeck })));
+const ModernCommandPalette = lazy(() => import('./components/modern/ModernCommandPalette').then(m => ({ default: m.ModernCommandPalette })));
+const ModernWelcome = lazy(() => import('./components/modern/ModernWelcome').then(m => ({ default: m.ModernWelcome })));
 const LandingPage = lazy(() => import('./components/views/LandingPage').then(m => ({ default: m.LandingPage })));
 const ExecutiveDashboard = lazy(() => import('./components/views/ExecutiveDashboard').then(m => ({ default: m.ExecutiveDashboard })));
 const UploadIngestionView = lazy(() => import('./components/views/UploadIngestionView').then(m => ({ default: m.UploadIngestionView })));
@@ -132,17 +132,23 @@ const MainContent: React.FC = () => {
   if (!currentUser && !isGuestMode) {
     if (flags.publicLanding) {
       return (
-        <PublicLandingView
-          onExploreSample={() => {
-            enterAsGuest();
-            loadDemoDataset('global_tech_sales');
-            setCurrentTab('executive_dashboard');
-          }}
-          onOpenLogin={() => setIsAuthModalOpen(true)}
-        />
+        <Suspense fallback={<SuspenseLoader />}>
+          <PublicLandingView
+            onExploreSample={() => {
+              enterAsGuest();
+              loadDemoDataset('global_tech_sales');
+              setCurrentTab('executive_dashboard');
+            }}
+            onOpenLogin={() => setIsAuthModalOpen(true)}
+          />
+        </Suspense>
       );
     }
-    return <LoginPage />;
+    return (
+      <Suspense fallback={<SuspenseLoader />}>
+        <LoginPage />
+      </Suspense>
+    );
   }
 
   const renderActiveView = () => {
@@ -258,13 +264,19 @@ const MainContent: React.FC = () => {
       </div>
 
       {/* Global Drill-Through Modal with Breadcrumb Depth Tracking */}
-      <DrillThroughModal />
+      <Suspense fallback={null}>
+        <DrillThroughModal />
+      </Suspense>
 
       {/* Global Cloud Authentication & Account Modal (Single Authoritative Instance) */}
-      <AuthModal 
-        isOpen={isAuthModalOpen} 
-        onClose={() => setIsAuthModalOpen(false)} 
-      />
+      {isAuthModalOpen && (
+        <Suspense fallback={null}>
+          <AuthModal 
+            isOpen={isAuthModalOpen} 
+            onClose={() => setIsAuthModalOpen(false)} 
+          />
+        </Suspense>
+      )}
 
       {/* Global Toast Notification System */}
       <ToastContainer />
@@ -273,17 +285,25 @@ const MainContent: React.FC = () => {
       <CookieBanner />
 
       {/* Fullscreen Boardroom Presentation Deck */}
-      {isPresentationMode && <ExecutivePresentationDeck />}
+      {isPresentationMode && (
+        <Suspense fallback={<SuspenseLoader />}>
+          <ExecutivePresentationDeck />
+        </Suspense>
+      )}
 
       {/* Modern UI Auxiliary Features */}
       {isModern && !isPresentationMode && (
         <>
           <ModernMobileBottomNav />
           <ModernOnboardingChecklist />
-          <ModernCommandPalette 
-            isOpen={isCommandPaletteOpen} 
-            onClose={() => setIsCommandPaletteOpen(false)} 
-          />
+          {isCommandPaletteOpen && (
+            <Suspense fallback={null}>
+              <ModernCommandPalette 
+                isOpen={isCommandPaletteOpen} 
+                onClose={() => setIsCommandPaletteOpen(false)} 
+              />
+            </Suspense>
+          )}
           {isWelcomeModalOpen && (
             <div 
               role="dialog"
@@ -303,7 +323,9 @@ const MainContent: React.FC = () => {
                 >
                   ✕
                 </button>
-                <ModernWelcome onClose={() => setIsWelcomeModalOpen(false)} />
+                <Suspense fallback={<SuspenseLoader />}>
+                  <ModernWelcome onClose={() => setIsWelcomeModalOpen(false)} />
+                </Suspense>
               </div>
             </div>
           )}

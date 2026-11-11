@@ -1,20 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { 
-  auth, 
-  db, 
-  googleProvider, 
-  signInWithPopup, 
-  signOut, 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword, 
-  sendPasswordResetEmail,
-  updateProfile,
-  onAuthStateChanged, 
-  User,
-  handleFirestoreError,
-  OperationType
-} from '../firebase';
-import { doc, setDoc, getDocs, collection, query } from 'firebase/firestore';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
+import type { User } from 'firebase/auth';
 
 export interface SavedCloudDashboard {
   id: string;
@@ -55,12 +40,27 @@ export interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const FIREBASE_SESSION_KEY = 'acuitybi_has_firebase_session';
+
+type FirebaseModules = {
+  fb: typeof import('../firebase');
+  fs: typeof import('firebase/firestore');
+};
+
+let firebaseModulesPromise: Promise<FirebaseModules> | null = null;
+
+function loadFirebaseModules(): Promise<FirebaseModules> {
+  if (!firebaseModulesPromise) {
+    firebaseModulesPromise = Promise.all([
+      import('../firebase'),
+      import('firebase/firestore')
+    ]).then(([fb, fs]) => ({ fb, fs }));
+  }
+  return firebaseModulesPromise;
+}
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
-  const [authError, setAuthError] = useState<string | null>(null);
-
   const [isGuestMode, setIsGuestMode] = useState<boolean>(() => {
     try {
       return sessionStorage.getItem('acuitybi_guest_mode') === 'true';
@@ -68,40 +68,79 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return false;
     }
   });
+  const [hasStoredSession] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem(FIREBASE_SESSION_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const [loading, setLoading] = useState<boolean>(() => !isGuestMode && hasStoredSession);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const authUnsubscribeRef = useRef<(() => void) | null>(null);
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setCurrentUser(user);
-      setLoading(false);
+  const ensureAuthSubscription = useCallback(async () => {
+    const { fb, fs } = await loadFirebaseModules();
+    if (!authUnsubscribeRef.current) {
+      authUnsubscribeRef.current = fb.onAuthStateChanged(fb.auth, async (user) => {
+        setCurrentUser(user);
+        setLoading(false);
 
-      if (user) {
-        // If logged in, clear guest mode
-        try {
-          sessionStorage.removeItem('acuitybi_guest_mode');
-        } catch {}
-        setIsGuestMode(false);
-
-        // Sync user profile document in Firestore
-        try {
-          const userDocRef = doc(db, 'users', user.uid);
-          await setDoc(userDocRef, {
-            uid: user.uid,
-            displayName: user.displayName || 'Analyst',
-            email: user.email || '',
-            photoURL: user.photoURL || '',
-            lastLoginAt: new Date().toISOString()
-          }, { merge: true });
-        } catch (err) {
+        if (user) {
           try {
-            handleFirestoreError(err, OperationType.WRITE, `users/${user.uid}`);
-          } catch (e) {
-            console.error('Handled user profile sync note', e);
+            sessionStorage.removeItem('acuitybi_guest_mode');
+            localStorage.setItem(FIREBASE_SESSION_KEY, 'true');
+          } catch {}
+          setIsGuestMode(false);
+
+          try {
+            const userDocRef = fs.doc(fb.db, 'users', user.uid);
+            await fs.setDoc(
+              userDocRef,
+              {
+                uid: user.uid,
+                displayName: user.displayName || 'Analyst',
+                email: user.email || '',
+                photoURL: user.photoURL || '',
+                lastLoginAt: new Date().toISOString()
+              },
+              { merge: true }
+            );
+          } catch (err) {
+            try {
+              fb.handleFirestoreError(err, fb.OperationType.WRITE, `users/${user.uid}`);
+            } catch (e) {
+              console.error('Handled user profile sync note', e);
+            }
           }
         }
-      }
-    });
+      });
+    }
+    return { fb, fs };
+  }, []);
 
-    return () => unsubscribe();
+  useEffect(() => {
+    if (!isGuestMode && (hasStoredSession || isAuthModalOpen)) {
+      ensureAuthSubscription().catch(() => {
+        setLoading(false);
+      });
+    } else if (isAuthModalOpen) {
+      ensureAuthSubscription().catch(() => {
+        setLoading(false);
+      });
+    } else {
+      setLoading(false);
+    }
+  }, [isGuestMode, hasStoredSession, isAuthModalOpen, ensureAuthSubscription]);
+
+  useEffect(() => {
+    return () => {
+      if (authUnsubscribeRef.current) {
+        authUnsubscribeRef.current();
+        authUnsubscribeRef.current = null;
+      }
+    };
   }, []);
 
   const enterAsGuest = () => {
@@ -109,6 +148,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       sessionStorage.setItem('acuitybi_guest_mode', 'true');
     } catch {}
     setIsGuestMode(true);
+    setLoading(false);
   };
 
   const exitGuestMode = () => {
@@ -120,8 +160,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loginWithGoogle = async () => {
     setAuthError(null);
+    const { fb } = await ensureAuthSubscription();
     try {
-      const res = await signInWithPopup(auth, googleProvider);
+      const res = await fb.signInWithPopup(fb.auth, fb.googleProvider);
+      try {
+        localStorage.setItem(FIREBASE_SESSION_KEY, 'true');
+      } catch {}
       exitGuestMode();
       return res.user;
     } catch (err: any) {
@@ -140,8 +184,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loginWithEmail = async (email: string, pass: string) => {
     setAuthError(null);
+    const { fb } = await ensureAuthSubscription();
     try {
-      const res = await signInWithEmailAndPassword(auth, email, pass);
+      const res = await fb.signInWithEmailAndPassword(fb.auth, email, pass);
+      try {
+        localStorage.setItem(FIREBASE_SESSION_KEY, 'true');
+      } catch {}
       exitGuestMode();
       return res.user;
     } catch (err: any) {
@@ -153,11 +201,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const registerWithEmail = async (email: string, pass: string, displayName: string) => {
     setAuthError(null);
+    const { fb } = await ensureAuthSubscription();
     try {
-      const res = await createUserWithEmailAndPassword(auth, email, pass);
+      const res = await fb.createUserWithEmailAndPassword(fb.auth, email, pass);
       if (displayName) {
-        await updateProfile(res.user, { displayName });
+        await fb.updateProfile(res.user, { displayName });
       }
+      try {
+        localStorage.setItem(FIREBASE_SESSION_KEY, 'true');
+      } catch {}
       exitGuestMode();
       return res.user;
     } catch (err: any) {
@@ -169,8 +221,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const resetPassword = async (emailToReset: string) => {
     setAuthError(null);
+    const { fb } = await ensureAuthSubscription();
     try {
-      await sendPasswordResetEmail(auth, emailToReset);
+      await fb.sendPasswordResetEmail(fb.auth, emailToReset);
     } catch (err: any) {
       console.error('Password reset error:', err);
       setAuthError(err?.message || 'Failed to send password reset email');
@@ -180,10 +233,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     try {
-      await signOut(auth);
+      if (firebaseModulesPromise) {
+        const { fb } = await loadFirebaseModules();
+        await fb.signOut(fb.auth);
+      }
     } catch (err: any) {
       console.error('Sign-out error:', err);
     } finally {
+      try {
+        localStorage.removeItem(FIREBASE_SESSION_KEY);
+      } catch {}
+      setCurrentUser(null);
       exitGuestMode();
       setIsAuthModalOpen(false);
     }
@@ -196,12 +256,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     rowCount: number;
     visualCount: number;
   }) => {
-    if (!auth.currentUser) {
+    const { fb, fs } = await ensureAuthSubscription();
+    if (!fb.auth.currentUser) {
       setIsAuthModalOpen(true);
       throw new Error('Please sign in to save your dashboard to the cloud.');
     }
 
-    const uid = auth.currentUser.uid;
+    const uid = fb.auth.currentUser.uid;
     const dashboardId = `dash_${Date.now()}`;
     const docPath = `users/${uid}/dashboards/${dashboardId}`;
 
@@ -218,24 +279,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updatedAt: new Date().toISOString()
       };
 
-      await setDoc(doc(db, 'users', uid, 'dashboards', dashboardId), payload);
+      await fs.setDoc(fs.doc(fb.db, 'users', uid, 'dashboards', dashboardId), payload);
       return payload;
     } catch (error) {
-      handleFirestoreError(error, OperationType.CREATE, docPath);
+      fb.handleFirestoreError(error, fb.OperationType.CREATE, docPath);
     }
   };
 
   const fetchUserDashboards = async (): Promise<SavedCloudDashboard[]> => {
-    if (!auth.currentUser) return [];
-    const uid = auth.currentUser.uid;
+    const { fb, fs } = await ensureAuthSubscription();
+    if (!fb.auth.currentUser) return [];
+    const uid = fb.auth.currentUser.uid;
     const collPath = `users/${uid}/dashboards`;
 
     try {
-      const q = query(collection(db, 'users', uid, 'dashboards'));
-      const snapshot = await getDocs(q);
+      const q = fs.query(fs.collection(fb.db, 'users', uid, 'dashboards'));
+      const snapshot = await fs.getDocs(q);
       return snapshot.docs.map(d => d.data() as SavedCloudDashboard);
     } catch (error) {
-      handleFirestoreError(error, OperationType.LIST, collPath);
+      fb.handleFirestoreError(error, fb.OperationType.LIST, collPath);
+      return [];
     }
   };
 

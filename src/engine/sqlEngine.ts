@@ -1,4 +1,3 @@
-import alasql from 'alasql';
 import { ColumnProfile, TableSchema } from '../types';
 
 export interface SQLQueryResult {
@@ -9,19 +8,49 @@ export interface SQLQueryResult {
   error?: string;
 }
 
+const pendingTables = new Map<string, Record<string, any>[]>();
+let alasqlInstance: any = null;
+let alasqlLoadingPromise: Promise<any> | null = null;
+
+function applyTableToAlaSQL(alasql: any, name: string, rows: Record<string, any>[]) {
+  try {
+    alasql(`DROP TABLE IF EXISTS [${name}]`);
+    alasql(`CREATE TABLE [${name}]`);
+    if (alasql.tables && alasql.tables[name]) {
+      alasql.tables[name].data = rows;
+    }
+  } catch (e) {
+    console.warn(`Could not register SQL table ${name}:`, e);
+  }
+}
+
+export async function ensureSqlEngineReady(): Promise<any> {
+  if (alasqlInstance) {
+    return alasqlInstance;
+  }
+  if (!alasqlLoadingPromise) {
+    alasqlLoadingPromise = import('alasql').then((mod: any) => {
+      const instance = mod?.default ?? mod;
+      alasqlInstance = instance;
+      pendingTables.forEach((rows, name) => {
+        applyTableToAlaSQL(instance, name, rows);
+      });
+      return instance;
+    });
+  }
+  return alasqlLoadingPromise;
+}
+
 export function registerTablesInSQL(tables: { name: string; rows: Record<string, any>[] }[]) {
   tables.forEach(table => {
-    try {
-      alasql(`DROP TABLE IF EXISTS [${table.name}]`);
-      alasql(`CREATE TABLE [${table.name}]`);
-      alasql.tables[table.name].data = table.rows;
-    } catch (e) {
-      console.warn(`Could not register SQL table ${table.name}:`, e);
+    pendingTables.set(table.name, table.rows);
+    if (alasqlInstance) {
+      applyTableToAlaSQL(alasqlInstance, table.name, table.rows);
     }
   });
 }
 
-export function executeSQLQuery(query: string): SQLQueryResult {
+function runQueryWithAlaSQL(alasql: any, query: string): SQLQueryResult {
   const startTime = performance.now();
   try {
     const rawResult = alasql(query);
@@ -32,7 +61,7 @@ export function executeSQLQuery(query: string): SQLQueryResult {
       if (rawResult.length > 0 && typeof rawResult[0] === 'object' && rawResult[0] !== null) {
         rows = rawResult;
       } else if (rawResult.length > 0) {
-        rows = rawResult.map((v, i) => ({ Result: v }));
+        rows = rawResult.map((v) => ({ Result: v }));
       }
     } else if (typeof rawResult === 'object' && rawResult !== null) {
       rows = [rawResult];
@@ -58,6 +87,25 @@ export function executeSQLQuery(query: string): SQLQueryResult {
       error: error?.message || 'SQL execution failed.'
     };
   }
+}
+
+export async function executeSQLQueryAsync(query: string): Promise<SQLQueryResult> {
+  const alasql = await ensureSqlEngineReady();
+  return runQueryWithAlaSQL(alasql, query);
+}
+
+export function executeSQLQuery(query: string): SQLQueryResult {
+  if (!alasqlInstance) {
+    void ensureSqlEngineReady();
+    return {
+      columns: [],
+      rows: [],
+      rowCount: 0,
+      executionTimeMs: 0,
+      error: 'SQL engine is initializing...'
+    };
+  }
+  return runQueryWithAlaSQL(alasqlInstance, query);
 }
 
 export function generateStarterSQLQueries(tableName: string, columns: ColumnProfile[]): { name: string; sql: string; description: string }[] {

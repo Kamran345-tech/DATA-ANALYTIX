@@ -22,6 +22,13 @@ export default defineConfig(() => {
       rollupOptions: {
         output: {
           manualChunks(id) {
+            if (
+              id.includes('vite/preload-helper') ||
+              /node_modules\/@babel\/runtime\//.test(id)
+            ) {
+              return 'vendor-core';
+            }
+
             if (!id.includes('node_modules')) {
               return undefined;
             }
@@ -49,7 +56,7 @@ export default defineConfig(() => {
 
             // 4. ExcelJS workbook engine + its transitive stream/CSV/XML/archive dependencies
             if (
-              /node_modules\/(exceljs|fast-csv|@fast-csv|saxes|archiver|archiver-utils|unzipper|readable-stream|zip-stream|compress-commons|crc32-stream|crc|dayjs|uuid|bignumber\.js|bluebird|immediate|lie|setimmediate|xmlchars|lazystream|normalize-path|glob|minimatch|tar-stream|bl|buffer|events|util|stream-browserify|string_decoder|inherits|process|@babel\/runtime)\//.test(
+              /node_modules\/(exceljs|fast-csv|@fast-csv|saxes|archiver|archiver-utils|unzipper|readable-stream|zip-stream|compress-commons|crc32-stream|crc|dayjs|uuid|bignumber\.js|bluebird|immediate|lie|setimmediate|xmlchars|lazystream|normalize-path|glob|minimatch|tar-stream|bl|buffer|events|util|stream-browserify|string_decoder|inherits|process)\//.test(
                 id
               )
             ) {
