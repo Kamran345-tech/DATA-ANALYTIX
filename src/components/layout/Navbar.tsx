@@ -73,6 +73,7 @@ export const Navbar: React.FC = () => {
             className="text-xs max-w-[120px] xl:max-w-[160px] 2xl:max-w-[230px]"
             iconSize="sm"
             showEditButton={false}
+            singleLine={true}
           />
           <span className="hidden 2xl:inline text-secondary font-mono text-xs shrink-0">/</span>
           <span className={`hidden 2xl:flex text-xs font-medium items-center gap-1.5 shrink-0 whitespace-nowrap ${

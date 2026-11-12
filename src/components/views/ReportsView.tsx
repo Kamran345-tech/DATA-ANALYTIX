@@ -513,13 +513,17 @@ export const ReportsView: React.FC = () => {
                   </button>
                 </div>
               ) : (
-                <div className="flex items-center gap-2.5 flex-wrap">
-                  <h1 className="font-heading text-3xl sm:text-4xl lg:text-5xl font-extrabold text-primary print:text-black tracking-wide uppercase">
+                <div className="flex items-center gap-2.5 flex-wrap min-w-0 max-w-full">
+                  <h1
+                    title={reportHeadings.mainTitle || 'EXECUTIVE INTELLIGENCE BRIEF'}
+                    aria-label={reportHeadings.mainTitle || 'EXECUTIVE INTELLIGENCE BRIEF'}
+                    className="font-heading text-3xl sm:text-4xl lg:text-5xl font-extrabold text-primary print:text-black tracking-wide uppercase line-clamp-2 [overflow-wrap:anywhere] min-w-0 max-w-full"
+                  >
                     {reportHeadings.mainTitle || 'EXECUTIVE INTELLIGENCE BRIEF'}
                   </h1>
                   <button
                     onClick={() => handleStartInlineEdit('mainTitle')}
-                    className="p-1.5 rounded-lg bg-input hover:bg-card-hover text-secondary hover:text-accent transition-colors print:hidden opacity-70 group-hover:opacity-100"
+                    className="p-1.5 rounded-lg bg-input hover:bg-card-hover text-secondary hover:text-accent transition-colors print:hidden opacity-70 group-hover:opacity-100 shrink-0"
                     title="Change main report title"
                   >
                     <Pencil className="w-4 h-4" />
@@ -528,12 +532,32 @@ export const ReportsView: React.FC = () => {
               )}
             </div>
 
-            <div className="print:hidden py-1">
-              <EditableDashboardTitle className="text-base font-semibold" showLabelPrefix={true} />
+            <div className="print:hidden py-1 min-w-0 max-w-full">
+              <EditableDashboardTitle className="text-base font-semibold max-w-full" showLabelPrefix={true} />
             </div>
-            <p className="text-xs text-secondary print:text-muted">
-              Project: <span className="text-primary print:text-black font-medium">{project.name}</span> • Dataset: <span className="font-mono text-secondary print:text-black">{project.sourceFileName}</span>
-            </p>
+            <div className="text-xs text-secondary print:text-muted flex flex-wrap items-baseline gap-x-2 gap-y-1 min-w-0 max-w-full">
+              <span className="inline-flex items-baseline gap-1 min-w-0 max-w-full">
+                <span className="shrink-0">Project:</span>
+                <span
+                  title={project.name}
+                  aria-label={project.name}
+                  className="text-primary print:text-black font-medium line-clamp-2 [overflow-wrap:anywhere] min-w-0 max-w-full"
+                >
+                  {project.name}
+                </span>
+              </span>
+              <span aria-hidden="true">•</span>
+              <span className="inline-flex items-baseline gap-1 min-w-0 max-w-full">
+                <span className="shrink-0">Dataset:</span>
+                <span
+                  title={project.sourceFileName}
+                  aria-label={project.sourceFileName}
+                  className="font-mono text-secondary print:text-black line-clamp-2 [overflow-wrap:anywhere] min-w-0 max-w-full"
+                >
+                  {project.sourceFileName}
+                </span>
+              </span>
+            </div>
           </div>
 
           <div className="text-right text-xs text-secondary print:text-muted space-y-1">

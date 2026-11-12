@@ -200,7 +200,7 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({ onOpenCommandPalet
                         <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[var(--modern-primary)]' : 'group-hover:text-[var(--modern-text)]'}`} />
                         
                         {!isRailCollapsed && (
-                          <span className="truncate">{item.label}</span>
+                          <span className="min-w-0 truncate" title={item.label}>{item.label}</span>
                         )}
 
                         {/* Active Indicator bar */}

@@ -758,8 +758,17 @@ export const ExecutiveDashboard: React.FC = () => {
                   </h1>
                 </div>
 
-                <p className="font-body-sm text-body-sm text-secondary flex items-center gap-2 flex-wrap">
-                  <span>Scope: <strong className="text-primary font-semibold">{project.name}</strong></span>
+                <p className="font-body-sm text-body-sm text-secondary flex items-center gap-2 flex-wrap min-w-0 max-w-full">
+                  <span className="inline-flex items-baseline gap-1 min-w-0 max-w-full">
+                    <span className="shrink-0">Scope:</span>
+                    <strong
+                      className="text-primary font-semibold line-clamp-2 [overflow-wrap:anywhere] min-w-0 max-w-full"
+                      title={project.name}
+                      aria-label={project.name}
+                    >
+                      {project.name}
+                    </strong>
+                  </span>
                   <span aria-hidden="true">·</span>
                   <span className="flex items-center gap-1">Prepared by: <EditableAnalystName /></span>
                   <span aria-hidden="true">·</span>
@@ -2429,7 +2438,7 @@ export const ExecutiveDashboard: React.FC = () => {
                     />
                     <button
                       type="submit"
-                      className="absolute right-1.5 top-1.5 bottom-1.5 px-3 rounded-lg bg-teal-500 hover:bg-teal-400 text-primary font-bold text-xs transition-colors cursor-pointer flex items-center gap-1"
+                      className="absolute right-1.5 top-1.5 bottom-1.5 px-3 rounded-lg bg-accent hover:opacity-90 text-on-accent font-bold text-xs transition-colors cursor-pointer flex items-center gap-1"
                     >
                       <span>Ask AI</span>
                       <ArrowUpRight className="w-3.5 h-3.5" />

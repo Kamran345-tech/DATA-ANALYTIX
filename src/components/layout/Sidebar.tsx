@@ -342,7 +342,9 @@ export const Sidebar: React.FC = () => {
                     >
                       <button
                         onClick={() => handleSelectTab(item.id)}
-                        className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-colors group cursor-pointer ${
+                        title={item.label}
+                        aria-label={item.label}
+                        className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-colors group cursor-pointer ${
                           isActive 
                             ? isLight
                               ? 'bg-cyan-50/90 text-cyan-950 border border-cyan-400/50 font-bold shadow-xs'
@@ -352,22 +354,22 @@ export const Sidebar: React.FC = () => {
                               : 'text-secondary hover:text-primary hover:bg-white/[0.05] border border-transparent hover:border-white/[0.06]'
                         }`}
                       >
-                        <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
                           <Icon className={`w-4 h-4 shrink-0 transition-transform ${
                             isActive 
                               ? isLight ? 'text-cyan-700' : 'text-cyan-400' 
                               : isLight ? 'text-muted group-hover:text-primary' : 'text-secondary group-hover:text-primary'
                           }`} />
-                          <span className="truncate">{item.label}</span>
+                          <span className="min-w-0 truncate" title={item.label}>{item.label}</span>
                         </div>
 
                         <div className="flex items-center gap-1.5 shrink-0">
                           {item.badge && (
-                            <span className={`px-1.5 py-0.5 text-[9px] font-bold rounded uppercase tracking-wider ${
+                            <span className={`shrink-0 ml-2 px-1.5 py-0.5 text-[9px] font-bold rounded uppercase tracking-wider ${
                               isActive 
                                 ? isLight
-                                  ? 'bg-cyan-600 text-primary'
-                                  : 'bg-cyan-400 text-primary font-bold shadow-lg' 
+                                  ? 'bg-accent text-on-accent font-bold'
+                                  : 'bg-cyan-400 text-on-accent font-bold shadow-lg' 
                                 : isLight
                                   ? 'bg-elevated text-muted border border-slate-200'
                                   : 'bg-white/[0.06] text-secondary border border-white/10'
@@ -376,7 +378,7 @@ export const Sidebar: React.FC = () => {
                             </span>
                           )}
                           {isActive && (
-                            <ChevronRight className={`w-3 h-3 ${isLight ? 'text-cyan-700' : 'text-cyan-400'}`} />
+                            <ChevronRight className={`w-3 h-3 shrink-0 ${isLight ? 'text-cyan-700' : 'text-cyan-400'}`} />
                           )}
                         </div>
                       </button>

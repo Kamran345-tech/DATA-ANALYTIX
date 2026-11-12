@@ -227,19 +227,26 @@ export const DataPreviewView: React.FC = () => {
         isLight ? 'border-slate-200/90 shadow-sm' : 'border-white/10 shadow-xl'
       }`}>
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-3">
+          <div className="space-y-1.5 min-w-0 flex-1">
+            <div className="flex items-center gap-3 min-w-0">
               <div className="w-10 h-10 rounded-xl bg-cyan-500/15 text-cyan-500 dark:text-cyan-400 border border-cyan-400/30 flex items-center justify-center shadow-lg shrink-0">
                 <Table2 className="w-5 h-5 text-cyan-500 dark:text-cyan-400" />
               </div>
-              <div>
+              <div className="min-w-0 flex-1">
                 <h1 className={`font-heading text-2xl sm:text-3xl font-extrabold tracking-tight uppercase flex items-center gap-2.5 ${
                   isLight ? 'text-primary' : 'text-primary'
                 }`}>
                   DATA PROFILING & PREVIEW
                 </h1>
-                <p className={`text-xs font-mono ${isLight ? 'text-muted' : 'text-secondary'}`}>
-                  <strong className={isLight ? 'text-primary' : 'text-primary'}>{cleanRows.length.toLocaleString()}</strong> verified rows • <strong className={isLight ? 'text-primary' : 'text-primary'}>{columns.length}</strong> audited columns • Ingested from <span className={`font-semibold underline decoration-cyan-500/40 ${isLight ? 'text-sky-700' : 'text-cyan-300'}`}>{project.sourceFileName || 'Dataset Source'}</span>
+                <p className={`text-xs font-mono min-w-0 max-w-full ${isLight ? 'text-muted' : 'text-secondary'}`}>
+                  <strong className={isLight ? 'text-primary' : 'text-primary'}>{cleanRows.length.toLocaleString()}</strong> verified rows • <strong className={isLight ? 'text-primary' : 'text-primary'}>{columns.length}</strong> audited columns • Ingested from{' '}
+                  <span
+                    title={project.sourceFileName || project.name || 'Dataset Source'}
+                    aria-label={project.sourceFileName || project.name || 'Dataset Source'}
+                    className={`font-semibold underline decoration-cyan-500/40 line-clamp-2 [overflow-wrap:anywhere] ${isLight ? 'text-sky-700' : 'text-cyan-300'}`}
+                  >
+                    {project.sourceFileName || project.name || 'Dataset Source'}
+                  </span>
                 </p>
               </div>
             </div>

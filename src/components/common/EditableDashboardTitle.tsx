@@ -8,6 +8,7 @@ interface EditableDashboardTitleProps {
   iconSize?: 'sm' | 'md' | 'lg';
   showLabelPrefix?: boolean;
   showEditButton?: boolean;
+  singleLine?: boolean;
 }
 
 const PRESET_SUGGESTIONS = [
@@ -22,7 +23,8 @@ export const EditableDashboardTitle: React.FC<EditableDashboardTitleProps> = ({
   inputClassName = '',
   iconSize = 'md',
   showLabelPrefix = false,
-  showEditButton = true
+  showEditButton = true,
+  singleLine = false
 }) => {
   const { project, updateProjectMetadata, themeMode } = usePlatform();
   const isLight = themeMode === 'light';
@@ -162,7 +164,8 @@ export const EditableDashboardTitle: React.FC<EditableDashboardTitleProps> = ({
             ? 'hover:bg-elevated border-transparent hover:border-slate-300'
             : 'hover:bg-elevated border-transparent hover:border-subtle'
         } ${className}`}
-        title={`${project.name} — Click to rename this dashboard`}
+        title={project.name}
+        aria-label={project.name}
       >
         {showLabelPrefix && (
           <span className={`text-xs font-mono uppercase tracking-wider shrink-0 ${
@@ -173,7 +176,10 @@ export const EditableDashboardTitle: React.FC<EditableDashboardTitleProps> = ({
         )}
         <span
           title={project.name}
-          className={`font-heading font-extrabold transition-colors truncate min-w-0 max-w-full ${
+          aria-label={project.name}
+          className={`font-heading font-extrabold transition-colors min-w-0 max-w-full ${
+            singleLine ? 'truncate' : 'line-clamp-2 [overflow-wrap:anywhere]'
+          } ${
             isLight 
               ? 'text-primary group-hover:text-sky-700' 
               : 'text-primary group-hover:text-cyan-400'

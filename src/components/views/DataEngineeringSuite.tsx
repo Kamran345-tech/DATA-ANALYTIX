@@ -403,7 +403,13 @@ DIVIDE([Total ${primaryMetric}] - SUM('${tableName}'[COGS]), [Total ${primaryMet
                   <span>{node.step}</span>
                   <span className="text-secondary">{node.latency}</span>
                 </div>
-                <div className="font-bold text-xs truncate mb-1 text-primary" title={node.title}>{node.title}</div>
+                <div
+                  className="font-bold text-xs line-clamp-2 [overflow-wrap:anywhere] mb-1 text-primary"
+                  title={node.title}
+                  aria-label={node.title}
+                >
+                  {node.title}
+                </div>
                 <div className="text-[11px] font-semibold text-primary">{node.metric}</div>
                 <p className="text-[10px] text-secondary mt-1 line-clamp-2 leading-tight">{node.desc}</p>
               </div>

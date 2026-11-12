@@ -281,12 +281,16 @@ export const UploadIngestionView: React.FC = () => {
       {columns.length > 0 && (
         <div className="depth-card rounded-[20px] border bg-card border-subtle shadow-sm overflow-hidden">
           <div className="px-5 py-4 border-b border-subtle bg-elevated flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5">
-              <Table2 className="w-4 h-4 text-teal-500 dark:text-teal-400" />
-              <div>
-                <h3 className={`font-heading text-sm font-bold uppercase tracking-wide ${
-                  isLight ? 'text-primary' : 'text-primary'
-                }`}>
+            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+              <Table2 className="w-4 h-4 text-teal-500 dark:text-teal-400 shrink-0" />
+              <div className="min-w-0 flex-1">
+                <h3
+                  title={project.name}
+                  aria-label={project.name}
+                  className={`font-heading text-sm font-bold uppercase tracking-wide line-clamp-2 [overflow-wrap:anywhere] ${
+                    isLight ? 'text-primary' : 'text-primary'
+                  }`}
+                >
                   COLUMN-ROLE SCHEMA TABLE ({project.name})
                 </h3>
                 <p className={`text-xs ${isLight ? 'text-muted' : 'text-secondary'}`}>
