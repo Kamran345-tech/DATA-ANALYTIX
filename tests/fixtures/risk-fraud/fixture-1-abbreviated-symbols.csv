@@ -1,0 +1,3 @@
+Tx Date,Payment Method,Rule Type,Total Tx,Flagged Alerts,Confirmed Fraud,False Positives,Fraud Loss ($),Gross Volume ($),Recovered ($),Risk Score
+2025-01-01,CNP Credit Card,ATO Stuffing,"420,000","3,150",680,620,"$94,000","$84,000,000","$41,000",28
+2025-02-01,Instant Wire,Synthetic ID,"85,000",980,195,210,"$62,000","$51,000,000","$29,000",34

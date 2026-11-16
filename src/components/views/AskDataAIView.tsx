@@ -50,7 +50,7 @@ export const AskDataAIView: React.FC = () => {
           name: k.label,
           formattedValue: k.formattedValue,
           status: k.status,
-          deltaPercent: k.changePercent,
+          deltaPercent: k.changePercent ?? undefined,
         })),
       });
     });

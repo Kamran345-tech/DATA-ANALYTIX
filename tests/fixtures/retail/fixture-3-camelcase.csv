@@ -1,0 +1,3 @@
+saleDate,storeName,merchandiseCategory,grossMerchandiseValue,baskets,unitsSold,returnedValue,storeTraffic,sellThroughPct,clearanceMarkdown
+2025-01-01,Chicago Mich Ave,Outerwear,520000,3400,8840,41600,13800,71,36400
+2025-02-01,E-Commerce EU,Accessories,760000,5800,16240,68400,36500,76,45600

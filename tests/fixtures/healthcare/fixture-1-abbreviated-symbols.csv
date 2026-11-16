@@ -1,0 +1,3 @@
+Admission Date,Specialty Ward,Hospital,Patient Admissions,30d Readmissions,ALOS (Days),Bed Occupancy (%),ER Wait (Mins),Treatment Cost ($),HCAHPS Score
+2025-01-01,Cardiology,Metro General,620,58,4.8,88%,26,"$4,960,000",89
+2025-02-01,Orthopedics,Westside Surgical,480,24,3.4,82%,21,"$4,320,000",92

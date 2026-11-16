@@ -364,7 +364,7 @@ export const UploadIngestionView: React.FC = () => {
               <div className="min-w-0 flex-1 space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded bg-accent-soft text-accent">
-                    Auto-Detected Pack
+                    {detectedPacks[0].isUncertain ? 'Pack Selection Needed' : 'Recommended for your data'}
                   </span>
                   <span className="text-xs font-mono text-secondary">
                     Top 3:{' '}
@@ -375,7 +375,9 @@ export const UploadIngestionView: React.FC = () => {
                   </span>
                 </div>
                 <h3 className="font-heading text-base font-bold text-primary">
-                  Looks like {detectedPacks[0].packName} data ({detectedPacks[0].confidence}%)
+                  {detectedPacks[0].isUncertain
+                    ? `Not sure, please choose (top guess: ${detectedPacks[0].packName} at ${detectedPacks[0].confidence}%)`
+                    : `Looks like ${detectedPacks[0].packName} data (${detectedPacks[0].confidence}%)`}
                 </h3>
               </div>
             </div>

@@ -49,7 +49,7 @@ import {
   computePareto,
   detectAnomalies,
   computeVariance,
-  AnalyticsPackConfig,
+  EnrichedAnalyticsPackConfig,
   PackLensesConfig,
 } from '../../analytics';
 
@@ -134,6 +134,8 @@ export const AnalyticsPacksView: React.FC = () => {
 
   const isLight = themeMode === 'light';
   const [showCatalogGrid, setShowCatalogGrid] = useState<boolean>(true);
+  const [packSearchQuery, setPackSearchQuery] = useState<string>('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [activeLens, setActiveLens] = useState<PackLensKey>('descriptive');
   const [isMappingModalOpen, setIsMappingModalOpen] = useState<boolean>(false);
   const [mappingGeneration, setMappingGeneration] = useState<number>(0);
@@ -144,7 +146,7 @@ export const AnalyticsPacksView: React.FC = () => {
   const [costDelta, setCostDelta] = useState<number>(-3);
   const [churnDelta, setChurnDelta] = useState<number>(-1);
 
-  const activePack = useMemo<AnalyticsPackConfig>(
+  const activePack = useMemo<EnrichedAnalyticsPackConfig>(
     () => getPackById(activePackId),
     [activePackId]
   );
@@ -157,6 +159,20 @@ export const AnalyticsPacksView: React.FC = () => {
     () => detectPack({ columns, rows: cleanRows, datasetId }),
     [columns, cleanRows, datasetId]
   );
+
+  const filteredCatalogPacks = useMemo(() => {
+    const q = packSearchQuery.trim().toLowerCase();
+    return ANALYTICS_PACKS.filter(p => {
+      if (selectedCategory !== 'All' && p.category !== selectedCategory) return false;
+      if (!q) return true;
+      return (
+        p.name.toLowerCase().includes(q) ||
+        p.description.toLowerCase().includes(q) ||
+        (p.category || '').toLowerCase().includes(q) ||
+        p.detect.keywords.some(kw => kw.toLowerCase().includes(q))
+      );
+    });
+  }, [packSearchQuery, selectedCategory]);
 
   // Role mapping (auto + persisted user overrides)
   const roleMap = useMemo(() => {
@@ -261,7 +277,7 @@ export const AnalyticsPacksView: React.FC = () => {
     ]);
   }, [activeRows, primaryNumericCol, priceDelta, volumeDelta, costDelta, churnDelta]);
 
-  const handleTrySampleData = (pack: AnalyticsPackConfig) => {
+  const handleTrySampleData = (pack: EnrichedAnalyticsPackConfig) => {
     const sampleRows = pack.sampleDataset();
     setActivePackId(pack.id);
     ingestDatasetFromRows(`${pack.name} Sample Dataset`, sampleRows, {
@@ -275,11 +291,11 @@ export const AnalyticsPacksView: React.FC = () => {
     });
   };
 
-  const handleOpenPack = (pack: AnalyticsPackConfig) => {
+  const handleOpenPack = (pack: EnrichedAnalyticsPackConfig) => {
     setActivePackId(pack.id);
   };
 
-  const handleDownloadTemplate = (pack: AnalyticsPackConfig = activePack) => {
+  const handleDownloadTemplate = (pack: EnrichedAnalyticsPackConfig = activePack) => {
     const csv = buildPackTemplateCsv(pack);
     const filename = `data-analytix-${pack.id}-template.csv`;
     triggerCsvDownload(csv, filename);
@@ -380,9 +396,15 @@ export const AnalyticsPacksView: React.FC = () => {
             <div className="flex items-center gap-2.5 min-w-0">
               <Sparkles className="w-4 h-4 text-accent shrink-0" />
               <div className="text-xs text-primary min-w-0">
-                <span className="font-semibold">
-                  Looks like {detectedMatches[0].packName} data ({detectedMatches[0].confidence}%)
-                </span>
+                {detectedMatches[0].isUncertain ? (
+                  <span data-testid="pack-uncertain-banner" className="font-semibold text-[var(--warning)]">
+                    Not sure, please choose — low schema match ({detectedMatches[0].confidence}%)
+                  </span>
+                ) : (
+                  <span data-testid="pack-recommended-banner" className="font-semibold">
+                    Recommended for your data: Looks like {detectedMatches[0].packName} data ({detectedMatches[0].confidence}%)
+                  </span>
+                )}
                 <span className="text-secondary ml-2 hidden sm:inline">
                   Top matches:{' '}
                   {detectedMatches
@@ -392,7 +414,7 @@ export const AnalyticsPacksView: React.FC = () => {
                 </span>
               </div>
             </div>
-            {detectedMatches[0].packId !== activePack.id && (
+            {!detectedMatches[0].isUncertain && detectedMatches[0].packId !== activePack.id && (
               <button
                 type="button"
                 onClick={() => setActivePackId(detectedMatches[0].packId)}
@@ -407,23 +429,74 @@ export const AnalyticsPacksView: React.FC = () => {
 
       {/* 14-Pack Catalog Grid */}
       {showCatalogGrid && (
-        <section aria-label="Analytics Packs Catalog" className="space-y-3">
-          <div className="flex items-center justify-between gap-2">
+        <section aria-label="Analytics Packs Catalog" className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="font-heading text-sm font-bold uppercase tracking-wider text-secondary">
-              Select an Analytics Pack ({ANALYTICS_PACKS.length} Domains)
+              Select an Analytics Pack ({filteredCatalogPacks.length}/{ANALYTICS_PACKS.length} Domains)
             </h2>
             <span className="text-xs font-mono text-muted">
               Active: {activePack.name}
             </span>
           </div>
 
+          {/* Pack Picker Search & Category Filter Bar */}
+          <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-card border border-subtle">
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="w-3.5 h-3.5 text-muted absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                data-testid="pack-picker-search"
+                aria-label="Search analytics packs by domain, metric, or keyword"
+                placeholder="Search 14 packs (e.g. Financial, OEE, Churn, Healthcare, Retail)..."
+                value={packSearchQuery}
+                onChange={e => setPackSearchQuery(e.target.value)}
+                className="w-full min-h-[40px] pl-9 pr-3 py-1.5 rounded-xl bg-input border border-subtle text-xs text-primary focus:outline-hidden focus:ring-1 focus:ring-[var(--accent)]"
+              />
+            </div>
+
+            <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Filter packs by category">
+              {(
+                [
+                  'All',
+                  'Finance & Risk',
+                  'Revenue & Growth',
+                  'Product & Web',
+                  'Operations & Supply',
+                  'People & Sector',
+                ] as const
+              ).map(cat => {
+                const isActiveCat = selectedCategory === cat;
+                const slug = cat.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    data-testid={`pack-category-filter-${slug}`}
+                    onClick={() => setSelectedCategory(cat)}
+                    className={`min-h-[36px] px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer ${
+                      isActiveCat
+                        ? 'bg-accent text-on-accent'
+                        : 'bg-elevated text-secondary hover:text-primary border border-subtle'
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <div
             data-testid="analytics-packs-grid"
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
           >
-            {ANALYTICS_PACKS.map(pack => {
+            {filteredCatalogPacks.map(pack => {
               const Icon = PACK_ICON_MAP[pack.icon] || Layers;
               const isSelected = pack.id === activePack.id;
+              const isRecommended =
+                cleanRows.length > 0 &&
+                detectedMatches[0]?.packId === pack.id &&
+                !detectedMatches[0]?.isUncertain;
               return (
                 <div
                   key={pack.id}
@@ -439,17 +512,29 @@ export const AnalyticsPacksView: React.FC = () => {
                       <div className="w-10 h-10 rounded-xl bg-accent-soft text-accent border border-subtle flex items-center justify-center shrink-0">
                         <Icon className="w-5 h-5" />
                       </div>
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-elevated text-secondary border border-subtle">
-                        {pack.kpis.length} KPIs
-                      </span>
+                      <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                        {isRecommended && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-accent-soft text-accent border border-subtle">
+                            Recommended
+                          </span>
+                        )}
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-elevated text-secondary border border-subtle">
+                          {pack.kpis.length} KPIs
+                        </span>
+                      </div>
                     </div>
 
-                    <h3
-                      title={pack.name}
-                      className="font-heading text-base font-bold text-primary line-clamp-1"
-                    >
-                      {pack.name}
-                    </h3>
+                    <div className="space-y-0.5">
+                      <span className="text-[10px] font-mono uppercase tracking-wider text-muted">
+                        {pack.category}
+                      </span>
+                      <h3
+                        title={pack.name}
+                        className="font-heading text-base font-bold text-primary line-clamp-1"
+                      >
+                        {pack.name}
+                      </h3>
+                    </div>
 
                     <p
                       title={pack.description}
@@ -676,6 +761,20 @@ export const AnalyticsPacksView: React.FC = () => {
             </span>
           </div>
 
+          {/* Date Ambiguity Warning Banner */}
+          {dashboard.dateWarning && (
+            <div
+              data-testid="pack-date-warning-banner"
+              className="p-3.5 rounded-xl bg-elevated border border-subtle flex items-start gap-2.5 text-xs text-primary"
+            >
+              <AlertTriangle className="w-4 h-4 text-[var(--warning)] shrink-0 mt-0.5" />
+              <div>
+                <span className="font-bold">Date Format Advisory: </span>
+                <span className="text-secondary">{dashboard.dateWarning}</span>
+              </div>
+            </div>
+          )}
+
           <div
             data-testid="pack-kpi-grid"
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
@@ -688,6 +787,9 @@ export const AnalyticsPacksView: React.FC = () => {
                 unavailableReason={k.reason}
                 unavailableHint={k.hint}
                 sparklineData={k.sparkline}
+                formulaText={k.formulaText}
+                source={k.source}
+                assumption={k.assumption}
                 kpi={{
                   id: k.id,
                   name: k.label,
@@ -698,9 +800,9 @@ export const AnalyticsPacksView: React.FC = () => {
                   period: activePack.name,
                   status: k.status === 'available' ? 'On Track' : 'At Risk',
                   sourceColumn: roleMap[k.needs[0]] || k.needs[0] || 'metric',
-                  calculation: k.description,
+                  calculation: k.source,
                   aggregation: 'sum',
-                  definition: k.description,
+                  definition: k.formulaText,
                   traceableSource: `${activePack.id}.${k.id}`,
                 }}
                 onClick={() => {

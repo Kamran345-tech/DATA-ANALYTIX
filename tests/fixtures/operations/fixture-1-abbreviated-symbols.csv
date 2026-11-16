@@ -1,0 +1,3 @@
+Ship Date,Warehouse DC,Supplier,Shipments,On-Time Shipments,Lead Time (Days),Fill Rate (%),Stock on Hand,Backorders,Freight Cost ($)
+2025-01-01,Chicago DC,Apex Logistics,"4,200","4,032",3.8,97.4%,68000,65,"$142,800"
+2025-02-01,Newark Hub,GlobalFreight,"5,100","4,845",4.2,96.1%,82000,110,"$188,700"

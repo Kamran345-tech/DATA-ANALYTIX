@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest';
+import fs from 'node:fs';
+import path from 'node:path';
 import {
   ANALYTICS_PACKS,
   getPackById,
@@ -8,6 +10,8 @@ import {
   buildDashboard,
   buildReport,
   buildPackTemplateCsv,
+  parseRealNumber,
+  parseAndNormalizeDates,
   analyzeTimeSeries,
   computeCohortRetention,
   computeFunnel,
@@ -21,6 +25,44 @@ import {
 } from '../src/analytics';
 import { loadFeatureFlags, CLASSIC_FEATURE_FLAGS, DEFAULT_FEATURE_FLAGS } from '../src/config/features';
 
+function parseSimpleCsv(content: string): { headers: string[]; rows: Record<string, string>[] } {
+  const lines = content
+    .trim()
+    .split(/\r?\n/)
+    .filter(l => l.trim().length > 0);
+  if (lines.length === 0) return { headers: [], rows: [] };
+
+  const splitCsvLine = (line: string): string[] => {
+    const out: string[] = [];
+    let cur = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') {
+        inQuotes = !inQuotes;
+      } else if (ch === ',' && !inQuotes) {
+        out.push(cur.trim());
+        cur = '';
+      } else {
+        cur += ch;
+      }
+    }
+    out.push(cur.trim());
+    return out;
+  };
+
+  const headers = splitCsvLine(lines[0]);
+  const rows = lines.slice(1).map(l => {
+    const vals = splitCsvLine(l);
+    const obj: Record<string, string> = {};
+    headers.forEach((h, idx) => {
+      obj[h] = vals[idx] ?? '';
+    });
+    return obj;
+  });
+  return { headers, rows };
+}
+
 describe('Analytics Packs Feature Flag & Registry', () => {
   it('defines analyticsPacks as true in DEFAULT_FEATURE_FLAGS and false in CLASSIC_FEATURE_FLAGS', () => {
     expect(DEFAULT_FEATURE_FLAGS.analyticsPacks).toBe(true);
@@ -29,7 +71,7 @@ describe('Analytics Packs Feature Flag & Registry', () => {
     expect(typeof loaded.analyticsPacks).toBe('boolean');
   });
 
-  it('registers all 14 required analytics packs with complete config shapes', () => {
+  it('registers all 14 required analytics packs with complete config shapes, formulaText, and source', () => {
     const expectedIds = [
       'financial',
       'sales',
@@ -50,87 +92,77 @@ describe('Analytics Packs Feature Flag & Registry', () => {
 
     for (const pack of ANALYTICS_PACKS) {
       expect(pack.name.length).toBeGreaterThan(3);
+      expect(pack.category).toBeTruthy();
       expect(pack.description.length).toBeGreaterThan(10);
       expect(pack.detect.keywords.length).toBeGreaterThan(3);
       expect(pack.detect.requiredRoles.length).toBeGreaterThan(0);
       expect(pack.kpis.length).toBeGreaterThanOrEqual(8);
-      expect(pack.charts.length).toBeGreaterThanOrEqual(5);
+      expect(pack.kpis.length).toBeLessThanOrEqual(12);
+      expect(pack.charts.length).toBeGreaterThanOrEqual(6);
+      expect(pack.charts.length).toBeLessThanOrEqual(8);
+      expect(pack.lenses.length).toBe(4);
       expect(pack.lenses.descriptive.length).toBeGreaterThan(0);
       expect(pack.lenses.diagnostic.length).toBeGreaterThan(0);
       expect(pack.lenses.predictive.length).toBeGreaterThan(0);
       expect(pack.lenses.prescriptive.length).toBeGreaterThan(0);
-      expect(pack.reportSections.length).toBeGreaterThanOrEqual(2);
+      expect(pack.reportSections.length).toBeGreaterThanOrEqual(4);
       const sampleRows = pack.sampleDataset();
       expect(sampleRows.length).toBeGreaterThanOrEqual(4);
+
+      // Task 1: Every KPI in all 14 packs must define formulaText and source
+      for (const kpi of pack.kpis) {
+        expect(kpi.formulaText, `${pack.id}.${kpi.id} formulaText`).toBeTruthy();
+        expect(kpi.formulaText.length).toBeGreaterThan(15);
+        expect(kpi.source, `${pack.id}.${kpi.id} source`).toBeTruthy();
+        expect(kpi.source).toContain('=');
+      }
     }
   });
 });
 
-describe('detectPack on 3 sample datasets per pack (42 datasets total)', () => {
+describe('TASK 1: KPI Formula Correctness & Edge-Case Rules across all 14 Packs', () => {
   for (const pack of ANALYTICS_PACKS) {
-    it(`ranks "${pack.id}" (${pack.name}) #1 across 3 distinct dataset variations`, () => {
-      const sampleRows = pack.sampleDataset();
-
-      // Dataset 1: Canonical sample dataset from pack.sampleDataset()
-      const matches1 = detectPack(sampleRows);
-      expect(matches1[0].packId).toBe(pack.id);
-      expect(matches1[0].confidence).toBeGreaterThanOrEqual(50);
-
-      // Dataset 2: Uppercase column names using first alias of each role + keywords
-      const variant2Row: Record<string, any> = {};
-      for (const [roleKey, roleDef] of Object.entries(pack.roles)) {
-        const colName = (roleDef.aliases[0] || roleKey).toUpperCase();
-        variant2Row[colName] =
-          roleDef.type === 'number'
-            ? 1250
-            : roleDef.type === 'date'
-            ? '2025-03-01'
-            : 'Segment_A';
-      }
-      for (const kw of pack.detect.keywords.slice(0, 3)) {
-        variant2Row[kw.replace(/\s+/g, '_')] = 100;
-      }
-      const matches2 = detectPack([variant2Row, variant2Row]);
-      expect(matches2[0].packId).toBe(pack.id);
-
-      // Dataset 3: Alias column names using second alias from each role + keyword aliases
-      const variant3Row: Record<string, any> = {};
-      for (const [roleKey, roleDef] of Object.entries(pack.roles)) {
-        const aliasName = roleDef.aliases[1] || roleDef.aliases[0] || roleKey;
-        variant3Row[aliasName] =
-          roleDef.type === 'number'
-            ? 420
-            : roleDef.type === 'date'
-            ? '2025-04-01'
-            : 'Group_B';
-      }
-      for (const kw of pack.detect.keywords.slice(0, 4)) {
-        variant3Row[`col_${kw.replace(/\s+/g, '_')}`] = 55;
-      }
-      const matches3 = detectPack([variant3Row, variant3Row]);
-      expect(matches3[0].packId).toBe(pack.id);
-    });
-  }
-});
-
-describe('Every KPI formula on known data & missing-role unavailable fallback', () => {
-  for (const pack of ANALYTICS_PACKS) {
-    it(`computes all ${pack.kpis.length} KPIs accurately on known data for "${pack.id}"`, () => {
+    it(`evaluates "${pack.id}" on Dataset A (with nulls & formatted strings) and Dataset B (with zeros / divide-by-zero)`, () => {
       const sampleRows = pack.sampleDataset();
       const roleMap = mapRoles(sampleRows, pack);
-      const computed = computeKpis(pack, sampleRows, roleMap);
 
-      expect(computed.length).toBe(pack.kpis.length);
-      for (const kpi of computed) {
-        expect(kpi.status).toBe('available');
-        expect(typeof kpi.value).toBe('number');
-        expect(Number.isFinite(kpi.value!)).toBe(true);
-        expect(kpi.formattedValue.length).toBeGreaterThan(0);
-        expect(kpi.formattedValue).not.toContain('NaN');
+      // Dataset A: Sample rows + a row containing nulls across all columns (nulls must be ignored, not poison averages)
+      const nullRow: Record<string, any> = {};
+      for (const key of Object.keys(sampleRows[0])) {
+        nullRow[key] = null;
+      }
+      const datasetWithNulls = [...sampleRows, nullRow];
+      const computedBase = computeKpis(pack, sampleRows, roleMap);
+      const computedWithNulls = computeKpis(pack, datasetWithNulls, roleMap);
+
+      for (let i = 0; i < computedBase.length; i++) {
+        const baseKpi = computedBase[i];
+        const nullKpi = computedWithNulls[i];
+        expect(baseKpi.status).toBe('available');
+        expect(nullKpi.status).toBe('available');
+        expect(baseKpi.formulaText.length).toBeGreaterThan(15);
+        expect(baseKpi.source).toContain('=');
+        // Adding an all-null row must not change sums or averages!
+        expect(nullKpi.value).toBeCloseTo(baseKpi.value!, 4);
+      }
+
+      // Dataset B: All-zero numeric values (divide-by-zero must return status='unavailable' and value=null, never NaN/Infinity)
+      const zeroRow: Record<string, any> = {};
+      for (const key of Object.keys(sampleRows[0])) {
+        zeroRow[key] = key.includes('date') ? '2025-01-01' : 0;
+      }
+      const computedZeros = computeKpis(pack, [zeroRow, zeroRow], roleMap);
+      for (const kpi of computedZeros) {
+        if (kpi.value !== null) {
+          expect(Number.isFinite(kpi.value)).toBe(true);
+        } else {
+          expect(kpi.status).toBe('unavailable');
+          expect(kpi.formattedValue).toBe('Unavailable');
+        }
       }
     });
 
-    it(`returns status="unavailable" with clear column hint when required roles are missing for "${pack.id}"`, () => {
+    it(`returns status="unavailable" with exact missing column hint when required roles are missing for "${pack.id}"`, () => {
       const emptyRoleMap: Record<string, string> = {};
       const computed = computeKpis(pack, [{ unrelated_col: 123 }], emptyRoleMap);
 
@@ -139,7 +171,7 @@ describe('Every KPI formula on known data & missing-role unavailable fallback', 
         expect(kpi.status).toBe('unavailable');
         expect(kpi.value).toBeNull();
         expect(kpi.formattedValue).toBe('Unavailable');
-        expect(kpi.hint).toMatch(/^add column/i);
+        expect(kpi.hint).toMatch(/^Add column:/i);
       }
     });
 
@@ -150,7 +182,7 @@ describe('Every KPI formula on known data & missing-role unavailable fallback', 
 
       expect(dash.packId).toBe(pack.id);
       expect(dash.missingRoles.length).toBe(0);
-      expect(dash.charts.length).toBeGreaterThan(0);
+      expect(dash.charts.length).toBeGreaterThanOrEqual(6);
       expect(dash.computedKpis.length).toBe(pack.kpis.length);
 
       const rep = buildReport(pack, sampleRows, roleMap);
@@ -164,18 +196,223 @@ describe('Every KPI formula on known data & missing-role unavailable fallback', 
     });
   }
 
-  it('verifies Financial & FP&A KPI math on known deterministic ledger rows', () => {
+  it('re-verifies hand-calculated domain formulas: DSO, DPO, Current/Quick Ratio, ROE, ROA, CAC, CLV, Churn, Retention, NPL, Loss Ratio, Readmission, Bed Occupancy, Attrition, Time-to-Hire, Inventory Turnover, Sell-Through, OEE, and Stickiness', () => {
+    // 1. Financial: DSO, DPO, Current Ratio, Quick Ratio, ROE, ROA
     const finPack = getPackById('financial');
-    const sampleRows = finPack.sampleDataset();
-    const roleMap = mapRoles(sampleRows, finPack);
-    const kpis = Object.fromEntries(computeKpis(finPack, sampleRows, roleMap).map(k => [k.id, k]));
+    const finRows = [
+      {
+        date: '2025-01-01',
+        revenue: 'Rs 1,500,000',
+        cogs: 'Rs 600,000',
+        opex: 300000,
+        net_income: 200000,
+        ebitda: 350000,
+        current_assets: 600000,
+        inventory: 150000,
+        current_liabilities: 300000,
+        total_assets: 2000000,
+        total_debt: 500000,
+        total_equity: 1000000,
+        ar: 150000,
+        ap: 60000,
+      },
+    ];
+    const finMap = mapRoles(finRows, finPack);
+    const finKpis = Object.fromEntries(computeKpis(finPack, finRows, finMap).map(k => [k.id, k]));
 
-    expect(kpis.fin_revenue.status).toBe('available');
-    expect(kpis.fin_revenue.value).toBeGreaterThan(0);
-    expect(kpis.fin_gross_margin_pct.status).toBe('available');
-    expect(kpis.fin_gross_margin_pct.value).toBeGreaterThan(0);
-    expect(kpis.fin_current_ratio.status).toBe('available');
-    expect(kpis.fin_current_ratio.value).toBeGreaterThan(1.0);
+    expect(finKpis.fin_dso_days.value).toBeCloseTo((150000 / 1500000) * 365, 2); // 36.5 days
+    expect(finKpis.fin_dpo_days.value).toBeCloseTo((60000 / 600000) * 365, 2); // 36.5 days
+    expect(finKpis.fin_current_ratio.value).toBeCloseTo(600000 / 300000, 2); // 2.0x
+    expect(finKpis.fin_quick_ratio.value).toBeCloseTo((600000 - 150000) / 300000, 2); // 1.5x
+    expect(finKpis.fin_roe_pct.value).toBeCloseTo((200000 / 1000000) * 100, 2); // 20.0%
+    expect(finKpis.fin_roa_pct.value).toBeCloseTo((200000 / 2000000) * 100, 2); // 10.0%
+
+    // Edge case: Negative equity must return null/unavailable for ROE
+    const negEqKpis = Object.fromEntries(
+      computeKpis(finPack, [{ ...finRows[0], net_income: -100000, total_equity: -500000 }], finMap).map(k => [k.id, k])
+    );
+    expect(negEqKpis.fin_roe_pct.status).toBe('unavailable');
+
+    // 2. Marketing: CAC
+    const mktPack = getPackById('marketing');
+    const mktRows = [{ date: '2025-01-01', spend: '$50,000', impressions: 100000, clicks: 5000, conversions: 250, attributed_revenue: '$200,000' }];
+    const mktKpis = Object.fromEntries(computeKpis(mktPack, mktRows, mapRoles(mktRows, mktPack)).map(k => [k.id, k]));
+    expect(mktKpis.cac.value).toBeCloseTo(200, 2); // 50,000 / 250 = $200
+
+    // 3. Customer: CLV, Churn %, Retention %
+    const custPack = getPackById('customer');
+    const custRows = [{ date: '2025-01-01', active_customers: 300, churned_customers: 15, mrr: 60000, clv: 18500 }];
+    const custKpis = Object.fromEntries(computeKpis(custPack, custRows, mapRoles(custRows, custPack)).map(k => [k.id, k]));
+    expect(custKpis.logo_churn_rate.value).toBeCloseTo(5.0, 2); // 15 / 300 = 5%
+    expect(custKpis.gross_retention_rate.value).toBeCloseTo(95.0, 2); // (300 - 15) / 300 = 95%
+    expect(custKpis.avg_clv.value).toBeCloseTo(18500, 2);
+
+    // 4. Product: Stickiness (DAU/MAU) + DAU > MAU guard
+    const prodPack = getPackById('product');
+    const prodRows = [{ date: '2025-01-01', dau: 15000, mau: 50000 }];
+    const prodKpis = Object.fromEntries(computeKpis(prodPack, prodRows, mapRoles(prodRows, prodPack)).map(k => [k.id, k]));
+    expect(prodKpis.stickiness_ratio.value).toBeCloseTo(30.0, 2); // 15,000 / 50,000 = 30%
+    const invalidProdKpis = Object.fromEntries(
+      computeKpis(prodPack, [{ date: '2025-01-01', dau: 60000, mau: 50000 }], mapRoles(prodRows, prodPack)).map(k => [k.id, k])
+    );
+    expect(invalidProdKpis.stickiness_ratio.status).toBe('unavailable');
+
+    // 5. Operations: Inventory Turnover (COGS / Avg Inventory)
+    const opsPack = getPackById('operations');
+    const opsRows = [{ date: '2025-01-01', shipments: 1000, cogs: 900000, inventory_units: 100000, inventory_turnover: 9.0 }];
+    const opsKpis = Object.fromEntries(computeKpis(opsPack, opsRows, mapRoles(opsRows, opsPack)).map(k => [k.id, k]));
+    expect(opsKpis.inventory_turnover.value).toBeCloseTo(9.0, 2);
+
+    // 6. HR: Attrition % (Leavers / Average Headcount) & Time-to-Hire
+    const hrPack = getPackById('hr');
+    const hrRows = [{ date: '2025-01-01', headcount: 200, leavers: 24, attrition_pct: null, time_to_hire_days: 35 }];
+    const hrKpis = Object.fromEntries(computeKpis(hrPack, hrRows, mapRoles(hrRows, hrPack)).map(k => [k.id, k]));
+    expect(hrKpis.attrition_rate.value).toBeCloseTo(12.0, 2); // 24 / 200 = 12%
+    expect(hrKpis.time_to_hire.value).toBeCloseTo(35.0, 2);
+
+    // 7. Healthcare: Readmission % & Bed Occupancy % (including decimal 0.84 -> 84.0% normalization)
+    const hcPack = getPackById('healthcare');
+    const hcRows = [{ date: '2025-01-01', admissions: 500, readmissions: 45, bed_occupancy_pct: 0.84 }];
+    const hcKpis = Object.fromEntries(computeKpis(hcPack, hcRows, mapRoles(hcRows, hcPack)).map(k => [k.id, k]));
+    expect(hcKpis.readmission_rate.value).toBeCloseTo(9.0, 2); // 45 / 500 = 9%
+    expect(hcKpis.bed_occupancy.value).toBeCloseTo(84.0, 2); // 0.84 normalized to 84%
+
+    // 8. Retail: Sell-Through % (Units Sold / (Units Sold + On-Hand))
+    const retPack = getPackById('retail');
+    const retRows = [{ date: '2025-01-01', gmv: 100000, units_sold: 750, on_hand_units: 250, sell_through_pct: 75 }];
+    const retKpis = Object.fromEntries(computeKpis(retPack, retRows, mapRoles(retRows, retPack)).map(k => [k.id, k]));
+    expect(retKpis.sell_through_rate.value).toBeCloseTo(75.0, 2); // 750 / (750 + 250) = 75%
+
+    // 9. Manufacturing: OEE (Availability * Performance * Quality)
+    const mfgPack = getPackById('manufacturing');
+    const mfgRows = [
+      {
+        date: '2025-01-01',
+        produced_units: 1000,
+        good_units: 980,
+        oee_pct: 83.79,
+        availability_pct: 90,
+        performance_pct: 95,
+        quality_pct: 98,
+      },
+    ];
+    const mfgKpis = Object.fromEntries(computeKpis(mfgPack, mfgRows, mapRoles(mfgRows, mfgPack)).map(k => [k.id, k]));
+    expect(mfgKpis.oee_score.value).toBeCloseTo(0.9 * 0.95 * 0.98 * 100, 2); // 83.79%
+
+    // 10. Banking & Insurance: NPL % & Claims Loss Ratio %
+    const bankPack = getPackById('banking-insurance');
+    const bankRows = [
+      {
+        date: '2025-01-01',
+        loan_portfolio: 100000000,
+        npl_balance: 2000000,
+        premiums: 5000000,
+        claims_paid: 3000000,
+      },
+    ];
+    const bankKpis = Object.fromEntries(computeKpis(bankPack, bankRows, mapRoles(bankRows, bankPack)).map(k => [k.id, k]));
+    expect(bankKpis.npl_ratio.value).toBeCloseTo(2.0, 2); // 2M / 100M = 2.0%
+    expect(bankKpis.claims_loss_ratio.value).toBeCloseTo(60.0, 2); // 3M / 5M = 60.0%
+  });
+});
+
+describe('TASK 2: Auto-Detect Accuracy across 42 Messy CSV Fixtures & Confusion Table', () => {
+  it('ranks the correct pack #1 across 42 messy CSV fixtures (>= 90% top-1, >= 98% top-3) and reports confusion matrix', () => {
+    const fixturesDir = path.resolve(__dirname, 'fixtures');
+    const packIds = ANALYTICS_PACKS.map(p => p.id);
+    const confusion: Record<string, Record<string, number>> = {};
+    for (const actual of packIds) {
+      confusion[actual] = {};
+      for (const pred of packIds) confusion[actual][pred] = 0;
+    }
+
+    let total = 0;
+    let top1Correct = 0;
+    let top3Correct = 0;
+
+    for (const pack of ANALYTICS_PACKS) {
+      const packDir = path.join(fixturesDir, pack.id);
+      const files = fs.readdirSync(packDir).filter(f => f.endsWith('.csv')).sort();
+      expect(files.length).toBe(3);
+
+      for (const file of files) {
+        const rawCsv = fs.readFileSync(path.join(packDir, file), 'utf8');
+        const { headers, rows } = parseSimpleCsv(rawCsv);
+        const matches = detectPack(headers, rows);
+        const top1 = matches[0].packId;
+        const top3 = matches.slice(0, 3).map(m => m.packId);
+
+        confusion[pack.id][top1] = (confusion[pack.id][top1] || 0) + 1;
+        total += 1;
+        if (top1 === pack.id) top1Correct += 1;
+        if (top3.includes(pack.id)) top3Correct += 1;
+
+        expect(top1, `Fixture ${pack.id}/${file} ranked ${top1} instead of ${pack.id}`).toBe(pack.id);
+        expect(matches[0].confidence).toBeGreaterThanOrEqual(60);
+        expect(matches[0].isUncertain).toBe(false);
+      }
+    }
+
+    const top1Accuracy = (top1Correct / total) * 100;
+    const top3Accuracy = (top3Correct / total) * 100;
+    expect(top1Accuracy).toBeGreaterThanOrEqual(90);
+    expect(top3Accuracy).toBeGreaterThanOrEqual(98);
+  });
+
+  it('flags confidence < 60 as isUncertain=true with "Not sure, please choose"', () => {
+    const ambiguousCols = ['col_a', 'col_b', 'random_notes', 'misc_flag'];
+    const matches = detectPack(ambiguousCols, [{ col_a: 'foo', col_b: 'bar' }]);
+    expect(matches[0].confidence).toBeLessThan(60);
+    expect(matches[0].isUncertain).toBe(true);
+    expect(matches[0].recommendationMessage).toBe('Not sure, please choose');
+  });
+});
+
+describe('TASK 3: Real-Data Robustness (Currency/Percent/Accounting Strings, Mixed Dates, 100k Rows < 3s)', () => {
+  it('parses currency, percent, thousand-separator, and accounting-negative strings accurately', () => {
+    expect(parseRealNumber('Rs 1,200')).toBe(1200);
+    expect(parseRealNumber('PKR 45,000.50')).toBeCloseTo(45000.5, 2);
+    expect(parseRealNumber('12.5%')).toBeCloseTo(12.5, 2);
+    expect(parseRealNumber('(300)')).toBe(-300);
+    expect(parseRealNumber('($1,450.25)')).toBeCloseTo(-1450.25, 2);
+    expect(parseRealNumber('€ 2.500,50')).toBeCloseTo(2500.5, 2);
+    expect(parseRealNumber('N/A')).toBeNull();
+    expect(parseRealNumber('')).toBeNull();
+  });
+
+  it('normalizes ISO, DD/MM/YYYY, MM/DD/YYYY, and Excel serial dates and warns when ambiguous', () => {
+    // 1. Ambiguous slash dates (all parts <= 12, e.g. 04/05/2025)
+    const ambig = parseAndNormalizeDates(['04/05/2025', '06/07/2025']);
+    expect(ambig.hasAmbiguousSlashDates).toBe(true);
+    expect(ambig.warning).toContain('Ambiguous slash dates');
+
+    // 2. Mixed DD/MM/YYYY and MM/DD/YYYY in the same column
+    const mixed = parseAndNormalizeDates(['25/01/2025', '01/25/2025', '2025-03-01']);
+    expect(mixed.hasMixedFormats).toBe(true);
+    expect(mixed.warning).toContain('Mixed DD/MM/YYYY and MM/DD/YYYY');
+    expect(mixed.normalizedValues[0]).toBe('2025-01-25');
+    expect(mixed.normalizedValues[1]).toBe('2025-01-25');
+
+    // 3. Excel serial date (45658 -> 2025-01-01)
+    const excel = parseAndNormalizeDates([45658]);
+    expect(excel.normalizedValues[0]).toBe('2025-01-01');
+  });
+
+  it('renders a 100,000-row pack dashboard in < 3,000 ms without freezing', () => {
+    const salesPack = getPackById('sales');
+    const baseRows = salesPack.sampleDataset();
+    const largeRows: Record<string, any>[] = new Array(100000);
+    for (let i = 0; i < 100000; i++) {
+      largeRows[i] = baseRows[i % baseRows.length];
+    }
+
+    const t0 = performance.now();
+    const dash = buildDashboard(salesPack, largeRows);
+    const elapsedMs = performance.now() - t0;
+
+    expect(dash.computedKpis.length).toBe(salesPack.kpis.length);
+    expect(dash.charts.length).toBe(salesPack.charts.length);
+    expect(elapsedMs).toBeLessThan(3000);
   });
 });
 
@@ -280,7 +517,7 @@ describe('Shared Analytics Techniques (src/analytics/techniques/)', () => {
       { name: 'D', value: 40 },
       { name: 'E', value: 30 },
     ]);
-    expect(res.vitalFewCount).toBe(2); // A (50%) + B (35%) = 85% >= 80%
+    expect(res.vitalFewCount).toBe(2);
     expect(res.vitalFewValueSharePct).toBeCloseTo(85, 1);
   });
 

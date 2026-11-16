@@ -1,0 +1,3 @@
+eventDate,featureArea,devicePlatform,dailyActiveUsers,monthlyActiveUsers,activatedUsers,newSignups,eventCount,latencyMs,crashRatePct
+2025-01-01,Connector Hub,Web,12800,36500,2890,4300,154000,162,0.25
+2025-02-01,Report Builder,Android,6400,24000,1410,2400,72000,240,0.52

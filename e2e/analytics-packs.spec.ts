@@ -1,6 +1,23 @@
 import { test, expect, Page } from '@playwright/test';
 import fs from 'node:fs';
 
+const ALL_PACK_IDS = [
+  'financial',
+  'sales',
+  'marketing',
+  'customer',
+  'product',
+  'web',
+  'operations',
+  'hr',
+  'risk-fraud',
+  'healthcare',
+  'retail',
+  'manufacturing',
+  'banking-insurance',
+  'education',
+] as const;
+
 async function bootstrapPacksWorkspace(
   page: Page,
   options?: { startEmpty?: boolean; analyticsPacks?: boolean; theme?: 'dark' | 'light' }
@@ -74,9 +91,10 @@ async function bootstrapPacksWorkspace(
 }
 
 test.describe('Analytics Packs E2E Verification Suite', () => {
-  test('1. Renders all 14 pack cards, loads sample data, displays KPIs, 4 lenses, charts, and downloads valid PDF/ZIP/Excel/Template files', async ({
+  test('1. Parametrized 14-Pack Quality Bar: opens EVERY pack with sample data and verifies 8-12 KPIs with formula tooltips, 6-8 charts, 4 lens tabs, executive report sections, pack search/filter, and exports', async ({
     page,
   }) => {
+    test.setTimeout(90000);
     await bootstrapPacksWorkspace(page);
 
     // Navigate to Analytics Packs view
@@ -87,47 +105,65 @@ test.describe('Analytics Packs E2E Verification Suite', () => {
     const view = page.getByTestId('analytics-packs-view');
     await expect(view).toBeVisible({ timeout: 10000 });
 
-    // Verify all 14 pack cards are rendered
-    const expectedIds = [
-      'financial',
-      'sales',
-      'marketing',
-      'customer',
-      'product',
-      'web',
-      'operations',
-      'hr',
-      'risk-fraud',
-      'healthcare',
-      'retail',
-      'manufacturing',
-      'banking-insurance',
-      'education',
-    ];
-    for (const id of expectedIds) {
-      await expect(page.getByTestId(`pack-card-${id}`)).toBeVisible();
+    // Verify Pack Picker search and category filter work
+    const searchInput = page.getByTestId('pack-picker-search');
+    await expect(searchInput).toBeVisible();
+    await searchInput.fill('Manufacturing');
+    await expect(page.getByTestId('pack-card-manufacturing')).toBeVisible();
+    await searchInput.fill('');
+
+    await page.getByTestId('pack-category-filter-finance-risk').click();
+    await expect(page.getByTestId('pack-card-financial')).toBeVisible();
+    await page.getByTestId('pack-category-filter-all').click();
+
+    // Parametrized verification across ALL 14 packs
+    for (const packId of ALL_PACK_IDS) {
+      const packCard = page.getByTestId(`pack-card-${packId}`);
+      await expect(packCard).toBeVisible();
+
+      // Load sample data for this pack
+      await page.getByTestId(`pack-sample-btn-${packId}`).click();
+
+      // Verify 8-12 KPIs rendered and available with "i" formula tooltip buttons
+      const kpiCards = page.locator('[data-testid="pack-kpi-grid"] > [data-testid^="kpi-card-"]');
+      const kpiCount = await kpiCards.count();
+      expect(kpiCount, `Pack ${packId} KPI count`).toBeGreaterThanOrEqual(8);
+      expect(kpiCount, `Pack ${packId} KPI count`).toBeLessThanOrEqual(12);
+
+      const tooltipBtns = page.locator('[data-testid="pack-kpi-grid"] [data-testid^="kpi-formula-tooltip-"]');
+      expect(await tooltipBtns.count(), `Pack ${packId} formula tooltip count`).toBe(kpiCount);
+
+      // Verify 6-8 domain charts rendered
+      const chartCards = page.locator('[data-testid="pack-charts-grid"] > [data-testid^="pack-chart-card-"]');
+      const chartCount = await chartCards.count();
+      expect(chartCount, `Pack ${packId} chart count`).toBeGreaterThanOrEqual(6);
+      expect(chartCount, `Pack ${packId} chart count`).toBeLessThanOrEqual(8);
+
+      // Verify 4 lens tabs and active lens content
+      for (const lens of ['descriptive', 'diagnostic', 'predictive', 'prescriptive']) {
+        const lensTab = page.getByTestId(`pack-lens-tab-${lens}`);
+        await expect(lensTab).toBeVisible();
+      }
+
+      // Verify report sections contain real numbers
+      const reportSection0 = page.getByTestId('pack-report-section-0');
+      await expect(reportSection0).toBeVisible();
+      const reportText = await reportSection0.innerText();
+      expect(reportText.length).toBeGreaterThan(30);
+      expect(reportText).toMatch(/\d/);
     }
 
-    // Click "Try with sample data" on Financial & FP&A pack
-    await page.getByTestId('pack-sample-btn-financial').click();
-    await page.waitForTimeout(300);
-
-    // KPIs visible & populated
-    const kpiGrid = page.getByTestId('pack-kpi-grid');
-    await expect(kpiGrid).toBeVisible();
-    await expect(page.getByTestId('kpi-card-fin_revenue')).toBeVisible();
-    await expect(page.getByTestId('kpi-card-fin_gross_margin_pct')).toBeVisible();
-
-    // Test all 4 lenses (Descriptive, Diagnostic, Predictive, Prescriptive)
+    // Test all 4 lens tabs interactively on the active pack
     for (const lens of ['descriptive', 'diagnostic', 'predictive', 'prescriptive']) {
       await page.getByTestId(`pack-lens-tab-${lens}`).click();
       await expect(page.getByTestId(`pack-lens-content-${lens}`)).toBeVisible();
     }
     await expect(page.getByTestId('pack-whatif-simulator')).toBeVisible();
 
-    // Charts & Report sections visible
-    await expect(page.getByTestId('pack-charts-grid')).toBeVisible();
-    await expect(page.getByTestId('pack-report-sections')).toBeVisible();
+    // Switch back to financial pack for export verification
+    await page.getByTestId('pack-sample-btn-financial').click();
+    await expect(page.getByTestId('kpi-card-fin_revenue')).toBeVisible();
+    await expect(page.getByTestId('kpi-card-fin_gross_margin_pct')).toBeVisible();
 
     // Verify Template CSV download button
     const [templateDownload] = await Promise.all([
@@ -171,7 +207,7 @@ test.describe('Analytics Packs E2E Verification Suite', () => {
     expect(zipBuf.subarray(0, 2).toString('ascii')).toBe('PK');
   });
 
-  test('2. Zero-data exports work cleanly and missing roles show Unavailable badges', async ({
+  test('2. Zero-data exports work cleanly and missing roles show Unavailable badges with exact missing column', async ({
     page,
   }) => {
     await bootstrapPacksWorkspace(page, { startEmpty: true });
@@ -183,6 +219,7 @@ test.describe('Analytics Packs E2E Verification Suite', () => {
 
     await expect(page.getByTestId('pack-missing-roles-banner')).toBeVisible({ timeout: 10000 });
     await expect(page.getByTestId('kpi-card-fin_revenue')).toContainText('UNAVAILABLE');
+    await expect(page.getByTestId('kpi-missing-col-fin_revenue')).toContainText('Add column: revenue');
 
     // Even with 0 rows loaded, pack template and PDF downloads work
     const menuTrigger = page.getByTestId('download-menu-trigger-analytics_pack').first();

@@ -74,9 +74,22 @@ When `analyticsPacks` is enabled, Data Analytix provides 14 domain-specific anal
 
 ### How to Add a New Pack (15th Pack in 1 Config File)
 Because the Analytics Packs architecture uses **one generic renderer** (`src/components/views/AnalyticsPacksView.tsx`) and **one declarative engine** (`src/analytics/engine.ts`), adding a 15th pack requires **only a new config file** (no hardcoded UI changes):
-1. Create `src/analytics/packs/<my-pack>.ts` exporting an `AnalyticsPackConfig` object (`id`, `name`, `icon`, `description`, `detect`, `kpis`, `charts`, `lenses`, `reportSections`, `sampleDataset`).
-2. Add the pack ID to `PackId` in `src/analytics/packs/types.ts` and register the config in `ANALYTICS_PACKS` inside `src/analytics/packs/registry.ts`.
-3. Run `npm test` — the generic catalog grid, auto-detection engine, role mapper, KPI cards, 4 lenses, charts, and PDF/ZIP/Excel/CSV template exporters automatically include the new pack.
+1. Create `src/analytics/packs/<my-pack>.ts` exporting an `AnalyticsPackConfig` object (`id`, `name`, `category`, `icon`, `description`, `detect`, `kpis`, `charts`, `lenses`, `reportSections`, `sampleDataset`).
+2. Add the pack ID to `PackId` in `src/analytics/packs/types.ts` and register the config in `RAW_PACKS` inside `src/analytics/packs/registry.ts`.
+3. Run `npm test` — the generic catalog grid, search/category filter, auto-detection engine, role mapper, KPI cards with `"i"` formula tooltips, 4 lenses, charts, and PDF/ZIP/Excel/CSV template exporters automatically include the new pack.
+
+### Real-Data Hardening & KPI Formula Assumptions
+Every KPI across all 14 packs defines `formulaText` (plain-English definition), `source` (standard mathematical formula), and explicit edge-case guards (divide-by-zero, negative values, all-null columns, and decimal-to-percent unit normalization):
+- **Quick Ratio (`financial`)**: `(Current Assets − Inventory) / Current Liabilities`. If `inventory` is not mapped, Inventory is assumed to be `0` (Quick Ratio = Current Ratio).
+- **ROE % (`financial`)**: `(Net Income / Shareholders' Equity) × 100`. Returns `Unavailable` when `Shareholders' Equity <= 0` to prevent false positive ROE when both Net Income and Equity are negative.
+- **DSO & DPO (`financial`)**: Uses a `365-day` annualized convention (`(AR / Total Revenue) × 365` and `(AP / Total COGS) × 365`).
+- **CLV (`customer`)**: Averages reported cohort `clv` values when mapped, ignoring null or non-positive records.
+- **Stickiness DAU/MAU % (`product`)**: `(DAU / MAU) × 100`. Returns `Unavailable` if `DAU > MAU` (unit/aggregation mismatch) or `MAU <= 0`.
+- **Inventory Turnover (`operations`)**: Computes `COGS / Average Inventory` when both `cogs` and `inventory_units` are mapped; otherwise averages reported `inventory_turnover`.
+- **Attrition Rate % (`hr`)**: Computes `(Σ Leavers / Σ Headcount) × 100` when `leavers` and `headcount` are mapped; otherwise averages reported `attrition_pct`.
+- **Bed Occupancy % (`healthcare`)**: Computes `(Occupied Beds / Total Beds) × 100` when bed counts are mapped; otherwise averages reported `bed_occupancy_pct` (auto-normalizing decimals like `0.84` → `84.0%`).
+- **Sell-Through Rate % (`retail`)**: Computes `[Units Sold / (Units Sold + On-Hand Units)] × 100` when `on_hand_units` is mapped; otherwise averages reported `sell_through_pct`.
+- **OEE % (`manufacturing`)**: Computes `Availability (%) × Performance (%) × Quality (%)` when component ratios are mapped; otherwise averages reported `oee_pct`.
 
 ---
 

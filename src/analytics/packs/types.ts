@@ -1,4 +1,11 @@
-import type { KPI, VisualConfig } from '../../types';
+import { ColumnProfile } from '../../types';
+import { ChartRecommendation } from '../../engine/chartRecommendationEngine';
+
+export type ColumnSchema = ColumnProfile;
+export interface DatasetProfile {
+  rowCount: number;
+  columns: ColumnProfile[];
+}
 
 export type PackId =
   | 'financial'
@@ -16,59 +23,32 @@ export type PackId =
   | 'banking-insurance'
   | 'education';
 
-export type RoleDataType = 'number' | 'date' | 'category' | 'id';
+export type PackCategory =
+  | 'Finance & Risk'
+  | 'Revenue & Growth'
+  | 'Product & Web'
+  | 'Operations & Supply'
+  | 'People & Sector';
 
-export interface RoleDefinition {
-  aliases: string[];
-  type: RoleDataType;
-  description?: string;
-  sampleValues?: (string | number)[];
-}
+export type Role = string;
 
-export type PackKpiFormat =
-  | 'currency'
-  | 'percent'
-  | 'number'
-  | 'ratio'
-  | 'days'
-  | 'compact';
+export type KpiUnit = 'currency' | 'percent' | 'ratio' | 'count' | 'days' | 'score';
 
-export type PackKpiFormulaFn = (
-  rows: Record<string, any>[],
-  roleMap: Record<string, string>
-) => number | null;
+export type FavorableDirection = 'up' | 'down';
 
-export interface PackKpiConfig {
-  id: string;
-  label: string;
-  formula: string | PackKpiFormulaFn;
-  sqlHint?: string;
-  unit: string;
-  format: PackKpiFormat;
-  goodDirection: 'up' | 'down';
-  needs: string[];
-  description: string;
-}
-
-export type PackChartIntent =
+export type ChartIntent =
   | 'trend'
-  | 'compare'
+  | 'comparison'
   | 'composition'
   | 'distribution'
-  | 'relationship'
   | 'ranking'
-  | 'flow'
-  | 'geo';
+  | 'Exception';
 
-export interface PackChartConfig {
-  id: string;
-  title: string;
-  intent: PackChartIntent;
-  x: string;
-  y: string;
-  group?: string;
-  needs: string[];
-  aggregation?: 'sum' | 'avg' | 'count' | 'max' | 'min';
+export type LensId = 'exec' | 'ops' | 'Perf' | 'risk';
+
+export interface PackRoleDefinition {
+  type: 'number' | 'date' | 'category';
+  aliases: string[];
   description?: string;
 }
 
@@ -79,91 +59,191 @@ export interface PackLensesConfig {
   prescriptive: string[];
 }
 
-export interface PackReportSectionConfig {
+export type HybridPackLenses = PackLensConfig[] & PackLensesConfig;
+
+export type HybridSampleDataset = (() => Record<string, any>[]) & {
+  name: string;
+  rows: Record<string, any>[];
+};
+
+export interface PackKpiConfig {
+  id: string;
   title: string;
-  kpis: string[];
-  charts: string[];
-  narrativeTemplate: string;
+  unit: KpiUnit;
+  favorableDirection: FavorableDirection;
+  requiredRoles: Role[];
+  /** Plain-English definition shown in the KPI "i" tooltip */
+  formulaText: string;
+  /** Standard mathematical formula / source definition (e.g., "DSO = (Accounts Receivable / Total Credit Revenue) × 365") */
+  source: string;
+  /** Optional explicit assumption note surfaced in the UI when a formula uses a standard assumption */
+  assumption?: string;
+  formula: (rows: Record<string, any>[], roleMap: Record<Role, string>) => number | null;
+  target?: number;
+}
+
+export interface PackChartConfig {
+  id: string;
+  title: string;
+  subtitle: string;
+  intent: ChartIntent;
+  xRole: Role;
+  yRoles: Role[];
+  aggregation?: 'sum' | 'avg' | 'count';
+}
+
+export interface PackLensConfig {
+  id: LensId;
+  name: string;
+  description: string;
+  kpiIds: string[];
+  chartIds: string[];
 }
 
 export interface AnalyticsPackConfig {
-  id: PackId | string;
+  id: PackId;
   name: string;
+  category?: PackCategory;
   icon: string;
   description: string;
   detect: {
     keywords: string[];
-    requiredRoles: string[];
-    optionalRoles: string[];
+    requiredRoles: Role[];
+    optionalRoles: Role[];
+    roleAliases: Record<Role, string[]>;
   };
-  roles: Record<string, RoleDefinition>;
+  taxonomy: {
+    dimensions: Role[];
+    measures: Role[];
+  };
   kpis: PackKpiConfig[];
   charts: PackChartConfig[];
-  lenses: PackLensesConfig;
-  reportSections: PackReportSectionConfig[];
-  sampleDataset: () => Record<string, any>[];
+  lenses: PackLensConfig[] | HybridPackLenses;
+  reportSections: string[];
+  sampleDataset:
+    | {
+        name: string;
+        rows: Record<string, any>[];
+      }
+    | HybridSampleDataset;
+  roles?: Record<Role, PackRoleDefinition>;
+}
+
+export interface EnrichedAnalyticsPackConfig extends Omit<AnalyticsPackConfig, 'lenses' | 'sampleDataset' | 'roles'> {
+  category: PackCategory;
+  lenses: HybridPackLenses;
+  sampleDataset: HybridSampleDataset;
+  roles: Record<Role, PackRoleDefinition>;
 }
 
 export interface PackDetectionMatch {
-  packId: string;
+  packId: PackId;
   packName: string;
-  confidence: number; // 0 to 100
-  matchedRoles: string[];
-  missingRoles: string[];
-  roleMapping: Record<string, string>; // role -> dataset column
+  confidence: number; // 0..100
+  matchedRoles: Record<Role, string>;
+  missingRequiredRoles: Role[];
+  matchedKeywords: number;
+  /** True when confidence < 60, prompting UI to show "Not sure, please choose" */
+  isUncertain: boolean;
+  /** Recommendation banner text ("Recommended for your data" or "Not sure, please choose") */
+  recommendationMessage: string;
 }
 
 export interface ComputedPackKpi {
   id: string;
+  title: string;
   label: string;
-  status: 'available' | 'unavailable';
+  unit: KpiUnit;
+  favorableDirection: FavorableDirection;
+  goodDirection: FavorableDirection;
+  requiredRoles: Role[];
+  needs: Role[];
+  formulaText: string;
+  source: string;
+  assumption?: string;
+  description: string;
   value: number | null;
   formattedValue: string;
-  unit: string;
-  format: PackKpiFormat;
-  goodDirection: 'up' | 'down';
-  changePercent?: number;
-  isFavorable?: boolean;
+  deltaPct: number | null;
+  changePercent: number | null;
+  isFavorableDelta: boolean | null;
+  sparkline: number[];
+  status: 'available' | 'unavailable' | 'ready';
+  missingRoles: Role[];
   reason?: string;
   hint?: string;
-  description: string;
-  needs: string[];
-  sparkline?: number[];
+  target?: number;
+}
+
+export interface ComputedPackChart {
+  id: string;
+  title: string;
+  subtitle: string;
+  intent: ChartIntent;
+  chartType: 'line' | 'bar' | 'area' | 'donut' | 'scatter' | 'composed';
+  type: 'line' | 'bar' | 'area' | 'donut' | 'scatter' | 'composed';
+  xColumn: string | null;
+  categoryField: string;
+  yColumns: string[];
+  valueField: string;
+  secondaryCategoryField?: string;
+  secondaryValueField?: string;
+  aggregation: 'sum' | 'avg' | 'count';
+  data: Record<string, any>[];
+  status: 'available' | 'unavailable' | 'ready';
+  missingRoles: Role[];
+}
+
+export interface DateNormalizationResult {
+  normalizedValues: (string | null)[];
+  normalizedDates: (string | null)[];
+  detectedFormats: ('ISO' | 'DD/MM/YYYY' | 'MM/DD/YYYY' | 'EXCEL_SERIAL' | 'OTHER')[];
+  hasMixedFormats: boolean;
+  hasAmbiguousSlashDates: boolean;
+  isAmbiguous: boolean;
+  warning: string | null;
+  warningMessage?: string;
 }
 
 export interface BuiltPackDashboard {
-  packId: string;
+  pack: EnrichedAnalyticsPackConfig;
+  packId: PackId;
   packName: string;
-  roleMap: Record<string, string>;
-  matchedRoles: string[];
-  missingRoles: string[];
+  roleMapping: Record<Role, string>;
+  unmappedRequiredRoles: Role[];
+  missingRoles: Role[];
+  kpis: ComputedPackKpi[];
   computedKpis: ComputedPackKpi[];
-  kpis: KPI[];
-  charts: VisualConfig[];
+  charts: ComputedPackChart[];
+  recommendedCharts: ChartRecommendation[];
+  profile: DatasetProfile | null;
+  schema: ColumnSchema[];
+  executiveNarrative: string[];
+  dateWarning?: string | null;
+  computeDurationMs?: number;
 }
 
 export interface BuiltPackReportSection {
+  heading: string;
   title: string;
+  body: string;
+  narrative: string;
+  highlights: string[];
   kpiSummaries: {
     id: string;
     label: string;
     formattedValue: string;
-    status: 'available' | 'unavailable';
-    changePercent?: number;
-    goodDirection: 'up' | 'down';
+    formulaText: string;
+    source: string;
   }[];
-  chartTitles: string[];
-  narrative: string;
 }
 
 export interface BuiltPackReport {
-  packId: string;
+  packId: PackId;
   packName: string;
   generatedAt: string;
+  datasetName: string;
   rowCount: number;
   sections: BuiltPackReportSection[];
-  topPerformer?: { category: string; value: number; formattedValue: string };
-  bottomPerformer?: { category: string; value: number; formattedValue: string };
-  anomalyCount: number;
-  overallTrendPct: number;
+  kpis: ComputedPackKpi[];
 }

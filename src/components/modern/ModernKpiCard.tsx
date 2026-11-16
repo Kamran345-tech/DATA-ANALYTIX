@@ -1,182 +1,243 @@
 import React from 'react';
-import { TrendingUp, TrendingDown, Minus, AlertCircle, ChevronRight } from 'lucide-react';
-import { KPI } from '../../types';
+import { TrendingUp, TrendingDown, Minus, Info, AlertCircle } from 'lucide-react';
+import { Tooltip } from '../common/Tooltip';
 
 export interface ModernKpiCardProps {
-  kpi?: KPI;
-  isLoading?: boolean;
-  onClick?: () => void;
-  sparklineData?: number[];
-  className?: string;
+  kpiId?: string;
+  label?: string;
+  value?: string;
+  deltaPercent?: number | null;
+  isPositiveFavorable?: boolean;
+  sparkline?: number[];
+  targetText?: string;
+  formulaText?: string;
+  source?: string;
+  assumption?: string;
+  // Extended compatibility props used by AnalyticsPacksView
   goodDirection?: 'up' | 'down';
   unavailable?: boolean;
   unavailableReason?: string;
   unavailableHint?: string;
+  sparklineData?: number[];
+  kpi?: {
+    id: string;
+    name: string;
+    value: number;
+    formattedValue: string;
+    change?: number;
+    changePercent?: number | null;
+    period?: string;
+    status?: string;
+    sourceColumn?: string;
+    calculation?: string;
+    aggregation?: string;
+    definition?: string;
+    traceableSource?: string;
+  };
+  onClick?: () => void;
 }
 
 export const ModernKpiCard: React.FC<ModernKpiCardProps> = ({
-  kpi,
-  isLoading = false,
-  onClick,
-  sparklineData = [35, 42, 38, 55, 49, 62, 70],
-  className = '',
-  goodDirection = 'up',
+  kpiId,
+  label,
+  value,
+  deltaPercent,
+  isPositiveFavorable,
+  sparkline,
+  targetText,
+  formulaText,
+  source,
+  assumption,
+  goodDirection,
   unavailable = false,
   unavailableReason,
   unavailableHint,
+  sparklineData,
+  kpi,
+  onClick,
 }) => {
-  if (isLoading || !kpi) {
-    return (
-      <div className={`modern-card p-5 space-y-3 animate-pulse ${className}`}>
-        <div className="flex justify-between items-center">
-          <div className="h-3.5 bg-[var(--modern-bg-surface-2)] rounded-md w-1/3" />
-          <div className="h-4 bg-[var(--modern-bg-surface-2)] rounded-md w-12" />
-        </div>
-        <div className="h-8 bg-[var(--modern-bg-surface-2)] rounded-md w-2/3" />
-        <div className="h-3 bg-[var(--modern-bg-surface-2)] rounded-md w-1/2" />
-      </div>
-    );
+  const resolvedId = kpiId || kpi?.id || '';
+  const resolvedLabel = label || kpi?.name || 'Metric';
+  const resolvedValue = unavailable ? 'Unavailable' : value || kpi?.formattedValue || '0';
+  const resolvedDelta =
+    deltaPercent !== undefined ? deltaPercent : kpi?.changePercent !== undefined ? kpi.changePercent : null;
+  const resolvedPositiveFav =
+    isPositiveFavorable !== undefined
+      ? isPositiveFavorable
+      : goodDirection
+      ? goodDirection === 'up'
+      : true;
+  const resolvedSparkline = sparkline || sparklineData || [];
+  const resolvedFormulaText = formulaText || kpi?.definition || kpi?.calculation || '';
+  const resolvedSource = source || kpi?.calculation || '';
+
+  const hasDelta = !unavailable && typeof resolvedDelta === 'number' && Number.isFinite(resolvedDelta);
+  const isUp = hasDelta && resolvedDelta! > 0;
+  const isDown = hasDelta && resolvedDelta! < 0;
+  const isFavorable = hasDelta ? (resolvedPositiveFav ? resolvedDelta! >= 0 : resolvedDelta! <= 0) : true;
+
+  // Build SVG path for mini sparkline (76x24)
+  let sparkPath = '';
+  if (!unavailable && resolvedSparkline && resolvedSparkline.length >= 2) {
+    const min = Math.min(...resolvedSparkline);
+    const max = Math.max(...resolvedSparkline);
+    const range = max - min || 1;
+    const width = 76;
+    const height = 24;
+    sparkPath = resolvedSparkline
+      .map((val, idx) => {
+        const x = (idx / (resolvedSparkline.length - 1)) * width;
+        const y = height - ((val - min) / range) * (height - 4) - 2;
+        return `${idx === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`;
+      })
+      .join(' ');
   }
 
-  if (unavailable) {
-    return (
-      <div
-        role="group"
-        aria-label={`${kpi.name}: Unavailable`}
-        data-testid={`kpi-card-${kpi.id}`}
-        className={`modern-card p-5 flex flex-col justify-between text-left border border-dashed border-subtle bg-card/60 ${className}`}
-      >
-        <div>
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <span
-              title={kpi.name}
-              className="text-xs font-semibold text-secondary truncate"
-            >
-              {kpi.name}
-            </span>
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold font-mono bg-elevated text-muted border border-subtle shrink-0">
-              <AlertCircle className="w-3 h-3" />
-              <span>UNAVAILABLE</span>
-            </span>
-          </div>
-
-          <div className="text-lg font-bold font-mono text-muted my-1">
-            —
-          </div>
-
-          <div className="text-[11px] text-secondary leading-snug mt-1">
-            {unavailableHint || unavailableReason || 'Map required columns to compute this KPI.'}
-          </div>
-        </div>
-
-        <div className="mt-4 pt-3 border-t border-subtle flex items-center justify-between gap-2 text-[10px] font-mono text-muted">
-          <span className="truncate">{kpi.definition || 'Role mapping required'}</span>
-        </div>
-      </div>
-    );
-  }
-
-  const delta = kpi.changePercent ?? 0;
-  const isUpward = delta >= 0;
-  const isNeutral = kpi.changePercent === 0 || kpi.changePercent === undefined;
-  const isFavorable = goodDirection === 'down' ? delta <= 0 : delta >= 0;
-
-  // Simple clean SVG sparkline
-  const minVal = Math.min(...sparklineData);
-  const maxVal = Math.max(...sparklineData);
-  const range = maxVal - minVal || 1;
-  const points = sparklineData
-    .map((val, idx) => {
-      const x = (idx / Math.max(1, sparklineData.length - 1)) * 80;
-      const y = 24 - ((val - minVal) / range) * 20;
-      return `${x},${y}`;
-    })
-    .join(' ');
+  const tooltipContent =
+    resolvedFormulaText || resolvedSource
+      ? `${resolvedFormulaText ? `${resolvedFormulaText}` : ''}${
+          resolvedSource && resolvedSource !== resolvedFormulaText ? ` | Formula: ${resolvedSource}` : ''
+        }${assumption ? ` | Assumption: ${assumption}` : ''}`
+      : '';
 
   return (
     <div
-      role="button"
-      tabIndex={0}
-      data-testid={`kpi-card-${kpi.id}`}
+      data-testid={resolvedId ? `kpi-card-${resolvedId}` : 'modern-kpi-card'}
       onClick={onClick}
+      role={onClick && !unavailable ? 'button' : undefined}
+      tabIndex={onClick && !unavailable ? 0 : undefined}
       onKeyDown={e => {
-        if (e.key === 'Enter' || e.key === ' ') {
+        if (onClick && !unavailable && (e.key === 'Enter' || e.key === ' ')) {
           e.preventDefault();
-          onClick?.();
+          onClick();
         }
       }}
-      aria-label={`${kpi.name}: ${kpi.formattedValue || kpi.value}`}
-      className={`modern-card modern-card-lift p-5 flex flex-col justify-between group transition-all text-left cursor-pointer ${className}`}
+      className={`depth-card rounded-xl p-5 bg-[var(--bg-card)] border border-[var(--border-color)] flex flex-col justify-between gap-3 transition-all min-w-0 ${
+        onClick && !unavailable ? 'cursor-pointer hover:border-[var(--accent)]' : ''
+      } ${unavailable ? 'opacity-85 border-dashed' : ''}`}
     >
-      <div>
-        {/* Header: Name and Status Delta Pill */}
-        <div className="flex items-center justify-between gap-2 mb-2">
+      <div className="flex items-start justify-between gap-2 min-w-0">
+        <div className="flex items-center gap-1.5 min-w-0 flex-1">
           <span
-            title={kpi.name}
-            className="text-xs font-semibold text-[var(--modern-text-muted)] group-hover:text-[var(--modern-text)] transition-colors truncate"
+            title={resolvedLabel}
+            className="text-[11px] font-semibold uppercase tracking-[0.07em] text-[var(--text-secondary)] truncate"
           >
-            {kpi.name}
+            {resolvedLabel}
           </span>
-
-          {/* Delta Pill: Color + Icon (never color alone) */}
-          <div
-            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold font-mono shrink-0 ${
-              isNeutral
-                ? 'bg-[var(--bg-elevated)] text-[var(--text-muted)] border border-[var(--border-subtle)]'
-                : isFavorable
-                ? 'bg-emerald-500/10 text-[var(--success)] border border-emerald-500/20'
-                : 'bg-rose-500/10 text-[var(--danger)] border border-rose-500/20'
-            }`}
-          >
-            {isNeutral ? (
-              <Minus className="w-3 h-3" aria-hidden="true" />
-            ) : isUpward ? (
-              <TrendingUp className="w-3 h-3" aria-hidden="true" />
-            ) : (
-              <TrendingDown className="w-3 h-3" aria-hidden="true" />
-            )}
-            <span>
-              {kpi.changePercent !== undefined
-                ? `${isUpward ? '+' : ''}${kpi.changePercent.toFixed(1)}%`
-                : kpi.status}
-            </span>
-          </div>
-        </div>
-
-        {/* Large Tabular Value */}
-        <div className="text-2xl sm:text-3xl font-extrabold font-mono text-[var(--modern-text)] tabular-nums tracking-tight my-1">
-          {kpi.formattedValue || kpi.value.toLocaleString()}
-        </div>
-
-        {/* Period & Formula Subtitle */}
-        <div className="text-[11px] text-[var(--modern-text-muted)] truncate flex items-center gap-1.5 mt-0.5">
-          <span>{kpi.period || 'Current Period'}</span>
-          {kpi.aggregation && (
-            <>
-              <span aria-hidden="true">·</span>
-              <span className="uppercase text-[10px] font-mono">{kpi.aggregation}</span>
-            </>
+          {tooltipContent && (
+            <Tooltip content={tooltipContent} side="top" className="!w-auto">
+              <button
+                type="button"
+                onClick={e => e.stopPropagation()}
+                data-testid={resolvedId ? `kpi-formula-tooltip-${resolvedId}` : 'kpi-formula-tooltip'}
+                aria-label={`Formula for ${resolvedLabel}: ${tooltipContent}`}
+                className="shrink-0 inline-flex items-center justify-center w-5 h-5 rounded text-[var(--text-muted)] hover:text-[var(--accent)] hover:bg-[var(--bg-surface)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] transition-colors"
+              >
+                <Info className="w-3.5 h-3.5" />
+              </button>
+            </Tooltip>
           )}
         </div>
+
+        {unavailable ? (
+          <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded bg-[var(--bg-surface)] text-[var(--text-muted)] border border-[var(--border-subtle)] shrink-0">
+            <AlertCircle className="w-3 h-3 text-[var(--warning)]" aria-hidden="true" />
+            <span>UNAVAILABLE</span>
+          </span>
+        ) : (
+          hasDelta && (
+            <span
+              data-testid={resolvedId ? `kpi-trend-${resolvedId}` : 'kpi-trend'}
+              className={`inline-flex items-center gap-1 text-[11px] font-mono font-semibold px-1.5 py-0.5 rounded shrink-0 ${
+                isFavorable
+                  ? 'text-[var(--success)] bg-[var(--bg-surface)] border border-[var(--border-subtle)]'
+                  : 'text-[var(--danger)] bg-[var(--bg-surface)] border border-[var(--border-subtle)]'
+              }`}
+              title={`${resolvedDelta! > 0 ? '+' : ''}${resolvedDelta!.toFixed(1)}% (${
+                isFavorable ? 'Favorable' : 'Unfavorable'
+              })`}
+            >
+              {isUp ? (
+                <TrendingUp className="w-3 h-3" aria-hidden="true" />
+              ) : isDown ? (
+                <TrendingDown className="w-3 h-3" aria-hidden="true" />
+              ) : (
+                <Minus className="w-3 h-3" aria-hidden="true" />
+              )}
+              <span>
+                {resolvedDelta! > 0 ? '+' : ''}
+                {resolvedDelta!.toFixed(1)}%
+              </span>
+              <span className="text-[9px] uppercase tracking-wider opacity-90">
+                {isFavorable ? 'Favorable' : 'Unfavorable'}
+              </span>
+            </span>
+          )
+        )}
       </div>
 
-      {/* Footer: Sparkline & Click Hint */}
-      <div className="mt-4 pt-3 border-t border-[var(--modern-border)] flex items-center justify-between gap-2">
-        {/* Subtle SVG Sparkline */}
-        <svg className="w-20 h-6 shrink-0 overflow-visible" aria-hidden="true">
-          <polyline
-            fill="none"
-            stroke={isFavorable ? 'var(--modern-success)' : 'var(--modern-primary)'}
-            strokeWidth="1.75"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            points={points}
-          />
-        </svg>
+      <div className="flex items-end justify-between gap-3 min-w-0">
+        <div
+          className={`font-bold font-mono leading-none tracking-[-0.03em] truncate ${
+            unavailable
+              ? 'text-lg sm:text-xl text-[var(--text-muted)]'
+              : 'text-[26px] sm:text-[30px] text-[var(--text-primary)]'
+          }`}
+        >
+          {resolvedValue}
+        </div>
+        {sparkPath && (
+          <svg
+            width="76"
+            height="24"
+            viewBox="0 0 76 24"
+            className="shrink-0 overflow-visible"
+            aria-hidden="true"
+          >
+            <path
+              d={sparkPath}
+              fill="none"
+              stroke={isFavorable ? 'var(--accent)' : 'var(--danger)'}
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        )}
+      </div>
 
-        <span className="text-[10px] text-[var(--modern-text-muted)] group-hover:text-[var(--modern-primary)] transition-colors flex items-center gap-0.5 font-medium">
-          Drill-down <ChevronRight className="w-3 h-3" />
-        </span>
+      <div className="flex items-center justify-between gap-2 pt-1 border-t border-[var(--border-subtle)] min-w-0">
+        {unavailable ? (
+          <div
+            data-testid={resolvedId ? `kpi-missing-col-${resolvedId}` : 'kpi-missing-col'}
+            title={unavailableHint || unavailableReason || 'Missing required column'}
+            className="text-[11px] font-mono text-[var(--text-secondary)] truncate"
+          >
+            {unavailableHint || unavailableReason || 'Add required column to compute'}
+          </div>
+        ) : targetText ? (
+          <div className="text-[11px] text-[var(--text-muted)] font-mono truncate">{targetText}</div>
+        ) : (
+          <div
+            title={resolvedSource || resolvedFormulaText}
+            className="text-[11px] text-[var(--text-muted)] font-mono truncate"
+          >
+            {resolvedSource || 'Verified Formula'}
+          </div>
+        )}
+
+        {assumption && (
+          <Tooltip content={`Assumption: ${assumption}`} side="bottom" className="!w-auto">
+            <span
+              onClick={e => e.stopPropagation()}
+              data-testid={resolvedId ? `kpi-assumption-badge-${resolvedId}` : 'kpi-assumption-badge'}
+              tabIndex={0}
+              className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[var(--bg-surface)] text-[var(--text-secondary)] border border-[var(--border-subtle)] cursor-help shrink-0"
+            >
+              Assumption
+            </span>
+          </Tooltip>
+        )}
       </div>
     </div>
   );

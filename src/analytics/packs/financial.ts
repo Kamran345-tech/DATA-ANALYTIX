@@ -1,699 +1,332 @@
 import { AnalyticsPackConfig } from './types';
-import { sumRole, avgRole, safePct, safeDivVal } from './helpers';
+import { sumRole, safeDivVal, safePct, hasValidRoleNumber } from './helpers';
 
 export const financialPack: AnalyticsPackConfig = {
   id: 'financial',
-  name: 'Financial & FP&A Analytics',
+  name: 'Financial & FP&A',
+  category: 'Finance & Risk',
   icon: 'Landmark',
-  description:
-    'Full P&L statement, balance sheet liquidity, EBITDA, free cash flow, runway, DSO/DPO, and budget variance telemetry.',
+  description: 'P&L, balance sheet, liquidity, working capital (DSO/DPO), ROE/ROA, EBITDA, cash burn, and budget variance.',
   detect: {
     keywords: [
-      'cogs',
-      'ebitda',
-      'opex',
-      'operating_expense',
-      'gross_profit',
-      'net_profit',
-      'current_assets',
-      'current_liabilities',
-      'accounts_receivable',
-      'accounts_payable',
-      'free_cash_flow',
-      'operating_cash_flow',
-      'total_debt',
-      'shareholder_equity',
-      'budget_revenue',
-      'dso',
-      'dpo',
-      'burn_rate',
+      'ebitda', 'cogs', 'opex', 'operating_expense', 'net_income', 'gross_profit',
+      'current_assets', 'current_liabilities', 'accounts_receivable', 'accounts_payable',
+      'cash_flow', 'capex', 'equity', 'debt', 'ledger', 'budget_revenue', 'dso', 'dpo',
+      'amdani', 'kharcha', 'munafa', 'laagat', 'qarza', 'sarmaya', 'wusooli', 'adaigi',
     ],
-    requiredRoles: ['revenue', 'cogs'],
+    requiredRoles: ['date', 'revenue'],
     optionalRoles: [
-      'date',
-      'segment',
-      'operating_expense',
-      'ebitda',
-      'net_profit',
-      'budget_revenue',
-      'current_assets',
-      'current_liabilities',
-      'inventory',
-      'total_debt',
-      'total_equity',
-      'total_assets',
-      'operating_cash_flow',
-      'capex',
-      'cash_balance',
-      'accounts_receivable',
-      'accounts_payable',
-      'ageing_bucket',
+      'cogs', 'opex', 'net_income', 'ebitda', 'current_assets', 'current_liabilities',
+      'inventory', 'total_assets', 'total_debt', 'total_equity', 'ar', 'ap', 'cash', 'budget', 'department',
     ],
+    roleAliases: {
+      date: ['date', 'period', 'fiscal_date', 'month', 'quarter', 'posting_date', 'tareekh', 'mahina', 'salana_date'],
+      department: ['department', 'cost_center', 'business_unit', 'subsidiary', 'entity', 'shoba', 'dept', 'vibhag'],
+      revenue: ['revenue', 'gross_revenue', 'total_revenue', 'sales_revenue', 'turnover', 'top_line', 'rev', 'amdani', 'kul_amdani', 'total_rev'],
+      cogs: ['cogs', 'cost_of_goods_sold', 'cost_of_sales', 'direct_cost', 'cost_of_revenue', 'laagat', 'maal_ki_laagat'],
+      opex: ['opex', 'operating_expense', 'operating_expenses', 'sga', 'overhead', 'expenses', 'kharcha', 'chalan_kharcha'],
+      net_income: ['net_income', 'net_profit', 'earnings', 'bottom_line', 'profit_after_tax', 'pat', 'munafa', 'khalis_munafa'],
+      ebitda: ['ebitda', 'operating_income', 'ebit', 'operating_profit', 'oper_profit'],
+      current_assets: ['current_assets', 'short_term_assets', 'liquid_assets', 'ca', 'jari_assets'],
+      current_liabilities: ['current_liabilities', 'short_term_liabilities', 'payables_short', 'cl', 'jari_wajibaat'],
+      inventory: ['inventory', 'stock_value', 'merchandise_inventory', 'ending_inventory', 'maal_godam'],
+      total_assets: ['total_assets', 'assets', 'asset_base', 'kul_assets', 'asasa'],
+      total_debt: ['total_debt', 'debt', 'long_term_debt', 'borrowings', 'liabilities', 'kul_qarza'],
+      total_equity: ['total_equity', 'shareholder_equity', 'equity', 'net_worth', 'book_value', 'sarmaya', 'equity_sarmaya'],
+      ar: ['accounts_receivable', 'ar', 'trade_receivables', 'receivables', 'debtors', 'wusooli', 'accts_rec'],
+      ap: ['accounts_payable', 'ap', 'trade_payables', 'payables', 'creditors', 'adaigi', 'accts_pay'],
+      cash: ['cash', 'cash_balance', 'cash_and_equivalents', 'treasury_cash', 'naqad', 'naqdi'],
+      budget: ['budget', 'budget_revenue', 'plan_revenue', 'forecast_revenue', 'target_revenue', 'mizaniya'],
+    },
   },
-  roles: {
-    date: {
-      aliases: ['period', 'fiscal_month', 'date', 'month', 'quarter', 'posting_date'],
-      type: 'date',
-      description: 'Fiscal period or transaction date',
-    },
-    segment: {
-      aliases: ['business_unit', 'segment', 'cost_center', 'department', 'entity', 'product_line'],
-      type: 'category',
-      description: 'Business unit, segment, or cost center',
-    },
-    expense_category: {
-      aliases: ['expense_category', 'opex_type', 'gl_account', 'account_category'],
-      type: 'category',
-      description: 'Operating expense classification (R&D, G&A, S&M)',
-    },
-    ageing_bucket: {
-      aliases: ['ageing_bucket', 'ar_bucket', 'aging_tier', 'overdue_bucket'],
-      type: 'category',
-      description: 'Accounts receivable ageing bucket (0-30, 31-60, 61-90, 90+ days)',
-    },
-    revenue: {
-      aliases: ['revenue', 'gross_revenue', 'net_revenue', 'total_revenue', 'recognized_revenue'],
-      type: 'number',
-      description: 'Recognized top-line revenue',
-    },
-    cogs: {
-      aliases: ['cogs', 'cost_of_goods_sold', 'cost_of_sales', 'direct_cost'],
-      type: 'number',
-      description: 'Cost of Goods Sold (COGS)',
-    },
-    operating_expense: {
-      aliases: ['operating_expense', 'opex', 'sga', 'operating_cost', 'overhead'],
-      type: 'number',
-      description: 'Operating expenses (SG&A + R&D)',
-    },
-    ebitda: {
-      aliases: ['ebitda', 'operating_ebitda', 'adjusted_ebitda'],
-      type: 'number',
-      description: 'Earnings before interest, taxes, depreciation, and amortization',
-    },
-    net_profit: {
-      aliases: ['net_profit', 'net_income', 'bottom_line', 'eat', 'profit_after_tax'],
-      type: 'number',
-      description: 'Net profit after tax and interest',
-    },
-    budget_revenue: {
-      aliases: ['budget_revenue', 'planned_revenue', 'target_revenue', 'forecast_revenue', 'budget'],
-      type: 'number',
-      description: 'Budgeted / planned revenue target',
-    },
-    current_assets: {
-      aliases: ['current_assets', 'short_term_assets', 'liquid_assets'],
-      type: 'number',
-      description: 'Total current assets on balance sheet',
-    },
-    current_liabilities: {
-      aliases: ['current_liabilities', 'short_term_liabilities', 'payables_due'],
-      type: 'number',
-      description: 'Total current liabilities due within 12 months',
-    },
-    inventory: {
-      aliases: ['inventory', 'ending_inventory', 'stock_value'],
-      type: 'number',
-      description: 'Balance sheet inventory value',
-    },
-    total_debt: {
-      aliases: ['total_debt', 'long_term_debt', 'debt', 'borrowings'],
-      type: 'number',
-      description: 'Total short and long-term interest-bearing debt',
-    },
-    total_equity: {
-      aliases: ['total_equity', 'shareholder_equity', 'net_worth', 'book_equity'],
-      type: 'number',
-      description: 'Total shareholders equity',
-    },
-    total_assets: {
-      aliases: ['total_assets', 'book_assets', 'asset_base'],
-      type: 'number',
-      description: 'Total balance sheet assets',
-    },
-    operating_cash_flow: {
-      aliases: ['operating_cash_flow', 'ocf', 'cash_from_operations'],
-      type: 'number',
-      description: 'Cash flow generated by core operations',
-    },
-    capex: {
-      aliases: ['capex', 'capital_expenditure', 'ppe_additions'],
-      type: 'number',
-      description: 'Capital expenditures',
-    },
-    cash_balance: {
-      aliases: ['cash_balance', 'ending_cash', 'cash_and_equivalents', 'treasury_cash'],
-      type: 'number',
-      description: 'Ending cash & cash equivalents',
-    },
-    accounts_receivable: {
-      aliases: ['accounts_receivable', 'ar_balance', 'trade_receivables', 'receivables'],
-      type: 'number',
-      description: 'Accounts Receivable (AR) balance',
-    },
-    accounts_payable: {
-      aliases: ['accounts_payable', 'ap_balance', 'trade_payables', 'payables'],
-      type: 'number',
-      description: 'Accounts Payable (AP) balance',
-    },
+  taxonomy: {
+    dimensions: ['date', 'department'],
+    measures: [
+      'revenue', 'cogs', 'opex', 'net_income', 'ebitda',
+      'current_assets', 'current_liabilities', 'inventory', 'total_assets',
+      'total_debt', 'total_equity', 'ar', 'ap', 'cash', 'budget',
+    ],
   },
   kpis: [
     {
       id: 'fin_revenue',
-      label: 'Total Revenue',
-      formula: (rows, r) => sumRole(rows, r, 'revenue'),
-      sqlHint: 'SELECT SUM(revenue) FROM dataset',
-      unit: '$',
-      format: 'currency',
-      goodDirection: 'up',
-      needs: ['revenue'],
-      description: 'Total recognized top-line revenue across all business units.',
-    },
-    {
-      id: 'fin_cogs',
-      label: 'Cost of Goods Sold (COGS)',
-      formula: (rows, r) => sumRole(rows, r, 'cogs'),
-      sqlHint: 'SELECT SUM(cogs) FROM dataset',
-      unit: '$',
-      format: 'currency',
-      goodDirection: 'down',
-      needs: ['cogs'],
-      description: 'Direct production and delivery costs attributable to goods/services sold.',
-    },
-    {
-      id: 'fin_gross_profit',
-      label: 'Gross Profit',
-      formula: (rows, r) => Number((sumRole(rows, r, 'revenue') - sumRole(rows, r, 'cogs')).toFixed(2)),
-      sqlHint: 'SELECT SUM(revenue) - SUM(cogs) FROM dataset',
-      unit: '$',
-      format: 'currency',
-      goodDirection: 'up',
-      needs: ['revenue', 'cogs'],
-      description: 'Top-line revenue minus direct Cost of Goods Sold.',
+      title: 'Total Revenue',
+      unit: 'currency',
+      favorableDirection: 'up',
+      requiredRoles: ['revenue'],
+      formulaText: 'Sum of recognized top-line revenue across the selected period.',
+      source: 'Total Revenue = Σ(Revenue)',
+      formula: (rows, r) => (hasValidRoleNumber(rows, r, 'revenue') ? sumRole(rows, r, 'revenue') : null),
     },
     {
       id: 'fin_gross_margin_pct',
-      label: 'Gross Margin %',
+      title: 'Gross Margin %',
+      unit: 'percent',
+      favorableDirection: 'up',
+      requiredRoles: ['revenue', 'cogs'],
+      formulaText: 'Percentage of revenue retained after subtracting direct Cost of Goods Sold (COGS).',
+      source: 'Gross Margin % = ((Revenue − COGS) / Revenue) × 100',
       formula: (rows, r) => {
         const rev = sumRole(rows, r, 'revenue');
         const cogs = sumRole(rows, r, 'cogs');
-        return safePct(rev - cogs, rev);
+        if (rev <= 0) return null;
+        return safePct(rev - cogs, rev, { min: -500, max: 100 });
       },
-      sqlHint: 'SELECT ((SUM(revenue) - SUM(cogs)) / SUM(revenue)) * 100 FROM dataset',
-      unit: '%',
-      format: 'percent',
-      goodDirection: 'up',
-      needs: ['revenue', 'cogs'],
-      description: 'Percentage of revenue retained after accounting for direct COGS.',
+      target: 60,
     },
     {
-      id: 'fin_opex',
-      label: 'Operating Expense (OpEx)',
-      formula: (rows, r) => sumRole(rows, r, 'operating_expense'),
-      sqlHint: 'SELECT SUM(operating_expense) FROM dataset',
-      unit: '$',
-      format: 'currency',
-      goodDirection: 'down',
-      needs: ['operating_expense'],
-      description: 'Total SG&A, R&D, and overhead operating expenses.',
-    },
-    {
-      id: 'fin_ebitda',
-      label: 'EBITDA',
+      id: 'fin_operating_margin_pct',
+      title: 'Operating Margin %',
+      unit: 'percent',
+      favorableDirection: 'up',
+      requiredRoles: ['revenue', 'cogs', 'opex'],
+      formulaText: 'Operating income (Revenue minus COGS and OPEX) as a percentage of total revenue.',
+      source: 'Operating Margin % = ((Revenue − COGS − OPEX) / Revenue) × 100',
       formula: (rows, r) => {
-        if (r.ebitda) return sumRole(rows, r, 'ebitda');
-        return Number(
-          (
-            sumRole(rows, r, 'revenue') -
-            sumRole(rows, r, 'cogs') -
-            sumRole(rows, r, 'operating_expense')
-          ).toFixed(2)
-        );
+        const rev = sumRole(rows, r, 'revenue');
+        if (rev <= 0) return null;
+        const opInc = rev - sumRole(rows, r, 'cogs') - sumRole(rows, r, 'opex');
+        return safePct(opInc, rev, { min: -500, max: 100 });
       },
-      sqlHint: 'SELECT SUM(ebitda) FROM dataset',
-      unit: '$',
-      format: 'currency',
-      goodDirection: 'up',
-      needs: ['revenue', 'cogs', 'operating_expense'],
-      description: 'Earnings before interest, taxes, depreciation, and amortization.',
-    },
-    {
-      id: 'fin_net_profit',
-      label: 'Net Profit & Margin',
-      formula: (rows, r) => {
-        if (r.net_profit) return sumRole(rows, r, 'net_profit');
-        return Number(
-          (
-            (sumRole(rows, r, 'revenue') -
-              sumRole(rows, r, 'cogs') -
-              sumRole(rows, r, 'operating_expense')) *
-            0.78
-          ).toFixed(2)
-        );
-      },
-      sqlHint: 'SELECT SUM(net_profit) FROM dataset',
-      unit: '$',
-      format: 'currency',
-      goodDirection: 'up',
-      needs: ['revenue', 'cogs'],
-      description: 'Bottom-line net income after operating expenses, interest, and taxes.',
+      target: 22,
     },
     {
       id: 'fin_net_margin_pct',
-      label: 'Net Profit Margin %',
+      title: 'Net Profit Margin %',
+      unit: 'percent',
+      favorableDirection: 'up',
+      requiredRoles: ['revenue', 'net_income'],
+      formulaText: 'Bottom-line net profit after taxes and interest divided by total revenue.',
+      source: 'Net Profit Margin % = (Net Income / Revenue) × 100',
       formula: (rows, r) => {
         const rev = sumRole(rows, r, 'revenue');
-        const np = r.net_profit
-          ? sumRole(rows, r, 'net_profit')
-          : (rev - sumRole(rows, r, 'cogs') - sumRole(rows, r, 'operating_expense')) * 0.78;
-        return safePct(np, rev);
+        if (rev <= 0) return null;
+        return safePct(sumRole(rows, r, 'net_income'), rev, { min: -500, max: 100 });
       },
-      sqlHint: 'SELECT (SUM(net_profit) / SUM(revenue)) * 100 FROM dataset',
-      unit: '%',
-      format: 'percent',
-      goodDirection: 'up',
-      needs: ['revenue', 'cogs'],
-      description: 'Net profit expressed as a percentage of total revenue.',
+      target: 15,
+    },
+    {
+      id: 'fin_ebitda',
+      title: 'EBITDA',
+      unit: 'currency',
+      favorableDirection: 'up',
+      requiredRoles: ['ebitda'],
+      formulaText: 'Earnings before interest, taxes, depreciation, and amortization.',
+      source: 'EBITDA = Operating Profit + Depreciation + Amortization',
+      formula: (rows, r) => (hasValidRoleNumber(rows, r, 'ebitda') ? sumRole(rows, r, 'ebitda') : null),
     },
     {
       id: 'fin_current_ratio',
-      label: 'Current Ratio',
-      formula: (rows, r) =>
-        safeDivVal(sumRole(rows, r, 'current_assets'), sumRole(rows, r, 'current_liabilities')),
-      sqlHint: 'SELECT SUM(current_assets) / SUM(current_liabilities) FROM dataset',
-      unit: 'x',
-      format: 'ratio',
-      goodDirection: 'up',
-      needs: ['current_assets', 'current_liabilities'],
-      description: 'Short-term liquidity ratio measuring ability to cover current liabilities.',
+      title: 'Current Ratio',
+      unit: 'ratio',
+      favorableDirection: 'up',
+      requiredRoles: ['current_assets', 'current_liabilities'],
+      formulaText: 'Short-term liquidity ratio measuring ability to pay obligations due within one year.',
+      source: 'Current Ratio = Current Assets / Current Liabilities',
+      formula: (rows, r) => {
+        const ca = sumRole(rows, r, 'current_assets');
+        const cl = sumRole(rows, r, 'current_liabilities');
+        if (ca < 0 || cl <= 0) return null;
+        return safeDivVal(ca, cl);
+      },
+      target: 1.8,
     },
     {
       id: 'fin_quick_ratio',
-      label: 'Quick Ratio (Acid Test)',
+      title: 'Quick Ratio (Acid-Test)',
+      unit: 'ratio',
+      favorableDirection: 'up',
+      requiredRoles: ['current_assets', 'current_liabilities'],
+      formulaText: 'Strict liquidity test subtracting inventory from current assets before dividing by current liabilities.',
+      source: 'Quick Ratio = (Current Assets − Inventory) / Current Liabilities',
+      assumption: 'If `inventory` column is not mapped, Inventory is assumed to be 0 (Quick Ratio = Current Ratio).',
       formula: (rows, r) => {
         const ca = sumRole(rows, r, 'current_assets');
-        const inv = r.inventory ? sumRole(rows, r, 'inventory') : ca * 0.2;
+        const inv = r.inventory ? Math.max(0, sumRole(rows, r, 'inventory')) : 0;
         const cl = sumRole(rows, r, 'current_liabilities');
+        if (ca < 0 || cl <= 0 || ca - inv < 0) return null;
         return safeDivVal(ca - inv, cl);
       },
-      sqlHint: 'SELECT (SUM(current_assets) - SUM(inventory)) / SUM(current_liabilities) FROM dataset',
-      unit: 'x',
-      format: 'ratio',
-      goodDirection: 'up',
-      needs: ['current_assets', 'current_liabilities'],
-      description: 'Immediate liquidity ratio excluding inventory from current assets.',
+      target: 1.3,
     },
     {
       id: 'fin_debt_to_equity',
-      label: 'Debt-to-Equity (D/E)',
-      formula: (rows, r) =>
-        safeDivVal(sumRole(rows, r, 'total_debt'), sumRole(rows, r, 'total_equity')),
-      sqlHint: 'SELECT SUM(total_debt) / SUM(total_equity) FROM dataset',
-      unit: 'x',
-      format: 'ratio',
-      goodDirection: 'down',
-      needs: ['total_debt', 'total_equity'],
-      description: 'Financial leverage ratio comparing total debt to shareholder equity.',
+      title: 'Debt-to-Equity',
+      unit: 'ratio',
+      favorableDirection: 'down',
+      requiredRoles: ['total_debt', 'total_equity'],
+      formulaText: 'Financial leverage ratio comparing total debt liabilities against shareholder equity.',
+      source: 'Debt-to-Equity = Total Debt / Total Shareholders’ Equity',
+      formula: (rows, r) => {
+        const debt = sumRole(rows, r, 'total_debt');
+        const eq = sumRole(rows, r, 'total_equity');
+        if (debt < 0 || eq <= 0) return null;
+        return safeDivVal(debt, eq);
+      },
+      target: 0.8,
     },
     {
-      id: 'fin_roe_roa',
-      label: 'Return on Equity (ROE %)',
+      id: 'fin_roe_pct',
+      title: 'Return on Equity (ROE)',
+      unit: 'percent',
+      favorableDirection: 'up',
+      requiredRoles: ['net_income', 'total_equity'],
+      formulaText: 'Profitability generated per dollar of shareholders’ equity.',
+      source: 'ROE (%) = (Net Income / Average Shareholders’ Equity) × 100',
+      assumption: 'Returns null when Shareholders’ Equity <= 0 to prevent false positive ROE when both Net Income and Equity are negative.',
       formula: (rows, r) => {
-        const np = r.net_profit
-          ? sumRole(rows, r, 'net_profit')
-          : sumRole(rows, r, 'revenue') - sumRole(rows, r, 'cogs') - sumRole(rows, r, 'operating_expense');
-        const eq = avgRole(rows, r, 'total_equity') || sumRole(rows, r, 'total_equity') / Math.max(1, rows.length);
-        return safePct(np, eq * Math.min(rows.length, 4));
+        const eq = sumRole(rows, r, 'total_equity');
+        if (eq <= 0) return null;
+        return safePct(sumRole(rows, r, 'net_income'), eq, { min: -500, max: 500 });
       },
-      sqlHint: 'SELECT (SUM(net_profit) / AVG(total_equity)) * 100 FROM dataset',
-      unit: '%',
-      format: 'percent',
-      goodDirection: 'up',
-      needs: ['revenue', 'total_equity'],
-      description: 'Capital efficiency measuring net income generated per dollar of equity (ROE/ROA).',
+      target: 18,
     },
     {
-      id: 'fin_free_cash_flow',
-      label: 'Free Cash Flow (FCF)',
+      id: 'fin_roa_pct',
+      title: 'Return on Assets (ROA)',
+      unit: 'percent',
+      favorableDirection: 'up',
+      requiredRoles: ['net_income', 'total_assets'],
+      formulaText: 'Efficiency of total asset base in generating net profit.',
+      source: 'ROA (%) = (Net Income / Total Assets) × 100',
       formula: (rows, r) => {
-        const ocf = sumRole(rows, r, 'operating_cash_flow');
-        const capex = r.capex ? sumRole(rows, r, 'capex') : 0;
-        return Number((ocf - capex).toFixed(2));
+        const assets = sumRole(rows, r, 'total_assets');
+        if (assets <= 0) return null;
+        return safePct(sumRole(rows, r, 'net_income'), assets, { min: -500, max: 500 });
       },
-      sqlHint: 'SELECT SUM(operating_cash_flow) - SUM(capex) FROM dataset',
-      unit: '$',
-      format: 'currency',
-      goodDirection: 'up',
-      needs: ['operating_cash_flow'],
-      description: 'Operating cash flow minus capital expenditures available to capital providers.',
+      target: 9,
     },
     {
-      id: 'fin_burn_runway',
-      label: 'Cash Runway (Months)',
-      formula: (rows, r) => {
-        const cash = avgRole(rows, r, 'cash_balance');
-        const avgOpex = avgRole(rows, r, 'operating_expense') || 1;
-        return Number((cash / avgOpex).toFixed(1));
-      },
-      sqlHint: 'SELECT AVG(cash_balance) / AVG(operating_expense) FROM dataset',
-      unit: 'mo',
-      format: 'number',
-      goodDirection: 'up',
-      needs: ['cash_balance', 'operating_expense'],
-      description: 'Months of operational runway supported by ending treasury cash vs monthly OpEx burn.',
-    },
-    {
-      id: 'fin_dso_dpo',
-      label: 'Days Sales Outstanding (DSO)',
-      formula: (rows, r) => {
-        const ar = avgRole(rows, r, 'accounts_receivable');
-        const rev = sumRole(rows, r, 'revenue');
-        return safeDivVal(ar * 365, rev);
-      },
-      sqlHint: 'SELECT (AVG(accounts_receivable) * 365) / SUM(revenue) FROM dataset',
+      id: 'fin_dso_days',
+      title: 'Days Sales Outstanding (DSO)',
       unit: 'days',
-      format: 'days',
-      goodDirection: 'down',
-      needs: ['accounts_receivable', 'revenue'],
-      description: 'Average number of days to collect payment after a credit sale (working capital speed).',
-    },
-    {
-      id: 'fin_budget_variance_pct',
-      label: 'Budget vs Actual Variance %',
+      favorableDirection: 'down',
+      requiredRoles: ['ar', 'revenue'],
+      formulaText: 'Average number of days it takes to collect payment after a credit sale.',
+      source: 'DSO = (Accounts Receivable / Total Credit Revenue) × 365 days',
+      assumption: 'Uses a 365-day annualized convention across total period revenue and ending Accounts Receivable.',
       formula: (rows, r) => {
-        const actual = sumRole(rows, r, 'revenue');
-        const budget = sumRole(rows, r, 'budget_revenue');
-        return safePct(actual - budget, budget);
-      },
-      sqlHint: 'SELECT ((SUM(revenue) - SUM(budget_revenue)) / SUM(budget_revenue)) * 100 FROM dataset',
-      unit: '%',
-      format: 'percent',
-      goodDirection: 'up',
-      needs: ['revenue', 'budget_revenue'],
-      description: 'Percentage variance between actual recognized revenue and approved budget.',
-    },
-    {
-      id: 'fin_breakeven',
-      label: 'Break-Even Revenue Point',
-      formula: (rows, r) => {
+        const ar = sumRole(rows, r, 'ar');
         const rev = sumRole(rows, r, 'revenue');
-        const cogs = sumRole(rows, r, 'cogs');
-        const opex = sumRole(rows, r, 'operating_expense');
-        const cmRatio = rev > 0 ? (rev - cogs) / rev : 0;
-        return cmRatio > 0 ? Number((opex / cmRatio).toFixed(2)) : null;
+        if (ar < 0 || rev <= 0) return null;
+        return safeDivVal(ar * 365, rev, { min: 0, max: 3650 });
       },
-      sqlHint: 'SELECT SUM(operating_expense) / ((SUM(revenue) - SUM(cogs)) / SUM(revenue)) FROM dataset',
-      unit: '$',
-      format: 'currency',
-      goodDirection: 'down',
-      needs: ['revenue', 'cogs', 'operating_expense'],
-      description: 'Minimum revenue required to cover both variable COGS and fixed operating expenses.',
+      target: 38,
+    },
+    {
+      id: 'fin_dpo_days',
+      title: 'Days Payable Outstanding (DPO)',
+      unit: 'days',
+      favorableDirection: 'up',
+      requiredRoles: ['ap', 'cogs'],
+      formulaText: 'Average number of days the company takes to pay its trade suppliers.',
+      source: 'DPO = (Accounts Payable / Cost of Goods Sold) × 365 days',
+      assumption: 'Uses a 365-day annualized convention against total period COGS.',
+      formula: (rows, r) => {
+        const ap = sumRole(rows, r, 'ap');
+        const cogs = sumRole(rows, r, 'cogs');
+        if (ap < 0 || cogs <= 0) return null;
+        return safeDivVal(ap * 365, cogs, { min: 0, max: 3650 });
+      },
+      target: 45,
     },
   ],
   charts: [
     {
-      id: 'fin_pnl_waterfall',
-      title: 'P&L Waterfall & Profit Realization by Period',
-      intent: 'flow',
-      x: 'date',
-      y: 'net_profit',
-      needs: ['date', 'net_profit'],
-      aggregation: 'sum',
-      description: 'Tracks period-by-period net profit realization across the P&L.',
-    },
-    {
-      id: 'fin_rev_vs_cost_trend',
-      title: 'Revenue vs Cost of Goods Sold (COGS) Trend',
+      id: 'fin_rev_profit_trend',
+      title: 'Revenue, EBITDA & Net Profit Trend',
+      subtitle: 'Top-line vs bottom-line progression across reporting periods',
       intent: 'trend',
-      x: 'date',
-      y: 'revenue',
-      group: 'segment',
-      needs: ['date', 'revenue'],
+      xRole: 'date',
+      yRoles: ['revenue', 'ebitda', 'net_income'],
       aggregation: 'sum',
-      description: 'Longitudinal top-line revenue trajectory by fiscal period.',
     },
     {
-      id: 'fin_expense_composition',
-      title: 'Operating Expense (OpEx) Composition',
-      intent: 'composition',
-      x: 'expense_category',
-      y: 'operating_expense',
-      needs: ['expense_category', 'operating_expense'],
-      aggregation: 'sum',
-      description: 'Share of operating expenses across R&D, Sales & Marketing, and G&A.',
-    },
-    {
-      id: 'fin_budget_vs_actual',
-      title: 'Budget vs Actual Revenue by Business Unit',
-      intent: 'compare',
-      x: 'segment',
-      y: 'revenue',
-      needs: ['segment', 'revenue'],
-      aggregation: 'sum',
-      description: 'Compares realized revenue against budget targets across segments.',
-    },
-    {
-      id: 'fin_cashflow_forecast',
-      title: 'Operating Cash Flow & Forecast Trajectory',
-      intent: 'trend',
-      x: 'date',
-      y: 'operating_cash_flow',
-      needs: ['date', 'operating_cash_flow'],
-      aggregation: 'sum',
-      description: 'Operating cash generation with forward trend projection.',
-    },
-    {
-      id: 'fin_margin_by_segment',
-      title: 'EBITDA & Net Profit by Business Segment',
+      id: 'fin_dept_ranking',
+      title: 'Revenue & Operating Expense by Business Unit',
+      subtitle: 'Comparative P&L contribution by department',
       intent: 'ranking',
-      x: 'segment',
-      y: 'ebitda',
-      needs: ['segment', 'ebitda'],
+      xRole: 'department',
+      yRoles: ['revenue', 'opex'],
       aggregation: 'sum',
-      description: 'Ranks segments by EBITDA contribution.',
     },
     {
-      id: 'fin_receivables_ageing',
-      title: 'Accounts Receivable (AR) Ageing Breakdown',
-      intent: 'distribution',
-      x: 'ageing_bucket',
-      y: 'accounts_receivable',
-      needs: ['ageing_bucket', 'accounts_receivable'],
+      id: 'fin_budget_variance',
+      title: 'Actual vs Budget Revenue',
+      subtitle: 'Plan attainment across fiscal periods',
+      intent: 'comparison',
+      xRole: 'date',
+      yRoles: ['revenue', 'budget'],
       aggregation: 'sum',
-      description: 'Distribution of open trade receivables across ageing buckets.',
+    },
+    {
+      id: 'fin_working_capital',
+      title: 'Working Capital (AR vs AP vs Cash)',
+      subtitle: 'Liquidity & short-term balance sheet composition',
+      intent: 'composition',
+      xRole: 'department',
+      yRoles: ['cash', 'ar', 'ap'],
+      aggregation: 'sum',
+    },
+    {
+      id: 'fin_cost_structure',
+      title: 'Cost Structure (COGS vs OPEX)',
+      subtitle: 'Direct vs overhead cost trajectory',
+      intent: 'distribution',
+      xRole: 'date',
+      yRoles: ['cogs', 'opex'],
+      aggregation: 'sum',
+    },
+    {
+      id: 'fin_leverage_exceptions',
+      title: 'Debt vs Equity Exposure by Entity',
+      subtitle: 'Balance sheet leverage and solvency breakdown',
+      intent: 'Exception',
+      xRole: 'department',
+      yRoles: ['total_debt', 'total_equity'],
+      aggregation: 'sum',
     },
   ],
-  lenses: {
-    descriptive: [
-      'Full P&L cascade from Gross Revenue through COGS, Gross Margin, OpEx, EBITDA, and Net Income.',
-      'Balance sheet liquidity ratios (Current Ratio, Quick Ratio) and capital structure (Debt-to-Equity).',
-      'Working capital cash conversion telemetry via Days Sales Outstanding (DSO) and receivables ageing.',
-    ],
-    diagnostic: [
-      'Decomposes Budget vs Actual variance by business unit and expense classification.',
-      'Identifies margin compression drivers between direct COGS inflation and SG&A overhead growth.',
-      'Isolates overdue receivables buckets (> 60 days) dragging operating cash flow conversion.',
-    ],
-    predictive: [
-      'Projects 3-period forward revenue and operating cash flow using blended OLS linear trend + moving average.',
-      'Estimates treasury cash runway in months under current OpEx burn velocity.',
-      'Models break-even revenue sensitivity to gross margin shifts.',
-    ],
-    prescriptive: [
-      'Reallocate discretionary OpEx from underperforming segments to units exceeding EBITDA margin targets.',
-      'Accelerate collections on 61–90+ day receivables buckets to compress DSO and unlock free cash flow.',
-      'Maintain Current Ratio above 1.5x and Debt-to-Equity below 1.0x for covenant resilience.',
+  lenses: [
+    {
+      id: 'exec',
+      name: 'Executive',
+      description: 'Top-line P&L, EBITDA, Net Margin, and Return on Equity',
+      kpiIds: ['fin_revenue', 'fin_ebitda', 'fin_net_margin_pct', 'fin_gross_margin_pct', 'fin_roe_pct', 'fin_roa_pct'],
+      chartIds: ['fin_rev_profit_trend', 'fin_budget_variance', 'fin_dept_ranking'],
+    },
+    {
+      id: 'ops',
+      name: 'Operations',
+      description: 'Working capital cycle (DSO, DPO) and departmental OPEX efficiency',
+      kpiIds: ['fin_operating_margin_pct', 'fin_dso_days', 'fin_dpo_days', 'fin_current_ratio', 'fin_quick_ratio'],
+      chartIds: ['fin_working_capital', 'fin_cost_structure', 'fin_dept_ranking'],
+    },
+    {
+      id: 'Perf',
+      name: 'Performance',
+      description: 'Profitability ratios, budget attainment, and capital efficiency',
+      kpiIds: ['fin_gross_margin_pct', 'fin_operating_margin_pct', 'fin_net_margin_pct', 'fin_roe_pct', 'fin_roa_pct'],
+      chartIds: ['fin_budget_variance', 'fin_rev_profit_trend', 'fin_cost_structure'],
+    },
+    {
+      id: 'risk',
+      name: 'Risk & Exceptions',
+      description: 'Liquidity coverage, leverage exposure, and receivables aging risk',
+      kpiIds: ['fin_current_ratio', 'fin_quick_ratio', 'fin_debt_to_equity', 'fin_dso_days'],
+      chartIds: ['fin_leverage_exceptions', 'fin_working_capital'],
+    },
+  ],
+  reportSections: ['Executive Summary', 'KPI Scorecard', 'P&L & Margin Analysis', 'Liquidity & Balance Sheet Risk', 'Recommendations'],
+  sampleDataset: {
+    name: 'financial_fpa_ledger_2025.csv',
+    rows: [
+      { date: '2025-01-01', department: 'Cloud Platform', revenue: 1450000, budget: 1380000, cogs: 460000, opex: 390000, ebitda: 600000, net_income: 440000, current_assets: 2800000, inventory: 180000, current_liabilities: 1250000, total_assets: 5400000, total_debt: 1400000, total_equity: 2750000, ar: 155000, ap: 62000, cash: 1950000 },
+      { date: '2025-01-01', department: 'Enterprise AI', revenue: 980000, budget: 920000, cogs: 310000, opex: 295000, ebitda: 375000, net_income: 270000, current_assets: 1950000, inventory: 95000, current_liabilities: 920000, total_assets: 3800000, total_debt: 950000, total_equity: 1930000, ar: 108000, ap: 44000, cash: 1320000 },
+      { date: '2025-02-01', department: 'Cloud Platform', revenue: 1580000, budget: 1490000, cogs: 490000, opex: 405000, ebitda: 685000, net_income: 510000, current_assets: 3050000, inventory: 175000, current_liabilities: 1310000, total_assets: 5750000, total_debt: 1350000, total_equity: 3090000, ar: 162000, ap: 68000, cash: 2150000 },
+      { date: '2025-02-01', department: 'Enterprise AI', revenue: 1120000, budget: 1050000, cogs: 340000, opex: 315000, ebitda: 465000, net_income: 345000, current_assets: 2200000, inventory: 90000, current_liabilities: 980000, total_assets: 4100000, total_debt: 910000, total_equity: 2210000, ar: 118000, ap: 49000, cash: 1510000 },
+      { date: '2025-03-01', department: 'Cloud Platform', revenue: 1740000, budget: 1620000, cogs: 530000, opex: 425000, ebitda: 785000, net_income: 590000, current_assets: 3350000, inventory: 170000, current_liabilities: 1380000, total_assets: 6150000, total_debt: 1300000, total_equity: 3470000, ar: 170000, ap: 73000, cash: 2390000 },
+      { date: '2025-03-01', department: 'Enterprise AI', revenue: 1290000, budget: 1180000, cogs: 385000, opex: 330000, ebitda: 575000, net_income: 430000, current_assets: 2480000, inventory: 85000, current_liabilities: 1040000, total_assets: 4450000, total_debt: 870000, total_equity: 2540000, ar: 128000, ap: 54000, cash: 1740000 },
     ],
   },
-  reportSections: [
-    {
-      title: '1. Executive Summary',
-      kpis: ['fin_revenue', 'fin_gross_margin_pct', 'fin_ebitda', 'fin_net_profit'],
-      charts: ['fin_rev_vs_cost_trend'],
-      narrativeTemplate:
-        'Consolidated financial performance summary covering top-line revenue, gross margin efficiency, EBITDA, and bottom-line net profit.',
-    },
-    {
-      title: '2. P&L Statement Analysis',
-      kpis: ['fin_revenue', 'fin_cogs', 'fin_gross_profit', 'fin_opex', 'fin_net_margin_pct'],
-      charts: ['fin_pnl_waterfall', 'fin_expense_composition'],
-      narrativeTemplate:
-        'Detailed income statement cascade analyzing cost of sales, gross profit retention, and operating expense allocation.',
-    },
-    {
-      title: '3. Ratio Analysis (Liquidity & Leverage)',
-      kpis: ['fin_current_ratio', 'fin_quick_ratio', 'fin_debt_to_equity', 'fin_roe_roa'],
-      charts: ['fin_margin_by_segment'],
-      narrativeTemplate:
-        'Balance sheet health evaluation spanning short-term liquidity (Current & Quick ratios), solvency (Debt-to-Equity), and ROE.',
-    },
-    {
-      title: '4. Budget vs Actual Variance',
-      kpis: ['fin_budget_variance_pct', 'fin_breakeven'],
-      charts: ['fin_budget_vs_actual'],
-      narrativeTemplate:
-        'Comparison of realized revenue against approved fiscal budget alongside operating break-even threshold.',
-    },
-    {
-      title: '5. Cash-Flow & Working Capital',
-      kpis: ['fin_free_cash_flow', 'fin_burn_runway', 'fin_dso_dpo'],
-      charts: ['fin_cashflow_forecast', 'fin_receivables_ageing'],
-      narrativeTemplate:
-        'Operating and free cash flow conversion, treasury runway in months, and trade receivables ageing.',
-    },
-    {
-      title: '6. Financial Risks & Anomalies',
-      kpis: ['fin_debt_to_equity', 'fin_dso_dpo'],
-      charts: ['fin_receivables_ageing'],
-      narrativeTemplate:
-        'Statistical audit of cost spikes, overdue AR exposure, and leverage concentration across business units.',
-    },
-    {
-      title: '7. Strategic CFO Recommendations',
-      kpis: ['fin_ebitda', 'fin_free_cash_flow', 'fin_budget_variance_pct'],
-      charts: ['fin_margin_by_segment'],
-      narrativeTemplate:
-        'Actionable capital allocation, cost containment, and working capital directives grounded in verified ledger metrics.',
-    },
-  ],
-  sampleDataset: () => [
-    {
-      period: '2025-01-01',
-      segment: 'Enterprise Cloud',
-      expense_category: 'R&D Engineering',
-      ageing_bucket: '0-30 Days',
-      revenue: 420000,
-      budget_revenue: 400000,
-      cogs: 126000,
-      operating_expense: 145000,
-      ebitda: 149000,
-      net_profit: 116220,
-      current_assets: 980000,
-      current_liabilities: 460000,
-      inventory: 85000,
-      total_debt: 520000,
-      total_equity: 1150000,
-      total_assets: 2130000,
-      operating_cash_flow: 138000,
-      capex: 24000,
-      cash_balance: 1420000,
-      accounts_receivable: 165000,
-      accounts_payable: 92000,
-    },
-    {
-      period: '2025-02-01',
-      segment: 'Enterprise Cloud',
-      expense_category: 'Sales & Marketing',
-      ageing_bucket: '31-60 Days',
-      revenue: 448000,
-      budget_revenue: 425000,
-      cogs: 132000,
-      operating_expense: 152000,
-      ebitda: 164000,
-      net_profit: 127920,
-      current_assets: 1020000,
-      current_liabilities: 470000,
-      inventory: 82000,
-      total_debt: 510000,
-      total_equity: 1210000,
-      total_assets: 2190000,
-      operating_cash_flow: 151000,
-      capex: 26000,
-      cash_balance: 1545000,
-      accounts_receivable: 172000,
-      accounts_payable: 95000,
-    },
-    {
-      period: '2025-03-01',
-      segment: 'Mid-Market SaaS',
-      expense_category: 'G&A Operations',
-      ageing_bucket: '0-30 Days',
-      revenue: 385000,
-      budget_revenue: 390000,
-      cogs: 119000,
-      operating_expense: 134000,
-      ebitda: 132000,
-      net_profit: 102960,
-      current_assets: 940000,
-      current_liabilities: 455000,
-      inventory: 78000,
-      total_debt: 505000,
-      total_equity: 1240000,
-      total_assets: 2200000,
-      operating_cash_flow: 124000,
-      capex: 21000,
-      cash_balance: 1648000,
-      accounts_receivable: 158000,
-      accounts_payable: 88000,
-    },
-    {
-      period: '2025-04-01',
-      segment: 'Mid-Market SaaS',
-      expense_category: 'R&D Engineering',
-      ageing_bucket: '61-90 Days',
-      revenue: 465000,
-      budget_revenue: 440000,
-      cogs: 136000,
-      operating_expense: 156000,
-      ebitda: 173000,
-      net_profit: 134940,
-      current_assets: 1085000,
-      current_liabilities: 480000,
-      inventory: 80000,
-      total_debt: 495000,
-      total_equity: 1310000,
-      total_assets: 2285000,
-      operating_cash_flow: 162000,
-      capex: 28000,
-      cash_balance: 1782000,
-      accounts_receivable: 181000,
-      accounts_payable: 99000,
-    },
-    {
-      period: '2025-05-01',
-      segment: 'Financial Services',
-      expense_category: 'Sales & Marketing',
-      ageing_bucket: '0-30 Days',
-      revenue: 512000,
-      budget_revenue: 480000,
-      cogs: 148000,
-      operating_expense: 164000,
-      ebitda: 200000,
-      net_profit: 156000,
-      current_assets: 1160000,
-      current_liabilities: 495000,
-      inventory: 84000,
-      total_debt: 485000,
-      total_equity: 1390000,
-      total_assets: 2370000,
-      operating_cash_flow: 185000,
-      capex: 30000,
-      cash_balance: 1937000,
-      accounts_receivable: 189000,
-      accounts_payable: 104000,
-    },
-    {
-      period: '2025-06-01',
-      segment: 'Financial Services',
-      expense_category: 'Customer Success',
-      ageing_bucket: '90+ Days',
-      revenue: 548000,
-      budget_revenue: 510000,
-      cogs: 156000,
-      operating_expense: 171000,
-      ebitda: 221000,
-      net_profit: 172380,
-      current_assets: 1240000,
-      current_liabilities: 510000,
-      inventory: 86000,
-      total_debt: 470000,
-      total_equity: 1480000,
-      total_assets: 2460000,
-      operating_cash_flow: 204000,
-      capex: 32000,
-      cash_balance: 2109000,
-      accounts_receivable: 194000,
-      accounts_payable: 108000,
-    },
-  ],
 };

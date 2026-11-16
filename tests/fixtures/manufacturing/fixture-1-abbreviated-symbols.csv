@@ -1,0 +1,3 @@
+Production Date,Factory Plant,Assembly Line,Produced Units,Good Units,Scrap Units,OEE (%),Unplanned Downtime (Hrs),Manufacturing Cost ($),Cycle Time (Sec)
+2025-01-01,Detroit Stamping,Line A-1,"48,000","47,040",960,86.5%,14,"$576,000",22
+2025-02-01,Stuttgart Precision,Line C-1,"39,000","38,415",585,89.8%,9,"$546,000",20

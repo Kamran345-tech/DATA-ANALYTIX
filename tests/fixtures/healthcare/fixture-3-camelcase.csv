@@ -1,0 +1,3 @@
+admissionDate,serviceLine,medicalCenter,patientAdmissions,repeatAdmissions,lengthOfStay,bedOccupancyPct,waitTimeMins,encounterCost,patientSatisfaction
+2025-01-01,Oncology,University Medical,410,31,5.6,85,19,5740000,94
+2025-02-01,Emergency Trauma,Metro General,1120,96,2.9,93,42,4480000,81

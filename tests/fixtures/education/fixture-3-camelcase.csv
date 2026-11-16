@@ -1,0 +1,3 @@
+semesterDate,courseName,deliveryMode,enrolledStudents,completedStudents,withdrawn,attendanceRate,assessmentScore,tuitionRevenue,instructionCost
+2025-01-01,Nursing Health,Medical Campus,740,688,29,96,88,9620000,6290000
+2025-02-01,Data Engineering,Main Campus,860,782,43,94,87,10320000,5848000

@@ -1,0 +1,3 @@
+dispatchDate,distributionCenter,carrierVendor,shipmentsCount,otifOrders,leadTimeDays,fillRatePct,inventoryUnits,backorderUnits,logisticsCost,inventoryTurnover
+2025-01-01,Dallas Hub,PrimeCarrier,3950,3810,3.6,98.1,59000,40,128400,9.6
+2025-02-01,Atlanta DC,Apex Logistics,4400,4220,3.9,97.2,64000,58,146200,9.1
