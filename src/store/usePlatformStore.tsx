@@ -31,6 +31,7 @@ import { applyDocumentTheme, subscribeSystemThemeChange } from '../utils/theme';
 export type NavigationTab = 
   | 'landing'
   | 'executive_dashboard'
+  | 'analytics_packs'
   | 'how_to_use'
   | 'upload'
   | 'live_connector'
@@ -133,6 +134,10 @@ export interface PlatformContextType {
   // Automatic Task Mode (Section 11)
   activeTaskMode: TaskMode | null;
   setTaskMode: (mode: TaskMode | null) => void;
+
+  // Active Analytics Pack ID
+  activePackId: string;
+  setActivePackId: (id: string) => void;
 
   // Editable Report Headings
   reportHeadings: ReportHeadings;
@@ -363,6 +368,26 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   // Automatic Task Mode Detection & Execution (Section 11)
   const [activeTaskMode, setActiveTaskModeState] = useState<TaskMode | null>(null);
+
+  // Active Analytics Pack ID (persisted in localStorage)
+  const [activePackId, setActivePackIdState] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('dataanalytix_active_pack');
+      if (saved && saved.trim()) return saved.trim();
+    }
+    return 'financial';
+  });
+
+  const setActivePackId = (id: string) => {
+    setActivePackIdState(id);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('dataanalytix_active_pack', id);
+      } catch {
+        // ignore storage quota errors
+      }
+    }
+  };
 
   const setTaskMode = (mode: TaskMode | null) => {
     setActiveTaskModeState(mode);
@@ -1438,6 +1463,8 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         updateProjectMetadata,
         activeTaskMode,
         setTaskMode,
+        activePackId,
+        setActivePackId,
         reportHeadings,
         updateReportHeading,
         updateKpi,

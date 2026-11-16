@@ -36,6 +36,7 @@ export interface FeatureFlags {
   heroScene3D: boolean;
   chartGuide: boolean;
   unifiedTheme: boolean;
+  analyticsPacks: boolean;
 }
 
 export const CLASSIC_FEATURE_FLAGS: FeatureFlags = {
@@ -58,6 +59,7 @@ export const CLASSIC_FEATURE_FLAGS: FeatureFlags = {
   heroScene3D: false,
   chartGuide: false,
   unifiedTheme: false,
+  analyticsPacks: false,
 };
 
 export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
@@ -80,6 +82,7 @@ export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
   heroScene3D: true,
   chartGuide: true,
   unifiedTheme: true,
+  analyticsPacks: true,
 };
 
 export const FEATURE_METADATA: FeatureFlagMeta[] = [
@@ -234,6 +237,14 @@ export const FEATURE_METADATA: FeatureFlagMeta[] = [
     description: 'Activates the WCAG AA unified semantic token palette (--bg-app, --bg-card, --text-primary, --chart-1..8) across Dark, Light, and System modes.',
     classicBehavior: 'Classic per-view theme classes and override rules.',
     newBehavior: 'Single semantic token set with verified >= 4.5:1 text contrast across all views in Dark and Light modes.'
+  },
+  {
+    key: 'analyticsPacks',
+    label: 'Domain Analytics Packs (14 Packs)',
+    category: 'engine',
+    description: 'Enables data-driven domain analytics packs (Financial, Sales, Marketing, Customer, Product, Web, Operations, HR, Risk/Fraud, Healthcare, Retail, Manufacturing, Banking/Insurance, Education) with auto-detection, role mapping, 8–16 KPIs, 6–8 intent charts, 4 lenses, and reports.',
+    classicBehavior: 'Single general-purpose Executive Dashboard without domain-specific pack detection.',
+    newBehavior: '14 domain Analytics Packs with auto-detection banner, role mapping, pack dashboards, and zero-data template downloads.'
   }
 ];
 

@@ -22,11 +22,13 @@ import {
   ChevronRight,
   HelpCircle,
   Cloud,
+  Layers,
   Database as DbIcon
 } from 'lucide-react';
 import { usePlatform, NavigationTab } from '../../store/usePlatformStore';
 import { Tooltip } from '../common/Tooltip';
 import { useFirebaseAuth } from '../../store/useFirebaseAuth';
+import { loadFeatureFlags, FeatureFlags } from '../../config/features';
 
 interface NavItem {
   id: NavigationTab;
@@ -58,6 +60,15 @@ const navSections: { title: string; items: NavItem[] }[] = [
         description: 'Real-time executive telemetry with Net Sales, Gross Margin, Unit Volumes, AI directives, and drill-through.',
         proTip: 'Click any KPI card to open raw transactional drill-through records.',
         categoryTag: 'Monitoring'
+      },
+      { 
+        id: 'analytics_packs', 
+        label: 'Analytics Packs', 
+        icon: Layers, 
+        badge: '14 Packs',
+        description: 'Domain-specific auto-built dashboards, KPIs, lenses, and reports across 14 analytics packs.',
+        proTip: 'Try any pack with 1-click sample data or map your own dataset columns.',
+        categoryTag: 'Domains'
       },
       { 
         id: 'how_to_use', 
@@ -262,9 +273,16 @@ const navSections: { title: string; items: NavItem[] }[] = [
 export const Sidebar: React.FC = () => {
   const { currentTab, setCurrentTab, isSidebarOpen, setIsSidebarOpen, isPresentationMode, themeMode } = usePlatform();
   const { currentUser, isGuestMode, setIsAuthModalOpen } = useFirebaseAuth();
+  const [flags, setFlags] = React.useState<FeatureFlags>(() => loadFeatureFlags());
   const isLight = themeMode === 'light';
   const asideRef = React.useRef<HTMLElement | null>(null);
   const previousFocusRef = React.useRef<HTMLElement | null>(null);
+
+  React.useEffect(() => {
+    const handleFlags = (e: any) => setFlags(e.detail || loadFeatureFlags());
+    window.addEventListener('dataanalytix:features-updated', handleFlags);
+    return () => window.removeEventListener('dataanalytix:features-updated', handleFlags);
+  }, []);
 
   const restoreMobileMenuFocus = React.useCallback(() => {
     if (typeof window === 'undefined' || window.innerWidth >= 1024) return;
@@ -403,7 +421,9 @@ export const Sidebar: React.FC = () => {
                 {section.title}
               </h4>
               <div className="space-y-0.5 pt-1">
-                {section.items.map(item => {
+                {section.items
+                  .filter(item => item.id !== 'analytics_packs' || flags.analyticsPacks)
+                  .map(item => {
                   const Icon = item.icon;
                   const isActive = currentTab === item.id;
                   return (

@@ -11,10 +11,15 @@ import {
   Key,
   Calendar,
   Hash,
-  Type
+  Type,
+  Layers,
+  SlidersHorizontal
 } from 'lucide-react';
 import { usePlatform } from '../../store/usePlatformStore';
 import { DEMO_DATASETS } from '../../data/demoDatasets';
+import { loadFeatureFlags, FeatureFlags } from '../../config/features';
+import { ColumnMappingModal } from '../common/ColumnMappingModal';
+import type { PackDetectionMatch, AnalyticsPackConfig } from '../../analytics';
 
 export const UploadIngestionView: React.FC = () => {
   const { 
@@ -26,16 +31,84 @@ export const UploadIngestionView: React.FC = () => {
     project,
     columns,
     cleanRows,
+    detectedTypes,
     setCurrentTab,
-    themeMode 
+    themeMode,
+    activePackId,
+    setActivePackId
   } = usePlatform();
 
   const isLight = themeMode === 'light';
+  const [flags, setFlags] = useState<FeatureFlags>(() => loadFeatureFlags());
 
   const [dragActive, setDragActive] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [roleOverrides, setRoleOverrides] = useState<Record<string, string>>({});
+  const [detectedPacks, setDetectedPacks] = useState<PackDetectionMatch[]>([]);
+  const [allPacks, setAllPacks] = useState<AnalyticsPackConfig[]>([]);
+  const [isPackMappingOpen, setIsPackMappingOpen] = useState(false);
+  const [activePackRoles, setActivePackRoles] = useState<{ value: string; label: string; required?: boolean }[]>([]);
+  const [activePackRoleMap, setActivePackRoleMap] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  React.useEffect(() => {
+    const handleFlags = (e: any) => setFlags(e.detail || loadFeatureFlags());
+    window.addEventListener('dataanalytix:features-updated', handleFlags);
+    return () => window.removeEventListener('dataanalytix:features-updated', handleFlags);
+  }, []);
+
+  React.useEffect(() => {
+    if (!flags.analyticsPacks || columns.length === 0) {
+      setDetectedPacks([]);
+      return;
+    }
+    let cancelled = false;
+    import('../../analytics').then(mod => {
+      if (cancelled) return;
+      const matches = mod.detectPack({ columns, rows: cleanRows });
+      setDetectedPacks(matches);
+      setAllPacks(mod.ANALYTICS_PACKS);
+      const topId = matches[0]?.packId || activePackId;
+      if (matches[0] && matches[0].confidence >= 40) {
+        setActivePackId(topId);
+      }
+      const packObj = mod.getPackById(topId);
+      const dsId = project?.id || project?.name || 'default';
+      const persisted = mod.getPersistedPackRoleMap(dsId, packObj.id);
+      const mapped = mod.mapRoles({ columns, rows: cleanRows, datasetId: dsId }, packObj, persisted);
+      setActivePackRoleMap(mapped);
+      const reqSet = new Set(packObj.detect.requiredRoles);
+      setActivePackRoles(
+        Object.entries(packObj.roles).map(([roleKey, roleDef]) => ({
+          value: roleKey,
+          label: roleDef.description || `${roleKey} (${roleDef.aliases.slice(0, 2).join(', ')})`,
+          required: reqSet.has(roleKey),
+        }))
+      );
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [flags.analyticsPacks, columns, cleanRows]);
+
+  const handlePackSelectChange = (newPackId: string) => {
+    setActivePackId(newPackId);
+    import('../../analytics').then(mod => {
+      const packObj = mod.getPackById(newPackId);
+      const dsId = project?.id || project?.name || 'default';
+      const persisted = mod.getPersistedPackRoleMap(dsId, packObj.id);
+      const mapped = mod.mapRoles({ columns, rows: cleanRows, datasetId: dsId }, packObj, persisted);
+      setActivePackRoleMap(mapped);
+      const reqSet = new Set(packObj.detect.requiredRoles);
+      setActivePackRoles(
+        Object.entries(packObj.roles).map(([roleKey, roleDef]) => ({
+          value: roleKey,
+          label: roleDef.description || `${roleKey} (${roleDef.aliases.slice(0, 2).join(', ')})`,
+          required: reqSet.has(roleKey),
+        }))
+      );
+    });
+  };
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -277,6 +350,79 @@ export const UploadIngestionView: React.FC = () => {
         </div>
       )}
 
+      {/* Post-Upload Analytics Pack Detection Banner */}
+      {flags.analyticsPacks && columns.length > 0 && detectedPacks.length > 0 && (
+        <div
+          data-testid="upload-pack-detection-banner"
+          className="depth-card rounded-[20px] p-5 border bg-card border-subtle shadow-sm space-y-3"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-start gap-3 min-w-0 flex-1">
+              <div className="w-10 h-10 rounded-xl bg-accent-soft text-accent border border-subtle flex items-center justify-center shrink-0 mt-0.5">
+                <Layers className="w-5 h-5" />
+              </div>
+              <div className="min-w-0 flex-1 space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded bg-accent-soft text-accent">
+                    Auto-Detected Pack
+                  </span>
+                  <span className="text-xs font-mono text-secondary">
+                    Top 3:{' '}
+                    {detectedPacks
+                      .slice(0, 3)
+                      .map(m => `${m.packName} (${m.confidence}%)`)
+                      .join(' · ')}
+                  </span>
+                </div>
+                <h3 className="font-heading text-base font-bold text-primary">
+                  Looks like {detectedPacks[0].packName} data ({detectedPacks[0].confidence}%)
+                </h3>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
+              <label className="sr-only" htmlFor="upload-change-pack-select">
+                Change pack
+              </label>
+              <select
+                id="upload-change-pack-select"
+                aria-label="Change pack"
+                data-testid="upload-change-pack-select"
+                value={activePackId}
+                onChange={e => handlePackSelectChange(e.target.value)}
+                className="min-h-[40px] rounded-xl bg-elevated border border-subtle px-3 py-1.5 text-xs font-semibold text-primary focus:outline-hidden cursor-pointer"
+              >
+                {allPacks.map(p => (
+                  <option key={p.id} value={p.id}>
+                    Change pack: {p.name}
+                  </option>
+                ))}
+              </select>
+
+              <button
+                type="button"
+                data-testid="upload-map-columns-btn"
+                onClick={() => setIsPackMappingOpen(true)}
+                className="min-h-[40px] px-3.5 py-1.5 rounded-xl bg-elevated hover:bg-card-hover border border-subtle text-xs font-semibold text-primary flex items-center gap-1.5 cursor-pointer transition-colors"
+              >
+                <SlidersHorizontal className="w-3.5 h-3.5 text-accent" />
+                <span>Map columns</span>
+              </button>
+
+              <button
+                type="button"
+                data-testid="upload-open-pack-btn"
+                onClick={() => setCurrentTab('analytics_packs')}
+                className="min-h-[40px] px-3.5 py-1.5 rounded-xl bg-accent text-on-accent text-xs font-bold hover:opacity-90 flex items-center gap-1.5 cursor-pointer transition-opacity"
+              >
+                <span>Open Pack Dashboard</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Column-Role Mapping & Schema Inspection Table */}
       {columns.length > 0 && (
         <div className="depth-card rounded-[20px] border bg-card border-subtle shadow-sm overflow-hidden">
@@ -453,6 +599,26 @@ export const UploadIngestionView: React.FC = () => {
           ))}
         </div>
       </div>
+
+      {flags.analyticsPacks && (
+        <ColumnMappingModal
+          isOpen={isPackMappingOpen}
+          columns={columns.map(c => c.name)}
+          detectedTypes={detectedTypes}
+          packRoles={activePackRoles}
+          initialMapping={activePackRoleMap}
+          packName={allPacks.find(p => p.id === activePackId)?.name || 'Analytics Pack'}
+          onCancel={() => setIsPackMappingOpen(false)}
+          onConfirm={customMap => {
+            const dsId = project?.id || project?.name || 'default';
+            import('../../analytics').then(mod => {
+              mod.savePersistedPackRoleMap(dsId, activePackId, customMap);
+              setActivePackRoleMap(customMap);
+            });
+            setIsPackMappingOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 };

@@ -27,6 +27,7 @@ import {
   FileText
 } from 'lucide-react';
 import { usePlatform, NavigationTab } from '../../store/usePlatformStore';
+import { loadFeatureFlags, FeatureFlags } from '../../config/features';
 
 interface NavGroup {
   id: string;
@@ -76,6 +77,7 @@ const MODERN_NAV_GROUPS: NavGroup[] = [
     name: 'Build',
     items: [
       { id: 'executive_dashboard', label: 'Executive Dashboard', icon: LayoutDashboard, description: 'Board-ready KPI telemetry and visual filters' },
+      { id: 'analytics_packs', label: 'Analytics Packs', icon: Layers, description: '14 domain-specific dashboards, KPIs and reports' },
       { id: 'dashboard_builder', label: 'Dashboard Builder', icon: SlidersHorizontal, description: 'Compose and customize analytical widgets' },
       { id: 'reports', label: 'Executive Reports', icon: FileText, description: 'Print-ready decks and PDF exports' },
     ]
@@ -99,6 +101,13 @@ export interface ModernSidebarProps {
 
 export const ModernSidebar: React.FC<ModernSidebarProps> = ({ onOpenCommandPalette }) => {
   const { currentTab, setCurrentTab } = usePlatform();
+  const [flags, setFlags] = useState<FeatureFlags>(() => loadFeatureFlags());
+
+  useEffect(() => {
+    const handleFlags = (e: any) => setFlags(e.detail || loadFeatureFlags());
+    window.addEventListener('dataanalytix:features-updated', handleFlags);
+    return () => window.removeEventListener('dataanalytix:features-updated', handleFlags);
+  }, []);
 
   // Collapsed rail state persisted in localStorage
   const [isRailCollapsed, setIsRailCollapsed] = useState<boolean>(() => {
@@ -180,7 +189,9 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({ onOpenCommandPalet
               {/* Group Items */}
               {(!isGroupCollapsed || isRailCollapsed) && (
                 <div className="space-y-0.5">
-                  {group.items.map((item) => {
+                  {group.items
+                    .filter(item => item.id !== 'analytics_packs' || flags.analyticsPacks)
+                    .map((item) => {
                     const isActive = currentTab === item.id;
                     const Icon = item.icon;
 

@@ -3,9 +3,15 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 import { defineConfig } from 'vite';
 
-export default defineConfig(() => {
+export default defineConfig(({ command }) => {
   return {
     plugins: [react(), tailwindcss()],
+    define:
+      command === 'build'
+        ? {
+            'process.env.NODE_ENV': JSON.stringify('production'),
+          }
+        : undefined,
     resolve: {
       alias: {
         '@': path.resolve(import.meta.dirname, '.'),
@@ -88,8 +94,13 @@ export default defineConfig(() => {
               return 'vendor-motion';
             }
 
-            // 10. Absolute core necessities ONLY (React runtime + CSV parser)
-            if (/node_modules\/(react|react-dom|scheduler|papaparse)\//.test(id)) {
+            // 10. CSV parser (loaded on-demand when parsing local CSV/TXT files)
+            if (/node_modules\/papaparse\//.test(id)) {
+              return 'vendor-csv';
+            }
+
+            // 11. Absolute core necessities ONLY (React runtime)
+            if (/node_modules\/(react|react-dom|scheduler)\//.test(id)) {
               return 'vendor-core';
             }
 

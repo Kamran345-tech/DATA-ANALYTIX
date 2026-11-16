@@ -38,17 +38,45 @@ The application supports simultaneous execution on two deployment targets with i
 | `VITE_FEATURE_HERO_SCENE_3D` | Vercel / Local | `"true"` | `true` | `VITE_FEATURE_HERO_SCENE_3D=false` | Enables the pure-CSS 3D 5-pillar hero scene |
 | `VITE_FEATURE_CHART_GUIDE` | Vercel / Local | `"true"` | `true` | `VITE_FEATURE_CHART_GUIDE=false` | Enables the 8-chart selection guide and PDF download |
 | `VITE_FEATURE_UNIFIED_THEME` | Vercel / Local | `"true"` | `true` | `VITE_FEATURE_UNIFIED_THEME=false` | Enables the WCAG AA unified semantic theme token system |
+| `VITE_FEATURE_ANALYTICS_PACKS` | Vercel / Local | `"true"` | `true` | `VITE_FEATURE_ANALYTICS_PACKS=false` | Enables the 14 data-driven domain Analytics Packs, KPIs, lenses & reports |
 
 #### Turning Flags Off or Customizing on Vercel (`https://data-analytix-flax.vercel.app/`)
-- **Default New Visitor Experience**: Because `depthUI`, `heroScene3D`, `chartGuide`, and `unifiedTheme` default to `true` in `src/config/features.ts`, new visitors on Vercel see the unified theme, 3D hero scene, depth UI, and 8-chart guide out of the box without requiring extra environment variables.
+- **Default New Visitor Experience**: Because `depthUI`, `heroScene3D`, `chartGuide`, `unifiedTheme`, and `analyticsPacks` default to `true` in `src/config/features.ts`, new visitors on Vercel see the unified theme, 3D hero scene, depth UI, 8-chart guide, and 14 Analytics Packs out of the box without requiring extra environment variables.
 - **Turning Individual Flags Off via Environment Variables**: Set any `VITE_FEATURE_<FLAG_NAME>=false` (or `0`) in `.env` or **Vercel Project Settings → Environment Variables** to disable that feature at build time:
 ```env
 VITE_FEATURE_DEPTH_UI=false
 VITE_FEATURE_HERO_SCENE_3D=false
 VITE_FEATURE_CHART_GUIDE=false
 VITE_FEATURE_UNIFIED_THEME=false
+VITE_FEATURE_ANALYTICS_PACKS=false
 ```
 - **Runtime Override & Persistence**: Any visitor can click **"Switch to Classic"** in the top navbar or toggle individual flags in **Settings → Experiments & Alternatives**. User preferences are saved to `localStorage['dataanalytix_features']`, which takes precedence over build-time defaults and displays a live session banner in Settings showing which flags are currently `ON`.
+
+---
+
+## 📦 Analytics Packs (14 Domain Configurations)
+
+When `analyticsPacks` is enabled, Data Analytix provides 14 domain-specific analytics packs under `src/analytics/packs/`:
+1. **Financial & FP&A** (`financial`) — Revenue, Gross/Operating/EBITDA/Net Margin, Current/Quick/D-to-E Ratios, ROE/ROA, FCF, Burn/Runway, Budget Variance, DSO/DPO, Break-Even.
+2. **Sales & Pipeline** (`sales`) — Quota Attainment, Win Rate, Sales Velocity, Pipeline Coverage, Weighted Pipeline, Deal Cycle.
+3. **Marketing & Growth** (`marketing`) — ROAS, CAC, LTV:CAC, CPL, CTR, Funnel CVR, Channel Attribution.
+4. **Customer & Retention** (`customer`) — Logo/Net Revenue Churn, NRR, GRR, LTV, ARPU, NPS, CSAT, Cohort Retention, RFM.
+5. **Product & SaaS** (`product`) — DAU/MAU Stickiness, Activation Rate, Feature Adoption, Time-to-Value, Retention D1/D7/D30.
+6. **Web, App & E-Commerce** (`web`) — Sessions, Bounce Rate, Conversion Rate, AOV, Cart Abandonment, Revenue per Visitor.
+7. **Operations & Supply Chain** (`operations`) — OTIF, Lead Time, Inventory Turnover, Stockout Rate, Fill Rate, Defect Rate, Cost/Unit.
+8. **HR & People** (`hr`) — Headcount, Voluntary/Involuntary Attrition, Time-to-Hire, Cost-per-Hire, Offer Acceptance, Revenue/Employee, Compa-Ratio, Absenteeism.
+9. **Risk, Fraud & Compliance** (`risk-fraud`) — Fraud Rate, False Positive Rate, Chargeback Rate, VaR, Loss Rate, High-Risk Exposure, SLA Breach.
+10. **Healthcare & Clinical** (`healthcare`) — Bed Occupancy, ALOS, 30-Day Readmission, Wait Time, Cost/Encounter, No-Show Rate, Mortality Index.
+11. **Retail & Store** (`retail`) — Same-Store Sales Growth, Sales/SqFt, GMROI, Basket Size, Units/Transaction, Shrinkage, Sell-Through.
+12. **Manufacturing & Quality** (`manufacturing`) — OEE (Availability × Performance × Quality), First-Pass Yield, Scrap Rate, Cycle Time, MTBF, MTTR, Capacity Utilization.
+13. **Banking & Insurance** (`banking-insurance`) — NIM, Cost-to-Income, NPL Ratio, Loss Ratio, Combined Ratio, Claims Frequency/Severity, Capital Adequacy.
+14. **Education & Learning** (`education`) — Enrollment, Completion Rate, Dropout Rate, Pass Rate, Avg Score, Attendance, Student-to-Instructor Ratio, Placement Rate.
+
+### How to Add a New Pack (15th Pack in 1 Config File)
+Because the Analytics Packs architecture uses **one generic renderer** (`src/components/views/AnalyticsPacksView.tsx`) and **one declarative engine** (`src/analytics/engine.ts`), adding a 15th pack requires **only a new config file** (no hardcoded UI changes):
+1. Create `src/analytics/packs/<my-pack>.ts` exporting an `AnalyticsPackConfig` object (`id`, `name`, `icon`, `description`, `detect`, `kpis`, `charts`, `lenses`, `reportSections`, `sampleDataset`).
+2. Add the pack ID to `PackId` in `src/analytics/packs/types.ts` and register the config in `ANALYTICS_PACKS` inside `src/analytics/packs/registry.ts`.
+3. Run `npm test` — the generic catalog grid, auto-detection engine, role mapper, KPI cards, 4 lenses, charts, and PDF/ZIP/Excel/CSV template exporters automatically include the new pack.
 
 ---
 
@@ -77,6 +105,7 @@ All feature flags can be toggled through the **Settings -> "Experiments & Altern
 | `heroScene3D` | UI | Classic hero layout | Pure-CSS 3D isometric 5-pillar hero scene |
 | `chartGuide` | Engine | Standard chart recommendations | 8-chart decision guide, rules engine, and PDF guide |
 | `unifiedTheme` | UI | Classic theme CSS rules | Single semantic token system across Dark & Light |
+| `analyticsPacks` | Engine | Standard single-domain dashboard | 14 domain-driven Analytics Packs with auto-detection, KPIs, 4 lenses & reports |
 
 ---
 

@@ -3,6 +3,7 @@ import type { NavigationTab } from '../store/usePlatformStore';
 export const TAB_TO_HASH_MAP: Record<NavigationTab, string> = {
   landing: 'welcome',
   executive_dashboard: 'dashboard',
+  analytics_packs: 'analytics-packs',
   how_to_use: 'guide',
   upload: 'upload',
   live_connector: 'live-data',

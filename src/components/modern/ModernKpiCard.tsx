@@ -1,5 +1,5 @@
 import React from 'react';
-import { TrendingUp, TrendingDown, Minus, Info, ChevronRight } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, AlertCircle, ChevronRight } from 'lucide-react';
 import { KPI } from '../../types';
 
 export interface ModernKpiCardProps {
@@ -8,6 +8,10 @@ export interface ModernKpiCardProps {
   onClick?: () => void;
   sparklineData?: number[];
   className?: string;
+  goodDirection?: 'up' | 'down';
+  unavailable?: boolean;
+  unavailableReason?: string;
+  unavailableHint?: string;
 }
 
 export const ModernKpiCard: React.FC<ModernKpiCardProps> = ({
@@ -15,7 +19,11 @@ export const ModernKpiCard: React.FC<ModernKpiCardProps> = ({
   isLoading = false,
   onClick,
   sparklineData = [35, 42, 38, 55, 49, 62, 70],
-  className = ''
+  className = '',
+  goodDirection = 'up',
+  unavailable = false,
+  unavailableReason,
+  unavailableHint,
 }) => {
   if (isLoading || !kpi) {
     return (
@@ -30,8 +38,48 @@ export const ModernKpiCard: React.FC<ModernKpiCardProps> = ({
     );
   }
 
-  const isPositive = (kpi.changePercent ?? 0) >= 0;
+  if (unavailable) {
+    return (
+      <div
+        role="group"
+        aria-label={`${kpi.name}: Unavailable`}
+        data-testid={`kpi-card-${kpi.id}`}
+        className={`modern-card p-5 flex flex-col justify-between text-left border border-dashed border-subtle bg-card/60 ${className}`}
+      >
+        <div>
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <span
+              title={kpi.name}
+              className="text-xs font-semibold text-secondary truncate"
+            >
+              {kpi.name}
+            </span>
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold font-mono bg-elevated text-muted border border-subtle shrink-0">
+              <AlertCircle className="w-3 h-3" />
+              <span>UNAVAILABLE</span>
+            </span>
+          </div>
+
+          <div className="text-lg font-bold font-mono text-muted my-1">
+            —
+          </div>
+
+          <div className="text-[11px] text-secondary leading-snug mt-1">
+            {unavailableHint || unavailableReason || 'Map required columns to compute this KPI.'}
+          </div>
+        </div>
+
+        <div className="mt-4 pt-3 border-t border-subtle flex items-center justify-between gap-2 text-[10px] font-mono text-muted">
+          <span className="truncate">{kpi.definition || 'Role mapping required'}</span>
+        </div>
+      </div>
+    );
+  }
+
+  const delta = kpi.changePercent ?? 0;
+  const isUpward = delta >= 0;
   const isNeutral = kpi.changePercent === 0 || kpi.changePercent === undefined;
+  const isFavorable = goodDirection === 'down' ? delta <= 0 : delta >= 0;
 
   // Simple clean SVG sparkline
   const minVal = Math.min(...sparklineData);
@@ -39,7 +87,7 @@ export const ModernKpiCard: React.FC<ModernKpiCardProps> = ({
   const range = maxVal - minVal || 1;
   const points = sparklineData
     .map((val, idx) => {
-      const x = (idx / (sparklineData.length - 1)) * 80;
+      const x = (idx / Math.max(1, sparklineData.length - 1)) * 80;
       const y = 24 - ((val - minVal) / range) * 20;
       return `${x},${y}`;
     })
@@ -49,6 +97,7 @@ export const ModernKpiCard: React.FC<ModernKpiCardProps> = ({
     <div
       role="button"
       tabIndex={0}
+      data-testid={`kpi-card-${kpi.id}`}
       onClick={onClick}
       onKeyDown={e => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -57,35 +106,38 @@ export const ModernKpiCard: React.FC<ModernKpiCardProps> = ({
         }
       }}
       aria-label={`${kpi.name}: ${kpi.formattedValue || kpi.value}`}
-      className={`modern-card modern-card-lift p-5 flex flex-col justify-between group transition-all text-left ${className}`}
+      className={`modern-card modern-card-lift p-5 flex flex-col justify-between group transition-all text-left cursor-pointer ${className}`}
     >
       <div>
         {/* Header: Name and Status Delta Pill */}
         <div className="flex items-center justify-between gap-2 mb-2">
-          <span className="text-xs font-semibold text-[var(--modern-text-muted)] group-hover:text-[var(--modern-text)] transition-colors truncate">
+          <span
+            title={kpi.name}
+            className="text-xs font-semibold text-[var(--modern-text-muted)] group-hover:text-[var(--modern-text)] transition-colors truncate"
+          >
             {kpi.name}
           </span>
 
           {/* Delta Pill: Color + Icon (never color alone) */}
           <div
-            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold font-mono ${
+            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold font-mono shrink-0 ${
               isNeutral
                 ? 'bg-[var(--bg-elevated)] text-[var(--text-muted)] border border-[var(--border-subtle)]'
-                : isPositive
+                : isFavorable
                 ? 'bg-emerald-500/10 text-[var(--success)] border border-emerald-500/20'
                 : 'bg-rose-500/10 text-[var(--danger)] border border-rose-500/20'
             }`}
           >
             {isNeutral ? (
-              <Minus className="w-3 h-3" />
-            ) : isPositive ? (
-              <TrendingUp className="w-3 h-3" />
+              <Minus className="w-3 h-3" aria-hidden="true" />
+            ) : isUpward ? (
+              <TrendingUp className="w-3 h-3" aria-hidden="true" />
             ) : (
-              <TrendingDown className="w-3 h-3" />
+              <TrendingDown className="w-3 h-3" aria-hidden="true" />
             )}
             <span>
               {kpi.changePercent !== undefined
-                ? `${isPositive ? '+' : ''}${kpi.changePercent.toFixed(1)}%`
+                ? `${isUpward ? '+' : ''}${kpi.changePercent.toFixed(1)}%`
                 : kpi.status}
             </span>
           </div>
@@ -114,7 +166,7 @@ export const ModernKpiCard: React.FC<ModernKpiCardProps> = ({
         <svg className="w-20 h-6 shrink-0 overflow-visible" aria-hidden="true">
           <polyline
             fill="none"
-            stroke={isPositive ? 'var(--modern-success)' : 'var(--modern-primary)'}
+            stroke={isFavorable ? 'var(--modern-success)' : 'var(--modern-primary)'}
             strokeWidth="1.75"
             strokeLinecap="round"
             strokeLinejoin="round"

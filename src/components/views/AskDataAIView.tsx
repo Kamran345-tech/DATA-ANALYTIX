@@ -1,16 +1,16 @@
-import React, { useState } from 'react';
-import { 
-  Sparkles, 
-  Send, 
-  Bot, 
-  User, 
-  CheckCircle2, 
-  ShieldCheck, 
-  HelpCircle, 
+import React, { useState, useEffect } from 'react';
+import {
+  Sparkles,
+  Send,
+  Bot,
+  User,
+  CheckCircle2,
+  ShieldCheck,
   Loader2,
-  Database
+  Layers,
 } from 'lucide-react';
 import { usePlatform } from '../../store/usePlatformStore';
+import { loadFeatureFlags } from '../../config/features';
 
 interface ChatMessage {
   id: string;
@@ -18,29 +18,66 @@ interface ChatMessage {
   text: string;
   timestamp: string;
   grounded?: boolean;
+  isRuleBased?: boolean;
   sourceMetrics?: string[];
+  packName?: string;
 }
 
 export const AskDataAIView: React.FC = () => {
-  const { analytics, project, cleanRows, columns } = usePlatform();
+  const { analytics, project, cleanRows, columns, activePackId } = usePlatform();
+  const flags = loadFeatureFlags();
+  const [packContext, setPackContext] = useState<{
+    packId: string;
+    packName: string;
+    kpis: { id: string; name: string; formattedValue: string; status: string; deltaPercent?: number }[];
+  } | null>(null);
+
+  useEffect(() => {
+    if (!flags.analyticsPacks) return;
+    let cancelled = false;
+    import('../../analytics').then(mod => {
+      if (cancelled) return;
+      const pack = mod.getPackById(activePackId);
+      const dsId = project?.id || project?.name || 'default';
+      const persisted = mod.getPersistedPackRoleMap(dsId, pack.id);
+      const roleMap = mod.mapRoles({ columns, rows: cleanRows, datasetId: dsId }, pack, persisted);
+      const kpis = mod.computeKpis(pack, cleanRows, roleMap);
+      setPackContext({
+        packId: pack.id,
+        packName: pack.name,
+        kpis: kpis.map(k => ({
+          id: k.id,
+          name: k.label,
+          formattedValue: k.formattedValue,
+          status: k.status,
+          deltaPercent: k.changePercent,
+        })),
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [flags.analyticsPacks, activePackId, columns, cleanRows, project?.id, project?.name]);
+
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'welcome',
       sender: 'assistant',
-      text: `Hello! I am your Data Analytix Principal Data Intelligence Assistant. I am strictly grounded in the verified metrics calculated from your **${project.name}** dataset (${cleanRows.length} rows).\n\nYou can ask about revenue drivers, trends, statistical anomalies, or management action items.`,
+      text: `Hello! I am your Data Analytix Principal Data Intelligence Assistant. I am strictly grounded in the verified metrics calculated from your **${project.name}** dataset (${cleanRows.length} rows).\n\nYou can ask about revenue drivers, domain pack KPIs, SQL queries, statistical anomalies, or management action items.`,
       timestamp: new Date().toLocaleTimeString(),
       grounded: true,
-      sourceMetrics: ['Total Volume', 'Quality Score']
-    }
+      isRuleBased: false,
+      sourceMetrics: ['Total Volume', 'Quality Score'],
+    },
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
 
   const starterQuestions = [
     'What was total revenue and overall performance?',
-    'Which segment or category performed best?',
+    'Summarize the active Analytics Pack KPIs and recommend SQL queries.',
     'What are the biggest statistical risks or anomalies?',
-    'What specific actions should management take next?'
+    'What specific actions should management take next?',
   ];
 
   const handleSend = async (questionText?: string) => {
@@ -51,7 +88,7 @@ export const AskDataAIView: React.FC = () => {
       id: `usr-${Date.now()}`,
       sender: 'user',
       text: query,
-      timestamp: new Date().toLocaleTimeString()
+      timestamp: new Date().toLocaleTimeString(),
     };
     setMessages(prev => [...prev, userMsg]);
     setInput('');
@@ -62,38 +99,53 @@ export const AskDataAIView: React.FC = () => {
         projectName: project.name,
         rowCount: cleanRows.length,
         columnCount: columns.length,
+        packId: packContext?.packId || activePackId,
+        packName: packContext?.packName,
+        packKpis: packContext?.kpis || [],
         kpis: analytics.kpis,
         topCategories: Object.values(analytics.categoryPerformance)[0] || [],
         trends: analytics.trends,
         anomalies: analytics.anomalies,
-        recommendations: analytics.opportunities
+        recommendations: analytics.opportunities,
       };
 
       const res = await fetch('/api/ai/interpret', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: query, analyticalContext })
+        body: JSON.stringify({ prompt: query, analyticalContext }),
       });
 
       const data = await res.json();
-      const isAi = data.model === 'gemini-2.5-flash';
+      const isAi = data.model === 'gemini-2.5-flash' && !data.isRuleBased;
       const assistantMsg: ChatMessage = {
         id: `ai-${Date.now()}`,
         sender: 'assistant',
         text: data.text || 'Unable to interpret query.',
         timestamp: new Date().toLocaleTimeString(),
         grounded: isAi,
-        sourceMetrics: data.sourceMetrics || ['Verified Metric Engine']
+        isRuleBased: Boolean(data.isRuleBased || !isAi),
+        sourceMetrics: data.sourceMetrics || ['Verified Metric Engine'],
+        packName: packContext?.packName,
       };
 
       setMessages(prev => [...prev, assistantMsg]);
     } catch (err: any) {
+      const packKpiLine =
+        packContext && packContext.kpis.length > 0
+          ? `\n- **${packContext.packName} KPIs**: ${packContext.kpis
+              .filter(k => k.status === 'available')
+              .slice(0, 4)
+              .map(k => `${k.name}: ${k.formattedValue}`)
+              .join(', ')}`
+          : '';
       const fallbackMsg: ChatMessage = {
         id: `ai-${Date.now()}`,
         sender: 'assistant',
-        text: `### Offline Deterministic Analysis\n\n*Server note: Cloud AI endpoint unavailable (${err?.message || 'Offline mode'}). Displaying computed dataset metrics:*\n\n- **Audited Dataset**: ${cleanRows.length.toLocaleString()} active transaction records\n- **Verified Core KPIs**: ${analytics.kpis.slice(0, 3).map(k => `${k.name}: ${k.formattedValue}`).join(', ')}\n- **Risk Status**: ${analytics.anomalies.length > 0 ? analytics.anomalies[0].title : 'Normal operational variation'}\n\n*Source: Analytical values calculated directly from in-memory engine without generative extrapolation.*`,
+        text: `### Offline Deterministic Analysis (Rule-Based Engine)\n\n*Server note: Cloud AI endpoint unavailable (${err?.message || 'Offline mode'}). Displaying computed dataset metrics:*\n\n- **Audited Dataset**: ${cleanRows.length.toLocaleString()} active transaction records\n- **Verified Core KPIs**: ${analytics.kpis.slice(0, 3).map(k => `${k.name}: ${k.formattedValue}`).join(', ')}${packKpiLine}\n- **Risk Status**: ${analytics.anomalies.length > 0 ? analytics.anomalies[0].title : 'Normal operational variation'}\n\n*Source: Deterministic rule-based summary calculated directly from in-memory engine without generative extrapolation.*`,
         timestamp: new Date().toLocaleTimeString(),
-        grounded: false
+        grounded: false,
+        isRuleBased: true,
+        packName: packContext?.packName,
       };
       setMessages(prev => [...prev, fallbackMsg]);
     } finally {
@@ -117,8 +169,19 @@ export const AskDataAIView: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-accent-soft text-accent border border-subtle text-xs font-mono">
-          <ShieldCheck className="w-3.5 h-3.5" /> Anti-Hallucination Active
+        <div className="flex flex-wrap items-center gap-2">
+          {flags.analyticsPacks && packContext && (
+            <div
+              data-testid="ai-pack-context-badge"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-elevated text-primary border border-subtle text-xs font-mono"
+            >
+              <Layers className="w-3.5 h-3.5 text-accent" />
+              <span>Pack: {packContext.packName}</span>
+            </div>
+          )}
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-accent-soft text-accent border border-subtle text-xs font-mono">
+            <ShieldCheck className="w-3.5 h-3.5" /> Anti-Hallucination Active
+          </div>
         </div>
       </div>
 
@@ -129,8 +192,9 @@ export const AskDataAIView: React.FC = () => {
           {starterQuestions.map((q, idx) => (
             <button
               key={idx}
+              type="button"
               onClick={() => handleSend(q)}
-              className="text-xs text-secondary bg-card hover:bg-elevated border border-subtle hover:border-teal-500/40 px-3 py-1.5 rounded-xl transition-colors text-left"
+              className="min-h-[40px] text-xs text-secondary bg-card hover:bg-elevated border border-subtle px-3 py-1.5 rounded-xl transition-colors text-left cursor-pointer"
             >
               {q}
             </button>
@@ -155,17 +219,24 @@ export const AskDataAIView: React.FC = () => {
 
             <div
               className={`p-4 rounded-2xl max-w-xl space-y-2 ${
-                msg.sender === 'user' 
-                  ? 'bg-accent text-on-accent font-medium' 
+                msg.sender === 'user'
+                  ? 'bg-accent text-on-accent font-medium'
                   : 'bg-card text-primary border border-subtle'
               }`}
             >
               <div className="whitespace-pre-wrap">{msg.text}</div>
 
-              {msg.grounded && msg.sender === 'assistant' && (
-                <div className="pt-2 border-t border-subtle flex items-center gap-1.5 text-[10px] text-secondary font-mono">
-                  <CheckCircle2 className="w-3 h-3 text-accent" />
-                  <span>Verified from data engine (Source: {project.name})</span>
+              {msg.sender === 'assistant' && (
+                <div className="pt-2 border-t border-subtle flex flex-wrap items-center justify-between gap-2 text-[10px] text-secondary font-mono">
+                  <span className="flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3 h-3 text-accent" />
+                    <span>
+                      {msg.grounded
+                        ? `AI-Generated · Grounded in ${project.name}`
+                        : `Rule-Based Deterministic Engine · ${project.name}`}
+                    </span>
+                  </span>
+                  {msg.packName && <span className="text-accent">[{msg.packName}]</span>}
                 </div>
               )}
             </div>
@@ -181,7 +252,7 @@ export const AskDataAIView: React.FC = () => {
         {loading && (
           <div className="flex items-center gap-2 text-xs font-mono text-accent p-3">
             <Loader2 className="w-4 h-4 animate-spin" />
-            <span>Querying verified semantic model & formulating management explanation...</span>
+            <span>Querying verified semantic model &amp; formulating management explanation...</span>
           </div>
         )}
       </div>
@@ -190,16 +261,17 @@ export const AskDataAIView: React.FC = () => {
       <div className="flex gap-2">
         <input
           type="text"
-          placeholder="Ask anything about trends, drivers, metrics, or recommendations..."
+          placeholder="Ask anything about trends, pack KPIs, SQL queries, or recommendations..."
           value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-          className="flex-1 bg-card text-xs text-primary px-4 py-3 rounded-2xl border border-subtle focus:border-teal-500/40 focus:outline-none"
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handleSend()}
+          className="flex-1 bg-card text-xs text-primary px-4 py-3 rounded-2xl border border-subtle focus:outline-none"
         />
         <button
+          type="button"
           onClick={() => handleSend()}
           disabled={loading || !input.trim()}
-          className="px-6 py-3 rounded-2xl bg-accent text-on-accent font-semibold text-xs hover:opacity-90 transition-all disabled:opacity-40 flex items-center gap-1.5"
+          className="min-h-[44px] px-6 py-3 rounded-2xl bg-accent text-on-accent font-semibold text-xs hover:opacity-90 transition-all disabled:opacity-40 flex items-center gap-1.5 cursor-pointer"
         >
           <Send className="w-4 h-4" />
           <span>Ask</span>

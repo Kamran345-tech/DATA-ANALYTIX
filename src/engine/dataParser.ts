@@ -1,4 +1,3 @@
-import Papa from 'papaparse';
 import { DataType } from '../types';
 
 export interface ParseResult {
@@ -20,6 +19,7 @@ export async function parseFile(file: File): Promise<ParseResult> {
   const extension = file.name.split('.').pop()?.toLowerCase();
 
   if (extension === 'csv' || extension === 'txt') {
+    const { default: Papa } = await import('papaparse');
     return new Promise((resolve, reject) => {
       Papa.parse(file, {
         header: true,

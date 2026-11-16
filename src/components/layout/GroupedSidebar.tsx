@@ -82,6 +82,7 @@ const WORKFLOW_GROUPS: WorkflowGroup[] = [
     badge: 'Insights',
     items: [
       { id: 'executive_dashboard', label: 'Executive Dashboard', icon: LayoutDashboard, description: 'Board-level KPI telemetry & slicers' },
+      { id: 'analytics_packs', label: 'Analytics Packs', icon: Layers, description: '14 domain-specific dashboards, KPIs & reports' },
       { id: 'dashboard_builder', label: 'Custom Dashboard Builder', icon: SlidersHorizontal, description: 'Compose customized visual layouts' },
       { id: 'analysis', label: 'Deep Statistical Analysis', icon: TrendingUp, description: 'Correlations, anomalies, and distributions' },
       { id: 'ai_insights', label: 'Ask Data AI', icon: Sparkles, description: 'Natural language questions grounded in metrics' },
@@ -106,10 +107,16 @@ const WORKFLOW_GROUPS: WorkflowGroup[] = [
 
 export const GroupedSidebar: React.FC = () => {
   const { currentTab, setCurrentTab, isSidebarOpen, setIsSidebarOpen, isPresentationMode } = usePlatform();
-  const flags = loadFeatureFlags();
+  const [flags, setFlags] = useState(() => loadFeatureFlags());
   const brandName = getBrandText('primary', flags);
   const asideRef = React.useRef<HTMLElement | null>(null);
   const previousFocusRef = React.useRef<HTMLElement | null>(null);
+
+  React.useEffect(() => {
+    const handleFlags = (e: any) => setFlags(e.detail || loadFeatureFlags());
+    window.addEventListener('dataanalytix:features-updated', handleFlags);
+    return () => window.removeEventListener('dataanalytix:features-updated', handleFlags);
+  }, []);
 
   // Keep track of which groups are expanded (default: all open)
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>(() => ({}));
@@ -287,7 +294,9 @@ export const GroupedSidebar: React.FC = () => {
                 {/* Group Items */}
                 {!isCollapsed && (
                   <div className="p-1 space-y-0.5 border-t border-subtle">
-                    {group.items.map((item) => {
+                    {group.items
+                      .filter(item => item.id !== 'analytics_packs' || flags.analyticsPacks)
+                      .map((item) => {
                       const isActive = currentTab === item.id;
                       const Icon = item.icon;
 

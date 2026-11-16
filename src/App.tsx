@@ -3,7 +3,6 @@ import { PlatformProvider, usePlatform } from './store/usePlatformStore';
 import { AuthProvider, useFirebaseAuth } from './store/useFirebaseAuth';
 import { Navbar } from './components/layout/Navbar';
 import { Sidebar } from './components/layout/Sidebar';
-import { GroupedSidebar } from './components/layout/GroupedSidebar';
 import { ToastContainer } from './components/common/ToastContainer';
 import { ToastProvider } from './store/useToast';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
@@ -13,12 +12,14 @@ import { updateHashForTab, getTabFromCurrentHash } from './utils/routing';
 import { applyDocumentTheme } from './utils/theme';
 import { useThemeTransition } from './hooks/useThemeTransition';
 import './styles/modern.css';
-import { ModernNavbar } from './components/modern/ModernNavbar';
-import { ModernSidebar } from './components/modern/ModernSidebar';
-import { ModernOnboardingChecklist } from './components/modern/ModernOnboardingChecklist';
-import { ModernMobileBottomNav } from './components/modern/ModernMobileBottomNav';
 
 // Code-split views and heavy overlays using React.lazy for fast initial load
+const GroupedSidebar = lazy(() => import('./components/layout/GroupedSidebar').then(m => ({ default: m.GroupedSidebar })));
+const ModernNavbar = lazy(() => import('./components/modern/ModernNavbar').then(m => ({ default: m.ModernNavbar })));
+const ModernSidebar = lazy(() => import('./components/modern/ModernSidebar').then(m => ({ default: m.ModernSidebar })));
+const ModernOnboardingChecklist = lazy(() => import('./components/modern/ModernOnboardingChecklist').then(m => ({ default: m.ModernOnboardingChecklist })));
+const ModernMobileBottomNav = lazy(() => import('./components/modern/ModernMobileBottomNav').then(m => ({ default: m.ModernMobileBottomNav })));
+const AnalyticsPacksView = lazy(() => import('./components/views/AnalyticsPacksView').then(m => ({ default: m.AnalyticsPacksView })));
 const LoginPage = lazy(() => import('./components/views/LoginPage').then(m => ({ default: m.LoginPage })));
 const PublicLandingView = lazy(() => import('./components/views/PublicLandingView').then(m => ({ default: m.PublicLandingView })));
 const DrillThroughModal = lazy(() => import('./components/common/DrillThroughModal').then(m => ({ default: m.DrillThroughModal })));
@@ -157,6 +158,8 @@ const MainContent: React.FC = () => {
         return <LandingPage />;
       case 'executive_dashboard':
         return <ExecutiveDashboard />;
+      case 'analytics_packs':
+        return flags.analyticsPacks ? <AnalyticsPacksView /> : <ExecutiveDashboard />;
       case 'how_to_use':
         return <HowToUseView />;
       case 'upload':
@@ -227,10 +230,12 @@ const MainContent: React.FC = () => {
     >
       {!isPresentationMode && (
         isModern ? (
-          <ModernNavbar 
-            onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
-            onOpenWelcome={() => setIsWelcomeModalOpen(true)}
-          />
+          <Suspense fallback={null}>
+            <ModernNavbar 
+              onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+              onOpenWelcome={() => setIsWelcomeModalOpen(true)}
+            />
+          </Suspense>
         ) : (
           <Navbar />
         )
@@ -238,9 +243,13 @@ const MainContent: React.FC = () => {
 
       <div className="flex flex-1 overflow-hidden min-h-0 relative">
         {isModern ? (
-          <ModernSidebar onOpenCommandPalette={() => setIsCommandPaletteOpen(true)} />
+          <Suspense fallback={null}>
+            <ModernSidebar onOpenCommandPalette={() => setIsCommandPaletteOpen(true)} />
+          </Suspense>
         ) : flags.groupedSidebar ? (
-          <GroupedSidebar />
+          <Suspense fallback={null}>
+            <GroupedSidebar />
+          </Suspense>
         ) : (
           <Sidebar />
         )}
@@ -294,8 +303,10 @@ const MainContent: React.FC = () => {
       {/* Modern UI Auxiliary Features */}
       {isModern && !isPresentationMode && (
         <>
-          <ModernMobileBottomNav />
-          <ModernOnboardingChecklist />
+          <Suspense fallback={null}>
+            <ModernMobileBottomNav />
+            <ModernOnboardingChecklist />
+          </Suspense>
           {isCommandPaletteOpen && (
             <Suspense fallback={null}>
               <ModernCommandPalette 

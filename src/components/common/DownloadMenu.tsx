@@ -24,6 +24,7 @@ import type { ExportDataPayload } from '../../engine/exportEngine';
 
 export type DownloadMenuContext =
   | 'executive_dashboard'
+  | 'analytics_pack'
   | 'dashboard_builder'
   | 'chart'
   | 'preview'
@@ -59,6 +60,7 @@ export interface DownloadMenuProps {
   customSql?: string;
   customPython?: string;
   chartPayload?: ChartDownloadPayload;
+  packId?: string;
   className?: string;
 }
 
@@ -112,6 +114,48 @@ const CONTEXT_FORMATS: Record<DownloadMenuContext, DownloadFormatItem[]> = {
       description: 'Full sovereign analytics package with manifest & scripts',
       requiresData: true,
       icon: Archive,
+    },
+  ],
+  analytics_pack: [
+    {
+      id: 'pack_report_pdf',
+      label: 'Pack Executive Report (PDF)',
+      ext: 'pdf',
+      description: 'Domain-specific A4 report with pack KPIs, lenses, and role templates',
+      requiresData: false,
+      icon: FileText,
+    },
+    {
+      id: 'pack_bundle_zip',
+      label: 'Pack Dashboard & Report Bundle (ZIP)',
+      ext: 'zip',
+      description: 'Complete pack dashboard specification, report, data & template archive',
+      requiresData: false,
+      icon: Archive,
+    },
+    {
+      id: 'pack_excel',
+      label: 'Pack Analytics Workbook (XLSX)',
+      ext: 'xlsx',
+      description: 'Multi-sheet Excel workbook with pack KPIs, rows, or role template',
+      requiresData: false,
+      icon: FileSpreadsheet,
+    },
+    {
+      id: 'pack_csv',
+      label: 'Pack Dataset / Schema (CSV)',
+      ext: 'csv',
+      description: 'Active dataset rows or role-header template CSV if empty',
+      requiresData: false,
+      icon: TableIcon,
+    },
+    {
+      id: 'pack_template_csv',
+      label: 'Pack Data Template (CSV)',
+      ext: 'csv',
+      description: 'Expected role headers + 3 sample rows for this analytics pack',
+      requiresData: false,
+      icon: BookOpen,
     },
   ],
   dashboard_builder: [
@@ -531,6 +575,7 @@ export const DownloadMenu: React.FC<DownloadMenuProps> = ({
   customSql,
   customPython,
   chartPayload,
+  packId,
   className = '',
 }) => {
   const {
@@ -548,6 +593,7 @@ export const DownloadMenu: React.FC<DownloadMenuProps> = ({
     customVisuals,
     themeMode,
     loadDemoDataset,
+    activePackId,
   } = usePlatform();
   const kpis = analytics?.kpis || [];
   const insights = analytics?.insights || [];
@@ -831,6 +877,140 @@ export const DownloadMenu: React.FC<DownloadMenuProps> = ({
         case 'project_zip': {
           downloadedFilename = buildSopFileName('project-bundle', datasetSlug, 'zip');
           const zipBlob = await exportEngine.createCompleteProjectZip(payload);
+          triggerBlobDownload(zipBlob, downloadedFilename);
+          break;
+        }
+        case 'pack_template_csv': {
+          const { getPackById, buildPackTemplateCsv } = await import('../../analytics');
+          const resolvedPack = getPackById(packId || activePackId);
+          const csv = buildPackTemplateCsv(resolvedPack);
+          downloadedFilename = buildSopFileName(`${resolvedPack.id}-template`, resolvedPack.name, 'csv');
+          triggerBlobDownload(new Blob([csv], { type: 'text/csv;charset=utf-8;' }), downloadedFilename);
+          break;
+        }
+        case 'pack_csv': {
+          const { getPackById, buildPackTemplateCsv } = await import('../../analytics');
+          const resolvedPack = getPackById(packId || activePackId);
+          const csv = hasData
+            ? await buildChunkedCsvAsync(activeRows, setProgressPct)
+            : buildPackTemplateCsv(resolvedPack);
+          downloadedFilename = buildSopFileName(`${resolvedPack.id}-data`, datasetSlug, 'csv');
+          triggerBlobDownload(new Blob([csv], { type: 'text/csv;charset=utf-8;' }), downloadedFilename);
+          break;
+        }
+        case 'pack_report_pdf': {
+          const { getPackById, mapRoles, getPersistedPackRoleMap, buildDashboard } = await import('../../analytics');
+          const resolvedPack = getPackById(packId || activePackId);
+          const persisted = getPersistedPackRoleMap(datasetSlug, resolvedPack.id);
+          const roleMap = mapRoles({ columns, rows: activeRows, datasetId: datasetSlug }, resolvedPack, persisted);
+          const builtDash = buildDashboard(resolvedPack, activeRows, roleMap);
+          const packKpis = builtDash.computedKpis.map((k) => ({
+            id: k.id,
+            name: k.label,
+            value: k.value ?? 0,
+            formattedValue: k.status === 'available' ? k.formattedValue : `Unavailable (${k.hint || 'missing role'})`,
+            change: k.changePercent ?? 0,
+            changePercent: k.changePercent ?? 0,
+            period: 'Pack Metric',
+            status: k.status === 'available' ? ('On Track' as const) : ('At Risk' as const),
+            sourceColumn: roleMap[k.needs[0]] || k.needs[0] || 'metric',
+            calculation: k.description,
+            definition: k.description,
+            traceableSource: `${resolvedPack.name} [${k.id}]`,
+            aggregation: 'sum' as const,
+          }));
+          const packPayload: ExportDataPayload = {
+            ...payload,
+            project: {
+              ...project,
+              name: hasData ? `${resolvedPack.name} — ${project.name}` : `${resolvedPack.name} (Schema Template)`,
+            },
+            kpis: packKpis.length > 0 ? packKpis : kpis,
+          };
+          const doc = exportEngine.generateEnterpriseReportPDF(packPayload, {
+            customVisuals: builtDash.charts.length > 0 ? builtDash.charts : customVisuals,
+          });
+          downloadedFilename = buildSopFileName(`${resolvedPack.id}-report`, datasetSlug, 'pdf');
+          doc.save(downloadedFilename);
+          break;
+        }
+        case 'pack_excel': {
+          const { getPackById, mapRoles, getPersistedPackRoleMap, buildDashboard } = await import('../../analytics');
+          const resolvedPack = getPackById(packId || activePackId);
+          const persisted = getPersistedPackRoleMap(datasetSlug, resolvedPack.id);
+          const roleMap = mapRoles({ columns, rows: activeRows, datasetId: datasetSlug }, resolvedPack, persisted);
+          const builtDash = buildDashboard(resolvedPack, activeRows, roleMap);
+          const roleCols = Object.entries(resolvedPack.roles).map(([roleKey, roleDef]) => ({
+            name: roleDef.aliases[0] || roleKey,
+            originalName: roleDef.aliases[0] || roleKey,
+            dataType: (roleDef.type === 'number' ? 'number' : roleDef.type === 'date' ? 'date' : 'string') as 'number' | 'date' | 'string',
+            totalCount: 0,
+            nullCount: 0,
+            nullPercentage: 0,
+            distinctCount: 0,
+            uniquePercentage: 0,
+            isPrimaryKeyCandidate: false,
+            isForeignKeyCandidate: false,
+            topValues: [],
+            inconsistentFormatsCount: 0,
+            outliersCount: 0,
+          }));
+          const packPayload: ExportDataPayload = {
+            ...payload,
+            columns: hasData ? columns : roleCols,
+            kpis: builtDash.computedKpis.map((k) => ({
+              id: k.id,
+              name: k.label,
+              value: k.value ?? 0,
+              formattedValue: k.status === 'available' ? k.formattedValue : 'Unavailable',
+              change: k.changePercent ?? 0,
+              changePercent: k.changePercent ?? 0,
+              period: 'Current Period',
+              status: 'On Track' as const,
+              sourceColumn: roleMap[k.needs[0]] || k.needs[0] || 'metric',
+              calculation: k.description,
+              definition: k.description,
+              traceableSource: resolvedPack.name,
+              aggregation: 'sum' as const,
+            })),
+          };
+          downloadedFilename = buildSopFileName(`${resolvedPack.id}-workbook`, datasetSlug, 'xlsx');
+          const blob = hasData
+            ? await exportEngine.buildSopExcelWorkbookAsync(packPayload, false)
+            : await exportEngine.generateBlankExcelTemplateAsync(roleCols, false);
+          triggerBlobDownload(blob, downloadedFilename);
+          break;
+        }
+        case 'pack_bundle_zip': {
+          const { getPackById, mapRoles, getPersistedPackRoleMap, buildDashboard } = await import('../../analytics');
+          const resolvedPack = getPackById(packId || activePackId);
+          const persisted = getPersistedPackRoleMap(datasetSlug, resolvedPack.id);
+          const roleMap = mapRoles({ columns, rows: activeRows, datasetId: datasetSlug }, resolvedPack, persisted);
+          const builtDash = buildDashboard(resolvedPack, activeRows, roleMap);
+          const packPayload: ExportDataPayload = {
+            ...payload,
+            project: {
+              ...project,
+              name: hasData ? `${resolvedPack.name} — ${project.name}` : `${resolvedPack.name} Template`,
+            },
+            kpis: builtDash.computedKpis.map((k) => ({
+              id: k.id,
+              name: k.label,
+              value: k.value ?? 0,
+              formattedValue: k.status === 'available' ? k.formattedValue : 'Unavailable',
+              change: k.changePercent ?? 0,
+              changePercent: k.changePercent ?? 0,
+              period: 'Current Period',
+              status: 'On Track' as const,
+              sourceColumn: roleMap[k.needs[0]] || k.needs[0] || 'metric',
+              calculation: k.description,
+              definition: k.description,
+              traceableSource: resolvedPack.name,
+              aggregation: 'sum' as const,
+            })),
+          };
+          downloadedFilename = buildSopFileName(`${resolvedPack.id}-bundle`, datasetSlug, 'zip');
+          const zipBlob = await exportEngine.createCompleteProjectZip(packPayload);
           triggerBlobDownload(zipBlob, downloadedFilename);
           break;
         }
