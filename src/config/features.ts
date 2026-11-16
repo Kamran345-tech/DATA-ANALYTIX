@@ -38,7 +38,7 @@ export interface FeatureFlags {
   unifiedTheme: boolean;
 }
 
-export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
+export const CLASSIC_FEATURE_FLAGS: FeatureFlags = {
   unifiedBranding: false,
   modernTheme: false,
   groupedSidebar: false,
@@ -58,6 +58,28 @@ export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
   heroScene3D: false,
   chartGuide: false,
   unifiedTheme: false,
+};
+
+export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
+  unifiedBranding: false,
+  modernTheme: false,
+  groupedSidebar: false,
+  enhancedEngine: false,
+  columnMapping: false,
+  demoBadges: false,
+  verifiedAI: false,
+  publicLanding: false,
+  hashRouting: false,
+  pricing: false,
+  workspaces: false,
+  workerParsing: false,
+  xlsxSafe: false,
+  showAllErrors: false,
+  selfHostedFonts: false,
+  depthUI: true,
+  heroScene3D: true,
+  chartGuide: true,
+  unifiedTheme: true,
 };
 
 export const FEATURE_METADATA: FeatureFlagMeta[] = [
@@ -281,6 +303,12 @@ export function saveFeatureFlags(flags: FeatureFlags): void {
 }
 
 export function resetFeatureFlags(): FeatureFlags {
+  const flags = { ...CLASSIC_FEATURE_FLAGS };
+  saveFeatureFlags(flags);
+  return flags;
+}
+
+export function enableDefaultFeatureFlags(): FeatureFlags {
   const flags = { ...DEFAULT_FEATURE_FLAGS };
   saveFeatureFlags(flags);
   return flags;

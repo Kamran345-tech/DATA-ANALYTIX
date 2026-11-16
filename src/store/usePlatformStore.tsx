@@ -273,6 +273,20 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [isPresentationMode, setIsPresentationMode] = useState(false);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    let lastIsDesktop = window.innerWidth >= 1024;
+    const handleResize = () => {
+      const isDesktop = window.innerWidth >= 1024;
+      if (isDesktop !== lastIsDesktop) {
+        lastIsDesktop = isDesktop;
+        setIsSidebarOpen(isDesktop);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
     const handleSetTab = (e: any) => {
       if (e.detail) setCurrentTab(e.detail);
     };

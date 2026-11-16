@@ -78,6 +78,7 @@ export const Hero3DScene: React.FC = () => {
   return (
     <div
       ref={containerRef}
+      data-testid="hero-3d-scene"
       className="hero-3d-viewport"
       aria-hidden="true"
       style={{ perspective: '1400px' }}

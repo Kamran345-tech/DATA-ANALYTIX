@@ -263,15 +263,92 @@ export const Sidebar: React.FC = () => {
   const { currentTab, setCurrentTab, isSidebarOpen, setIsSidebarOpen, isPresentationMode, themeMode } = usePlatform();
   const { currentUser, isGuestMode, setIsAuthModalOpen } = useFirebaseAuth();
   const isLight = themeMode === 'light';
+  const asideRef = React.useRef<HTMLElement | null>(null);
+  const previousFocusRef = React.useRef<HTMLElement | null>(null);
+
+  const restoreMobileMenuFocus = React.useCallback(() => {
+    if (typeof window === 'undefined' || window.innerWidth >= 1024) return;
+    requestAnimationFrame(() => {
+      const toggleBtn = document.querySelector<HTMLElement>('[data-testid="mobile-menu-toggle"]');
+      if (toggleBtn) {
+        toggleBtn.focus();
+      } else if (previousFocusRef.current) {
+        previousFocusRef.current.focus();
+      }
+    });
+  }, []);
+
+  React.useEffect(() => {
+    if (typeof window === 'undefined' || window.innerWidth >= 1024) return;
+    if (!isSidebarOpen || isPresentationMode) return;
+
+    previousFocusRef.current = document.activeElement as HTMLElement | null;
+
+    const focusFirst = () => {
+      if (!asideRef.current) return;
+      const focusables = asideRef.current.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusables.length > 0) {
+        focusables[0].focus();
+      } else {
+        asideRef.current.focus();
+      }
+    };
+    const rafId = requestAnimationFrame(focusFirst);
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (window.innerWidth >= 1024) return;
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setIsSidebarOpen(false);
+        restoreMobileMenuFocus();
+        return;
+      }
+      if (e.key === 'Tab' && asideRef.current) {
+        const focusables = Array.from(
+          asideRef.current.querySelectorAll<HTMLElement>(
+            'button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])'
+          )
+        ).filter(el => el.offsetParent !== null);
+        if (focusables.length === 0) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        if (e.shiftKey) {
+          if (document.activeElement === first || !asideRef.current.contains(document.activeElement)) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last || !asideRef.current.contains(document.activeElement)) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      cancelAnimationFrame(rafId);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isSidebarOpen, isPresentationMode, setIsSidebarOpen, restoreMobileMenuFocus]);
 
   if (isPresentationMode || !isSidebarOpen) {
     return null;
   }
 
+  const handleCloseDrawer = () => {
+    setIsSidebarOpen(false);
+    restoreMobileMenuFocus();
+  };
+
   const handleSelectTab = (id: NavigationTab) => {
     setCurrentTab(id);
     if (typeof window !== 'undefined' && window.innerWidth < 1024) {
       setIsSidebarOpen(false);
+      restoreMobileMenuFocus();
     }
   };
 
@@ -279,16 +356,23 @@ export const Sidebar: React.FC = () => {
     <>
       {/* Mobile Backdrop Overlay */}
       <div 
-        onClick={() => setIsSidebarOpen(false)}
+        data-testid="sidebar-backdrop"
+        onClick={handleCloseDrawer}
         className="fixed inset-0 bg-black/70 backdrop-blur-xs z-40 lg:hidden transition-opacity"
         aria-hidden="true"
       />
 
-      <aside className={`fixed inset-y-0 lg:static top-0 lg:top-auto left-0 z-50 lg:z-30 w-72 lg:w-64 flex flex-col h-full max-h-full overflow-y-auto select-none shrink-0 transition-all ${
-        isLight
-          ? 'bg-white/85 backdrop-blur-2xl border-r border-slate-200/80 shadow-lg'
-          : 'bg-app backdrop-blur-2xl border-r border-white/[0.08] shadow-lg'
-      }`}>
+      <aside
+        id="app-sidebar-drawer"
+        ref={asideRef}
+        tabIndex={-1}
+        aria-label="Sidebar Navigation"
+        className={`fixed inset-y-0 lg:static top-0 lg:top-auto left-0 z-50 lg:z-30 w-72 max-w-[85vw] lg:w-64 flex flex-col h-full max-h-full overflow-y-auto select-none shrink-0 transition-colors ${
+          isLight
+            ? 'bg-white/95 backdrop-blur-2xl border-r border-slate-200/80 shadow-lg'
+            : 'bg-app backdrop-blur-2xl border-r border-white/[0.08] shadow-lg'
+        }`}
+      >
         {/* Mobile Header with Close button */}
         <div className={`flex lg:hidden items-center justify-between p-4 border-b ${
           isLight ? 'border-slate-200 bg-elevated' : 'border-white/10 bg-app backdrop-blur-md'
@@ -296,11 +380,13 @@ export const Sidebar: React.FC = () => {
           <span className={`font-heading text-lg font-bold tracking-wider ${
             isLight ? 'text-primary' : 'text-primary'
           }`}>
-            DATA<span className="text-cyan-400">ANALYTIX</span>
+            DATA<span className="text-accent">ANALYTIX</span>
           </span>
           <button 
-            onClick={() => setIsSidebarOpen(false)}
-            className={`p-1.5 rounded-lg ${
+            type="button"
+            onClick={handleCloseDrawer}
+            aria-label="Close Navigation Drawer"
+            className={`min-w-[44px] min-h-[44px] p-2 rounded-lg flex items-center justify-center ${
               isLight ? 'text-muted hover:text-primary hover:bg-input' : 'text-secondary hover:text-primary hover:bg-white/10'
             }`}
           >
@@ -341,10 +427,11 @@ export const Sidebar: React.FC = () => {
                       }
                     >
                       <button
+                        type="button"
                         onClick={() => handleSelectTab(item.id)}
                         title={item.label}
                         aria-label={item.label}
-                        className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-colors group cursor-pointer ${
+                        className={`w-full min-h-[44px] lg:min-h-0 flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-colors group cursor-pointer ${
                           isActive 
                             ? isLight
                               ? 'bg-cyan-50/90 text-cyan-950 border border-cyan-400/50 font-bold shadow-xs'

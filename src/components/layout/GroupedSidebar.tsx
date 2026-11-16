@@ -94,130 +94,243 @@ const WORKFLOW_GROUPS: WorkflowGroup[] = [
     stageNumber: '05',
     badge: 'Artifacts',
     items: [
+      { id: 'landing', label: 'Home / Overview', icon: LayoutDashboard, description: 'Command center and quick jump pathways' },
       { id: 'export_center', label: 'Export Center (PBIP/Excel)', icon: FolderDown, description: 'Download production ZIP packages' },
       { id: 'how_to_use', label: 'Module Playbook & Guide', icon: BookOpen, description: 'Comprehensive architectural docs' },
+      { id: 'how_to_modify', label: 'How to Modify Project', icon: FileCode2, description: 'Technical extension & deployment guide' },
+      { id: 'blog', label: 'Knowledge Base / Blog', icon: BookOpen, description: 'Technical whitepapers and articles' },
       { id: 'settings', label: 'System Settings & Flags', icon: Settings, description: 'Theme, flags, experiments, and quotas' },
     ]
   }
 ];
 
 export const GroupedSidebar: React.FC = () => {
-  const { currentTab, setCurrentTab } = usePlatform();
+  const { currentTab, setCurrentTab, isSidebarOpen, setIsSidebarOpen, isPresentationMode } = usePlatform();
   const flags = loadFeatureFlags();
   const brandName = getBrandText('primary', flags);
+  const asideRef = React.useRef<HTMLElement | null>(null);
+  const previousFocusRef = React.useRef<HTMLElement | null>(null);
 
-  // Keep track of which groups are expanded (default: group containing currentTab, or all open)
-  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>(() => {
-    // By default, expand all stages so navigation is effortless
-    return {};
-  });
+  // Keep track of which groups are expanded (default: all open)
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>(() => ({}));
+
+  const restoreMobileMenuFocus = React.useCallback(() => {
+    if (typeof window === 'undefined' || window.innerWidth >= 1024) return;
+    requestAnimationFrame(() => {
+      const toggleBtn = document.querySelector<HTMLElement>('[data-testid="mobile-menu-toggle"]');
+      if (toggleBtn) {
+        toggleBtn.focus();
+      } else if (previousFocusRef.current) {
+        previousFocusRef.current.focus();
+      }
+    });
+  }, []);
+
+  React.useEffect(() => {
+    if (typeof window === 'undefined' || window.innerWidth >= 1024) return;
+    if (!isSidebarOpen || isPresentationMode) return;
+
+    previousFocusRef.current = document.activeElement as HTMLElement | null;
+
+    const focusFirst = () => {
+      if (!asideRef.current) return;
+      const focusables = asideRef.current.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusables.length > 0) {
+        focusables[0].focus();
+      } else {
+        asideRef.current.focus();
+      }
+    };
+    const rafId = requestAnimationFrame(focusFirst);
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (window.innerWidth >= 1024) return;
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setIsSidebarOpen(false);
+        restoreMobileMenuFocus();
+        return;
+      }
+      if (e.key === 'Tab' && asideRef.current) {
+        const focusables = Array.from(
+          asideRef.current.querySelectorAll<HTMLElement>(
+            'button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])'
+          )
+        ).filter(el => el.offsetParent !== null);
+        if (focusables.length === 0) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        if (e.shiftKey) {
+          if (document.activeElement === first || !asideRef.current.contains(document.activeElement)) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last || !asideRef.current.contains(document.activeElement)) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      cancelAnimationFrame(rafId);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isSidebarOpen, isPresentationMode, setIsSidebarOpen, restoreMobileMenuFocus]);
+
+  if (isPresentationMode || !isSidebarOpen) {
+    return null;
+  }
+
+  const handleCloseDrawer = () => {
+    setIsSidebarOpen(false);
+    restoreMobileMenuFocus();
+  };
+
+  const handleSelectTab = (id: NavigationTab) => {
+    setCurrentTab(id);
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      setIsSidebarOpen(false);
+      restoreMobileMenuFocus();
+    }
+  };
 
   const toggleGroup = (groupId: string) => {
     setCollapsedGroups(prev => ({ ...prev, [groupId]: !prev[groupId] }));
   };
 
   return (
-    <aside 
-      aria-label="Workflow Navigation"
-      className="w-64 shrink-0 bg-sidebar border-r border-subtle flex flex-col h-full text-secondary select-none overflow-hidden"
-    >
-      {/* Brand Header */}
-      <div className="p-4 border-b border-subtle flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-primary font-bold text-sm shadow-md">
-            DA
+    <>
+      <div
+        data-testid="sidebar-backdrop"
+        onClick={handleCloseDrawer}
+        className="fixed inset-0 bg-black/70 backdrop-blur-xs z-40 lg:hidden transition-opacity"
+        aria-hidden="true"
+      />
+      <aside 
+        id="app-sidebar-drawer"
+        ref={asideRef}
+        tabIndex={-1}
+        aria-label="Workflow Navigation"
+        className="fixed inset-y-0 lg:static top-0 lg:top-auto left-0 z-50 lg:z-30 w-72 max-w-[85vw] lg:w-64 shrink-0 bg-sidebar border-r border-subtle flex flex-col h-full max-h-full text-secondary select-none overflow-hidden shadow-lg"
+      >
+        {/* Brand Header */}
+        <div className="p-4 border-b border-subtle flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center text-on-accent font-bold text-sm shadow-md shrink-0">
+              DA
+            </div>
+            <div className="min-w-0">
+              <div className="font-bold text-sm text-primary tracking-tight leading-none truncate">{brandName}</div>
+              <div className="text-[10px] text-accent font-mono mt-0.5">Workflow Studio</div>
+            </div>
           </div>
-          <div>
-            <div className="font-bold text-sm text-primary tracking-tight leading-none">{brandName}</div>
-            <div className="text-[10px] text-accent font-mono mt-0.5">Workflow Studio</div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className="text-[9px] font-semibold px-2 py-0.5 rounded bg-accent-soft border border-subtle text-accent">
+              5 STAGES
+            </span>
+            <button
+              type="button"
+              onClick={handleCloseDrawer}
+              aria-label="Close Navigation Drawer"
+              className="lg:hidden min-w-[44px] min-h-[44px] p-2 rounded-lg flex items-center justify-center text-muted hover:text-primary hover:bg-input"
+            >
+              ✕
+            </button>
           </div>
         </div>
-        <span className="text-[9px] font-semibold px-2 py-0.5 rounded bg-accent-soft border border-subtle text-accent">
-          5 STAGES
-        </span>
-      </div>
 
-      {/* Workflow Navigation Groups */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-4">
-        {WORKFLOW_GROUPS.map((group) => {
-          const isCollapsed = collapsedGroups[group.id];
-          const hasActiveChild = group.items.some(item => item.id === currentTab);
+        {/* Workflow Navigation Groups */}
+        <div className="flex-1 overflow-y-auto p-3 space-y-4">
+          {WORKFLOW_GROUPS.map((group) => {
+            const isCollapsed = collapsedGroups[group.id];
+            const hasActiveChild = group.items.some(item => item.id === currentTab);
 
-          return (
-            <div key={group.id} className="rounded-xl border border-subtle bg-card overflow-hidden">
-              {/* Group Accordion Header */}
-              <button
-                onClick={() => toggleGroup(group.id)}
-                aria-expanded={!isCollapsed}
-                className={`w-full px-3 py-2 flex items-center justify-between text-left transition-colors ${
-                  hasActiveChild ? 'bg-accent-soft text-accent' : 'hover:bg-card-hover text-muted hover:text-primary'
-                }`}
-              >
-                <div className="flex items-center gap-2 min-w-0 flex-1">
-                  <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-elevated text-muted shrink-0">
-                    {group.stageNumber}
-                  </span>
-                  <span className="text-xs font-bold tracking-tight text-primary min-w-0 truncate" title={group.title}>
-                    {group.title}
-                  </span>
-                </div>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  {group.badge && (
-                    <span className="shrink-0 ml-2 text-[9px] font-medium px-1.5 py-0.2 rounded bg-elevated text-muted">
-                      {group.badge}
+            return (
+              <div key={group.id} className="rounded-xl border border-subtle bg-card overflow-hidden">
+                {/* Group Accordion Header */}
+                <button
+                  type="button"
+                  onClick={() => toggleGroup(group.id)}
+                  aria-expanded={!isCollapsed}
+                  className={`w-full min-h-[44px] lg:min-h-0 px-3 py-2 flex items-center justify-between text-left transition-colors ${
+                    hasActiveChild ? 'bg-accent-soft text-accent' : 'hover:bg-card-hover text-muted hover:text-primary'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-elevated text-muted shrink-0">
+                      {group.stageNumber}
                     </span>
-                  )}
-                  {isCollapsed ? (
-                    <ChevronRight className="w-3.5 h-3.5 text-muted shrink-0" />
-                  ) : (
-                    <ChevronDown className="w-3.5 h-3.5 text-muted shrink-0" />
-                  )}
-                </div>
-              </button>
+                    <span className="text-xs font-bold tracking-tight text-primary min-w-0 truncate" title={group.title}>
+                      {group.title}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {group.badge && (
+                      <span className="shrink-0 ml-2 text-[9px] font-medium px-1.5 py-0.2 rounded bg-elevated text-muted">
+                        {group.badge}
+                      </span>
+                    )}
+                    {isCollapsed ? (
+                      <ChevronRight className="w-3.5 h-3.5 text-muted shrink-0" />
+                    ) : (
+                      <ChevronDown className="w-3.5 h-3.5 text-muted shrink-0" />
+                    )}
+                  </div>
+                </button>
 
-              {/* Group Items */}
-              {!isCollapsed && (
-                <div className="p-1 space-y-0.5 border-t border-subtle">
-                  {group.items.map((item) => {
-                    const isActive = currentTab === item.id;
-                    const Icon = item.icon;
+                {/* Group Items */}
+                {!isCollapsed && (
+                  <div className="p-1 space-y-0.5 border-t border-subtle">
+                    {group.items.map((item) => {
+                      const isActive = currentTab === item.id;
+                      const Icon = item.icon;
 
-                    return (
-                      <button
-                        key={item.id}
-                        onClick={() => setCurrentTab(item.id)}
-                        title={`${item.label} — ${item.description}`}
-                        aria-label={item.label}
-                        aria-current={isActive ? 'page' : undefined}
-                        className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-medium text-left min-w-0 ${
-                          isActive
-                            ? 'bg-accent text-on-accent font-semibold shadow-xs'
-                            : 'text-muted hover:text-primary hover:bg-card-hover'
-                        }`}
-                      >
-                        <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-on-accent' : 'text-muted'}`} />
-                        <span className="min-w-0 truncate" title={item.label}>{item.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+                      return (
+                        <button
+                          type="button"
+                          key={item.id}
+                          onClick={() => handleSelectTab(item.id)}
+                          title={`${item.label} — ${item.description}`}
+                          aria-label={item.label}
+                          aria-current={isActive ? 'page' : undefined}
+                          className={`w-full min-h-[44px] lg:min-h-0 flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-medium text-left min-w-0 ${
+                            isActive
+                              ? 'bg-accent text-on-accent font-semibold shadow-xs'
+                              : 'text-muted hover:text-primary hover:bg-card-hover'
+                          }`}
+                        >
+                          <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-on-accent' : 'text-muted'}`} />
+                          <span className="min-w-0 truncate" title={item.label}>{item.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
 
-      {/* Bottom User / Status Bar */}
-      <div className="p-3 border-t border-subtle bg-sidebar text-[11px] text-muted flex items-center justify-between">
-        <span>v2.4 Enterprise</span>
-        <button
-          onClick={() => setCurrentTab('settings')}
-          className="hover:text-primary transition-colors"
-          title="Open Settings"
-        >
-          <Settings className="w-4 h-4" />
-        </button>
-      </div>
-    </aside>
+        {/* Bottom User / Status Bar */}
+        <div className="p-3 border-t border-subtle bg-sidebar text-[11px] text-muted flex items-center justify-between">
+          <span>v2.4 Enterprise</span>
+          <button
+            type="button"
+            onClick={() => handleSelectTab('settings')}
+            className="min-w-[44px] min-h-[44px] lg:min-w-0 lg:min-h-0 flex items-center justify-center hover:text-primary transition-colors"
+            title="Open Settings"
+            aria-label="Open Settings"
+          >
+            <Settings className="w-4 h-4" />
+          </button>
+        </div>
+      </aside>
+    </>
   );
 };

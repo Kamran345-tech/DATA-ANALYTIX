@@ -1781,9 +1781,13 @@ html[data-unified-theme="true"] .bg-accent,
 html[data-unified-theme="true"] .glass-btn-primary,
 html[data-unified-theme="true"] button.bg-sky-600,
 html[data-unified-theme="true"] button.bg-sky-700,
+html[data-unified-theme="true"] button.bg-cyan-400,
 html[data-unified-theme="true"] button.bg-cyan-500,
 html[data-unified-theme="true"] button.bg-cyan-600,
+html[data-unified-theme="true"] button.bg-emerald-500,
 html[data-unified-theme="true"] button.bg-emerald-600,
+html[data-unified-theme="true"] button.bg-amber-400,
+html[data-unified-theme="true"] button.bg-amber-500,
 html[data-unified-theme="true"] button.bg-teal-500,
 html[data-unified-theme="true"] button.bg-teal-600 {
   background-color: var(--accent) !important;
@@ -1796,9 +1800,13 @@ html[data-unified-theme="true"] .text-on-accent,
 html[data-unified-theme="true"] .glass-btn-primary *,
 html[data-unified-theme="true"] button.bg-sky-600 *,
 html[data-unified-theme="true"] button.bg-sky-700 *,
+html[data-unified-theme="true"] button.bg-cyan-400 *,
 html[data-unified-theme="true"] button.bg-cyan-500 *,
 html[data-unified-theme="true"] button.bg-cyan-600 *,
+html[data-unified-theme="true"] button.bg-emerald-500 *,
 html[data-unified-theme="true"] button.bg-emerald-600 *,
+html[data-unified-theme="true"] button.bg-amber-400 *,
+html[data-unified-theme="true"] button.bg-amber-500 *,
 html[data-unified-theme="true"] button.bg-teal-500 *,
 html[data-unified-theme="true"] button.bg-teal-600 * {
   color: var(--text-on-accent) !important;
@@ -1865,3 +1873,40 @@ html[data-unified-theme="true"] svg text {
 html[data-unified-theme="true"] .recharts-cartesian-grid line {
   stroke: var(--chart-grid) !important;
 }
+
+/* ========================================================================== */
+/* MOBILE VIEWPORT HYGIENE (375x812 & 414x896): >=44px Touch Targets & Wrap   */
+/* ========================================================================== */
+@media (max-width: 639px) {
+  html,
+  body,
+  #root,
+  #main-content {
+    overflow-x: hidden !important;
+    max-width: 100vw !important;
+  }
+
+  #main-content div.flex:not(.flex-col):not(.overflow-x-auto) {
+    flex-wrap: wrap;
+  }
+
+  header button,
+  aside button,
+  #main-content button,
+  #main-content [role="button"],
+  #main-content select {
+    min-height: 44px;
+    min-width: 44px;
+    max-width: 100%;
+  }
+
+  #main-content input[type="text"],
+  #main-content input[type="search"],
+  #main-content input[type="email"],
+  #main-content input[type="password"],
+  #main-content input[type="number"] {
+    min-height: 48px;
+    max-width: 100%;
+  }
+}
+

@@ -114,13 +114,15 @@ export const SettingsView: React.FC = () => {
           <button
             type="button"
             onClick={() => {
+              const reset = resetFeatureFlags();
+              setFeatures(reset);
               setUiMode('classic');
-              success('Interface Reset', 'Appearance restored to Classic mode.');
+              success('Switched to Classic', 'All feature flags and appearance settings restored to Classic mode.');
             }}
             className="px-3 py-1 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors border cursor-pointer bg-input hover:bg-card-hover text-secondary border-subtle"
           >
             <RotateCcw className="w-3.5 h-3.5" />
-            Reset to Classic
+            Switch to Classic
           </button>
         </div>
 
@@ -586,11 +588,11 @@ export const SettingsView: React.FC = () => {
               EXPERIMENTS &amp; ALTERNATIVES
             </h3>
             <p className="text-xs mt-1 text-secondary">
-              Toggle additive alternatives next to Classic behavior. All flags default to OFF (Classic mode).
+              Toggle additive features next to Classic behavior. New visitors default to Unified Theme, Depth UI, 3D Hero Scene, and 8-Chart Guide enabled; use &ldquo;Switch to Classic&rdquo; to turn all flags off.
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={() => {
@@ -608,15 +610,17 @@ export const SettingsView: React.FC = () => {
             </button>
             <button
               type="button"
+              data-testid="settings-switch-to-classic"
               onClick={() => {
                 const reset = resetFeatureFlags();
                 setFeatures(reset);
-                success('Flags Reset', 'All features have been returned to Classic mode.');
+                setUiMode('classic');
+                success('Switched to Classic', 'All feature flags have been turned off and saved to Classic mode.');
               }}
               className="px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors border cursor-pointer bg-input hover:bg-card-hover text-secondary border-subtle"
             >
               <RotateCcw className="w-3.5 h-3.5" />
-              Reset to Classic
+              Switch to Classic
             </button>
           </div>
         </div>

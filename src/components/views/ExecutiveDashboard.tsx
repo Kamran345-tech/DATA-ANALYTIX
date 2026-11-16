@@ -758,22 +758,30 @@ export const ExecutiveDashboard: React.FC = () => {
                   </h1>
                 </div>
 
-                <p className="font-body-sm text-body-sm text-secondary flex items-center gap-2 flex-wrap min-w-0 max-w-full">
+                <div className="font-body-sm text-body-sm text-secondary flex items-center gap-2 flex-wrap min-w-0 max-w-full">
                   <span className="inline-flex items-baseline gap-1 min-w-0 max-w-full">
                     <span className="shrink-0">Scope:</span>
-                    <strong
-                      className="text-primary font-semibold line-clamp-2 [overflow-wrap:anywhere] min-w-0 max-w-full"
-                      title={project.name}
-                      aria-label={project.name}
+                    <Tooltip
+                      side="bottom"
+                      title="Dataset Scope"
+                      className="w-auto min-w-0 max-w-full"
+                      content={<span className="font-mono [overflow-wrap:anywhere]">{project.name}</span>}
                     >
-                      {project.name}
-                    </strong>
+                      <strong
+                        tabIndex={0}
+                        className="text-primary font-semibold line-clamp-2 [overflow-wrap:anywhere] min-w-0 max-w-full focus-visible:outline-2 focus-visible:outline-accent rounded px-0.5"
+                        title={project.name}
+                        aria-label={project.name}
+                      >
+                        {project.name}
+                      </strong>
+                    </Tooltip>
                   </span>
                   <span aria-hidden="true">·</span>
                   <span className="flex items-center gap-1">Prepared by: <EditableAnalystName /></span>
                   <span aria-hidden="true">·</span>
                   <span>Audited: <strong className="text-accent font-semibold tabular-nums">{filteredRows.length.toLocaleString()} rows</strong></span>
-                </p>
+                </div>
               </div>
             </div>
 

@@ -80,6 +80,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
   };
 
   const handleMouseEnter = () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
       updatePosition();
       setIsVisible(true);
@@ -94,6 +95,26 @@ export const Tooltip: React.FC<TooltipProps> = ({
     setIsVisible(false);
   };
 
+  const handleFocus = () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    updatePosition();
+    setIsVisible(true);
+  };
+
+  const handleBlur = () => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    setIsVisible(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape' && isVisible) {
+      setIsVisible(false);
+    }
+  };
+
   useEffect(() => {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
@@ -105,12 +126,16 @@ export const Tooltip: React.FC<TooltipProps> = ({
       ref={triggerRef}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
+      onFocusCapture={handleFocus}
+      onBlurCapture={handleBlur}
+      onKeyDown={handleKeyDown}
       className={`relative inline-block w-full ${className}`}
     >
       {children}
 
       {isVisible && (
         <div
+          role="tooltip"
           style={{
             position: 'fixed',
             top: coords.top,
@@ -166,7 +191,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
 
             {/* Body */}
             <div
-              className={`text-[11px] leading-relaxed ${
+              className={`text-[11px] leading-relaxed [overflow-wrap:anywhere] ${
                 isLight ? 'text-muted' : 'text-secondary'
               }`}
             >

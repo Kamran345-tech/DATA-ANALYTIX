@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Pencil, Check, X, Sparkles, RotateCcw } from 'lucide-react';
 import { usePlatform } from '../../store/usePlatformStore';
+import { Tooltip } from './Tooltip';
 
 interface EditableDashboardTitleProps {
   className?: string;
@@ -157,37 +158,54 @@ export const EditableDashboardTitle: React.FC<EditableDashboardTitleProps> = ({
 
   return (
     <div className="inline-flex items-center gap-2 flex-wrap min-w-0 max-w-full">
-      <div 
-        onClick={() => setIsEditing(true)}
-        className={`group inline-flex items-center gap-2 cursor-pointer rounded-xl px-1.5 py-0.5 border transition-colors select-none min-w-0 max-w-full ${
-          isLight
-            ? 'hover:bg-elevated border-transparent hover:border-slate-300'
-            : 'hover:bg-elevated border-transparent hover:border-subtle'
-        } ${className}`}
-        title={project.name}
-        aria-label={project.name}
+      <Tooltip
+        side="bottom"
+        title="Full Dashboard / Dataset Name"
+        tag="Click to Rename"
+        className="w-auto min-w-0 max-w-full"
+        content={<span className="font-mono [overflow-wrap:anywhere]">{project.name}</span>}
       >
-        {showLabelPrefix && (
-          <span className={`text-xs font-mono uppercase tracking-wider shrink-0 ${
-            isLight ? 'text-muted' : 'text-secondary'
-          }`}>
-            Dashboard:
-          </span>
-        )}
-        <span
+        <div 
+          role="button"
+          tabIndex={0}
+          onClick={() => setIsEditing(true)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              setIsEditing(true);
+            }
+          }}
+          className={`group inline-flex items-center gap-2 cursor-pointer rounded-xl px-1.5 py-0.5 border transition-colors select-none min-w-0 max-w-full focus-visible:outline-2 focus-visible:outline-accent ${
+            isLight
+              ? 'hover:bg-elevated border-transparent hover:border-slate-300'
+              : 'hover:bg-elevated border-transparent hover:border-subtle'
+          } ${className}`}
           title={project.name}
           aria-label={project.name}
-          className={`font-heading font-extrabold transition-colors min-w-0 max-w-full ${
-            singleLine ? 'truncate' : 'line-clamp-2 [overflow-wrap:anywhere]'
-          } ${
-            isLight 
-              ? 'text-primary group-hover:text-sky-700' 
-              : 'text-primary group-hover:text-cyan-400'
-          }`}
         >
-          {project.name}
-        </span>
-      </div>
+          {showLabelPrefix && (
+            <span className={`text-xs font-mono uppercase tracking-wider shrink-0 ${
+              isLight ? 'text-muted' : 'text-secondary'
+            }`}>
+              Dashboard:
+            </span>
+          )}
+          <span
+            data-testid="clamped-dashboard-title"
+            title={project.name}
+            aria-label={project.name}
+            className={`font-heading font-extrabold transition-colors min-w-0 max-w-full ${
+              singleLine ? 'truncate' : 'line-clamp-2 [overflow-wrap:anywhere]'
+            } ${
+              isLight 
+                ? 'text-primary group-hover:text-sky-700' 
+                : 'text-primary group-hover:text-cyan-400'
+            }`}
+          >
+            {project.name}
+          </span>
+        </div>
+      </Tooltip>
 
       {showEditButton && (
         <button

@@ -17,6 +17,12 @@ import { EditableDashboardTitle } from '../common/EditableDashboardTitle';
 import { Tooltip } from '../common/Tooltip';
 import { BrandLogo } from '../common/BrandLogo';
 import { useFirebaseAuth } from '../../store/useFirebaseAuth';
+import {
+  FeatureFlags,
+  loadFeatureFlags,
+  resetFeatureFlags,
+  enableDefaultFeatureFlags
+} from '../../config/features';
 
 export const Navbar: React.FC = () => {
   const { 
@@ -37,16 +43,44 @@ export const Navbar: React.FC = () => {
   } = usePlatform();
 
   const { currentUser, isGuestMode, setIsAuthModalOpen } = useFirebaseAuth();
+  const [flags, setFlags] = React.useState<FeatureFlags>(() => loadFeatureFlags());
+
+  React.useEffect(() => {
+    const syncFlags = (e: any) => setFlags(e?.detail || loadFeatureFlags());
+    window.addEventListener('dataanalytix:features-updated', syncFlags);
+    return () => window.removeEventListener('dataanalytix:features-updated', syncFlags);
+  }, []);
 
   const isLight = themeMode === 'light';
+  const isNewLookActive =
+    uiMode === 'modern' ||
+    flags.depthUI ||
+    flags.heroScene3D ||
+    flags.chartGuide ||
+    flags.unifiedTheme;
+
+  const handleToggleClassicModern = () => {
+    if (isNewLookActive) {
+      const classic = resetFeatureFlags();
+      setFlags(classic);
+      setUiMode('classic');
+    } else {
+      const modernDefaults = enableDefaultFeatureFlags();
+      setFlags(modernDefaults);
+    }
+  };
 
   return (
-    <header className="sticky top-0 z-40 shrink-0 px-2.5 sm:px-4 py-2 flex items-center justify-between gap-2 glass-nav transition-colors duration-200 max-w-full overflow-x-clip">
+    <header className="sticky top-0 z-40 shrink-0 px-2 sm:px-4 py-1.5 sm:py-2 flex items-center justify-between gap-1.5 sm:gap-2 glass-nav transition-colors duration-200 max-w-full overflow-x-clip">
       {/* Left branding & drawer trigger */}
-      <div className="flex items-center gap-2 min-w-0 shrink">
+      <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 shrink">
         <button
+          type="button"
+          data-testid="mobile-menu-toggle"
+          aria-expanded={isSidebarOpen}
+          aria-controls="app-sidebar-drawer"
           onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          className={`p-1.5 rounded-lg transition-colors cursor-pointer shrink-0 ${
+          className={`min-w-[44px] min-h-[44px] lg:min-w-0 lg:min-h-0 p-1.5 rounded-lg flex items-center justify-center transition-colors cursor-pointer shrink-0 ${
             isLight 
               ? 'text-muted hover:text-cyan-700 hover:bg-elevated' 
               : 'text-secondary hover:text-cyan-400 hover:bg-white/5'
@@ -57,20 +91,22 @@ export const Navbar: React.FC = () => {
           <Menu className="w-5 h-5" />
         </button>
 
-        <div 
+        <button
+          type="button"
           onClick={() => setCurrentTab('landing')}
-          className="cursor-pointer group select-none flex items-center shrink-0"
+          className="cursor-pointer group select-none flex items-center shrink-0 min-h-[44px] lg:min-h-0 px-0.5 rounded-lg"
           title="Return to Home Overview"
+          aria-label="Return to Home Overview"
         >
           <BrandLogo size="sm" showSubtitle={false} />
-        </div>
+        </button>
 
         {/* Project Title & Status Indicator */}
         <div className={`hidden lg:flex items-center gap-1.5 pl-2.5 border-l min-w-0 shrink ${
           isLight ? 'border-slate-200' : 'border-white/10'
         }`}>
           <EditableDashboardTitle
-            className="text-xs max-w-[120px] xl:max-w-[160px] 2xl:max-w-[230px]"
+            className="text-xs max-w-[120px] xl:max-w-[150px] 2xl:max-w-[220px]"
             iconSize="sm"
             showEditButton={false}
             singleLine={true}
@@ -89,7 +125,7 @@ export const Navbar: React.FC = () => {
       </div>
 
       {/* Center Search */}
-      <div className="hidden lg:flex items-center relative w-36 xl:w-48 2xl:w-64 shrink-0">
+      <div className="hidden lg:flex items-center relative w-32 xl:w-44 2xl:w-60 shrink-0">
         <Search className={`w-4 h-4 absolute left-3 pointer-events-none z-10 ${
           isLight ? 'text-secondary' : 'text-secondary'
         }`} />
@@ -102,10 +138,12 @@ export const Navbar: React.FC = () => {
         />
         {filters.searchQuery && (
           <button 
+            type="button"
             onClick={() => setFilters(prev => ({ ...prev, searchQuery: '' }))}
             className={`absolute right-2 text-xs p-0.5 rounded transition-colors z-10 ${
               isLight ? 'text-secondary hover:text-muted' : 'text-muted hover:text-secondary'
             }`}
+            aria-label="Clear search"
           >
             ×
           </button>
@@ -114,11 +152,24 @@ export const Navbar: React.FC = () => {
 
       {/* Right controls */}
       <div className="flex items-center gap-1 xl:gap-1.5 shrink-0">
-        {/* ================================================================= */}
-        {/* PROMINENT DARK & LIGHT MODE OPTION AT THE TOP                    */}
-        {/* ================================================================= */}
+        {/* Mobile single-button theme switcher (<640px) with >=44px touch target */}
+        <button
+          type="button"
+          onClick={() => setThemeMode(isLight ? 'dark' : 'light')}
+          className="sm:hidden min-w-[44px] min-h-[44px] p-2 rounded-lg glass-btn-secondary flex items-center justify-center cursor-pointer shrink-0"
+          title={isLight ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
+          aria-label={isLight ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
+        >
+          {isLight ? (
+            <Moon className="w-4 h-4 text-primary shrink-0" />
+          ) : (
+            <Sun className="w-4 h-4 text-amber-300 shrink-0" />
+          )}
+        </button>
+
+        {/* Desktop/Tablet Light & Dark Mode segmented switcher (>=640px) */}
         <div 
-          className="flex items-center p-1 rounded-xl glass-card shrink-0"
+          className="hidden sm:flex items-center p-1 rounded-xl glass-card shrink-0"
           role="group"
           aria-label="Theme mode switcher"
         >
@@ -157,20 +208,18 @@ export const Navbar: React.FC = () => {
           </button>
         </div>
 
-        {/* Small Classic / Modern Switcher Toggle */}
+        {/* Switch to Classic / Modern Toggle */}
         <button
           type="button"
-          onClick={() => setUiMode(uiMode === 'modern' ? 'modern' : 'modern')}
-          onClickCapture={(e) => {
-            e.stopPropagation();
-            setUiMode(uiMode === 'modern' ? 'classic' : 'modern');
-          }}
-          className="hidden sm:flex glass-btn-secondary items-center gap-1.5 px-2 xl:px-2.5 py-1 rounded-lg text-xs font-semibold cursor-pointer whitespace-nowrap shrink-0"
-          title={`Switch interface to ${uiMode === 'modern' ? 'Classic' : 'Modern'} mode`}
-          aria-label="Toggle Classic or Modern interface mode"
+          data-testid="navbar-switch-classic"
+          onClick={handleToggleClassicModern}
+          className="hidden sm:flex glass-btn-secondary items-center gap-1.5 px-2 xl:px-2.5 py-1.5 rounded-lg text-xs font-semibold cursor-pointer whitespace-nowrap shrink-0"
+          title={isNewLookActive ? 'Switch to Classic interface and persist in localStorage' : 'Switch to Modern default interface'}
+          aria-label={isNewLookActive ? 'Switch to Classic' : 'Switch to Modern'}
         >
-          <span className={`w-2 h-2 rounded-full shrink-0 ${uiMode === 'modern' ? 'bg-sky-400' : 'bg-emerald-400'}`} />
-          <span className="hidden xl:inline">{uiMode === 'modern' ? 'Modern' : 'Classic'}</span>
+          <span className={`w-2 h-2 rounded-full shrink-0 ${isNewLookActive ? 'bg-accent' : 'bg-emerald-400'}`} />
+          <span className="hidden xl:inline">{isNewLookActive ? 'Switch to Classic' : 'Switch to Modern'}</span>
+          <span className="xl:hidden">{isNewLookActive ? 'Classic' : 'Modern'}</span>
         </button>
 
         {/* How to Use Platform Guide Button */}
@@ -250,8 +299,9 @@ export const Navbar: React.FC = () => {
           content="Upload custom business CSV, Excel (XLSX), or JSON files or switch to enterprise demo datasets."
         >
           <button
+            type="button"
             onClick={() => setCurrentTab('upload')}
-            className="glass-btn-primary flex items-center gap-1.5 px-2.5 xl:px-3 py-1.5 rounded-lg font-semibold text-xs cursor-pointer shadow-xs whitespace-nowrap shrink-0"
+            className="glass-btn-primary min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 flex items-center justify-center gap-1.5 px-2.5 xl:px-3 py-1.5 rounded-lg font-semibold text-xs cursor-pointer shadow-xs whitespace-nowrap shrink-0"
             aria-label="Upload Data"
           >
             <UploadCloud className="w-4 h-4 shrink-0" />
@@ -269,6 +319,7 @@ export const Navbar: React.FC = () => {
             content="Download the complete 14-folder enterprise archive including native Power BI PBIP developer files, Excel models, and PDF executive reports."
           >
             <button
+              type="button"
               onClick={() => setCurrentTab('export_center')}
               className="glass-btn-secondary flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs cursor-pointer whitespace-nowrap shrink-0"
               aria-label="Export"
@@ -288,8 +339,9 @@ export const Navbar: React.FC = () => {
           content={currentUser ? 'Manage cloud profile, view Firestore sync status, or sign out.' : isGuestMode ? 'You are currently in Guest Demo mode. Click to sign in or create an account to persist dashboards.' : 'Sign in with Google or Email to sync and persist your dashboards to Firebase Firestore.'}
         >
           <button
+            type="button"
             onClick={() => setIsAuthModalOpen(true)}
-            className="glass-btn-secondary flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-xs font-semibold cursor-pointer whitespace-nowrap shrink-0"
+            className="glass-btn-secondary min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 flex items-center justify-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-xs font-semibold cursor-pointer whitespace-nowrap shrink-0"
             aria-label={currentUser ? (currentUser.displayName?.split(' ')[0] || 'My Account') : isGuestMode ? 'Guest Demo' : 'Sign In'}
           >
             {currentUser?.photoURL ? (
@@ -301,7 +353,7 @@ export const Navbar: React.FC = () => {
             ) : (
               <span className={`w-2 h-2 rounded-full ${currentUser ? 'bg-emerald-400' : isGuestMode ? 'bg-amber-400' : 'bg-cyan-400'} shrink-0`} />
             )}
-            <span className="hidden sm:inline max-w-[96px] truncate whitespace-nowrap">
+            <span className="hidden sm:inline max-w-[84px] truncate whitespace-nowrap">
               {currentUser ? (currentUser.displayName?.split(' ')[0] || 'My Account') : isGuestMode ? 'Guest Demo' : 'Sign In'}
             </span>
           </button>

@@ -33,6 +33,7 @@ import { KpiCardEditorModal } from '../common/KpiCardEditorModal';
 import { parseRobustNumber } from '../../engine/dataParser';
 import { InteractiveSlicersBar } from '../common/InteractiveSlicersBar';
 import { DownloadMenu } from '../common/DownloadMenu';
+import { Tooltip } from '../common/Tooltip';
 
 export const ReportsView: React.FC = () => {
   const { 
@@ -538,24 +539,40 @@ export const ReportsView: React.FC = () => {
             <div className="text-xs text-secondary print:text-muted flex flex-wrap items-baseline gap-x-2 gap-y-1 min-w-0 max-w-full">
               <span className="inline-flex items-baseline gap-1 min-w-0 max-w-full">
                 <span className="shrink-0">Project:</span>
-                <span
-                  title={project.name}
-                  aria-label={project.name}
-                  className="text-primary print:text-black font-medium line-clamp-2 [overflow-wrap:anywhere] min-w-0 max-w-full"
+                <Tooltip
+                  side="bottom"
+                  title="Project Name"
+                  className="w-auto min-w-0 max-w-full"
+                  content={<span className="font-mono [overflow-wrap:anywhere]">{project.name}</span>}
                 >
-                  {project.name}
-                </span>
+                  <span
+                    tabIndex={0}
+                    title={project.name}
+                    aria-label={project.name}
+                    className="text-primary print:text-black font-medium line-clamp-2 [overflow-wrap:anywhere] min-w-0 max-w-full focus-visible:outline-2 focus-visible:outline-accent rounded px-0.5"
+                  >
+                    {project.name}
+                  </span>
+                </Tooltip>
               </span>
               <span aria-hidden="true">•</span>
               <span className="inline-flex items-baseline gap-1 min-w-0 max-w-full">
                 <span className="shrink-0">Dataset:</span>
-                <span
-                  title={project.sourceFileName}
-                  aria-label={project.sourceFileName}
-                  className="font-mono text-secondary print:text-black line-clamp-2 [overflow-wrap:anywhere] min-w-0 max-w-full"
+                <Tooltip
+                  side="bottom"
+                  title="Source Dataset"
+                  className="w-auto min-w-0 max-w-full"
+                  content={<span className="font-mono [overflow-wrap:anywhere]">{project.sourceFileName}</span>}
                 >
-                  {project.sourceFileName}
-                </span>
+                  <span
+                    tabIndex={0}
+                    title={project.sourceFileName}
+                    aria-label={project.sourceFileName}
+                    className="font-mono text-secondary print:text-black line-clamp-2 [overflow-wrap:anywhere] min-w-0 max-w-full focus-visible:outline-2 focus-visible:outline-accent rounded px-0.5"
+                  >
+                    {project.sourceFileName}
+                  </span>
+                </Tooltip>
               </span>
             </div>
           </div>

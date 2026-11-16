@@ -4,12 +4,12 @@ Data Analytix is an autonomous, in-browser business intelligence and data engine
 
 ---
 
-## 🏛️ Core Architectural Principle: ADDITIVE ONLY, CLASSIC STAYS
+## 🏛️ Core Architectural Principle: ADDITIVE ONLY, CLASSIC PRESERVED
 
 All enhancements are built strictly as **additive alternatives** alongside the proven Classic architecture.
-- **Default State**: Every feature flag defaults to `false` (Classic mode).
-- **Zero Regressions**: No existing routes, response shapes, classic calculation heuristics, or brand identifiers have been altered or broken.
-- **Regression Locking**: All classic engine operations are covered by automated Vitest snapshot tests in `tests/classic-regression.test.ts`.
+- **Default State for New Visitors**: The four visual & chart guide flags (`depthUI`, `heroScene3D`, `chartGuide`, `unifiedTheme`) default to `true` in `src/config/features.ts` (`DEFAULT_FEATURE_FLAGS`) so new visitors immediately experience the unified WCAG AA theme, 20px depth cards, 3D isometric hero scene, and 8-chart selection guide. The remaining 15 optional flags default to `false`.
+- **Switch to Classic Anytime**: Visitors can click **"Switch to Classic"** in the top navigation bar or in **Settings → Experiments & Alternatives** to turn all flags off (`CLASSIC_FEATURE_FLAGS`). The user's choice is persisted in `localStorage['dataanalytix_features']` and respected across reloads.
+- **Zero Regressions**: No existing routes, response shapes, classic calculation heuristics, or brand identifiers have been altered or broken (`tests/classic-regression.test.ts` remains 100% green).
 
 ---
 
@@ -27,31 +27,28 @@ The application supports simultaneous execution on two deployment targets with i
 - Zero duplicated code between Express and Vercel functions.
 
 ### Environment Variables & Live Feature Flag Status (Local & Vercel)
-| Variable | Required In | Value in `.env.example` | Code Default (if unset) | Description |
-|---|---|---|---|---|
-| `GEMINI_API_KEY` | Optional | `"MY_GEMINI_API_KEY"` | unset | API key for Gemini 2.5 Flash model grounding |
-| `APP_URL` | AI Studio | `"MY_APP_URL"` | unset | Host application base URL |
-| `FIREBASE_PROJECT_ID` | Vercel / Local | `"mercurial-amphora-3lxdt"` | `"mercurial-amphora-3lxdt"` | Firebase project ID |
-| `FIREBASE_DATABASE_ID` | Vercel / Local | `"ai-studio-nexusbiautonomou-..."` | `"ai-studio-nexusbiautonomou-..."` | Firestore database instance name |
-| `REQUIRE_AUTH_FOR_AI` | Optional | `"false"` | `"false"` | When `true`, enforces Firebase bearer tokens on `/api/ai/interpret` |
-| `VITE_FEATURE_DEPTH_UI` | Vercel / Local | `"true"` | `false` | Enables 20px depth cards, top highlight, and hover lift |
-| `VITE_FEATURE_HERO_SCENE_3D` | Vercel / Local | `"true"` | `false` | Enables the pure-CSS 3D 5-pillar hero scene |
-| `VITE_FEATURE_CHART_GUIDE` | Vercel / Local | `"true"` | `false` | Enables the 8-chart selection guide and PDF download |
-| `VITE_FEATURE_UNIFIED_THEME` | Vercel / Local | `"true"` | `false` | Enables the WCAG AA unified semantic theme token system |
+| Variable | Required In | Value in `.env.example` | Code Default (`src/config/features.ts`) | How to Turn Off | Description |
+|---|---|---|---|---|---|
+| `GEMINI_API_KEY` | Optional | `"MY_GEMINI_API_KEY"` | unset | Omit or leave empty | API key for Gemini 2.5 Flash model grounding |
+| `APP_URL` | AI Studio | `"MY_APP_URL"` | unset | Omit | Host application base URL |
+| `FIREBASE_PROJECT_ID` | Vercel / Local | `"mercurial-amphora-3lxdt"` | `"mercurial-amphora-3lxdt"` | Set custom ID | Firebase project ID |
+| `FIREBASE_DATABASE_ID` | Vercel / Local | `"ai-studio-nexusbiautonomou-..."` | `"ai-studio-nexusbiautonomou-..."` | Set custom DB | Firestore database instance name |
+| `REQUIRE_AUTH_FOR_AI` | Optional | `"false"` | `"false"` | `REQUIRE_AUTH_FOR_AI=false` | When `true`, enforces Firebase bearer tokens on `/api/ai/interpret` |
+| `VITE_FEATURE_DEPTH_UI` | Vercel / Local | `"true"` | `true` | `VITE_FEATURE_DEPTH_UI=false` | Enables 20px depth cards, top highlight, and hover lift |
+| `VITE_FEATURE_HERO_SCENE_3D` | Vercel / Local | `"true"` | `true` | `VITE_FEATURE_HERO_SCENE_3D=false` | Enables the pure-CSS 3D 5-pillar hero scene |
+| `VITE_FEATURE_CHART_GUIDE` | Vercel / Local | `"true"` | `true` | `VITE_FEATURE_CHART_GUIDE=false` | Enables the 8-chart selection guide and PDF download |
+| `VITE_FEATURE_UNIFIED_THEME` | Vercel / Local | `"true"` | `true` | `VITE_FEATURE_UNIFIED_THEME=false` | Enables the WCAG AA unified semantic theme token system |
 
-#### Live Site Behavior (`https://data-analytix-flax.vercel.app/`)
-- **Default UI Shell (`uiMode`)**: Starts in **Classic** layout (`uiMode = 'classic'`) by default on first visit so classic workflows and `tests/classic-regression.test.ts` remain 100% locked. Users can switch between **Classic** and **Modern** layout at any time via the top-bar mode toggle (persisted in `localStorage['dataanalytix_ui']`).
-- **Build-Time Feature Flags (`VITE_FEATURE_*`)**:
-  - In `src/config/features.ts`, all 19 flags in `DEFAULT_FEATURE_FLAGS` default to `false` when no `VITE_FEATURE_*` environment variables are injected at build time.
-  - In `.env.example`, the four visual/guide flags (`VITE_FEATURE_DEPTH_UI`, `VITE_FEATURE_HERO_SCENE_3D`, `VITE_FEATURE_CHART_GUIDE`, `VITE_FEATURE_UNIFIED_THEME`) are set to `"true"`, while the remaining 15 optional flags are commented out (`false`).
-  - On Vercel (`https://data-analytix-flax.vercel.app/`), if `VITE_FEATURE_*` environment variables are not set in the Vercel dashboard, the production bundle boots with **Classic defaults** (`all flags = false`). When the four variables below are set in **Vercel Project Settings → Environment Variables** and redeployed, the live deployment automatically enables the unified theme, 3D hero, depth UI, and 8-chart guide for all visitors:
+#### Turning Flags Off or Customizing on Vercel (`https://data-analytix-flax.vercel.app/`)
+- **Default New Visitor Experience**: Because `depthUI`, `heroScene3D`, `chartGuide`, and `unifiedTheme` default to `true` in `src/config/features.ts`, new visitors on Vercel see the unified theme, 3D hero scene, depth UI, and 8-chart guide out of the box without requiring extra environment variables.
+- **Turning Individual Flags Off via Environment Variables**: Set any `VITE_FEATURE_<FLAG_NAME>=false` (or `0`) in `.env` or **Vercel Project Settings → Environment Variables** to disable that feature at build time:
 ```env
-VITE_FEATURE_DEPTH_UI=true
-VITE_FEATURE_HERO_SCENE_3D=true
-VITE_FEATURE_CHART_GUIDE=true
-VITE_FEATURE_UNIFIED_THEME=true
+VITE_FEATURE_DEPTH_UI=false
+VITE_FEATURE_HERO_SCENE_3D=false
+VITE_FEATURE_CHART_GUIDE=false
+VITE_FEATURE_UNIFIED_THEME=false
 ```
-- **Runtime Override**: Regardless of build-time environment variables, any visitor can toggle individual flags on or off in **Settings → Experiments & Alternatives** (which also displays a live banner showing which flags are `ON` for the current session).
+- **Runtime Override & Persistence**: Any visitor can click **"Switch to Classic"** in the top navbar or toggle individual flags in **Settings → Experiments & Alternatives**. User preferences are saved to `localStorage['dataanalytix_features']`, which takes precedence over build-time defaults and displays a live session banner in Settings showing which flags are currently `ON`.
 
 ---
 

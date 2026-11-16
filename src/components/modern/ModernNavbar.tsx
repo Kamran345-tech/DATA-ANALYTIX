@@ -12,6 +12,7 @@ import {
 import { usePlatform } from '../../store/usePlatformStore';
 import { useFirebaseAuth } from '../../store/useFirebaseAuth';
 import { BRAND, getBrandText, loadFeatureFlags } from '../../config/features';
+import { Tooltip } from '../common/Tooltip';
 
 export interface ModernNavbarProps {
   onOpenCommandPalette?: () => void;
@@ -65,10 +66,22 @@ export const ModernNavbar: React.FC<ModernNavbarProps> = ({
         </button>
 
         {/* Dataset metadata badge: unboxed text with subtle separator */}
-        <div className="hidden lg:flex items-center gap-2 pl-3 border-l border-[var(--modern-border)] text-xs text-[var(--modern-text-muted)] font-mono">
-          <span className="font-medium text-[var(--modern-text)] truncate max-w-[200px]" title={project.name}>
-            {project.sourceFileName || project.name}
-          </span>
+        <div className="hidden lg:flex items-center gap-2 pl-3 border-l border-[var(--modern-border)] text-xs text-[var(--modern-text-muted)] font-mono min-w-0">
+          <Tooltip
+            side="bottom"
+            title="Active Dataset"
+            className="w-auto min-w-0"
+            content={<span className="font-mono [overflow-wrap:anywhere]">{project.sourceFileName || project.name}</span>}
+          >
+            <span
+              tabIndex={0}
+              className="font-medium text-[var(--modern-text)] truncate max-w-[200px] inline-block align-bottom focus-visible:outline-2 focus-visible:outline-accent rounded px-0.5"
+              title={project.sourceFileName || project.name}
+              aria-label={project.sourceFileName || project.name}
+            >
+              {project.sourceFileName || project.name}
+            </span>
+          </Tooltip>
           <span aria-hidden="true" className="text-[var(--modern-text-subtle)]">·</span>
           <span>{rowCount.toLocaleString()} rows</span>
           <span aria-hidden="true" className="text-[var(--modern-text-subtle)]">·</span>
