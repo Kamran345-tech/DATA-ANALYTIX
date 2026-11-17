@@ -36,6 +36,20 @@ export interface ThemeTokenPalette {
   chartGrid: string;
   chartAxis: string;
   chartTooltipBg: string;
+  pack1: string;
+  pack2: string;
+  pack3: string;
+  pack4: string;
+  pack5: string;
+  pack6: string;
+  pack7: string;
+  pack8: string;
+  pack9: string;
+  pack10: string;
+  pack11: string;
+  pack12: string;
+  pack13: string;
+  pack14: string;
 }
 
 export const UNIFIED_THEME_TOKENS: Record<'dark' | 'light', ThemeTokenPalette> = {
@@ -72,6 +86,20 @@ export const UNIFIED_THEME_TOKENS: Record<'dark' | 'light', ThemeTokenPalette> =
     chartGrid: 'rgba(148, 163, 184, 0.16)',
     chartAxis: '#9AA7BD',
     chartTooltipBg: '#0E1629',
+    pack1: '#34D399',
+    pack2: '#60A5FA',
+    pack3: '#F472B6',
+    pack4: '#A78BFA',
+    pack5: '#818CF8',
+    pack6: '#22D3EE',
+    pack7: '#FBBF24',
+    pack8: '#FB7185',
+    pack9: '#F87171',
+    pack10: '#2DD4BF',
+    pack11: '#E879F9',
+    pack12: '#FB923C',
+    pack13: '#38BDF8',
+    pack14: '#A3E635',
   },
   light: {
     bgApp: '#F6F8FC',
@@ -106,6 +134,20 @@ export const UNIFIED_THEME_TOKENS: Record<'dark' | 'light', ThemeTokenPalette> =
     chartGrid: 'rgba(15, 23, 42, 0.10)',
     chartAxis: '#5B6B82',
     chartTooltipBg: '#FFFFFF',
+    pack1: '#047857',
+    pack2: '#1D4ED8',
+    pack3: '#BE185D',
+    pack4: '#6D28D9',
+    pack5: '#4338CA',
+    pack6: '#0E7490',
+    pack7: '#B45309',
+    pack8: '#BE123C',
+    pack9: '#B91C1C',
+    pack10: '#0F766E',
+    pack11: '#A21CAF',
+    pack12: '#C2410C',
+    pack13: '#0369A1',
+    pack14: '#3F6212',
   },
 };
 

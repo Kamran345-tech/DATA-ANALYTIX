@@ -7,6 +7,7 @@ export const operationsPack: AnalyticsPackConfig = {
   category: 'Operations & Supply',
   icon: 'Truck',
   description: 'OTIF (On-Time In-Full), lead time, fill rate, inventory turnover, backorder rate, warehouse utilization, and logistics cost.',
+  theme: { hue: "amber", gradientFrom: "var(--pack-7)", gradientTo: "var(--pack-12)" },
   detect: {
     keywords: [
       'otif', 'lead_time', 'fill_rate', 'inventory_turnover', 'backorder', 'warehouse',

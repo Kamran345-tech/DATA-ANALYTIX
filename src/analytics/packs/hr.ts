@@ -7,6 +7,7 @@ export const hrPack: AnalyticsPackConfig = {
   category: 'People & Sector',
   icon: 'UserCheck',
   description: 'Headcount, voluntary/involuntary attrition, time-to-hire, cost-per-hire, eNPS, diversity ratio, compensation, and training hours.',
+  theme: { hue: "rose", gradientFrom: "var(--pack-8)", gradientTo: "var(--pack-3)" },
   detect: {
     keywords: [
       'headcount', 'attrition', 'time_to_hire', 'enps', 'employees', 'turnover_rate',

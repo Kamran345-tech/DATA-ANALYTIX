@@ -100,12 +100,21 @@ export interface PackLensConfig {
   chartIds: string[];
 }
 
+export interface PackThemeConfig {
+  hue: string;
+  gradientFrom: string;
+  gradientTo: string;
+  token?: string;
+  chartPalette?: string[];
+}
+
 export interface AnalyticsPackConfig {
   id: PackId;
   name: string;
   category?: PackCategory;
   icon: string;
   description: string;
+  theme?: PackThemeConfig;
   detect: {
     keywords: string[];
     requiredRoles: Role[];
@@ -129,8 +138,9 @@ export interface AnalyticsPackConfig {
   roles?: Record<Role, PackRoleDefinition>;
 }
 
-export interface EnrichedAnalyticsPackConfig extends Omit<AnalyticsPackConfig, 'lenses' | 'sampleDataset' | 'roles'> {
+export interface EnrichedAnalyticsPackConfig extends Omit<AnalyticsPackConfig, 'lenses' | 'sampleDataset' | 'roles' | 'theme'> {
   category: PackCategory;
+  theme: Required<PackThemeConfig>;
   lenses: HybridPackLenses;
   sampleDataset: HybridSampleDataset;
   roles: Record<Role, PackRoleDefinition>;

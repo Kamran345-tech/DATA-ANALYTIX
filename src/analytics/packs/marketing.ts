@@ -7,6 +7,7 @@ export const marketingPack: AnalyticsPackConfig = {
   category: 'Revenue & Growth',
   icon: 'Megaphone',
   description: 'ROAS, CAC, CPL, CTR, conversion rate, ad spend efficiency, MQL generation, and multi-touch revenue attribution.',
+  theme: { hue: "magenta-orange", gradientFrom: "var(--pack-3)", gradientTo: "var(--pack-12)" },
   detect: {
     keywords: [
       'ad_spend', 'impressions', 'clicks', 'roas', 'cac', 'cpl', 'cpc', 'ctr',

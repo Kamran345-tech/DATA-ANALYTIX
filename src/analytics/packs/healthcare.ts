@@ -7,6 +7,7 @@ export const healthcarePack: AnalyticsPackConfig = {
   category: 'People & Sector',
   icon: 'HeartPulse',
   description: 'Patient admissions, average length of stay (ALOS), 30-day readmission rate, bed occupancy, ER wait time, and cost per encounter.',
+  theme: { hue: "teal-mint", gradientFrom: "var(--pack-10)", gradientTo: "var(--pack-1)" },
   detect: {
     keywords: [
       'admissions', 'readmission', 'alos', 'length_of_stay', 'bed_occupancy', 'patient',

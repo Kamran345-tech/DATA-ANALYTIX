@@ -270,4 +270,88 @@ test.describe('Analytics Packs E2E Verification Suite', () => {
     const sidebarPacksBtn = page.locator('#app-sidebar-drawer button[aria-label="Analytics Packs"]');
     await expect(sidebarPacksBtn).toHaveCount(0);
   });
+
+  test('4. Visual Redesign Verification & Multi-Viewport Screenshot Matrix (1440, 1024, 375 in Light & Dark)', async ({
+    page,
+  }) => {
+    test.setTimeout(120000);
+    const outDir = 'public/assets/qa-packs';
+    fs.mkdirSync(outDir, { recursive: true });
+
+    const viewports = [
+      { width: 1440, height: 900 },
+      { width: 1024, height: 800 },
+      { width: 375, height: 812 },
+    ] as const;
+
+    const themes = ['dark', 'light'] as const;
+
+    for (const theme of themes) {
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await bootstrapPacksWorkspace(page, { theme });
+      await page.evaluate(() => {
+        window.dispatchEvent(new CustomEvent('dataanalytix:set-tab', { detail: 'analytics_packs' }));
+      });
+      await expect(page.getByTestId('analytics-packs-view')).toBeVisible({ timeout: 10000 });
+
+      // Load initial sample data so the auto-detection banner and live metrics are active on the picker
+      await page.getByTestId('pack-sample-btn-financial').click();
+      await expect(page.getByTestId('pack-auto-detect-banner')).toBeVisible();
+      await expect(page.getByTestId('pack-hero-iso-illustration')).toBeVisible();
+      await expect(page.getByTestId('pack-key-insight-card')).toBeVisible();
+
+      // 1. Picker screenshots across viewports
+      for (const vp of viewports) {
+        await page.setViewportSize({ width: vp.width, height: vp.height });
+        await page.evaluate(() => window.scrollTo(0, 0));
+        await page.waitForTimeout(150);
+        await page.screenshot({
+          path: `${outDir}/packs_picker_${vp.width}_${theme}.png`,
+          fullPage: false,
+        });
+      }
+
+      // 2. Financial Pack Dashboard screenshots across viewports
+      for (const vp of viewports) {
+        await page.setViewportSize({ width: vp.width, height: vp.height });
+        await page.getByTestId('pack-kpi-grid').scrollIntoViewIfNeeded();
+        await page.waitForTimeout(150);
+        await page.screenshot({
+          path: `${outDir}/packs_financial_${vp.width}_${theme}.png`,
+          fullPage: false,
+        });
+      }
+
+      // 3. HR Pack Dashboard screenshots across viewports
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await page.getByTestId('pack-sample-btn-hr').click();
+      await expect(page.getByTestId('kpi-card-total_headcount')).toBeVisible();
+      for (const vp of viewports) {
+        await page.setViewportSize({ width: vp.width, height: vp.height });
+        await page.getByTestId('pack-kpi-grid').scrollIntoViewIfNeeded();
+        await page.waitForTimeout(150);
+        await page.screenshot({
+          path: `${outDir}/packs_hr_${vp.width}_${theme}.png`,
+          fullPage: false,
+        });
+      }
+
+      // 4. Empty State (missing roles + Map column button) screenshots across viewports
+      await page.evaluate(() => {
+        window.dispatchEvent(new CustomEvent('dataanalytix:clear-dataset'));
+      });
+      await expect(page.getByTestId('pack-missing-roles-banner')).toBeVisible();
+      await expect(page.getByTestId('kpi-map-col-btn-total_headcount')).toBeVisible();
+      for (const vp of viewports) {
+        await page.setViewportSize({ width: vp.width, height: vp.height });
+        await page.getByTestId('pack-missing-roles-banner').scrollIntoViewIfNeeded();
+        await page.waitForTimeout(150);
+        await page.screenshot({
+          path: `${outDir}/packs_empty_${vp.width}_${theme}.png`,
+          fullPage: false,
+        });
+      }
+    }
+  });
 });
+

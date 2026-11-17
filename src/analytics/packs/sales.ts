@@ -7,6 +7,7 @@ export const salesPack: AnalyticsPackConfig = {
   category: 'Revenue & Growth',
   icon: 'Briefcase',
   description: 'Closed-won revenue, win rate, quota attainment, pipeline coverage, average deal size, sales cycle length, and discount rate.',
+  theme: { hue: "blue", gradientFrom: "var(--pack-2)", gradientTo: "var(--pack-6)" },
   detect: {
     keywords: [
       'sales_rep', 'quota', 'pipeline_value', 'deals_won', 'win_rate', 'sales_cycle',

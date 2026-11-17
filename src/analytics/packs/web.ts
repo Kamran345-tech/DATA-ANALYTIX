@@ -7,6 +7,7 @@ export const webPack: AnalyticsPackConfig = {
   category: 'Product & Web',
   icon: 'Globe',
   description: 'Sessions, bounce rate, conversion funnel, Core Web Vitals (LCP), pageviews, organic vs paid traffic, and session duration.',
+  theme: { hue: "cyan", gradientFrom: "var(--pack-6)", gradientTo: "var(--pack-2)" },
   detect: {
     keywords: [
       'sessions', 'pageviews', 'bounce_rate', 'conversion_rate', 'traffic_source', 'referrer',

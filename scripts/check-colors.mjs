@@ -37,7 +37,7 @@ const PATTERNS = {
 const LEGACY_SURFACE_REGEX = /#(?:141414|1c1c1c|242424)\b/gi;
 
 const SEMANTIC_TOKENS_REGEX =
-  /\b(?:bg-app|bg-sidebar|bg-card|bg-card-hover|bg-input|bg-elevated|border-subtle|border-strong|text-primary|text-secondary|text-muted|text-on-accent|text-accent|bg-accent)\b|var\(--(?:bg-|text-|border-|accent|chart-|success|warning|danger|info)/g;
+  /\b(?:bg-app|bg-sidebar|bg-card|bg-card-hover|bg-input|bg-elevated|border-subtle|border-strong|text-primary|text-secondary|text-muted|text-on-accent|text-accent|bg-accent)\b|var\(--(?:bg-|text-|border-|accent|chart-|pack-|success|warning|danger|info)/g;
 
 function walkTsxFiles(dir, out = []) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {

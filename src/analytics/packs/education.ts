@@ -7,6 +7,7 @@ export const educationPack: AnalyticsPackConfig = {
   category: 'People & Sector',
   icon: 'GraduationCap',
   description: 'Student enrollment, course completion rate, retention rate, average GPA/assessment score, attendance, and cost per student.',
+  theme: { hue: "lime", gradientFrom: "var(--pack-14)", gradientTo: "var(--pack-1)" },
   detect: {
     keywords: [
       'enrollment', 'students', 'completion_rate', 'graduation', 'gpa', 'attendance_rate',

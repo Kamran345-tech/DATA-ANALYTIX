@@ -51,19 +51,27 @@ function notifyListeners() {
 
 export const toast = {
   show: (options: Omit<ToastItem, 'id' | 'timestamp'> & { id?: string }): string => {
-    const id = options.id || `toast_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const isSampleOrDatasetLoad = /sample loaded|dataset loaded|ingested|ready for analysis/i.test(
+      `${options.title || ''} ${options.message || ''}`
+    );
+    const id =
+      options.id ||
+      (isSampleOrDatasetLoad
+        ? 'dataset_load_merged_toast'
+        : `toast_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`);
+
     const existingIndex = globalToasts.findIndex(t => t.id === id);
     const newItem: ToastItem = {
       id,
-      duration: options.type === 'progress' ? 0 : 5000,
+      duration: options.type === 'progress' ? 0 : 4000,
       timestamp: Date.now(),
-      ...options
+      ...options,
     };
 
     if (existingIndex >= 0) {
       globalToasts[existingIndex] = { ...globalToasts[existingIndex], ...newItem };
     } else {
-      globalToasts = [...globalToasts, newItem];
+      globalToasts = [...globalToasts, newItem].slice(-2);
     }
     notifyListeners();
     return id;
@@ -74,7 +82,7 @@ export const toast = {
       type: 'success',
       title,
       message,
-      duration: 4500,
+      duration: 4000,
       ...options
     });
   },
@@ -84,7 +92,7 @@ export const toast = {
       type: 'info',
       title,
       message,
-      duration: 5000,
+      duration: 4000,
       ...options
     });
   },
@@ -94,7 +102,7 @@ export const toast = {
       type: 'warning',
       title,
       message,
-      duration: 6000,
+      duration: 4000,
       ...options
     });
   },
@@ -104,7 +112,7 @@ export const toast = {
       type: 'error',
       title,
       message,
-      duration: 7000,
+      duration: 4000,
       ...options
     });
   },

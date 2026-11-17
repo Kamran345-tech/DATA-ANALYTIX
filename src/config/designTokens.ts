@@ -37,6 +37,20 @@ export interface SemanticTokenSet {
   '--chart-grid': string;
   '--chart-axis': string;
   '--chart-tooltip-bg': string;
+  '--pack-1': string;
+  '--pack-2': string;
+  '--pack-3': string;
+  '--pack-4': string;
+  '--pack-5': string;
+  '--pack-6': string;
+  '--pack-7': string;
+  '--pack-8': string;
+  '--pack-9': string;
+  '--pack-10': string;
+  '--pack-11': string;
+  '--pack-12': string;
+  '--pack-13': string;
+  '--pack-14': string;
 }
 
 export const DARK_TOKENS: SemanticTokenSet = {
@@ -72,6 +86,20 @@ export const DARK_TOKENS: SemanticTokenSet = {
   '--chart-grid': 'rgba(148, 163, 184, 0.16)',
   '--chart-axis': '#9AA7BD',
   '--chart-tooltip-bg': '#0E1629',
+  '--pack-1': '#34D399',
+  '--pack-2': '#60A5FA',
+  '--pack-3': '#F472B6',
+  '--pack-4': '#A78BFA',
+  '--pack-5': '#818CF8',
+  '--pack-6': '#22D3EE',
+  '--pack-7': '#FBBF24',
+  '--pack-8': '#FB7185',
+  '--pack-9': '#F87171',
+  '--pack-10': '#2DD4BF',
+  '--pack-11': '#E879F9',
+  '--pack-12': '#FB923C',
+  '--pack-13': '#38BDF8',
+  '--pack-14': '#A3E635',
 };
 
 export const LIGHT_TOKENS: SemanticTokenSet = {
@@ -107,6 +135,20 @@ export const LIGHT_TOKENS: SemanticTokenSet = {
   '--chart-grid': 'rgba(15, 23, 42, 0.10)',
   '--chart-axis': '#5B6B82',
   '--chart-tooltip-bg': '#FFFFFF',
+  '--pack-1': '#047857',
+  '--pack-2': '#1D4ED8',
+  '--pack-3': '#BE185D',
+  '--pack-4': '#6D28D9',
+  '--pack-5': '#4338CA',
+  '--pack-6': '#0E7490',
+  '--pack-7': '#B45309',
+  '--pack-8': '#BE123C',
+  '--pack-9': '#B91C1C',
+  '--pack-10': '#0F766E',
+  '--pack-11': '#A21CAF',
+  '--pack-12': '#C2410C',
+  '--pack-13': '#0369A1',
+  '--pack-14': '#3F6212',
 };
 
 export const SOP_PRINT_PALETTE = {

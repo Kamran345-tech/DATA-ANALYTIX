@@ -7,6 +7,7 @@ export const productPack: AnalyticsPackConfig = {
   category: 'Product & Web',
   icon: 'Layers',
   description: 'DAU/MAU stickiness, user activation rate, feature adoption, session frequency, API latency, crash rate, and retention.',
+  theme: { hue: "indigo", gradientFrom: "var(--pack-5)", gradientTo: "var(--pack-2)" },
   detect: {
     keywords: [
       'dau', 'mau', 'wau', 'stickiness', 'activation_rate', 'feature_adoption',

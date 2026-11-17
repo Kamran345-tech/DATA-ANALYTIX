@@ -7,6 +7,7 @@ export const customerPack: AnalyticsPackConfig = {
   category: 'Revenue & Growth',
   icon: 'Users',
   description: 'Logo churn, Gross/Net Dollar Retention (GRR/NDR), Customer Lifetime Value (CLV), ARPU, NPS, expansion MRR, and support tickets.',
+  theme: { hue: "violet", gradientFrom: "var(--pack-4)", gradientTo: "var(--pack-5)" },
   detect: {
     keywords: [
       'active_customers', 'churned_customers', 'mrr', 'arr', 'expansion_mrr', 'contraction_mrr',

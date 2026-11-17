@@ -7,6 +7,7 @@ export const riskFraudPack: AnalyticsPackConfig = {
   category: 'Finance & Risk',
   icon: 'ShieldAlert',
   description: 'Fraud loss rate (bps), chargebacks, false positive rate, anomaly detection, AML alerts, blocked transactions, and recovery rate.',
+  theme: { hue: "red-crimson", gradientFrom: "var(--pack-9)", gradientTo: "var(--pack-8)" },
   detect: {
     keywords: [
       'fraud', 'chargeback', 'risk_score', 'false_positive', 'aml', 'suspicious',

@@ -7,6 +7,7 @@ export const retailPack: AnalyticsPackConfig = {
   category: 'Revenue & Growth',
   icon: 'ShoppingBag',
   description: 'GMV, basket size, sell-through rate, return rate, store footfall, conversion, markdowns, and inventory turns.',
+  theme: { hue: "pink", gradientFrom: "var(--pack-11)", gradientTo: "var(--pack-3)" },
   detect: {
     keywords: [
       'gmv', 'basket_size', 'sell_through', 'return_rate', 'footfall', 'store',

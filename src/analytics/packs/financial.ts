@@ -7,6 +7,7 @@ export const financialPack: AnalyticsPackConfig = {
   category: 'Finance & Risk',
   icon: 'Landmark',
   description: 'P&L, balance sheet, liquidity, working capital (DSO/DPO), ROE/ROA, EBITDA, cash burn, and budget variance.',
+  theme: { hue: "emerald-gold", gradientFrom: "var(--pack-1)", gradientTo: "var(--pack-7)" },
   detect: {
     keywords: [
       'ebitda', 'cogs', 'opex', 'operating_expense', 'net_income', 'gross_profit',

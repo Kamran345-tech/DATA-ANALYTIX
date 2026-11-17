@@ -120,6 +120,20 @@
     --chart-grid: rgba(148, 163, 184, 0.16);
     --chart-axis: #9AA7BD;
     --chart-tooltip-bg: #0E1629;
+    --pack-1: #34D399;
+    --pack-2: #60A5FA;
+    --pack-3: #F472B6;
+    --pack-4: #A78BFA;
+    --pack-5: #818CF8;
+    --pack-6: #22D3EE;
+    --pack-7: #FBBF24;
+    --pack-8: #FB7185;
+    --pack-9: #F87171;
+    --pack-10: #2DD4BF;
+    --pack-11: #E879F9;
+    --pack-12: #FB923C;
+    --pack-13: #38BDF8;
+    --pack-14: #A3E635;
 
     /* Legacy compatibility aliases */
     --color-bg-deep: #070D1B;
@@ -619,6 +633,20 @@ html.theme-light,
   --chart-grid: rgba(15, 23, 42, 0.10);
   --chart-axis: #5B6B82;
   --chart-tooltip-bg: #FFFFFF;
+  --pack-1: #047857;
+  --pack-2: #1D4ED8;
+  --pack-3: #BE185D;
+  --pack-4: #6D28D9;
+  --pack-5: #4338CA;
+  --pack-6: #0E7490;
+  --pack-7: #B45309;
+  --pack-8: #BE123C;
+  --pack-9: #B91C1C;
+  --pack-10: #0F766E;
+  --pack-11: #A21CAF;
+  --pack-12: #C2410C;
+  --pack-13: #0369A1;
+  --pack-14: #3F6212;
 
   --color-bg-main: var(--bg-app);
   --color-bg-card: var(--bg-card);
@@ -1909,4 +1937,163 @@ html[data-unified-theme="true"] .recharts-cartesian-grid line {
     max-width: 100%;
   }
 }
+
+/* ========================================================================== */
+/* 16. ANALYTICS PACKS VISUAL SYSTEM (Aurora Hero, Per-Pack Glow & Cards)     */
+/* ========================================================================== */
+.pack-hero-aurora {
+  position: relative;
+  background-color: var(--bg-card);
+  background-image:
+    radial-gradient(ellipse 68% 80% at 12% 15%, color-mix(in srgb, var(--pack-from, var(--pack-1)) 18%, transparent), transparent 65%),
+    radial-gradient(ellipse 60% 75% at 88% 85%, color-mix(in srgb, var(--pack-to, var(--pack-7)) 16%, transparent), transparent 65%),
+    linear-gradient(160deg, var(--bg-card) 0%, var(--bg-elevated) 100%);
+  box-shadow:
+    inset 0 1px 0 0 color-mix(in srgb, var(--pack-from, var(--pack-1)) 28%, transparent),
+    var(--shadow-card);
+}
+
+.pack-hero-gradient-text {
+  background-image: linear-gradient(125deg, var(--pack-from, var(--pack-1)) 0%, var(--pack-to, var(--pack-6)) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.pack-iso-scene {
+  perspective: 680px;
+}
+
+.pack-iso-platform {
+  transform: rotateX(54deg) rotateZ(-36deg);
+  transform-style: preserve-3d;
+  animation: packIsoFloat 6s ease-in-out infinite alternate;
+}
+
+@keyframes packIsoFloat {
+  0% {
+    transform: rotateX(54deg) rotateZ(-36deg) translateZ(0px);
+  }
+  100% {
+    transform: rotateX(54deg) rotateZ(-33deg) translateZ(8px);
+  }
+}
+
+.pack-picker-card {
+  position: relative;
+  background-color: var(--bg-card);
+  background-image: radial-gradient(
+    140% 100% at 0% 0%,
+    color-mix(in srgb, var(--pack-from, var(--accent)) 10%, transparent) 0%,
+    transparent 65%
+  );
+  box-shadow:
+    inset 0 1px 0 0 color-mix(in srgb, var(--pack-from, var(--accent)) 22%, transparent),
+    var(--shadow-card);
+  transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 200ms cubic-bezier(0.22, 1, 0.36, 1), border-color 200ms ease-out;
+}
+
+.pack-picker-card:hover {
+  transform: translateY(-4px);
+  border-color: color-mix(in srgb, var(--pack-from, var(--accent)) 60%, var(--border-strong));
+  box-shadow:
+    inset 0 1px 0 0 color-mix(in srgb, var(--pack-from, var(--accent)) 45%, transparent),
+    0 16px 36px -8px color-mix(in srgb, var(--pack-from, var(--accent)) 24%, rgba(2, 6, 23, 0.35));
+}
+
+.pack-picker-card[data-selected="true"],
+.pack-picker-card[data-recommended="true"] {
+  border-color: var(--pack-from, var(--accent));
+  box-shadow:
+    inset 0 1px 0 0 color-mix(in srgb, var(--pack-from, var(--accent)) 55%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--pack-from, var(--accent)) 45%, transparent),
+    0 14px 32px -8px color-mix(in srgb, var(--pack-from, var(--accent)) 22%, rgba(2, 6, 23, 0.3));
+}
+
+.pack-icon-tile {
+  background-image: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--pack-from, var(--accent)) 22%, var(--bg-elevated)) 0%,
+    color-mix(in srgb, var(--pack-to, var(--accent-2)) 16%, var(--bg-card)) 100%
+  );
+  border: 1px solid color-mix(in srgb, var(--pack-from, var(--accent)) 40%, var(--border-subtle));
+  box-shadow: 0 6px 18px -4px color-mix(in srgb, var(--pack-from, var(--accent)) 35%, transparent);
+  color: var(--pack-from, var(--accent));
+}
+
+.pack-dashboard-header {
+  position: relative;
+  background-color: var(--bg-card);
+  background-image:
+    radial-gradient(ellipse 75% 90% at 8% 0%, color-mix(in srgb, var(--pack-from, var(--accent)) 16%, transparent) 0%, transparent 65%),
+    radial-gradient(ellipse 55% 75% at 95% 100%, color-mix(in srgb, var(--pack-to, var(--accent-2)) 14%, transparent) 0%, transparent 65%);
+  box-shadow:
+    inset 0 2px 0 0 var(--pack-from, var(--accent)),
+    var(--shadow-card);
+}
+
+.pack-insight-banner {
+  position: relative;
+  background-color: var(--bg-card);
+  background-image: linear-gradient(
+    105deg,
+    color-mix(in srgb, var(--pack-from, var(--accent)) 13%, var(--bg-card)) 0%,
+    color-mix(in srgb, var(--pack-to, var(--accent-2)) 8%, var(--bg-elevated)) 100%
+  );
+  border: 1px solid color-mix(in srgb, var(--pack-from, var(--accent)) 42%, var(--border-subtle));
+  box-shadow: var(--shadow-card);
+}
+
+.pack-kpi-card {
+  position: relative;
+  transition: transform 180ms ease-out, box-shadow 180ms ease-out, border-color 180ms ease-out;
+}
+
+.pack-kpi-card:hover {
+  transform: translateY(-2px);
+}
+
+.pack-btn-press {
+  transition: transform 150ms ease-out, opacity 150ms ease-out, box-shadow 150ms ease-out;
+}
+
+.pack-btn-press:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+@keyframes packSkeletonShimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.pack-skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--bg-elevated) 25%,
+    var(--bg-card-hover) 50%,
+    var(--bg-elevated) 75%
+  );
+  background-size: 200% 100%;
+  animation: packSkeletonShimmer 1.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pack-iso-platform,
+  .pack-skeleton-shimmer {
+    animation: none !important;
+  }
+  .pack-picker-card,
+  .pack-Picker-card:hover,
+  .pack-kpi-card,
+  .pack-kpi-card:hover,
+  .pack-btn-press:active {
+    transform: none !important;
+    transition: none !important;
+  }
+}
+
 

@@ -192,38 +192,21 @@ const ToastCard: React.FC<ToastCardProps> = ({ toast, onDismiss, isLight }) => {
 };
 
 export const ToastContainer: React.FC = () => {
-  const { toasts, dismissToast, clearAll } = useToast();
+  const { toasts, dismissToast } = useToast();
   const { themeMode } = usePlatform();
   const isLight = themeMode === 'light';
 
   if (!toasts || toasts.length === 0) return null;
+  const visibleToasts = toasts.slice(-2);
 
   return (
     <aside 
       aria-label="Notifications"
-      className="fixed bottom-5 right-5 z-[120] flex flex-col gap-2.5 max-w-sm sm:max-w-md w-full pointer-events-none p-2 sm:p-0"
+      className="fixed bottom-4 right-4 z-[120] flex flex-col gap-2 max-w-xs sm:max-w-sm w-full pointer-events-none p-2 sm:p-0"
     >
-      {/* Clear all pill when multiple notifications exist */}
-      {toasts.length > 2 && (
-        <div className="flex justify-end pointer-events-auto">
-          <button
-            type="button"
-            onClick={clearAll}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono uppercase tracking-wider border shadow-md transition-all cursor-pointer ${
-              isLight
-                ? 'bg-white/90 text-muted border-slate-200 hover:bg-elevated'
-                : 'bg-accent text-secondary border-slate-700/60 hover:text-primary hover:bg-accent'
-            }`}
-          >
-            <Trash2 className="w-3 h-3" />
-            <span>Clear All ({toasts.length})</span>
-          </button>
-        </div>
-      )}
-
-      {/* List of active toasts */}
-      <div className="flex flex-col-reverse gap-2.5 pointer-events-auto">
-        {toasts.map((item) => (
+      {/* List of active toasts (max 2) */}
+      <div className="flex flex-col-reverse gap-2 pointer-events-auto">
+        {visibleToasts.map((item) => (
           <ToastCard 
             key={item.id} 
             toast={item} 

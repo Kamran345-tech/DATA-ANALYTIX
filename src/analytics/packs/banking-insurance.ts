@@ -7,6 +7,7 @@ export const bankingInsurancePack: AnalyticsPackConfig = {
   category: 'Finance & Risk',
   icon: 'Landmark',
   description: 'Net Interest Margin (NIM), Non-Performing Loans (NPL %), loan book, deposits, claims loss ratio, combined ratio, and capital adequacy.',
+  theme: { hue: "navy-gold", gradientFrom: "var(--pack-13)", gradientTo: "var(--pack-7)" },
   detect: {
     keywords: [
       'loan_book', 'npl', 'non_performing', 'net_interest_margin', 'nim', 'deposits',

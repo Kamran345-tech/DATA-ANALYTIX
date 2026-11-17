@@ -74,9 +74,24 @@ When `analyticsPacks` is enabled, Data Analytix provides 14 domain-specific anal
 
 ### How to Add a New Pack (15th Pack in 1 Config File)
 Because the Analytics Packs architecture uses **one generic renderer** (`src/components/views/AnalyticsPacksView.tsx`) and **one declarative engine** (`src/analytics/engine.ts`), adding a 15th pack requires **only a new config file** (no hardcoded UI changes):
-1. Create `src/analytics/packs/<my-pack>.ts` exporting an `AnalyticsPackConfig` object (`id`, `name`, `category`, `icon`, `description`, `detect`, `kpis`, `charts`, `lenses`, `reportSections`, `sampleDataset`).
+1. Create `src/analytics/packs/<my-pack>.ts` exporting an `AnalyticsPackConfig` object (`id`, `name`, `category`, `icon`, `description`, `theme`, `detect`, `kpis`, `charts`, `lenses`, `reportSections`, `sampleDataset`).
 2. Add the pack ID to `PackId` in `src/analytics/packs/types.ts` and register the config in `RAW_PACKS` inside `src/analytics/packs/registry.ts`.
 3. Run `npm test` — the generic catalog grid, search/category filter, auto-detection engine, role mapper, KPI cards with `"i"` formula tooltips, 4 lenses, charts, and PDF/ZIP/Excel/CSV template exporters automatically include the new pack.
+
+### Pack Theming (`--pack-1..14` Semantic Tokens)
+Every analytics pack has a distinct visual identity configured declaratively in its pack file via `theme`:
+```ts
+theme: {
+  hue: 'emerald',
+  gradientFrom: 'var(--pack-1)',
+  gradientTo: 'var(--pack-10)',
+  chartPalette: ['var(--pack-1)', 'var(--pack-10)', 'var(--chart-2)', 'var(--chart-3)', 'var(--chart-4)', 'var(--chart-5)'],
+}
+```
+- **Semantic Tokens Only**: Pack colors are defined as `--pack-1` through `--pack-14` in both `src/config/designTokens.ts` (`DARK_TOKENS` and `LIGHT_TOKENS`) and `src/index.css` (`:root` and `.theme-light`). All 14 tokens are verified by `tests/theme-contrast.test.ts` to maintain **>= 4.5:1 WCAG AA contrast** against both `--bg-card` and `--bg-app` in dark and light themes.
+- **Automatic Propagation**: The generic renderer binds `--pack-accent` and `--pack-gradient-to` on each picker card, header strip, confidence ring, KPI top border, KPI area sparkline, and maps `--chart-1..6` to `activePack.theme.chartPalette` so all charts adopt the active pack's palette automatically without hardcoded colors.
+- **Accessibility & Motion**: Color is never used as the sole signal (KPI delta chips pair color with `TrendingUp`/`TrendingDown` icons and `Favorable`/`Unfavorable` labels; confidence gauges pair ring color with explicit `%` numerals and status text). All floating and hover animations respect `@media (prefers-reduced-motion: reduce)`.
+
 
 ### Real-Data Hardening & KPI Formula Assumptions
 Every KPI across all 14 packs defines `formulaText` (plain-English definition), `source` (standard mathematical formula), and explicit edge-case guards (divide-by-zero, negative values, all-null columns, and decimal-to-percent unit normalization):

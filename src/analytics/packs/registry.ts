@@ -6,6 +6,7 @@ import {
   PackId,
   PackLensConfig,
   PackRoleDefinition,
+  PackThemeConfig,
 } from './types';
 import { financialPack } from './financial';
 import { salesPack } from './sales';
@@ -21,6 +22,107 @@ import { retailPack } from './retail';
 import { manufacturingPack } from './manufacturing';
 import { bankingInsurancePack } from './banking-insurance';
 import { educationPack } from './education';
+
+export const DEFAULT_PACK_THEMES: Record<PackId, Required<PackThemeConfig>> = {
+  financial: {
+    hue: 'emerald-gold',
+    token: '--pack-1',
+    gradientFrom: 'var(--pack-1)',
+    gradientTo: 'var(--pack-7)',
+    chartPalette: ['var(--pack-1)', 'var(--pack-7)', 'var(--pack-10)', 'var(--chart-2)', 'var(--chart-3)', 'var(--chart-6)'],
+  },
+  sales: {
+    hue: 'blue',
+    token: '--pack-2',
+    gradientFrom: 'var(--pack-2)',
+    gradientTo: 'var(--pack-6)',
+    chartPalette: ['var(--pack-2)', 'var(--pack-6)', 'var(--pack-5)', 'var(--pack-1)', 'var(--chart-4)', 'var(--chart-6)'],
+  },
+  marketing: {
+    hue: 'magenta-orange',
+    token: '--pack-3',
+    gradientFrom: 'var(--pack-3)',
+    gradientTo: 'var(--pack-12)',
+    chartPalette: ['var(--pack-3)', 'var(--pack-12)', 'var(--pack-7)', 'var(--pack-4)', 'var(--pack-2)', 'var(--pack-1)'],
+  },
+  customer: {
+    hue: 'violet',
+    token: '--pack-4',
+    gradientFrom: 'var(--pack-4)',
+    gradientTo: 'var(--pack-5)',
+    chartPalette: ['var(--pack-4)', 'var(--pack-5)', 'var(--pack-3)', 'var(--pack-6)', 'var(--pack-1)', 'var(--pack-7)'],
+  },
+  product: {
+    hue: 'indigo',
+    token: '--pack-5',
+    gradientFrom: 'var(--pack-5)',
+    gradientTo: 'var(--pack-2)',
+    chartPalette: ['var(--pack-5)', 'var(--pack-2)', 'var(--pack-6)', 'var(--pack-4)', 'var(--pack-10)', 'var(--pack-7)'],
+  },
+  web: {
+    hue: 'cyan',
+    token: '--pack-6',
+    gradientFrom: 'var(--pack-6)',
+    gradientTo: 'var(--pack-2)',
+    chartPalette: ['var(--pack-6)', 'var(--pack-2)', 'var(--pack-10)', 'var(--pack-5)', 'var(--pack-1)', 'var(--pack-4)'],
+  },
+  operations: {
+    hue: 'amber',
+    token: '--pack-7',
+    gradientFrom: 'var(--pack-7)',
+    gradientTo: 'var(--pack-12)',
+    chartPalette: ['var(--pack-7)', 'var(--pack-12)', 'var(--pack-1)', 'var(--pack-2)', 'var(--pack-6)', 'var(--pack-9)'],
+  },
+  hr: {
+    hue: 'rose',
+    token: '--pack-8',
+    gradientFrom: 'var(--pack-8)',
+    gradientTo: 'var(--pack-3)',
+    chartPalette: ['var(--pack-8)', 'var(--pack-3)', 'var(--pack-4)', 'var(--pack-7)', 'var(--pack-2)', 'var(--pack-10)'],
+  },
+  'risk-fraud': {
+    hue: 'red-crimson',
+    token: '--pack-9',
+    gradientFrom: 'var(--pack-9)',
+    gradientTo: 'var(--pack-8)',
+    chartPalette: ['var(--pack-9)', 'var(--pack-8)', 'var(--pack-7)', 'var(--pack-12)', 'var(--pack-5)', 'var(--pack-2)'],
+  },
+  healthcare: {
+    hue: 'teal-mint',
+    token: '--pack-10',
+    gradientFrom: 'var(--pack-10)',
+    gradientTo: 'var(--pack-1)',
+    chartPalette: ['var(--pack-10)', 'var(--pack-1)', 'var(--pack-6)', 'var(--pack-2)', 'var(--pack-4)', 'var(--pack-7)'],
+  },
+  retail: {
+    hue: 'pink',
+    token: '--pack-11',
+    gradientFrom: 'var(--pack-11)',
+    gradientTo: 'var(--pack-3)',
+    chartPalette: ['var(--pack-11)', 'var(--pack-3)', 'var(--pack-4)', 'var(--pack-7)', 'var(--pack-6)', 'var(--pack-1)'],
+  },
+  manufacturing: {
+    hue: 'steel-orange',
+    token: '--pack-12',
+    gradientFrom: 'var(--pack-12)',
+    gradientTo: 'var(--pack-13)',
+    chartPalette: ['var(--pack-12)', 'var(--pack-13)', 'var(--pack-7)', 'var(--pack-6)', 'var(--pack-1)', 'var(--pack-5)'],
+  },
+  'banking-insurance': {
+    hue: 'navy-gold',
+    token: '--pack-13',
+    gradientFrom: 'var(--pack-13)',
+    gradientTo: 'var(--pack-7)',
+    chartPalette: ['var(--pack-13)', 'var(--pack-7)', 'var(--pack-2)', 'var(--pack-1)', 'var(--pack-5)', 'var(--pack-9)'],
+  },
+  education: {
+    hue: 'lime',
+    token: '--pack-14',
+    gradientFrom: 'var(--pack-14)',
+    gradientTo: 'var(--pack-1)',
+    chartPalette: ['var(--pack-14)', 'var(--pack-1)', 'var(--pack-10)', 'var(--pack-6)', 'var(--pack-2)', 'var(--pack-7)'],
+  },
+};
 
 function enrichPackConfig(raw: AnalyticsPackConfig): EnrichedAnalyticsPackConfig {
   // 1. Build `roles` map from taxonomy + detect.roleAliases
@@ -124,9 +226,19 @@ function enrichPackConfig(raw: AnalyticsPackConfig): EnrichedAnalyticsPackConfig
     prescriptive,
   }) as HybridPackLenses;
 
+  const fallbackTheme = DEFAULT_PACK_THEMES[raw.id] || DEFAULT_PACK_THEMES.financial;
+  const resolvedTheme: Required<PackThemeConfig> = {
+    hue: raw.theme?.hue || fallbackTheme.hue,
+    token: raw.theme?.token || fallbackTheme.token,
+    gradientFrom: raw.theme?.gradientFrom || fallbackTheme.gradientFrom,
+    gradientTo: raw.theme?.gradientTo || fallbackTheme.gradientTo,
+    chartPalette: raw.theme?.chartPalette || fallbackTheme.chartPalette,
+  };
+
   return {
     ...raw,
     category: raw.category || 'Finance & Risk',
+    theme: resolvedTheme,
     roles,
     sampleDataset: sampleFn,
     lenses: hybridLenses,

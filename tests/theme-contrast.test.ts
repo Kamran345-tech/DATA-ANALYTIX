@@ -126,5 +126,26 @@ describe('WCAG 2.1 Contrast Utility & Unified Theme Token Verification', () => {
         expect(contrastRatio(color, light.bgCard)).toBeGreaterThanOrEqual(3.0);
       }
     });
+
+    it('ensures all 14 per-pack tokens (--pack-1..14) pass >= 4.5:1 text contrast in both dark and light mode', () => {
+      const dark = UNIFIED_THEME_TOKENS.dark;
+      const darkPacks = [
+        dark.pack1, dark.pack2, dark.pack3, dark.pack4, dark.pack5, dark.pack6, dark.pack7,
+        dark.pack8, dark.pack9, dark.pack10, dark.pack11, dark.pack12, dark.pack13, dark.pack14,
+      ];
+      for (const p of darkPacks) {
+        expect(contrastRatio(p, dark.bgCard)).toBeGreaterThanOrEqual(4.5);
+        expect(contrastRatio(p, dark.bgApp)).toBeGreaterThanOrEqual(4.5);
+      }
+
+      const lightPacks = [
+        light.pack1, light.pack2, light.pack3, light.pack4, light.pack5, light.pack6, light.pack7,
+        light.pack8, light.pack9, light.pack10, light.pack11, light.pack12, light.pack13, light.pack14,
+      ];
+      for (const p of lightPacks) {
+        expect(contrastRatio(p, light.bgCard)).toBeGreaterThanOrEqual(4.5);
+        expect(contrastRatio(p, light.bgApp)).toBeGreaterThanOrEqual(4.5);
+      }
+    });
   });
 });

@@ -351,79 +351,156 @@ export const UploadIngestionView: React.FC = () => {
       )}
 
       {/* Post-Upload Analytics Pack Detection Banner */}
-      {flags.analyticsPacks && columns.length > 0 && detectedPacks.length > 0 && (
-        <div
-          data-testid="upload-pack-detection-banner"
-          className="depth-card rounded-[20px] p-5 border bg-card border-subtle shadow-sm space-y-3"
-        >
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-start gap-3 min-w-0 flex-1">
-              <div className="w-10 h-10 rounded-xl bg-accent-soft text-accent border border-subtle flex items-center justify-center shrink-0 mt-0.5">
-                <Layers className="w-5 h-5" />
-              </div>
-              <div className="min-w-0 flex-1 space-y-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded bg-accent-soft text-accent">
-                    {detectedPacks[0].isUncertain ? 'Pack Selection Needed' : 'Recommended for your data'}
-                  </span>
-                  <span className="text-xs font-mono text-secondary">
-                    Top 3:{' '}
-                    {detectedPacks
-                      .slice(0, 3)
-                      .map(m => `${m.packName} (${m.confidence}%)`)
-                      .join(' · ')}
+      {flags.analyticsPacks && columns.length > 0 && detectedPacks.length > 0 && (() => {
+        const topMatch = detectedPacks[0];
+        const isUncertain = topMatch.isUncertain || topMatch.confidence < 60;
+        const topPackObj = allPacks.find(p => p.id === topMatch.packId);
+        const topAccent = isUncertain
+          ? 'var(--warning)'
+          : (topPackObj as any)?.theme?.gradientFrom || 'var(--accent)';
+        const ringRadius = 22;
+        const ringCircumference = 2 * Math.PI * ringRadius;
+        const ringOffset = ringCircumference - (Math.min(100, Math.max(0, topMatch.confidence)) / 100) * ringCircumference;
+
+        return (
+          <div
+            data-testid="upload-pack-detection-banner"
+            style={
+              flags.depthUI
+                ? ({
+                    '--pack-from': topAccent,
+                    '--pack-to': (topPackObj as any)?.theme?.gradientTo || 'var(--accent-2)',
+                  } as React.CSSProperties)
+                : undefined
+            }
+            className="depth-card pack-insight-banner rounded-[20px] p-5 border bg-card border-subtle shadow-sm space-y-4"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-5">
+              {/* Left: Circular SVG Confidence Gauge + Title */}
+              <div className="flex items-center gap-4 min-w-0 flex-1">
+                <div className="relative w-14 h-14 flex items-center justify-center shrink-0">
+                  <svg width="56" height="56" viewBox="0 0 56 56" className="-rotate-90" aria-hidden="true">
+                    <circle
+                      cx="28"
+                      cy="28"
+                      r={ringRadius}
+                      fill="none"
+                      stroke="var(--border-subtle)"
+                      strokeWidth="5"
+                    />
+                    <circle
+                      cx="28"
+                      cy="28"
+                      r={ringRadius}
+                      fill="none"
+                      stroke={topAccent}
+                      strokeWidth="5"
+                      strokeLinecap="round"
+                      strokeDasharray={ringCircumference}
+                      strokeDashoffset={ringOffset}
+                    />
+                  </svg>
+                  <span
+                    className="absolute text-[11px] font-mono tabular-nums font-bold"
+                    style={{ color: topAccent }}
+                  >
+                    {topMatch.confidence}%
                   </span>
                 </div>
-                <h3 className="font-heading text-base font-bold text-primary">
-                  {detectedPacks[0].isUncertain
-                    ? `Not sure, please choose (top guess: ${detectedPacks[0].packName} at ${detectedPacks[0].confidence}%)`
-                    : `Looks like ${detectedPacks[0].packName} data (${detectedPacks[0].confidence}%)`}
-                </h3>
+
+                <div className="min-w-0 flex-1 space-y-1">
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-secondary font-mono">
+                    <span className="font-semibold" style={{ color: topAccent }}>
+                      {isUncertain ? 'Low Schema Confidence (<60%)' : 'Recommended for your data'}
+                    </span>
+                    <span aria-hidden="true">·</span>
+                    <span>{columns.length} columns analyzed</span>
+                  </div>
+                  <h3 className="font-heading text-base sm:text-lg font-bold text-primary">
+                    {isUncertain
+                      ? `Not sure, pick one — closest match is ${topMatch.packName} (${topMatch.confidence}%)`
+                      : `Best Match: ${topMatch.packName} (${topMatch.confidence}% schema match)`}
+                  </h3>
+                </div>
+              </div>
+
+              {/* Center: Top 3 Matches Horizontal Bars */}
+              <div className="w-full md:w-64 space-y-1.5">
+                {detectedPacks.slice(0, 3).map(match => {
+                  const matchPack = allPacks.find(p => p.id === match.packId) as any;
+                  const barColor =
+                    match.confidence < 60
+                      ? 'var(--warning)'
+                      : matchPack?.theme?.gradientFrom || 'var(--accent)';
+                  return (
+                    <div key={match.packId} className="space-y-0.5">
+                      <div className="flex items-center justify-between text-[11px] font-mono tabular-nums">
+                        <span className="text-primary font-medium truncate max-w-[160px]">{match.packName}</span>
+                        <span className="text-secondary font-bold">{match.confidence}%</span>
+                      </div>
+                      <div className="w-full h-1.5 rounded-full bg-elevated overflow-hidden border border-subtle">
+                        <div
+                          className="h-full rounded-full"
+                          style={{
+                            width: `${Math.max(6, match.confidence)}%`,
+                            backgroundColor: barColor,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Right: Actions */}
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
+                <label className="sr-only" htmlFor="upload-change-pack-select">
+                  Change pack
+                </label>
+                <select
+                  id="upload-change-pack-select"
+                  aria-label="Change pack"
+                  data-testid="upload-change-pack-select"
+                  value={activePackId}
+                  onChange={e => handlePackSelectChange(e.target.value)}
+                  className="min-h-[44px] rounded-xl bg-elevated border border-subtle px-3 py-1.5 text-xs font-semibold text-primary focus:outline-hidden cursor-pointer"
+                >
+                  {allPacks.map(p => (
+                    <option key={p.id} value={p.id}>
+                      Change pack: {p.name}
+                    </option>
+                  ))}
+                </select>
+
+                <button
+                  type="button"
+                  data-testid="upload-map-columns-btn"
+                  onClick={() => setIsPackMappingOpen(true)}
+                  className="min-h-[44px] px-3.5 py-2 rounded-xl bg-elevated hover:bg-card-hover border border-subtle text-xs font-semibold text-primary flex items-center gap-1.5 cursor-pointer transition-colors pack-btn-press"
+                >
+                  <SlidersHorizontal className="w-3.5 h-3.5 text-accent" />
+                  <span>Map columns</span>
+                </button>
+
+                <button
+                  type="button"
+                  data-testid="upload-open-pack-btn"
+                  onClick={() => {
+                    if (!isUncertain && topMatch.packId) {
+                      setActivePackId(topMatch.packId);
+                    }
+                    setCurrentTab('analytics_packs');
+                  }}
+                  className="min-h-[44px] px-4 py-2 rounded-xl bg-accent text-on-accent text-xs font-bold hover:opacity-90 flex items-center gap-1.5 cursor-pointer transition-opacity pack-btn-press"
+                >
+                  <span>{isUncertain ? 'Browse Packs' : `Use ${topMatch.packName}`}</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
               </div>
             </div>
-
-            <div className="flex flex-wrap items-center gap-2 shrink-0">
-              <label className="sr-only" htmlFor="upload-change-pack-select">
-                Change pack
-              </label>
-              <select
-                id="upload-change-pack-select"
-                aria-label="Change pack"
-                data-testid="upload-change-pack-select"
-                value={activePackId}
-                onChange={e => handlePackSelectChange(e.target.value)}
-                className="min-h-[40px] rounded-xl bg-elevated border border-subtle px-3 py-1.5 text-xs font-semibold text-primary focus:outline-hidden cursor-pointer"
-              >
-                {allPacks.map(p => (
-                  <option key={p.id} value={p.id}>
-                    Change pack: {p.name}
-                  </option>
-                ))}
-              </select>
-
-              <button
-                type="button"
-                data-testid="upload-map-columns-btn"
-                onClick={() => setIsPackMappingOpen(true)}
-                className="min-h-[40px] px-3.5 py-1.5 rounded-xl bg-elevated hover:bg-card-hover border border-subtle text-xs font-semibold text-primary flex items-center gap-1.5 cursor-pointer transition-colors"
-              >
-                <SlidersHorizontal className="w-3.5 h-3.5 text-accent" />
-                <span>Map columns</span>
-              </button>
-
-              <button
-                type="button"
-                data-testid="upload-open-pack-btn"
-                onClick={() => setCurrentTab('analytics_packs')}
-                className="min-h-[40px] px-3.5 py-1.5 rounded-xl bg-accent text-on-accent text-xs font-bold hover:opacity-90 flex items-center gap-1.5 cursor-pointer transition-opacity"
-              >
-                <span>Open Pack Dashboard</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Column-Role Mapping & Schema Inspection Table */}
       {columns.length > 0 && (

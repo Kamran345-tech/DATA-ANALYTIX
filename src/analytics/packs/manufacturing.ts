@@ -7,6 +7,7 @@ export const manufacturingPack: AnalyticsPackConfig = {
   category: 'Operations & Supply',
   icon: 'Factory',
   description: 'OEE (Overall Equipment Effectiveness), First Pass Yield (FPY), scrap rate, unplanned downtime, cycle time, and unit production cost.',
+  theme: { hue: "steel-orange", gradientFrom: "var(--pack-12)", gradientTo: "var(--pack-13)" },
   detect: {
     keywords: [
       'oee', 'first_pass_yield', 'fpy', 'scrap', 'downtime', 'production_units',
