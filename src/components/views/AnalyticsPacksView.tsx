@@ -41,6 +41,8 @@ import { EditableDashboardTitle } from '../common/EditableDashboardTitle';
 import { ModernKpiCard } from '../modern/ModernKpiCard';
 import { ColumnMappingModal } from '../common/ColumnMappingModal';
 import { DownloadMenu } from '../common/DownloadMenu';
+import { PagePurposeBar } from '../common/PagePurposeBar';
+import { InteractiveSlicersBar } from '../common/InteractiveSlicersBar';
 import { GuideChartRenderer } from '../charts/InteractiveCharts';
 import { ChartGuideId } from '../../config/chartGuide';
 import {
@@ -757,6 +759,7 @@ export const AnalyticsPacksView: React.FC = () => {
 
   const topMatch = detectedMatches[0];
   const isTopMatchUncertain = Boolean(topMatch && (topMatch.isUncertain || topMatch.confidence < 60));
+  const [isDescExpanded, setIsDescExpanded] = useState(false);
   const hasActiveFilters = Boolean(
     filters.searchQuery || filters.selectedDimensionValue || dateWindowFilter !== 'all'
   );
@@ -767,6 +770,9 @@ export const AnalyticsPacksView: React.FC = () => {
       className="w-full min-w-0 max-w-[1280px] mx-auto space-y-6 pb-24 animate-fadeIn overflow-x-hidden"
       data-testid="analytics-packs-view"
     >
+      <PagePurposeBar page="analytics_packs" />
+      <InteractiveSlicersBar />
+
       {/* SLIM STICKY "SWITCH PACK" BAR WHEN CATALOG IS COLLAPSED (Part A Bug #4) */}
       {!showCatalogGrid && (
         <div
@@ -1282,18 +1288,10 @@ export const AnalyticsPacksView: React.FC = () => {
                 </div>
 
                 <EditableDashboardTitle />
-
-                {/* Full-width readable description measure (never a cramped narrow column) */}
-                <p className="text-xs sm:text-sm text-secondary max-w-3xl leading-relaxed">
-                  {activePack.description} · Active dataset:{' '}
-                  <span className="font-mono text-primary">
-                    {project?.name || `${activePack.name} Sample Dataset`}
-                  </span>
-                </p>
               </div>
             </div>
 
-            {/* Grouped Action Toolbar (Switch Pack + Map Columns + Template + Ask AI + Export) */}
+            {/* Grouped Action Toolbar (Switch Pack + Map Columns + Template + Ask AI + Download) */}
             <div className="flex flex-wrap items-center gap-1.5 p-1.5 rounded-2xl bg-elevated border border-subtle shrink-0 self-start">
               <label htmlFor="pack-selector-select" className="sr-only">
                 Switch Analytics Pack
@@ -1343,8 +1341,28 @@ export const AnalyticsPacksView: React.FC = () => {
                 <span>Ask AI</span>
               </button>
 
-              <DownloadMenu context="analytics_pack" packId={activePack.id} label="Export" compact />
+              <DownloadMenu context="analytics_pack" packId={activePack.id} label="Download" compact />
             </div>
+          </div>
+
+          {/* Full-width body font dataset/pack description with 2-line clamp and "more" toggle (Phase 1.1 & 1.2) */}
+          <div className="w-full flex flex-col sm:flex-row sm:items-baseline justify-between gap-2">
+            <p
+              data-testid="pack-header-description"
+              className={`w-full font-sans text-xs sm:text-sm text-secondary leading-relaxed ${
+                isDescExpanded ? '' : 'line-clamp-2'
+              }`}
+            >
+              {activePack.description}
+            </p>
+            <button
+              type="button"
+              data-testid="pack-description-more-btn"
+              onClick={() => setIsDescExpanded(prev => !prev)}
+              className="text-xs font-semibold text-accent hover:underline shrink-0 self-start cursor-pointer"
+            >
+              {isDescExpanded ? 'less' : 'more'}
+            </button>
           </div>
 
           {/* Row 2: Segmented Pill Lens Control in Header + Tidy 1-Row Filter Bar */}
@@ -2010,7 +2028,9 @@ export const AnalyticsPacksView: React.FC = () => {
                 </p>
               </div>
             </div>
-            <DownloadMenu context="analytics_pack" packId={activePack.id} label="Download Report" />
+            <span className="text-xs font-mono text-secondary">
+              Use the top <strong className="text-primary">Download</strong> button to export PDF, PPTX, or ZIP bundles
+            </span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

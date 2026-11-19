@@ -42,6 +42,7 @@ import { GlobalFilterBar } from '../common/GlobalFilterBar';
 import { InteractiveSlicersBar } from '../common/InteractiveSlicersBar';
 import { ModernEmptyState } from '../modern/ModernEmptyState';
 import { DownloadMenu } from '../common/DownloadMenu';
+import { PagePurposeBar } from '../common/PagePurposeBar';
 import { safeMax } from '../../utils/mathUtils';
 import { 
   recommendChartsForFields, 
@@ -1035,9 +1036,11 @@ export const DashboardBuilderView: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-12 animate-fadeIn w-full max-w-7xl mx-auto">
+      <PagePurposeBar page="dashboard_builder" />
+
       {/* Download notification toast */}
       {downloadSuccess && (
-        <div className="fixed top-20 right-6 z-50 bg-sky-950/90 border border-cyan-400 text-cyan-200 px-4 py-2.5 rounded-xl text-xs font-semibold shadow-xl flex items-center gap-2 animate-bounce">
+        <div className="fixed bottom-20 sm:bottom-6 right-6 z-50 bg-sky-950/90 border border-cyan-400 text-cyan-200 px-4 py-2.5 rounded-xl text-xs font-semibold shadow-xl flex items-center gap-2">
           <Check className="w-4 h-4 text-cyan-400" />
           <span>{downloadSuccess}</span>
         </div>
@@ -1123,67 +1126,72 @@ export const DashboardBuilderView: React.FC = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            {/* Download Bundle (Dashboard + Executive Report Bundle ZIP) */}
-            <button
-              onClick={handleDownloadBundleZip}
-              disabled={isBundleGenerating}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-700 hover:bg-sky-600 text-primary text-xs font-semibold transition-all shadow-md shrink-0 whitespace-nowrap disabled:opacity-50 cursor-pointer"
-              title="Download both the created dashboard and executive report in a single ZIP package"
-            >
-              {isBundleGenerating ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-primary shrink-0" />
-              ) : (
-                <Package className="w-3.5 h-3.5 stroke-[2.5] shrink-0" />
-              )}
-              <span className="whitespace-nowrap font-bold">Download Bundle (ZIP)</span>
-            </button>
+            {/* Legacy multi-button cluster shown only when Classic flags are active */}
+            {!flags.unifiedTheme && !flags.depthUI && (
+              <>
+                {/* Download Bundle (Dashboard + Executive Report Bundle ZIP) */}
+                <button
+                  onClick={handleDownloadBundleZip}
+                  disabled={isBundleGenerating}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-700 hover:bg-sky-600 text-primary text-xs font-semibold transition-all shadow-md shrink-0 whitespace-nowrap disabled:opacity-50 cursor-pointer"
+                  title="Download both the created dashboard and executive report in a single ZIP package"
+                >
+                  {isBundleGenerating ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-primary shrink-0" />
+                  ) : (
+                    <Package className="w-3.5 h-3.5 stroke-[2.5] shrink-0" />
+                  )}
+                  <span className="whitespace-nowrap font-bold">Download Bundle (ZIP)</span>
+                </button>
 
-            {/* Download Created Dashboard as JSON */}
-            <button
-              onClick={handleDownloadDashboardJSON}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors ${
-                isLight
-                  ? 'bg-elevated hover:bg-input text-primary border-slate-300'
-                  : 'bg-elevated hover:bg-elevated text-primary border-subtle hover:border-cyan-400/50'
-              }`}
-              title="Download full created dashboard specification & data as JSON"
-            >
-              <Download className={`w-3.5 h-3.5 ${isLight ? 'text-sky-700' : 'text-cyan-400'}`} />
-              <span>Dashboard (JSON)</span>
-            </button>
+                {/* Download Created Dashboard as JSON */}
+                <button
+                  onClick={handleDownloadDashboardJSON}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors ${
+                    isLight
+                      ? 'bg-elevated hover:bg-input text-primary border-slate-300'
+                      : 'bg-elevated hover:bg-elevated text-primary border-subtle hover:border-cyan-400/50'
+                  }`}
+                  title="Download full created dashboard specification & data as JSON"
+                >
+                  <Download className={`w-3.5 h-3.5 ${isLight ? 'text-sky-700' : 'text-cyan-400'}`} />
+                  <span>Dashboard (JSON)</span>
+                </button>
 
-            {/* Download Executive Report as PDF */}
-            <button
-              onClick={handleDownloadExecutivePDF}
-              disabled={isPdfGenerating}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors disabled:opacity-50 ${
-                isLight
-                  ? 'bg-elevated hover:bg-input text-primary border-slate-300'
-                  : 'bg-elevated hover:bg-elevated text-primary border-subtle hover:border-cyan-400/50'
-              }`}
-              title="Download verified Executive PDF Report"
-            >
-              {isPdfGenerating ? (
-                <Loader2 className={`w-3.5 h-3.5 animate-spin ${isLight ? 'text-sky-700' : 'text-cyan-400'}`} />
-              ) : (
-                <FileText className={`w-3.5 h-3.5 ${isLight ? 'text-sky-700' : 'text-cyan-400'}`} />
-              )}
-              <span>Executive Report (PDF)</span>
-            </button>
+                {/* Download Executive Report as PDF */}
+                <button
+                  onClick={handleDownloadExecutivePDF}
+                  disabled={isPdfGenerating}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors disabled:opacity-50 ${
+                    isLight
+                      ? 'bg-elevated hover:bg-input text-primary border-slate-300'
+                      : 'bg-elevated hover:bg-elevated text-primary border-subtle hover:border-cyan-400/50'
+                  }`}
+                  title="Download verified Executive PDF Report"
+                >
+                  {isPdfGenerating ? (
+                    <Loader2 className={`w-3.5 h-3.5 animate-spin ${isLight ? 'text-sky-700' : 'text-cyan-400'}`} />
+                  ) : (
+                    <FileText className={`w-3.5 h-3.5 ${isLight ? 'text-sky-700' : 'text-cyan-400'}`} />
+                  )}
+                  <span>Executive Report (PDF)</span>
+                </button>
 
-            {/* Download Standalone HTML Dashboard */}
-            <button
-              onClick={handleDownloadDashboardHTML}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors ${
-                isLight
-                  ? 'bg-elevated hover:bg-input text-primary border-slate-300 hover:border-amber-500/50'
-                  : 'bg-elevated hover:bg-elevated text-primary border-subtle hover:border-amber-400/50'
-              }`}
-              title="Export standalone offline HTML dashboard"
-            >
-              <FileSpreadsheet className="w-3.5 h-3.5 text-amber-500" />
-              <span>Offline HTML</span>
-            </button>
+                {/* Download Standalone HTML Dashboard */}
+                <button
+                  onClick={handleDownloadDashboardHTML}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors ${
+                    isLight
+                      ? 'bg-elevated hover:bg-input text-primary border-slate-300 hover:border-amber-500/50'
+                      : 'bg-elevated hover:bg-elevated text-primary border-subtle hover:border-amber-400/50'
+                  }`}
+                  title="Export standalone offline HTML dashboard"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-amber-500" />
+                  <span>Offline HTML</span>
+                </button>
+              </>
+            )}
 
             <DownloadMenu context="dashboard_builder" label="Download" />
           </div>
@@ -1191,7 +1199,7 @@ export const DashboardBuilderView: React.FC = () => {
       </div>
 
       {/* Global Filters & Interactive Slicers for Cross-Filtering */}
-      <GlobalFilterBar />
+      {!flags.unifiedTheme && !flags.depthUI && <GlobalFilterBar />}
       <InteractiveSlicersBar />
 
       {/* 2. Natural Language Visual Composer */}

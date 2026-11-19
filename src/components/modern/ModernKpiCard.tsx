@@ -91,7 +91,12 @@ export const ModernKpiCard: React.FC<ModernKpiCardProps> = ({
   const hasDelta = !unavailable && typeof resolvedDelta === 'number' && Number.isFinite(resolvedDelta);
   const isUp = hasDelta && resolvedDelta! > 0;
   const isDown = hasDelta && resolvedDelta! < 0;
-  const isFavorable = hasDelta ? (resolvedPositiveFav ? resolvedDelta! >= 0 : resolvedDelta! <= 0) : true;
+  const isNeutralDelta = !hasDelta || Math.abs(resolvedDelta!) < 0.05;
+  const isFavorable = hasDelta
+    ? resolvedPositiveFav
+      ? resolvedDelta! >= -0.5
+      : resolvedDelta! <= 0.5
+    : true;
 
   // Build SVG path + area fill for mini sparkline (88x28)
   let sparkPath = '';
@@ -122,7 +127,12 @@ export const ModernKpiCard: React.FC<ModernKpiCardProps> = ({
         }${assumption ? ` | Assumption: ${assumption}` : ''}`
       : '';
 
-  const strokeColor = isFavorable ? activeAccent : 'var(--danger)';
+  // Phase 1.4: Sparkline color follows meaning (good = positive color, bad = negative, neutral = pack color)
+  const strokeColor = isNeutralDelta
+    ? activeAccent
+    : isFavorable
+    ? 'var(--success)'
+    : 'var(--danger)';
 
   return (
     <div
@@ -146,7 +156,7 @@ export const ModernKpiCard: React.FC<ModernKpiCardProps> = ({
           : undefined
       }
       className={`depth-card pack-kpi-card relative overflow-hidden rounded-2xl bg-card border flex flex-col justify-between transition-all min-w-0 ${
-        isHero && useDepthVisuals ? 'p-5 sm:p-6 gap-3.5' : 'p-4 sm:p-5 gap-3'
+        isHero && useDepthVisuals ? 'p-4 sm:p-5 gap-3' : 'p-4 gap-2.5'
       } ${
         onClick && !unavailable
           ? 'cursor-pointer border-subtle hover:border-strong'
@@ -166,15 +176,19 @@ export const ModernKpiCard: React.FC<ModernKpiCardProps> = ({
       )}
 
       <div className="flex items-start justify-between gap-2 min-w-0">
-        <div className="flex items-center gap-1.5 min-w-0 flex-1">
-          <span
-            title={resolvedLabel}
-            className={`font-semibold uppercase tracking-[0.06em] truncate ${
-              isHero && useDepthVisuals ? 'text-xs text-primary' : 'text-[11px] text-secondary'
-            }`}
-          >
-            {resolvedLabel}
-          </span>
+        <div className="flex items-start gap-1 min-w-0 flex-1">
+          <Tooltip content={resolvedLabel} side="top" className="min-w-0">
+            <span
+              title={resolvedLabel}
+              aria-label={resolvedLabel}
+              data-testid={resolvedId ? `kpi-label-${resolvedId}` : 'kpi-label'}
+              className={`font-semibold uppercase tracking-[0.04em] line-clamp-2 leading-snug break-words ${
+                isHero && useDepthVisuals ? 'text-xs text-primary' : 'text-[11px] text-secondary'
+              }`}
+            >
+              {resolvedLabel}
+            </span>
+          </Tooltip>
           {tooltipContent && (
             <Tooltip content={tooltipContent} side="top" className="!w-auto">
               <button
@@ -182,7 +196,7 @@ export const ModernKpiCard: React.FC<ModernKpiCardProps> = ({
                 onClick={e => e.stopPropagation()}
                 data-testid={resolvedId ? `kpi-formula-tooltip-${resolvedId}` : 'kpi-formula-tooltip'}
                 aria-label={`Formula for ${resolvedLabel}: ${tooltipContent}`}
-                className="shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-lg text-muted hover:text-primary hover:bg-elevated focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] transition-colors cursor-pointer"
+                className="shrink-0 inline-flex items-center justify-center w-6 h-6 -mt-0.5 rounded-lg text-muted hover:text-primary hover:bg-elevated focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] transition-colors cursor-pointer"
               >
                 <Info className="w-3.5 h-3.5" />
               </button>
@@ -199,25 +213,26 @@ export const ModernKpiCard: React.FC<ModernKpiCardProps> = ({
           hasDelta && (
             <span
               data-testid={resolvedId ? `kpi-trend-${resolvedId}` : 'kpi-trend'}
-              className={`inline-flex items-center gap-1 text-[11px] font-mono tabular-nums font-semibold px-2 py-0.5 rounded-lg shrink-0 border border-subtle bg-elevated ${
+              data-favorable={isFavorable ? 'true' : 'false'}
+              className={`inline-flex items-center gap-1 text-[10px] font-mono tabular-nums font-semibold px-1.5 py-0.5 rounded-lg shrink-0 border border-subtle bg-elevated ${
                 isFavorable ? 'text-success' : 'text-danger'
               }`}
               title={`${resolvedDelta! > 0 ? '+' : ''}${resolvedDelta!.toFixed(1)}% (${
-                isFavorable ? 'Favorable' : 'Unfavorable'
+                isFavorable ? 'Favorable trend' : 'Unfavorable trend'
               })`}
             >
               {isUp ? (
-                <TrendingUp className="w-3 h-3" aria-hidden="true" />
+                <TrendingUp className="w-3 h-3 shrink-0" aria-hidden="true" />
               ) : isDown ? (
-                <TrendingDown className="w-3 h-3" aria-hidden="true" />
+                <TrendingDown className="w-3 h-3 shrink-0" aria-hidden="true" />
               ) : (
-                <Minus className="w-3 h-3" aria-hidden="true" />
+                <Minus className="w-3 h-3 shrink-0" aria-hidden="true" />
               )}
               <span>
                 {resolvedDelta! > 0 ? '+' : ''}
                 {resolvedDelta!.toFixed(1)}%
               </span>
-              <span className="hidden 2xl:inline text-[9px] uppercase tracking-wider opacity-90">
+              <span className="sr-only">
                 {isFavorable ? 'Favorable' : 'Unfavorable'}
               </span>
             </span>
@@ -227,6 +242,7 @@ export const ModernKpiCard: React.FC<ModernKpiCardProps> = ({
 
       <div className="flex items-end justify-between gap-2 min-w-0">
         <div
+          data-testid={resolvedId ? `kpi-value-${resolvedId}` : 'kpi-value'}
           className={`font-bold font-mono tabular-nums leading-none tracking-[-0.03em] shrink-0 whitespace-nowrap ${
             useDepthVisuals ? 'animate-kpi-reveal' : ''
           } ${
@@ -255,6 +271,7 @@ export const ModernKpiCard: React.FC<ModernKpiCardProps> = ({
             </defs>
             {sparkAreaPath && <path d={sparkAreaPath} fill={`url(#spark-grad-${reactId})`} />}
             <path
+              data-testid={resolvedId ? `kpi-sparkline-path-${resolvedId}` : 'kpi-sparkline-path'}
               d={sparkPath}
               fill="none"
               stroke={strokeColor}

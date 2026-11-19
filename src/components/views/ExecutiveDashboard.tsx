@@ -52,6 +52,7 @@ import { EditableAnalystName } from '../common/EditableAnalystName';
 import { KpiCardEditorModal } from '../common/KpiCardEditorModal';
 import { Tooltip } from '../common/Tooltip';
 import { DownloadMenu } from '../common/DownloadMenu';
+import { PagePurposeBar } from '../common/PagePurposeBar';
 import { buildSopFileName } from '../../config/designTokens';
 import { 
   TimeSeriesAreaChart, 
@@ -160,6 +161,13 @@ export const ExecutiveDashboard: React.FC = () => {
 
   // Compute filtered value for a KPI based on active slicers/filters
   const computeFilteredKpi = (kpi: KPI) => {
+    if ((kpi as any).isPackSynced) {
+      return {
+        formatted: kpi.formattedValue,
+        raw: kpi.value,
+        isFiltered: filteredRows.length < cleanRows.length,
+      };
+    }
     if (filteredRows.length === cleanRows.length) {
       return { formatted: kpi.formattedValue, raw: kpi.value, isFiltered: false };
     }
@@ -497,32 +505,106 @@ export const ExecutiveDashboard: React.FC = () => {
     return list.slice(0, 3);
   }, [analytics.insights, analytics.kpis, analytics.topPerformers, analytics.pvmAnalysis, analytics.opportunities, cleanRows.length, project.name, qualityReport.overallScore]);
 
-  // Adapt displayed KPIs according to chosen Persona perspective
+  // Synchronize Executive Dashboard KPIs with Analytics Pack engine so the same KPI shows the exact same value on Executive and Pack pages (Phase 2)
+  const [analyticsMod, setAnalyticsMod] = useState<typeof import('../../analytics') | null>(null);
+
+  useEffect(() => {
+    if (!flags.analyticsPacks) return;
+    let cancelled = false;
+    import('../../analytics')
+      .then((mod) => {
+        if (!cancelled) setAnalyticsMod(mod);
+      })
+      .catch(() => {
+        if (!cancelled) setAnalyticsMod(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [flags.analyticsPacks]);
+
+  const packSyncedKpis = useMemo<KPI[]>(() => {
+    if (!flags.analyticsPacks || !analyticsMod || filteredRows.length === 0) {
+      return [];
+    }
+    try {
+      const colNames = columns.map((c) => c.name);
+      const savedPackId =
+        typeof window !== 'undefined'
+          ? localStorage.getItem('dataanalytix_active_pack')
+          : null;
+      const matches = analyticsMod.detectPack(columns, filteredRows);
+      const topMatch = matches[0];
+      let targetPack = savedPackId ? analyticsMod.getPackById(savedPackId) : null;
+      if (!targetPack || (topMatch && topMatch.confidence >= 60 && !savedPackId)) {
+        if (topMatch && topMatch.confidence >= 60) {
+          targetPack = analyticsMod.getPackById(topMatch.packId);
+        }
+      }
+      if (!targetPack) return [];
+      const datasetId = project?.id || project?.name || 'active';
+      const customMap = analyticsMod.getPersistedPackRoleMap(datasetId, targetPack.id);
+      const roleMap = analyticsMod.mapRoles(
+        { columns, rows: filteredRows, datasetId },
+        targetPack,
+        customMap
+      );
+      const computed = analyticsMod.computeKpis(targetPack, filteredRows, roleMap);
+      const available = computed.filter((k) => k.status === 'available');
+      if (available.length >= 4) {
+        return available.slice(0, 4).map((k) => ({
+          id: k.id,
+          name: k.label,
+          value: k.value ?? 0,
+          formattedValue: k.formattedValue,
+          change: k.changePercent ?? 0,
+          changePercent: k.changePercent,
+          unit: k.unit,
+          period: targetPack!.name,
+          status: 'On Track',
+          sourceColumn: roleMap[k.needs[0]] || k.needs[0] || colNames[0] || 'metric',
+          calculation: k.source,
+          aggregation: 'sum',
+          definition: k.formulaText,
+          traceableSource: `${targetPack!.id}.${k.id}`,
+          isPackSynced: true,
+        } as KPI));
+      }
+      return [];
+    } catch {
+      return [];
+    }
+  }, [flags.analyticsPacks, analyticsMod, filteredRows, columns, project?.id, project?.name]);
+
+  // Adapt displayed KPIs according to chosen Persona perspective (merging any user-edited KPIs with pack-synced KPIs)
   const displayKpis = useMemo(() => {
     const all = analytics.kpis || [];
+    const hasCustomEdited = all.some((k) => (k as any).isCustomEdited);
+    const baseList =
+      !hasCustomEdited && packSyncedKpis.length >= 4 ? packSyncedKpis : all;
     if (dashboardPersona === 'finance') {
-      return [...all].sort((a, b) => {
+      return [...baseList].sort((a, b) => {
         const aScore = /margin|profit|cost|income/i.test(a.name) ? 2 : /rev|sales/i.test(a.name) ? 1 : 0;
         const bScore = /margin|profit|cost|income/i.test(b.name) ? 2 : /rev|sales/i.test(b.name) ? 1 : 0;
         return bScore - aScore;
       }).slice(0, 4);
     }
     if (dashboardPersona === 'operations') {
-      return [...all].sort((a, b) => {
-        const aScore = /unit|qty|volume|count|order|record/i.test(a.name) ? 2 : 0;
-        const bScore = /unit|qty|volume|count|order|record/i.test(b.name) ? 2 : 0;
+      return [...baseList].sort((a, b) => {
+        const aScore = /unit|qty|volume|count|order|record|otif|lead/i.test(a.name) ? 2 : 0;
+        const bScore = /unit|qty|volume|count|order|record|otif|lead/i.test(b.name) ? 2 : 0;
         return bScore - aScore;
       }).slice(0, 4);
     }
     if (dashboardPersona === 'growth') {
-      return [...all].sort((a, b) => {
+      return [...baseList].sort((a, b) => {
         const aScore = /growth|sales|customer|target|rate/i.test(a.name) ? 2 : 0;
         const bScore = /growth|sales|customer|target|rate/i.test(b.name) ? 2 : 0;
         return bScore - aScore;
       }).slice(0, 4);
     }
-    return all.slice(0, 4);
-  }, [analytics.kpis, dashboardPersona]);
+    return baseList.slice(0, 4);
+  }, [analytics.kpis, packSyncedKpis, dashboardPersona]);
 
   // Baseline metrics for What-If scenario
   const { baselineRev, baselineProfit, baselineCost } = useMemo(() => {
@@ -678,9 +760,11 @@ export const ExecutiveDashboard: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-12 animate-fadeIn w-full">
+      <PagePurposeBar page="executive_dashboard" />
+
       {/* Download notification toast */}
       {downloadSuccess && (
-        <div className="fixed top-20 right-6 z-50 bg-sky-50 dark:bg-cyan-950/90 border border-sky-300 dark:border-cyan-500/50 text-sky-800 dark:text-cyan-300 px-4 py-2.5 rounded-xl text-xs font-semibold shadow-xl flex items-center gap-2 animate-bounce">
+        <div className="fixed bottom-20 sm:bottom-6 right-6 z-50 bg-sky-50 dark:bg-cyan-950/90 border border-sky-300 dark:border-cyan-500/50 text-sky-800 dark:text-cyan-300 px-4 py-2.5 rounded-xl text-xs font-semibold shadow-xl flex items-center gap-2">
           <ShieldCheck className="w-4 h-4 text-sky-600 dark:text-cyan-400" />
           <span>{downloadSuccess}</span>
         </div>
@@ -812,41 +896,56 @@ export const ExecutiveDashboard: React.FC = () => {
           {/* Action Toolbar Row: Responsive, Generous Breathing Room, Zero Vertical Text Clamping */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-3 border-t border-white/[0.08]">
             <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-              {/* Unified SOP Download Menu */}
+              {/* Unified SOP Download Center Trigger (Phase 3: ONE Download button) */}
               <DownloadMenu context="executive_dashboard" label="Download" />
 
-              {/* Download Bundle ZIP */}
-              <button
-                onClick={handleDownloadBundleZip}
-                disabled={isBundleGenerating}
-                className="glass-btn-primary min-h-[38px] px-3.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-2 shadow-sm transition-all cursor-pointer whitespace-nowrap shrink-0 disabled:opacity-50"
-                title="Download both Dashboard (JSON) and Executive PDF Report in a combined ZIP bundle"
-              >
-                {isBundleGenerating ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin text-primary shrink-0" />
-                ) : (
-                  <Download className="w-3.5 h-3.5 stroke-[2.5] shrink-0" />
-                )}
-                <span className="whitespace-nowrap font-bold">Download Bundle (ZIP)</span>
-                <span className="hidden md:inline-block text-[10px] bg-cyan-900/40 text-cyan-200 px-1.5 py-0.5 rounded font-mono font-normal border border-cyan-400/20">Dashboard + PDF</span>
-              </button>
+              {/* Legacy multi-button cluster shown only when Classic flags are active */}
+              {!flags.unifiedTheme && !flags.depthUI && (
+                <>
+                  {/* Download Bundle ZIP */}
+                  <button
+                    onClick={handleDownloadBundleZip}
+                    disabled={isBundleGenerating}
+                    className="glass-btn-primary min-h-[38px] px-3.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-2 shadow-sm transition-all cursor-pointer whitespace-nowrap shrink-0 disabled:opacity-50"
+                    title="Download both Dashboard (JSON) and Executive PDF Report in a combined ZIP bundle"
+                  >
+                    {isBundleGenerating ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-primary shrink-0" />
+                    ) : (
+                      <Download className="w-3.5 h-3.5 stroke-[2.5] shrink-0" />
+                    )}
+                    <span className="whitespace-nowrap font-bold">Download Bundle (ZIP)</span>
+                    <span className="hidden md:inline-block text-[10px] bg-cyan-900/40 text-cyan-200 px-1.5 py-0.5 rounded font-mono font-normal border border-cyan-400/20">Dashboard + PDF</span>
+                  </button>
 
-              {/* Executive Report PDF */}
-              <button
-                onClick={handleDownloadExecutivePDF}
-                disabled={isPdfGenerating}
-                className="glass-btn-secondary min-h-[38px] px-3.5 py-1.5 rounded-xl font-semibold text-xs flex items-center gap-2 whitespace-nowrap shrink-0 disabled:opacity-50 cursor-pointer"
-                title="Download Executive PDF Report"
-              >
-                {isPdfGenerating ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-400 shrink-0" />
-                ) : (
-                  <FileText className="w-3.5 h-3.5 text-rose-400 shrink-0" />
-                )}
-                <span className="whitespace-nowrap">Executive Report (PDF)</span>
-              </button>
+                  {/* Executive Report PDF */}
+                  <button
+                    onClick={handleDownloadExecutivePDF}
+                    disabled={isPdfGenerating}
+                    className="glass-btn-secondary min-h-[38px] px-3.5 py-1.5 rounded-xl font-semibold text-xs flex items-center gap-2 whitespace-nowrap shrink-0 disabled:opacity-50 cursor-pointer"
+                    title="Download Executive PDF Report"
+                  >
+                    {isPdfGenerating ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-400 shrink-0" />
+                    ) : (
+                      <FileText className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                    )}
+                    <span className="whitespace-nowrap">Executive Report (PDF)</span>
+                  </button>
 
-              {/* Fullscreen Boardroom Presentation Deck Button */}
+                  {/* Dashboard JSON */}
+                  <button
+                    onClick={handleDownloadDashboardJSON}
+                    className="glass-btn-secondary min-h-[38px] px-3.5 py-1.5 rounded-xl font-semibold text-xs flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer"
+                    title="Download Dashboard Specification as JSON"
+                  >
+                    <Download className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                    <span className="whitespace-nowrap">Dashboard (JSON)</span>
+                  </button>
+                </>
+              )}
+
+              {/* Fullscreen Boardroom Presentation Deck Button (Phase 3: Keep in-app Present button) */}
               <button
                 onClick={() => setIsPresentationMode(true)}
                 className="glass-btn-primary min-h-[38px] px-3.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-2 shadow-sm transition-all cursor-pointer whitespace-nowrap shrink-0"
@@ -854,16 +953,6 @@ export const ExecutiveDashboard: React.FC = () => {
               >
                 <Tv className="w-3.5 h-3.5 shrink-0" />
                 <span className="whitespace-nowrap">Present Deck</span>
-              </button>
-
-              {/* Dashboard JSON */}
-              <button
-                onClick={handleDownloadDashboardJSON}
-                className="glass-btn-secondary min-h-[38px] px-3.5 py-1.5 rounded-xl font-semibold text-xs flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer"
-                title="Download Dashboard Specification as JSON"
-              >
-                <Download className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-                <span className="whitespace-nowrap">Dashboard (JSON)</span>
               </button>
 
               {/* How to Use Shortcut */}
@@ -1215,9 +1304,13 @@ export const ExecutiveDashboard: React.FC = () => {
                   <div className="my-3 flex items-end justify-between gap-2">
                     <div className="flex flex-col min-w-0">
                       <div className="flex items-baseline gap-2 flex-wrap">
-                        <span className={`font-metric-display text-metric-display font-extrabold tracking-tight leading-none truncate tabular-nums ${
-                          isLight ? 'text-primary font-extrabold' : 'text-primary'
-                        }`} title={filteredKpi.formatted}>
+                        <span
+                          data-testid={`exec-kpi-value-${kpi.id}`}
+                          className={`font-metric-display text-metric-display font-extrabold tracking-tight leading-none truncate tabular-nums ${
+                            isLight ? 'text-primary font-extrabold' : 'text-primary'
+                          }`}
+                          title={filteredKpi.formatted}
+                        >
                           {filteredKpi.formatted}
                         </span>
                         {filteredKpi.isFiltered && (

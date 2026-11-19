@@ -33,7 +33,10 @@ import { KpiCardEditorModal } from '../common/KpiCardEditorModal';
 import { parseRobustNumber } from '../../engine/dataParser';
 import { InteractiveSlicersBar } from '../common/InteractiveSlicersBar';
 import { DownloadMenu } from '../common/DownloadMenu';
+import { PagePurposeBar } from '../common/PagePurposeBar';
+import { SlideDeckPreviewPanel } from '../common/SlideDeckPreviewPanel';
 import { Tooltip } from '../common/Tooltip';
+import { loadFeatureFlags } from '../../config/features';
 
 export const ReportsView: React.FC = () => {
   const { 
@@ -58,6 +61,7 @@ export const ReportsView: React.FC = () => {
   } = usePlatform();
 
   const isLight = themeMode === 'light';
+  const flags = loadFeatureFlags();
 
   const [isPdfGenerating, setIsPdfGenerating] = useState(false);
   const [isBundleGenerating, setIsBundleGenerating] = useState(false);
@@ -387,10 +391,14 @@ export const ReportsView: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 pb-16 animate-fadeIn max-w-4xl mx-auto">
+    <div className="space-y-6 pb-16 animate-fadeIn max-w-6xl mx-auto">
+      <div className="print:hidden">
+        <PagePurposeBar page="reports" />
+      </div>
+
       {/* Toast Notification */}
       {downloadSuccess && (
-        <div className="fixed top-20 right-6 z-50 bg-elevated border border-strong text-accent px-4 py-2.5 rounded-xl text-xs font-semibold shadow-xl flex items-center gap-2 animate-bounce">
+        <div className="fixed bottom-20 sm:bottom-6 right-6 z-50 bg-elevated border border-strong text-accent px-4 py-2.5 rounded-xl text-xs font-semibold shadow-xl flex items-center gap-2">
           <Check className="w-4 h-4 text-accent" />
           <span>{downloadSuccess}</span>
         </div>
@@ -414,36 +422,49 @@ export const ReportsView: React.FC = () => {
             <span>Customize Headings</span>
           </button>
 
-          {/* Download Bundle (Dashboard + Executive Report Bundle ZIP) */}
-          <button
-            onClick={handleDownloadBundleZip}
-            disabled={isBundleGenerating}
-            className="glass-btn-primary flex items-center gap-1.5 px-3.5 py-2 rounded-xl font-bold text-xs transition-all disabled:opacity-50 shadow-md shrink-0 whitespace-nowrap cursor-pointer"
-            title="Download both the created dashboard and executive report in a single ZIP package"
-          >
-            {isBundleGenerating ? (
-              <Loader2 className="w-4 h-4 animate-spin text-on-accent shrink-0" />
-            ) : (
-              <Package className="w-4 h-4 stroke-[2.5] shrink-0" />
-            )}
-            <span className="whitespace-nowrap font-bold">Download Bundle (ZIP)</span>
-          </button>
+          {/* Legacy multi-button cluster shown only when Classic flags are active */}
+          {!flags.unifiedTheme && !flags.depthUI && (
+            <>
+              {/* Download Bundle (Dashboard + Executive Report Bundle ZIP) */}
+              <button
+                onClick={handleDownloadBundleZip}
+                disabled={isBundleGenerating}
+                className="glass-btn-primary flex items-center gap-1.5 px-3.5 py-2 rounded-xl font-bold text-xs transition-all disabled:opacity-50 shadow-md shrink-0 whitespace-nowrap cursor-pointer"
+                title="Download both the created dashboard and executive report in a single ZIP package"
+              >
+                {isBundleGenerating ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-on-accent shrink-0" />
+                ) : (
+                  <Package className="w-4 h-4 stroke-[2.5] shrink-0" />
+                )}
+                <span className="whitespace-nowrap font-bold">Download Bundle (ZIP)</span>
+              </button>
 
-          {/* Download PDF Report */}
-          <button
-            onClick={handleDownloadPDF}
-            disabled={isPdfGenerating}
-            className="glass-btn-secondary flex items-center gap-1.5 px-3.5 py-2 rounded-xl font-medium text-xs transition-all disabled:opacity-50 cursor-pointer"
-            title="Download Executive PDF Report"
-          >
-            {isPdfGenerating ? (
-              <Loader2 className="w-4 h-4 animate-spin text-danger" />
-            ) : (
-              <Download className="w-4 h-4 text-accent" />
-            )}
-            <span>Executive Report (PDF)</span>
-          </button>
+              {/* Download PDF Report */}
+              <button
+                onClick={handleDownloadPDF}
+                disabled={isPdfGenerating}
+                className="glass-btn-secondary flex items-center gap-1.5 px-3.5 py-2 rounded-xl font-medium text-xs transition-all disabled:opacity-50 cursor-pointer"
+                title="Download Executive PDF Report"
+              >
+                {isPdfGenerating ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-danger" />
+                ) : (
+                  <Download className="w-4 h-4 text-accent" />
+                )}
+                <span>Executive Report (PDF)</span>
+              </button>
 
+              <button
+                onClick={handlePrint}
+                className="glass-btn-secondary flex items-center gap-1.5 px-3.5 py-2 rounded-xl font-medium text-xs transition-all cursor-pointer"
+              >
+                <Printer className="w-4 h-4 text-muted" /> Print Preview
+              </button>
+            </>
+          )}
+
+          {/* Keep in-app Present Deck slideshow button (Phase 3) */}
           <button
             onClick={() => setIsPresentationMode(true)}
             className="glass-btn-primary flex items-center gap-1.5 px-3.5 py-2 rounded-xl font-bold text-xs shadow-sm transition-all cursor-pointer"
@@ -453,14 +474,7 @@ export const ReportsView: React.FC = () => {
             <span>Present Deck</span>
           </button>
 
-          <button
-            onClick={handlePrint}
-            className="glass-btn-secondary flex items-center gap-1.5 px-3.5 py-2 rounded-xl font-medium text-xs transition-all cursor-pointer"
-          >
-            <Printer className="w-4 h-4 text-muted" /> Print Preview
-          </button>
-
-          <DownloadMenu context="reports" />
+          <DownloadMenu context="reports" label="Download" />
         </div>
       </div>
 
@@ -468,6 +482,9 @@ export const ReportsView: React.FC = () => {
       <div className="print:hidden">
         <InteractiveSlicersBar />
       </div>
+
+      {/* 16:9 Presentation Slide Deck Preview Studio (Phase 4) */}
+      <SlideDeckPreviewPanel />
 
       {/* Printable Report Document */}
       <div className="bg-card border border-subtle text-primary shadow-xl rounded-3xl p-8 sm:p-12 space-y-10 print:bg-white print:text-black print:border-none print:shadow-none print:p-0">

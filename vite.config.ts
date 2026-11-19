@@ -79,6 +79,11 @@ export default defineConfig(({ command }) => {
               return 'vendor-zip';
             }
 
+            // 6b. PptxGenJS presentation deck builder (lazy-loaded on PPTX export)
+            if (/node_modules\/pptxgenjs\//.test(id)) {
+              return 'vendor-pptx';
+            }
+
             // 7. In-browser SQL engine (AlaSQL)
             if (/node_modules\/alasql\//.test(id)) {
               return 'vendor-sql';

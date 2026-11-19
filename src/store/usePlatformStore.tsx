@@ -934,9 +934,14 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setDaxMeasures(dax);
       setTransformations([]);
 
+      const shouldPrefixDb =
+        Boolean(metadata?.database) &&
+        metadata?.connectionType !== 'PACK_SAMPLE' &&
+        !sourceName.toLowerCase().includes(String(metadata?.database || '').toLowerCase());
+
       setProject({
         id: `live-${Date.now()}`,
-        name: metadata?.database ? `${metadata.database} / ${sourceName}` : sourceName,
+        name: shouldPrefixDb ? `${metadata!.database} / ${sourceName}` : sourceName,
         companyName: brand.companyName,
         department: brand.department,
         author: brand.author,

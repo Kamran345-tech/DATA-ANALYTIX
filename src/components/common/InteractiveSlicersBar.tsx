@@ -18,6 +18,7 @@ import {
   Columns
 } from 'lucide-react';
 import { usePlatform } from '../../store/usePlatformStore';
+import { loadFeatureFlags } from '../../config/features';
 import { safeMin, safeMax } from '../../utils/mathUtils';
 
 interface SlicerMeta {
@@ -44,8 +45,10 @@ export const InteractiveSlicersBar: React.FC<{
     themeMode 
   } = usePlatform();
 
+  const flags = loadFeatureFlags();
+  const isUnified = Boolean(flags.unifiedTheme || flags.depthUI || flags.analyticsPacks);
   const isLight = themeMode === 'light';
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(() => !isUnified);
   const [activeSearchCol, setActiveSearchCol] = useState<string | null>(null);
   const [slicerSearchTerms, setSlicerSearchTerms] = useState<Record<string, string>>({});
 
@@ -69,6 +72,21 @@ export const InteractiveSlicersBar: React.FC<{
     );
     return defaultCandidates.slice(0, 6).map(c => c.name);
   });
+
+  // Sync default slicer candidates whenever the active dataset columns change
+  React.useEffect(() => {
+    const validExisting = activeSlicerColNames.filter(name => columns.some(c => c.name === name));
+    if (validExisting.length === 0 && columns.length > 0) {
+      const defaultCandidates = columns.filter(c => 
+        c.dataType === 'string' && 
+        !c.isPrimaryKeyCandidate && 
+        !c.name.toLowerCase().endsWith('id') &&
+        c.distinctCount >= 2 &&
+        c.distinctCount <= 60
+      );
+      setActiveSlicerColNames(defaultCandidates.slice(0, 6).map(c => c.name));
+    }
+  }, [columns]);
 
   const [isAddSlicerModalOpen, setIsAddSlicerModalOpen] = useState(false);
   const [addSlicerSearchQuery, setAddSlicerSearchQuery] = useState('');
@@ -191,129 +209,239 @@ export const InteractiveSlicersBar: React.FC<{
   const isFiltered = filteredRows.length < cleanRows.length;
 
   return (
-    <div className={`rounded-2xl border transition-all duration-200 overflow-hidden ${
-      isLight 
-        ? 'bg-white border-slate-200/90 shadow-xs' 
-        : 'bg-card border-teal-500/40 shadow-lg'
-    } ${className}`}>
-      
+    <div
+      data-testid="shared-filter-chip-bar"
+      className={`rounded-2xl border transition-all duration-200 overflow-hidden bg-[var(--bg-card)] border-[var(--border-subtle)] shadow-xs ${className}`}
+    >
       {/* =================================================================== */}
-      {/* SLICER HEADER RIBBON                                                */}
+      {/* COMPACT ACTIVE-FILTER CHIP BAR + COLLAPSIBLE DRAWER TRIGGER         */}
       {/* =================================================================== */}
-      <div className={`px-4 py-3 flex flex-wrap items-center justify-between gap-3 border-b ${
-        isLight ? 'bg-elevated border-slate-200' : 'bg-elevated border-teal-500/40'
-      }`}>
-        <div className="flex items-center gap-3">
-          <div className={`p-1.5 rounded-lg flex items-center justify-center ${
-            isLight ? 'bg-sky-100 text-sky-800' : 'bg-cyan-500/15 text-cyan-400'
-          }`}>
-            <SlidersHorizontal className="w-4 h-4" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className={`text-xs font-bold uppercase tracking-wider ${
-                isLight ? 'text-primary' : 'text-primary'
-              }`}>
-                Interactive Slicers & Cross-Filters
-              </span>
-              <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold ${
+      <div className="px-3.5 py-2.5 flex flex-wrap items-center justify-between gap-2.5 bg-[var(--bg-elevated)]/70">
+        <div className="flex flex-wrap items-center gap-2 min-w-0 flex-1">
+          <button
+            type="button"
+            data-testid="shared-filter-drawer-toggle"
+            onClick={() => setIsExpanded(!isExpanded)}
+            aria-expanded={isExpanded}
+            aria-label={isExpanded ? 'Collapse Filters & Slicers Drawer' : 'Open Filters & Slicers Drawer'}
+            className="min-h-[38px] px-3 py-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] hover:bg-[var(--bg-hover)] text-primary text-xs font-semibold inline-flex items-center gap-2 transition-colors cursor-pointer shrink-0"
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5 text-accent" />
+            <span>Filters & Slicers</span>
+            <span
+              data-testid="shared-filter-active-count"
+              className={`px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold ${
                 activeSlicerCount > 0
-                  ? isLight ? 'bg-sky-100 text-sky-800 border border-sky-300' : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                  : isLight ? 'bg-input text-muted' : 'bg-input text-secondary'
-              }`}>
-                {activeSlicerCount} Active
+                  ? 'bg-accent text-[var(--text-on-accent)]'
+                  : 'bg-[var(--bg-input)] text-muted'
+              }`}
+            >
+              {activeSlicerCount}
+            </span>
+            {isExpanded ? <ChevronUp className="w-3.5 h-3.5 text-muted" /> : <ChevronDown className="w-3.5 h-3.5 text-muted" />}
+          </button>
+
+          {/* Quick Inline Search Input (shared across all pages) */}
+          <div className="relative flex-1 min-w-[160px] max-w-[260px]">
+            <Search className="w-3.5 h-3.5 text-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              type="text"
+              data-testid="shared-filter-search-input"
+              aria-label="Filter rows across all views"
+              value={filters.searchQuery || ''}
+              onChange={(e) =>
+                setFilters((prev) => ({
+                  ...prev,
+                  searchQuery: e.target.value,
+                }))
+              }
+              placeholder="Search dataset rows..."
+              className="w-full min-h-[36px] pl-8 pr-7 py-1 text-xs rounded-xl bg-[var(--bg-input)] border border-[var(--border-subtle)] text-primary placeholder:text-muted focus:outline-none focus:border-accent"
+            />
+            {filters.searchQuery && (
+              <button
+                type="button"
+                aria-label="Clear search query"
+                onClick={() => setFilters((prev) => ({ ...prev, searchQuery: '' }))}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted hover:text-primary"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Active Filter Chips inline in the compact bar */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            {filters.searchQuery && (
+              <span
+                data-testid="active-filter-chip"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-[var(--bg-input)] border border-accent/40 text-primary"
+              >
+                <span className="text-muted">Search:</span>
+                <span className="font-semibold">"{filters.searchQuery}"</span>
+                <button
+                  type="button"
+                  aria-label="Remove search filter"
+                  onClick={() => setFilters((prev) => ({ ...prev, searchQuery: '' }))}
+                  className="hover:text-accent"
+                >
+                  <X className="w-3 h-3" />
+                </button>
               </span>
-              <span className={`px-1.5 py-0.2 rounded text-[10px] font-mono ${
-                isLight ? 'bg-elevated text-muted' : 'bg-input text-secondary'
-              }`}>
-                {slicerColumns.length} Slicers
+            )}
+
+            {filters.selectedDimension && filters.selectedDimensionValue && (
+              <span
+                data-testid="active-filter-chip"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-[var(--bg-input)] border border-accent/40 text-primary"
+              >
+                <span className="text-muted">{filters.selectedDimension}:</span>
+                <span className="font-semibold">{filters.selectedDimensionValue}</span>
+                <button
+                  type="button"
+                  aria-label={`Remove ${filters.selectedDimension} filter`}
+                  onClick={() =>
+                    setFilters((prev) => ({
+                      ...prev,
+                      selectedDimension: null,
+                      selectedDimensionValue: null,
+                    }))
+                  }
+                  className="hover:text-accent"
+                >
+                  <X className="w-3 h-3" />
+                </button>
               </span>
-            </div>
-            <p className={`text-[11px] ${isLight ? 'text-muted' : 'text-secondary'}`}>
-              Multi-select categorical dimensions, date windows, and numeric thresholds to filter all telemetry in real-time.
-            </p>
+            )}
+
+            {filters.slicers &&
+              Object.entries(filters.slicers).map(([col, vals]) => {
+                if (!vals || vals.length === 0) return null;
+                return (
+                  <span
+                    key={col}
+                    data-testid="active-filter-chip"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-[var(--bg-input)] border border-accent/40 text-primary"
+                  >
+                    <span className="text-muted">{col}:</span>
+                    <span className="font-semibold">{vals.join(', ')}</span>
+                    <button
+                      type="button"
+                      aria-label={`Clear ${col} slicer`}
+                      onClick={() => clearSlicer(col)}
+                      className="hover:text-accent"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                );
+              })}
+
+            {filters.datePreset && filters.datePreset !== 'all' && (
+              <span
+                data-testid="active-filter-chip"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-[var(--bg-input)] border border-accent/40 text-primary"
+              >
+                <CalendarRange className="w-3 h-3 text-accent" />
+                <span className="font-semibold">Date: {filters.datePreset.toUpperCase()}</span>
+                <button
+                  type="button"
+                  aria-label="Reset date filter"
+                  onClick={() => setDatePresetFilter('all')}
+                  className="hover:text-accent"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+
+            {filters.metricRange && (
+              <span
+                data-testid="active-filter-chip"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-[var(--bg-input)] border border-accent/40 text-primary"
+              >
+                <BarChart2 className="w-3 h-3 text-accent" />
+                <span className="font-semibold">
+                  {filters.metricRange.column}: {filters.metricRange.min.toLocaleString()}–{filters.metricRange.max.toLocaleString()}
+                </span>
+                <button
+                  type="button"
+                  aria-label="Reset numeric filter"
+                  onClick={clearMetricRangeFilter}
+                  className="hover:text-accent"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+
+            {!hasActiveFilters && (
+              <span className="text-[11px] text-muted hidden md:inline">
+                No active filters · shared across Executive, Packs, Builder & Reports
+              </span>
+            )}
           </div>
         </div>
 
-        {/* Controls: Record counter, Add Slicer, Reset, Collapse */}
-        <div className="flex items-center gap-2">
-          {/* Row filter stats badge */}
-          <div className={`px-3 py-1.5 rounded-xl border text-xs font-mono flex items-center gap-2 ${
-            isFiltered
-              ? isLight ? 'bg-sky-50 text-sky-900 border-sky-300 font-bold' : 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30 font-bold'
-              : isLight ? 'bg-elevated text-muted border-slate-200' : 'bg-input text-secondary border-teal-500/40'
-          }`}>
-            <span className={`w-2 h-2 rounded-full ${isFiltered ? (isLight ? 'bg-sky-600 animate-pulse' : 'bg-cyan-400 animate-pulse') : (isLight ? 'bg-input' : 'bg-gray-500')}`} />
+        {/* Right Controls: Row counter, Add Slicer, Clear All */}
+        <div className="flex items-center gap-2 shrink-0">
+          <div
+            data-testid="shared-filter-row-count"
+            className={`px-2.5 py-1 rounded-xl border text-[11px] font-mono flex items-center gap-1.5 ${
+              isFiltered
+                ? 'bg-[var(--bg-input)] text-accent border-accent/40 font-bold'
+                : 'bg-[var(--bg-input)] text-secondary border-[var(--border-subtle)]'
+            }`}
+          >
+            <span className={`w-1.5 h-1.5 rounded-full ${isFiltered ? 'bg-accent animate-pulse' : 'bg-muted'}`} />
             <span>
               {filteredRows.length.toLocaleString()} / {cleanRows.length.toLocaleString()} rows
-              {isFiltered && ` (${Math.round((filteredRows.length / (cleanRows.length || 1)) * 100)}%)`}
             </span>
           </div>
 
-          {/* Add Slicer Button */}
-          <button
-            onClick={() => setIsAddSlicerModalOpen(true)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
-              isLight 
-                ? 'bg-sky-50 text-sky-700 border-sky-300 hover:bg-sky-100 shadow-2xs' 
-                : 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30 hover:bg-cyan-500/25'
-            }`}
-            title="Add any dataset column as a live slicer"
-          >
-            <Plus className="w-3.5 h-3.5 text-sky-600 dark:text-cyan-400" />
-            <span>Add Slicer</span>
-          </button>
-
-          {/* Reset All Active Slicer Filters */}
           {hasActiveFilters && (
             <button
+              type="button"
+              data-testid="shared-filter-clear-all"
               onClick={clearAllSlicers}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
-                isLight 
-                  ? 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100 shadow-2xs' 
-                  : 'bg-rose-500/15 text-rose-300 border-rose-500/30 hover:bg-rose-500/25'
-              }`}
+              className="min-h-[36px] flex items-center gap-1.5 px-2.5 py-1 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-input)] hover:bg-[var(--bg-hover)] text-xs font-semibold text-primary transition-all cursor-pointer"
               title="Clear all active slicers and restore complete dataset"
             >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span>Clear Slicers</span>
+              <RotateCcw className="w-3.5 h-3.5 text-accent" />
+              <span>Clear All</span>
             </button>
           )}
 
-          {/* Reset Slicers to Default Columns */}
-          <button
-            onClick={handleResetToDefaultSlicers}
-            className={`p-1.5 rounded-xl border transition-colors ${
-              isLight 
-                ? 'bg-white border-slate-200 text-muted hover:text-primary hover:bg-elevated' 
-                : 'bg-input border-teal-500/40 text-secondary hover:text-primary hover:bg-card-hover'
-            }`}
-            title="Reset slicers to default columns"
-          >
-            <Columns className="w-4 h-4" />
-          </button>
+          {isExpanded && (
+            <>
+              <button
+                type="button"
+                onClick={() => setIsAddSlicerModalOpen(true)}
+                className="min-h-[36px] flex items-center gap-1 px-2.5 py-1 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-input)] hover:bg-[var(--bg-hover)] text-xs font-semibold text-primary transition-all cursor-pointer"
+                title="Add any dataset column as a live slicer"
+              >
+                <Plus className="w-3.5 h-3.5 text-accent" />
+                <span className="hidden sm:inline">Add Slicer</span>
+              </button>
 
-          {/* Collapse / Expand Toggle */}
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className={`p-1.5 rounded-xl border transition-colors ${
-              isLight 
-                ? 'bg-white border-slate-200 text-muted hover:bg-elevated' 
-                : 'bg-input border-teal-500/40 text-secondary hover:bg-card-hover'
-            }`}
-            title={isExpanded ? 'Collapse Slicers Panel' : 'Expand Slicers Panel'}
-            aria-label="Toggle Slicers Panel"
-          >
-            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-          </button>
+              <button
+                type="button"
+                onClick={handleResetToDefaultSlicers}
+                className="min-h-[36px] p-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-input)] text-secondary hover:text-primary transition-colors"
+                title="Reset slicers to default columns"
+              >
+                <Columns className="w-4 h-4" />
+              </button>
+            </>
+          )}
         </div>
       </div>
 
       {/* =================================================================== */}
-      {/* SLICERS BODY                                                        */}
+      {/* COLLAPSIBLE DRAWER BODY                                             */}
       {/* =================================================================== */}
       {isExpanded && (
-        <div className="p-4 space-y-4">
+        <div data-testid="shared-filter-drawer" className="p-4 space-y-4 border-t border-[var(--border-subtle)]">
           
           {/* Quick Preset Date & Numeric Slicers Bar */}
           <div className="flex flex-wrap items-center gap-3">

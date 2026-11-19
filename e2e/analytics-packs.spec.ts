@@ -413,6 +413,290 @@ test.describe('Analytics Packs E2E Verification Suite', () => {
       }
     }
   });
+
+  test('5. Phase 1 + Phase 2 + Phase 3 Verification: single dataset name, body-font description toggle, favorable OTIF sparkline, shared filters & KPI parity across Executive and Pack pages, 3-step Download Center, and 14-pack + multi-viewport screenshot suite', async ({
+    page,
+  }) => {
+    test.setTimeout(180000);
+    const outDir = 'public/assets/qa-phase123';
+    fs.mkdirSync(outDir, { recursive: true });
+
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await bootstrapPacksWorkspace(page, { theme: 'dark' });
+
+    // Navigate to Analytics Packs
+    await page.evaluate(() => {
+      window.dispatchEvent(new CustomEvent('dataanalytix:set-tab', { detail: 'analytics_packs' }));
+    });
+    await expect(page.getByTestId('analytics-packs-view')).toBeVisible({ timeout: 10000 });
+
+    // Phase 2: Verify PagePurposeBar on Analytics Packs
+    await expect(page.getByTestId('page-purpose-bar-analytics_packs')).toBeVisible();
+    await expect(page.getByTestId('page-purpose-subtitle')).toContainText('Domain dashboards, KPIs, and reports');
+
+    // Open Operations & Supply Chain pack with sample data to verify Phase 1.1, 1.2, 1.3, 1.4
+    await page.getByTestId('pack-sample-btn-operations').click();
+    await expect(page.getByTestId('pack-sticky-switch-bar')).toBeVisible();
+
+    // Phase 1.1: Dataset name is shown ONCE ("Operations & Supply Chain Sample Dataset"), not prefixed twice
+    const headerTitleInput = page.locator('[data-testid="active-pack-dashboard"]').getByText('Operations & Supply Chain Sample Dataset');
+    await expect(headerTitleInput.first()).toBeVisible();
+    const duplicatedTitle = page.locator('[data-testid="active-pack-dashboard"]').getByText('Operations & Supply Chain / Operations & Supply Chain Sample Dataset');
+    await expect(duplicatedTitle).toHaveCount(0);
+
+    // Phase 1.2: Full-width body font description with 2-line clamp and "more"/"less" toggle
+    const desc = page.getByTestId('pack-header-description');
+    await expect(desc).toBeVisible();
+    await expect(desc).toHaveClass(/font-sans/);
+    await expect(desc).toHaveClass(/line-clamp-2/);
+    const moreBtn = page.getByTestId('pack-description-more-btn');
+    await expect(moreBtn).toHaveText('more');
+    await moreBtn.click();
+    await expect(moreBtn).toHaveText('less');
+    await moreBtn.click();
+
+    // Phase 1.3 & 1.4: OTIF label has 2-line wrap (line-clamp-2) and 95.4% OTIF shows favorable green sparkline (data-favorable="true")
+    const otifLabel = page.getByTestId('kpi-label-otif_rate');
+    await expect(otifLabel).toBeVisible();
+    await expect(otifLabel).toHaveClass(/line-clamp-2/);
+    const otifTrendBadge = page.getByTestId('kpi-trend-otif_rate');
+    await expect(otifTrendBadge).toHaveAttribute('data-favorable', 'true');
+    const otifSparkPath = page.getByTestId('kpi-sparkline-path-otif_rate');
+    await expect(otifSparkPath).toHaveAttribute('stroke', 'var(--success)');
+
+    // Phase 1.6: Capture all 14 pack dashboards with their own sample data
+    for (const packId of ALL_PACK_IDS) {
+      await page.getByTestId(`pack-chip-${packId}`).click();
+      await expect(page.getByTestId('pack-dashboard-heading')).toBeVisible();
+      await page.waitForTimeout(120);
+      await page.screenshot({
+        path: `${outDir}/pack_${packId}_1440_dark.png`,
+        fullPage: false,
+      });
+    }
+
+    // Switch back to Operations pack and verify Phase 2 KPI parity & shared filter across Analytics Packs and Executive Dashboard
+    await page.getByTestId('pack-chip-operations').click();
+    await expect(page.getByTestId('kpi-value-otif_rate')).toHaveText('95.4%');
+
+    // Navigate to Executive Dashboard via PagePurposeBar related link
+    await page.getByTestId('purpose-related-link-executive_dashboard').click();
+    await expect(page.getByTestId('page-purpose-bar-executive_dashboard')).toBeVisible();
+    await expect(page.getByTestId('exec-kpi-value-otif_rate')).toHaveText('95.4%');
+
+    // Apply a shared filter on Executive Dashboard and verify it persists on Analytics Packs, Dashboard Builder, and Executive Reports
+    const sharedSearchInput = page.getByTestId('shared-filter-search-input').first();
+    await sharedSearchInput.fill('Chicago');
+    await expect(page.getByTestId('active-filter-chip').first()).toContainText('Chicago');
+
+    const filteredExecOtif = await page.getByTestId('exec-kpi-value-otif_rate').innerText();
+
+    // Check Analytics Packs shows the exact same active filter chip and same filtered KPI value
+    await page.getByTestId('purpose-related-link-analytics_packs').click();
+    await expect(page.getByTestId('active-filter-chip').first()).toContainText('Chicago');
+    await expect(page.getByTestId('kpi-value-otif_rate')).toHaveText(filteredExecOtif);
+
+    // Clear shared filter from Analytics Packs
+    await page.getByTestId('shared-filter-clear-all').first().click();
+    await expect(page.getByTestId('kpi-value-otif_rate')).toHaveText('95.4%');
+
+    // Phase 3: Verify 3-Step Unified Download Center Dialog
+    const dlTrigger = page.getByTestId('download-menu-trigger-analytics_pack').first();
+    await dlTrigger.click();
+    await expect(page.getByTestId('download-center-stepper')).toBeVisible();
+    await expect(page.getByTestId('download-center-step-1')).toBeVisible();
+
+    // Advance to Step 2 ("Which report?")
+    await page.getByTestId('download-configure-pack_report_pdf').click();
+    await expect(page.getByTestId('download-center-step-2')).toBeVisible();
+    await page.getByTestId('download-audience-manager').click();
+
+    // Advance to Step 3 ("Download + progress + Copy summary")
+    await page.getByTestId('download-center-next-step-3').click();
+    await expect(page.getByTestId('download-center-step-3')).toBeVisible();
+    const stdFilename = await page.getByTestId('download-center-filename').innerText();
+    expect(stdFilename).toMatch(/_operations_pack-report-pdf_\d{4}-\d{2}-\d{2}\.pdf$/);
+
+    await page.getByTestId('download-center-copy-summary').click();
+    const [step3Download] = await Promise.all([
+      page.waitForEvent('download', { timeout: 20000 }),
+      page.getByTestId('download-center-confirm-download').click(),
+    ]);
+    expect(step3Download.suggestedFilename()).toBe(stdFilename);
+
+    // Multi-viewport screenshot matrix (1440, 1024, 375 in dark + light) for Operations Dashboard & Download Center
+    const viewports = [
+      { width: 1440, height: 900 },
+      { width: 1024, height: 800 },
+      { width: 375, height: 812 },
+    ] as const;
+
+    // Ensure Operations Pack Dashboard is open (catalog collapsed) for the dashboard viewport matrix
+    const jumpBtn = page.getByTestId('toggle-pack-catalog-btn');
+    if (await jumpBtn.isVisible().catch(() => false)) {
+      await jumpBtn.click();
+    }
+
+    for (const theme of ['dark', 'light'] as const) {
+      await page.evaluate((t) => {
+        localStorage.setItem('acuitybi_theme', t);
+        localStorage.setItem('dataanalytix_theme_pref', t);
+        const root = document.documentElement;
+        const body = document.body;
+        const isLight = t === 'light';
+        root.style.colorScheme = isLight ? 'light' : 'dark';
+        if (isLight) {
+          root.classList.add('theme-light');
+          root.classList.remove('dark', 'theme-dark');
+          body.classList.add('theme-light');
+          body.classList.remove('dark', 'theme-dark');
+        } else {
+          root.classList.add('dark', 'theme-dark');
+          root.classList.remove('theme-light');
+          body.classList.add('dark', 'theme-dark');
+          body.classList.remove('theme-light');
+        }
+      }, theme);
+      await page.waitForTimeout(150);
+
+      for (const vp of viewports) {
+        await page.setViewportSize({ width: vp.width, height: vp.height });
+        await page.evaluate(() => window.scrollTo(0, 0));
+        await page.waitForTimeout(150);
+        await page.screenshot({
+          path: `${outDir}/phase123_operations_${vp.width}_${theme}.png`,
+          fullPage: false,
+        });
+      }
+
+      // Also screenshot the 3-step Download Center open at 1440
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await dlTrigger.click();
+      await page.waitForTimeout(150);
+      await page.screenshot({
+        path: `${outDir}/phase3_download_center_step1_1440_${theme}.png`,
+        fullPage: false,
+      });
+      await page.getByTestId('download-center-step-tab-2').click();
+      await page.waitForTimeout(120);
+      await page.screenshot({
+        path: `${outDir}/phase3_download_center_step2_1440_${theme}.png`,
+        fullPage: false,
+      });
+      await page.getByTestId('download-center-step-tab-3').click();
+      await page.waitForTimeout(120);
+      await page.screenshot({
+        path: `${outDir}/phase3_download_center_step3_1440_${theme}.png`,
+        fullPage: false,
+      });
+      await page.keyboard.press('Escape');
+    }
+  });
+
+  test('6. Phase 4 Verification: 16:9 PPTX Presentation Generator, 3 Rendered Slides Storyboard, Audience Switcher, and Multi-Viewport Screenshots', async ({
+    page,
+  }) => {
+    test.setTimeout(120000);
+    const outDir = 'public/assets/qa-phase4';
+    fs.mkdirSync(outDir, { recursive: true });
+
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await bootstrapPacksWorkspace(page, { theme: 'dark' });
+
+    // Load Operations & Supply Chain sample dataset first via Analytics Packs
+    await page.evaluate(() => {
+      window.dispatchEvent(new CustomEvent('dataanalytix:set-tab', { detail: 'analytics_packs' }));
+    });
+    await expect(page.getByTestId('analytics-packs-view')).toBeVisible({ timeout: 10000 });
+    await page.getByTestId('pack-sample-btn-operations').click();
+    await expect(page.getByTestId('pack-sticky-switch-bar')).toBeVisible();
+
+    // Navigate to Executive Reports via PagePurposeBar related link
+    await page.getByTestId('purpose-related-link-reports').click();
+    await expect(page.getByTestId('page-purpose-bar-reports')).toBeVisible();
+    await expect(page.getByTestId('pptx-slide-deck-preview-panel')).toBeVisible();
+
+    // Verify all 3 rendered slides are visible in the 3-Slide Storyboard
+    const slide1 = page.getByTestId('rendered-slide-1');
+    const slide2 = page.getByTestId('rendered-slide-2');
+    const slide3 = page.getByTestId('rendered-slide-3');
+    await expect(slide1).toBeVisible();
+    await expect(slide2).toBeVisible();
+    await expect(slide3).toBeVisible();
+
+    await expect(slide1).toContainText('95.4%');
+    await expect(slide2).toContainText('KPI Scorecard');
+    await expect(slide3).toContainText('4-Lens Strategic Directives');
+
+    // Capture the 3 individual rendered slides
+    await slide1.screenshot({ path: `${outDir}/phase4_rendered_slide_1_dark.png` });
+    await slide2.screenshot({ path: `${outDir}/phase4_rendered_slide_2_dark.png` });
+    await slide3.screenshot({ path: `${outDir}/phase4_rendered_slide_3_dark.png` });
+
+    // Verify Audience template switcher (Board -> Manager -> Analyst)
+    await page.getByTestId('pptx-preview-audience-board').click();
+    await expect(slide1).toContainText('BOARD DECK');
+    await page.getByTestId('pptx-preview-audience-analyst').click();
+    await expect(slide1).toContainText('ANALYST DECK');
+    await page.getByTestId('pptx-preview-audience-manager').click();
+    await expect(slide1).toContainText('MANAGER DECK');
+
+    // Multi-viewport screenshot matrix (1440, 1024, 375 in dark + light) & 3 individual rendered slides
+    const viewports = [
+      { width: 1440, height: 900 },
+      { width: 1024, height: 800 },
+      { width: 375, height: 812 },
+    ] as const;
+
+    for (const theme of ['dark', 'light'] as const) {
+      await page.evaluate((t) => {
+        localStorage.setItem('acuitybi_theme', t);
+        localStorage.setItem('dataanalytix_theme_pref', t);
+        const root = document.documentElement;
+        const body = document.body;
+        const isLight = t === 'light';
+        root.style.colorScheme = isLight ? 'light' : 'dark';
+        if (isLight) {
+          root.classList.add('theme-light');
+          root.classList.remove('dark', 'theme-dark');
+          body.classList.add('theme-light');
+          body.classList.remove('dark', 'theme-dark');
+        } else {
+          root.classList.add('dark', 'theme-dark');
+          root.classList.remove('theme-light');
+          body.classList.add('dark', 'theme-dark');
+          body.classList.remove('theme-light');
+        }
+      }, theme);
+      await page.waitForTimeout(150);
+
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await page.waitForTimeout(120);
+      await slide1.screenshot({ path: `${outDir}/phase4_rendered_slide_1_${theme}.png` });
+      await slide2.screenshot({ path: `${outDir}/phase4_rendered_slide_2_${theme}.png` });
+      await slide3.screenshot({ path: `${outDir}/phase4_rendered_slide_3_${theme}.png` });
+
+      for (const vp of viewports) {
+        await page.setViewportSize({ width: vp.width, height: vp.height });
+        await page.evaluate(() => window.scrollTo(0, 0));
+        await page.waitForTimeout(150);
+        await page.screenshot({
+          path: `${outDir}/phase4_reports_pptx_${vp.width}_${theme}.png`,
+          fullPage: false,
+        });
+      }
+    }
+
+    // Trigger real .PPTX download at the end
+    await page.setViewportSize({ width: 1440, height: 900 });
+    const [pptxDownload] = await Promise.all([
+      page.waitForEvent('download', { timeout: 25000 }),
+      page.getByTestId('pptx-preview-download-btn').click(),
+    ]);
+    expect(pptxDownload.suggestedFilename()).toMatch(/_operations_presentation-pptx_\d{4}-\d{2}-\d{2}\.pptx$/);
+  });
 });
+
+
 
 

@@ -16,9 +16,17 @@ import {
   Image as ImageIcon,
   Table as TableIcon,
   Lock,
+  Presentation,
+  Copy,
+  Check,
+  SlidersHorizontal,
+  ArrowRight,
+  ArrowLeft,
+  X,
 } from 'lucide-react';
 import { usePlatform } from '../../store/usePlatformStore';
 import { useToast } from '../../store/useToast';
+import { loadFeatureFlags } from '../../config/features';
 import { buildSopFileName, buildSopMetadata, buildSopCodeHeaderComment } from '../../config/designTokens';
 import type { ExportDataPayload } from '../../engine/exportEngine';
 
@@ -69,9 +77,47 @@ interface DownloadFormatItem {
   label: string;
   ext: string;
   description: string;
+  sizeEstimate?: string;
+  supportsReportConfig?: boolean;
   requiresData: boolean;
   icon: React.FC<{ className?: string }>;
 }
+
+const PACK_CHOICE_OPTIONS = [
+  { id: 'financial', name: 'Financial & P&L Analytics' },
+  { id: 'sales', name: 'Sales & Pipeline Performance' },
+  { id: 'marketing', name: 'Marketing & Growth Attribution' },
+  { id: 'customer', name: 'Customer Success & Retention' },
+  { id: 'product', name: 'Product & Engagement Telemetry' },
+  { id: 'web', name: 'Web & Digital Funnel Analytics' },
+  { id: 'operations', name: 'Operations & Supply Chain' },
+  { id: 'hr', name: 'HR & Workforce Intelligence' },
+  { id: 'risk-fraud', name: 'Risk, Compliance & Fraud' },
+  { id: 'healthcare', name: 'Healthcare & Clinical Outcomes' },
+  { id: 'retail', name: 'Retail & Merchandising' },
+  { id: 'manufacturing', name: 'Manufacturing & OEE Quality' },
+  { id: 'banking-insurance', name: 'Banking & Insurance Portfolio' },
+  { id: 'education', name: 'Education & Student Success' },
+];
+
+export type ReportSectionKey =
+  | 'cover'
+  | 'executive_summary'
+  | 'kpis'
+  | 'charts'
+  | 'insights'
+  | 'data_quality'
+  | 'appendix';
+
+const REPORT_SECTIONS_LIST: { id: ReportSectionKey; label: string }[] = [
+  { id: 'cover', label: 'Cover' },
+  { id: 'executive_summary', label: 'Executive Summary' },
+  { id: 'kpis', label: 'KPIs' },
+  { id: 'charts', label: 'Charts' },
+  { id: 'insights', label: 'Insights' },
+  { id: 'data_quality', label: 'Data Quality' },
+  { id: 'appendix', label: 'Appendix' },
+];
 
 const CONTEXT_FORMATS: Record<DownloadMenuContext, DownloadFormatItem[]> = {
   executive_dashboard: [
@@ -80,38 +126,74 @@ const CONTEXT_FORMATS: Record<DownloadMenuContext, DownloadFormatItem[]> = {
       label: 'Executive Report (PDF)',
       ext: 'pdf',
       description: 'A4 boardroom intelligence report with KPIs & audit tables',
+      sizeEstimate: '~380 KB',
+      supportsReportConfig: true,
       requiresData: true,
       icon: FileText,
     },
     {
-      id: 'excel_workbook',
-      label: 'Enterprise Workbook (XLSX)',
-      ext: 'xlsx',
-      description: 'Multi-sheet Excel workbook with frozen headers & metadata',
-      requiresData: true,
-      icon: FileSpreadsheet,
+      id: 'presentation_pptx',
+      label: 'Presentation (PPTX)',
+      ext: 'pptx',
+      description: '16:9 widescreen slide deck with cover, KPIs, charts & recommendations',
+      sizeEstimate: '~460 KB',
+      supportsReportConfig: true,
+      requiresData: false,
+      icon: Presentation,
+    },
+    {
+      id: 'report_presentation_bundle_zip',
+      label: 'Report + Presentation bundle (ZIP)',
+      ext: 'zip',
+      description: 'Combined ZIP archive containing Executive PDF, PPTX deck & audited CSV data',
+      sizeEstimate: '~920 KB',
+      supportsReportConfig: true,
+      requiresData: false,
+      icon: Archive,
     },
     {
       id: 'standalone_html',
       label: 'Offline Dashboard (HTML)',
       ext: 'html',
       description: 'Self-contained interactive HTML with prefers-color-scheme tokens',
+      sizeEstimate: '~185 KB',
       requiresData: true,
       icon: FileCode,
     },
     {
+      id: 'dashboard_config_json',
+      label: 'Dashboard config (JSON)',
+      ext: 'json',
+      description: 'Portable dashboard layout, KPI definitions & visual specifications',
+      sizeEstimate: '~32 KB',
+      requiresData: false,
+      icon: FileCode,
+    },
+    {
+      id: 'excel_workbook',
+      label: 'Workbook (XLSX)',
+      ext: 'xlsx',
+      description: 'Multi-sheet Excel workbook with frozen headers & metadata',
+      sizeEstimate: '~240 KB',
+      requiresData: true,
+      icon: FileSpreadsheet,
+    },
+    {
       id: 'clean_csv',
-      label: 'Audited Dataset (CSV)',
+      label: 'Data (CSV)',
       ext: 'csv',
       description: 'Cleaned & filtered dataset rows in UTF-8 CSV format',
+      sizeEstimate: '~95 KB',
       requiresData: true,
       icon: TableIcon,
     },
     {
       id: 'project_zip',
-      label: 'Complete 14-Folder Bundle (ZIP)',
+      label: 'Full project bundle (ZIP)',
       ext: 'zip',
-      description: 'Full sovereign analytics package with manifest & scripts',
+      description: 'Full 14-folder sovereign analytics package with manifest & scripts',
+      sizeEstimate: '~1.4 MB',
+      supportsReportConfig: true,
       requiresData: true,
       icon: Archive,
     },
@@ -119,33 +201,67 @@ const CONTEXT_FORMATS: Record<DownloadMenuContext, DownloadFormatItem[]> = {
   analytics_pack: [
     {
       id: 'pack_report_pdf',
-      label: 'Pack Executive Report (PDF)',
+      label: 'Executive Report (PDF)',
       ext: 'pdf',
       description: 'Domain-specific A4 report with pack KPIs, lenses, and role templates',
+      sizeEstimate: '~390 KB',
+      supportsReportConfig: true,
       requiresData: false,
       icon: FileText,
     },
     {
+      id: 'presentation_pptx',
+      label: 'Presentation (PPTX)',
+      ext: 'pptx',
+      description: '16:9 domain slide deck with pack theme, KPIs, charts & 4-lens insights',
+      sizeEstimate: '~480 KB',
+      supportsReportConfig: true,
+      requiresData: false,
+      icon: Presentation,
+    },
+    {
       id: 'pack_bundle_zip',
-      label: 'Pack Dashboard & Report Bundle (ZIP)',
+      label: 'Report + Presentation bundle (ZIP)',
       ext: 'zip',
-      description: 'Complete pack dashboard specification, report, data & template archive',
+      description: 'Complete pack dashboard specification, PDF report, PPTX deck & data archive',
+      sizeEstimate: '~960 KB',
+      supportsReportConfig: true,
       requiresData: false,
       icon: Archive,
     },
     {
+      id: 'standalone_html',
+      label: 'Offline Dashboard (HTML)',
+      ext: 'html',
+      description: 'Self-contained interactive HTML dashboard with pack tokens',
+      sizeEstimate: '~190 KB',
+      requiresData: false,
+      icon: FileCode,
+    },
+    {
+      id: 'dashboard_config_json',
+      label: 'Dashboard config (JSON)',
+      ext: 'json',
+      description: 'Pack dashboard configuration, role mappings & computed KPI telemetry',
+      sizeEstimate: '~36 KB',
+      requiresData: false,
+      icon: FileCode,
+    },
+    {
       id: 'pack_excel',
-      label: 'Pack Analytics Workbook (XLSX)',
+      label: 'Workbook (XLSX)',
       ext: 'xlsx',
       description: 'Multi-sheet Excel workbook with pack KPIs, rows, or role template',
+      sizeEstimate: '~250 KB',
       requiresData: false,
       icon: FileSpreadsheet,
     },
     {
       id: 'pack_csv',
-      label: 'Pack Dataset / Schema (CSV)',
+      label: 'Data (CSV)',
       ext: 'csv',
       description: 'Active dataset rows or role-header template CSV if empty',
+      sizeEstimate: '~85 KB',
       requiresData: false,
       icon: TableIcon,
     },
@@ -154,40 +270,85 @@ const CONTEXT_FORMATS: Record<DownloadMenuContext, DownloadFormatItem[]> = {
       label: 'Pack Data Template (CSV)',
       ext: 'csv',
       description: 'Expected role headers + 3 sample rows for this analytics pack',
+      sizeEstimate: '~12 KB',
       requiresData: false,
       icon: BookOpen,
     },
   ],
   dashboard_builder: [
     {
-      id: 'standalone_html',
-      label: 'Standalone Dashboard (HTML)',
-      ext: 'html',
-      description: '100% offline HTML dashboard with embedded semantic tokens',
-      requiresData: true,
-      icon: FileCode,
-    },
-    {
       id: 'executive_pdf',
-      label: 'Dashboard Report (PDF)',
+      label: 'Executive Report (PDF)',
       ext: 'pdf',
       description: 'A4 visual breakdown report with 20mm margins',
+      sizeEstimate: '~360 KB',
+      supportsReportConfig: true,
       requiresData: true,
       icon: FileText,
     },
     {
+      id: 'presentation_pptx',
+      label: 'Presentation (PPTX)',
+      ext: 'pptx',
+      description: '16:9 presentation slides built from your custom Builder layout',
+      sizeEstimate: '~450 KB',
+      supportsReportConfig: true,
+      requiresData: false,
+      icon: Presentation,
+    },
+    {
+      id: 'report_presentation_bundle_zip',
+      label: 'Report + Presentation bundle (ZIP)',
+      ext: 'zip',
+      description: 'Combined ZIP with custom Builder PDF report, PPTX deck & CSV data',
+      sizeEstimate: '~910 KB',
+      supportsReportConfig: true,
+      requiresData: false,
+      icon: Archive,
+    },
+    {
+      id: 'standalone_html',
+      label: 'Offline Dashboard (HTML)',
+      ext: 'html',
+      description: '100% offline HTML dashboard with embedded semantic tokens',
+      sizeEstimate: '~180 KB',
+      requiresData: true,
+      icon: FileCode,
+    },
+    {
+      id: 'dashboard_config_json',
+      label: 'Dashboard config (JSON)',
+      ext: 'json',
+      description: 'Custom Builder visual canvas specification & data bindings',
+      sizeEstimate: '~30 KB',
+      requiresData: false,
+      icon: FileCode,
+    },
+    {
       id: 'excel_workbook',
-      label: 'Dashboard Data Workbook (XLSX)',
+      label: 'Workbook (XLSX)',
       ext: 'xlsx',
       description: 'Formatted Excel workbook backing all canvas cards',
+      sizeEstimate: '~230 KB',
       requiresData: true,
       icon: FileSpreadsheet,
     },
     {
+      id: 'clean_csv',
+      label: 'Data (CSV)',
+      ext: 'csv',
+      description: 'Cleaned & filtered dataset rows in UTF-8 CSV format',
+      sizeEstimate: '~90 KB',
+      requiresData: true,
+      icon: TableIcon,
+    },
+    {
       id: 'project_zip',
-      label: 'Dashboard & Report Bundle (ZIP)',
+      label: 'Full project bundle (ZIP)',
       ext: 'zip',
       description: 'Complete dashboard specification, HTML, PDF, and CSV bundle',
+      sizeEstimate: '~1.3 MB',
+      supportsReportConfig: true,
       requiresData: true,
       icon: Archive,
     },
@@ -379,35 +540,88 @@ const CONTEXT_FORMATS: Record<DownloadMenuContext, DownloadFormatItem[]> = {
   reports: [
     {
       id: 'executive_pdf',
-      label: 'Boardroom Executive Report (PDF)',
+      label: 'Executive Report (PDF)',
       ext: 'pdf',
       description: 'A4 20mm-margin report with KPIs, insights & governance',
+      sizeEstimate: '~380 KB',
+      supportsReportConfig: true,
       requiresData: true,
       icon: FileText,
+    },
+    {
+      id: 'presentation_pptx',
+      label: 'Presentation (PPTX)',
+      ext: 'pptx',
+      description: '16:9 widescreen executive presentation slide deck',
+      sizeEstimate: '~460 KB',
+      supportsReportConfig: true,
+      requiresData: false,
+      icon: Presentation,
+    },
+    {
+      id: 'report_presentation_bundle_zip',
+      label: 'Report + Presentation bundle (ZIP)',
+      ext: 'zip',
+      description: 'Combined ZIP with Executive Report PDF, PPTX slides & CSV data',
+      sizeEstimate: '~940 KB',
+      supportsReportConfig: true,
+      requiresData: false,
+      icon: Archive,
+    },
+    {
+      id: 'standalone_html',
+      label: 'Offline Dashboard (HTML)',
+      ext: 'html',
+      description: 'Self-contained offline HTML report & dashboard',
+      sizeEstimate: '~185 KB',
+      requiresData: true,
+      icon: FileCode,
+    },
+    {
+      id: 'dashboard_config_json',
+      label: 'Dashboard config (JSON)',
+      ext: 'json',
+      description: 'Portable report & dashboard configuration specification',
+      sizeEstimate: '~32 KB',
+      requiresData: false,
+      icon: FileCode,
+    },
+    {
+      id: 'excel_workbook',
+      label: 'Workbook (XLSX)',
+      ext: 'xlsx',
+      description: 'Multi-sheet Excel workbook with frozen headers',
+      sizeEstimate: '~240 KB',
+      requiresData: true,
+      icon: FileSpreadsheet,
+    },
+    {
+      id: 'clean_csv',
+      label: 'Data (CSV)',
+      ext: 'csv',
+      description: 'Audited dataset rows backing the report',
+      sizeEstimate: '~95 KB',
+      requiresData: true,
+      icon: TableIcon,
+    },
+    {
+      id: 'project_zip',
+      label: 'Full project bundle (ZIP)',
+      ext: 'zip',
+      description: '14-folder sovereign analytics archive',
+      sizeEstimate: '~1.4 MB',
+      supportsReportConfig: true,
+      requiresData: true,
+      icon: Archive,
     },
     {
       id: 'report_md',
       label: 'Executive Briefing (.md)',
       ext: 'md',
       description: 'Structured Markdown executive report with SOP metadata',
+      sizeEstimate: '~18 KB',
       requiresData: true,
       icon: FileText,
-    },
-    {
-      id: 'excel_workbook',
-      label: 'Audited Report Workbook (XLSX)',
-      ext: 'xlsx',
-      description: 'Multi-sheet Excel workbook with frozen headers',
-      requiresData: true,
-      icon: FileSpreadsheet,
-    },
-    {
-      id: 'project_zip',
-      label: 'Complete Report Package (ZIP)',
-      ext: 'zip',
-      description: '14-folder sovereign analytics archive',
-      requiresData: true,
-      icon: Archive,
     },
   ],
   export_center: [
@@ -599,13 +813,37 @@ export const DownloadMenu: React.FC<DownloadMenuProps> = ({
   const insights = analytics?.insights || [];
 
   const { addToast } = useToast();
+  const flags = loadFeatureFlags();
   const [isOpen, setIsOpen] = useState(false);
   const [activeExportId, setActiveExportId] = useState<string | null>(null);
   const [progressPct, setProgressPct] = useState<number | null>(null);
+  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [selectedItemId, setSelectedItemId] = useState<string>(() => {
+    if (context === 'analytics_pack') return 'pack_report_pdf';
+    return 'executive_pdf';
+  });
+  const [reportScope, setReportScope] = useState<'current_dashboard' | 'pack' | 'custom_builder' | 'all'>(() => {
+    if (context === 'analytics_pack') return 'pack';
+    if (context === 'dashboard_builder') return 'custom_builder';
+    return 'current_dashboard';
+  });
+  const [selectedPackScopeId, setSelectedPackScopeId] = useState<string>(() => packId || activePackId || 'financial');
+  const [selectedSections, setSelectedSections] = useState<Record<ReportSectionKey, boolean>>({
+    cover: true,
+    executive_summary: true,
+    kpis: true,
+    charts: true,
+    insights: true,
+    data_quality: true,
+    appendix: true,
+  });
+  const [audienceTemplate, setAudienceTemplate] = useState<'Board' | 'Manager' | 'Analyst'>('Board');
+  const [copiedSummary, setCopiedSummary] = useState(false);
+
   const [menuPos, setMenuPos] = useState<{ top: number; left: number; width: number }>({
     top: 64,
     left: 16,
-    width: 352,
+    width: 440,
   });
   const menuRef = useRef<HTMLDivElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
@@ -615,17 +853,22 @@ export const DownloadMenu: React.FC<DownloadMenuProps> = ({
   const hasData = activeRows && activeRows.length > 0;
   const datasetSlug = project?.name || project?.sourceFileName || (hasData ? 'dataset' : 'reference');
 
+  useEffect(() => {
+    if (packId || activePackId) {
+      setSelectedPackScopeId(packId || activePackId || 'financial');
+    }
+  }, [packId, activePackId]);
+
   const computeMenuPosition = () => {
     if (typeof window === 'undefined' || !triggerRef.current) return;
     const rect = triggerRef.current.getBoundingClientRect();
-    const width = Math.min(368, Math.max(280, window.innerWidth - 16));
-    // Prefer aligning to trigger's left edge if near the left half of screen, else right edge
+    const width = Math.min(460, Math.max(300, window.innerWidth - 16));
     const rawLeft =
       rect.left + width <= window.innerWidth - 8
         ? rect.left
         : rect.right - width;
     const left = Math.max(8, Math.min(rawLeft, window.innerWidth - width - 8));
-    const maxTop = Math.max(8, window.innerHeight - 460);
+    const maxTop = Math.max(8, window.innerHeight - 520);
     const top = Math.max(8, Math.min(rect.bottom + 6, maxTop));
     setMenuPos({ top, left, width });
   };
@@ -660,6 +903,74 @@ export const DownloadMenu: React.FC<DownloadMenuProps> = ({
   }, [isOpen]);
 
   const contextItems = CONTEXT_FORMATS[context] || CONTEXT_FORMATS.executive_dashboard;
+  const selectedFormatItem =
+    contextItems.find((it) => it.id === selectedItemId) ||
+    NO_DATA_READY_FORMATS.find((it) => it.id === selectedItemId) ||
+    contextItems[0];
+
+  // Standardized Phase 3 filename: <dataset>_<pack>_<type>_<YYYY-MM-DD>.<ext>
+  const buildStandardizedCenterFileName = (item: DownloadFormatItem): string => {
+    const cleanSlug = (val: string) =>
+      (val || 'dataset')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '') || 'dataset';
+    const dSlug = cleanSlug(datasetSlug);
+    const pSlug =
+      reportScope === 'pack'
+        ? cleanSlug(selectedPackScopeId)
+        : reportScope === 'custom_builder'
+        ? 'builder'
+        : reportScope === 'all'
+        ? 'all-packs'
+        : cleanSlug(packId || activePackId || 'executive');
+    const tSlug = cleanSlug(item.id.replace(/_/g, '-'));
+    const dateStr = new Date().toISOString().slice(0, 10);
+    return `${dSlug}_${pSlug}_${tSlug}_${dateStr}.${item.ext}`;
+  };
+
+  const handleCopySummary = async () => {
+    const activeSectionLabels = REPORT_SECTIONS_LIST.filter((s) => selectedSections[s.id]).map((s) => s.label);
+    const topKpiLines = kpis
+      .slice(0, 4)
+      .map((k) => `• ${k.name}: ${k.formattedValue} (${k.status})`)
+      .join('\n');
+    const summaryText = [
+      `DATA-ANALYTIX EXPORT SUMMARY — ${project?.name || 'Dataset'}`,
+      `Scope: ${
+        reportScope === 'pack'
+          ? `Analytics Pack (${selectedPackScopeId})`
+          : reportScope === 'custom_builder'
+          ? 'Custom Builder Layout'
+          : reportScope === 'all'
+          ? 'All Dashboards & Packs'
+          : 'Current Dashboard'
+      }`,
+      `Audience Template: ${audienceTemplate}`,
+      `Format: ${selectedFormatItem.label} (${buildStandardizedCenterFileName(selectedFormatItem)})`,
+      `Sections: ${activeSectionLabels.join(', ')}`,
+      `Audited Rows: ${activeRows.length.toLocaleString()} | Data Quality: ${qualityReport?.overallScore ?? 100}%`,
+      topKpiLines ? `\nKey Metrics:\n${topKpiLines}` : '',
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(summaryText);
+      }
+      setCopiedSummary(true);
+      addToast({
+        type: 'success',
+        title: 'Summary Copied',
+        message: 'Copied executive report summary & KPI telemetry to clipboard.',
+      });
+      setTimeout(() => setCopiedSummary(false), 2500);
+    } catch {
+      setCopiedSummary(true);
+      setTimeout(() => setCopiedSummary(false), 2500);
+    }
+  };
 
   const handleLoadSampleDataset = () => {
     loadDemoDataset('global-retail-sales');
@@ -670,7 +981,10 @@ export const DownloadMenu: React.FC<DownloadMenuProps> = ({
     });
   };
 
-  const handleDownloadFormat = async (item: DownloadFormatItem) => {
+  const handleDownloadFormat = async (
+    item: DownloadFormatItem,
+    options?: { useStandardizedName?: boolean }
+  ) => {
     if (item.requiresData && !hasData) {
       addToast({
         type: 'warning',
@@ -681,13 +995,14 @@ export const DownloadMenu: React.FC<DownloadMenuProps> = ({
     }
 
     setActiveExportId(item.id);
-    setProgressPct(null);
+    setProgressPct(15);
 
     try {
       // Yield a frame so spinner renders smoothly
       await new Promise((r) => setTimeout(r, 10));
 
       const exportEngine = await import('../../engine/exportEngine');
+      setProgressPct(45);
       const payload: ExportDataPayload = {
         project,
         brand,
@@ -703,6 +1018,8 @@ export const DownloadMenu: React.FC<DownloadMenuProps> = ({
       };
 
       let downloadedFilename = '';
+      const targetPackId =
+        reportScope === 'pack' ? selectedPackScopeId : packId || activePackId || 'financial';
 
       switch (item.id) {
         case 'chart_guide_pdf': {
@@ -749,27 +1066,118 @@ export const DownloadMenu: React.FC<DownloadMenuProps> = ({
           triggerBlobDownload(new Blob([json], { type: 'application/json;charset=utf-8;' }), downloadedFilename);
           break;
         }
+        case 'dashboard_config_json': {
+          const configPayload = {
+            dashboardTitle: project?.name || 'Dashboard Specification',
+            exportedAt: new Date().toISOString(),
+            scope: reportScope,
+            packId: targetPackId,
+            audienceTemplate,
+            includedSections: REPORT_SECTIONS_LIST.filter((s) => selectedSections[s.id]).map((s) => s.id),
+            rowCount: activeRows.length,
+            columnCount: columns.length,
+            kpis,
+            customVisuals,
+          };
+          downloadedFilename = options?.useStandardizedName
+            ? buildStandardizedCenterFileName(item)
+            : buildSopFileName('dashboard-config', datasetSlug, 'json');
+          triggerBlobDownload(
+            new Blob([JSON.stringify(configPayload, null, 2)], { type: 'application/json;charset=utf-8;' }),
+            downloadedFilename
+          );
+          break;
+        }
+        case 'presentation_pptx': {
+          const { generatePresentationPptxBlob } = await import('../../engine/pptxGenerator');
+          const { blob } = await generatePresentationPptxBlob({
+            datasetName: project?.name || 'Enterprise Dataset',
+            companyName: brand.companyName,
+            department: brand.department,
+            author: brand.author,
+            scope: reportScope,
+            packId: targetPackId,
+            audience: audienceTemplate,
+            includedSections: REPORT_SECTIONS_LIST.filter((s) => selectedSections[s.id]).map(
+              (s) => s.id
+            ),
+            rows: activeRows,
+            columns,
+            kpis,
+            insights,
+            qualityReport,
+            customVisuals,
+          });
+          downloadedFilename = options?.useStandardizedName
+            ? buildStandardizedCenterFileName(item)
+            : buildSopFileName('presentation-deck', datasetSlug, 'pptx');
+          triggerBlobDownload(blob, downloadedFilename);
+          break;
+        }
+        case 'report_presentation_bundle_zip': {
+          const [{ generatePresentationPptxBlob }, JSZipMod] = await Promise.all([
+            import('../../engine/pptxGenerator'),
+            import('jszip'),
+          ]);
+          const JSZip = (JSZipMod as any).default || JSZipMod;
+          const baseZipBlob = await exportEngine.createCompleteProjectZip(payload);
+          const zip = await JSZip.loadAsync(baseZipBlob);
+          const { blob: pptxBlob } = await generatePresentationPptxBlob({
+            datasetName: project?.name || 'Enterprise Dataset',
+            companyName: brand.companyName,
+            department: brand.department,
+            author: brand.author,
+            scope: reportScope,
+            packId: targetPackId,
+            audience: audienceTemplate,
+            includedSections: REPORT_SECTIONS_LIST.filter((s) => selectedSections[s.id]).map(
+              (s) => s.id
+            ),
+            rows: activeRows,
+            columns,
+            kpis,
+            insights,
+            qualityReport,
+            customVisuals,
+          });
+          const pptxName = buildSopFileName('presentation-deck', datasetSlug, 'pptx');
+          zip.file(`01_Executive_Reports/${pptxName}`, pptxBlob);
+          const finalZipBlob = await zip.generateAsync({ type: 'blob' });
+          downloadedFilename = options?.useStandardizedName
+            ? buildStandardizedCenterFileName(item)
+            : buildSopFileName('report-presentation-bundle', datasetSlug, 'zip');
+          triggerBlobDownload(finalZipBlob, downloadedFilename);
+          break;
+        }
         case 'executive_pdf': {
           const doc = exportEngine.generateEnterpriseReportPDF(payload, { customVisuals });
-          downloadedFilename = buildSopFileName('executive-report', datasetSlug, 'pdf');
+          downloadedFilename = options?.useStandardizedName
+            ? buildStandardizedCenterFileName(item)
+            : buildSopFileName('executive-report', datasetSlug, 'pdf');
           doc.save(downloadedFilename);
           break;
         }
         case 'excel_workbook': {
-          downloadedFilename = buildSopFileName('workbook', datasetSlug, 'xlsx');
+          downloadedFilename = options?.useStandardizedName
+            ? buildStandardizedCenterFileName(item)
+            : buildSopFileName('workbook', datasetSlug, 'xlsx');
           const blob = await exportEngine.buildSopExcelWorkbookAsync(payload, false);
           triggerBlobDownload(blob, downloadedFilename);
           break;
         }
         case 'standalone_html': {
           const html = exportEngine.generateStandaloneDashboardHTML(payload, { customVisuals });
-          downloadedFilename = buildSopFileName('dashboard', datasetSlug, 'html');
+          downloadedFilename = options?.useStandardizedName
+            ? buildStandardizedCenterFileName(item)
+            : buildSopFileName('dashboard', datasetSlug, 'html');
           triggerBlobDownload(new Blob([html], { type: 'text/html;charset=utf-8;' }), downloadedFilename);
           break;
         }
         case 'clean_csv': {
           const csv = await buildChunkedCsvAsync(activeRows, setProgressPct);
-          downloadedFilename = buildSopFileName('cleaned-data', datasetSlug, 'csv');
+          downloadedFilename = options?.useStandardizedName
+            ? buildStandardizedCenterFileName(item)
+            : buildSopFileName('cleaned-data', datasetSlug, 'csv');
           triggerBlobDownload(new Blob([csv], { type: 'text/csv;charset=utf-8;' }), downloadedFilename);
           break;
         }
@@ -875,32 +1283,38 @@ export const DownloadMenu: React.FC<DownloadMenuProps> = ({
           break;
         }
         case 'project_zip': {
-          downloadedFilename = buildSopFileName('project-bundle', datasetSlug, 'zip');
+          downloadedFilename = options?.useStandardizedName
+            ? buildStandardizedCenterFileName(item)
+            : buildSopFileName('project-bundle', datasetSlug, 'zip');
           const zipBlob = await exportEngine.createCompleteProjectZip(payload);
           triggerBlobDownload(zipBlob, downloadedFilename);
           break;
         }
         case 'pack_template_csv': {
           const { getPackById, buildPackTemplateCsv } = await import('../../analytics');
-          const resolvedPack = getPackById(packId || activePackId);
+          const resolvedPack = getPackById(targetPackId);
           const csv = buildPackTemplateCsv(resolvedPack);
-          downloadedFilename = buildSopFileName(`${resolvedPack.id}-template`, resolvedPack.name, 'csv');
+          downloadedFilename = options?.useStandardizedName
+            ? buildStandardizedCenterFileName(item)
+            : buildSopFileName(`${resolvedPack.id}-template`, resolvedPack.name, 'csv');
           triggerBlobDownload(new Blob([csv], { type: 'text/csv;charset=utf-8;' }), downloadedFilename);
           break;
         }
         case 'pack_csv': {
           const { getPackById, buildPackTemplateCsv } = await import('../../analytics');
-          const resolvedPack = getPackById(packId || activePackId);
+          const resolvedPack = getPackById(targetPackId);
           const csv = hasData
             ? await buildChunkedCsvAsync(activeRows, setProgressPct)
             : buildPackTemplateCsv(resolvedPack);
-          downloadedFilename = buildSopFileName(`${resolvedPack.id}-data`, datasetSlug, 'csv');
+          downloadedFilename = options?.useStandardizedName
+            ? buildStandardizedCenterFileName(item)
+            : buildSopFileName(`${resolvedPack.id}-data`, datasetSlug, 'csv');
           triggerBlobDownload(new Blob([csv], { type: 'text/csv;charset=utf-8;' }), downloadedFilename);
           break;
         }
         case 'pack_report_pdf': {
           const { getPackById, mapRoles, getPersistedPackRoleMap, buildDashboard } = await import('../../analytics');
-          const resolvedPack = getPackById(packId || activePackId);
+          const resolvedPack = getPackById(targetPackId);
           const persisted = getPersistedPackRoleMap(datasetSlug, resolvedPack.id);
           const roleMap = mapRoles({ columns, rows: activeRows, datasetId: datasetSlug }, resolvedPack, persisted);
           const builtDash = buildDashboard(resolvedPack, activeRows, roleMap);
@@ -930,13 +1344,15 @@ export const DownloadMenu: React.FC<DownloadMenuProps> = ({
           const doc = exportEngine.generateEnterpriseReportPDF(packPayload, {
             customVisuals: builtDash.charts.length > 0 ? builtDash.charts : customVisuals,
           });
-          downloadedFilename = buildSopFileName(`${resolvedPack.id}-report`, datasetSlug, 'pdf');
+          downloadedFilename = options?.useStandardizedName
+            ? buildStandardizedCenterFileName(item)
+            : buildSopFileName(`${resolvedPack.id}-report`, datasetSlug, 'pdf');
           doc.save(downloadedFilename);
           break;
         }
         case 'pack_excel': {
           const { getPackById, mapRoles, getPersistedPackRoleMap, buildDashboard } = await import('../../analytics');
-          const resolvedPack = getPackById(packId || activePackId);
+          const resolvedPack = getPackById(targetPackId);
           const persisted = getPersistedPackRoleMap(datasetSlug, resolvedPack.id);
           const roleMap = mapRoles({ columns, rows: activeRows, datasetId: datasetSlug }, resolvedPack, persisted);
           const builtDash = buildDashboard(resolvedPack, activeRows, roleMap);
@@ -974,7 +1390,9 @@ export const DownloadMenu: React.FC<DownloadMenuProps> = ({
               aggregation: 'sum' as const,
             })),
           };
-          downloadedFilename = buildSopFileName(`${resolvedPack.id}-workbook`, datasetSlug, 'xlsx');
+          downloadedFilename = options?.useStandardizedName
+            ? buildStandardizedCenterFileName(item)
+            : buildSopFileName(`${resolvedPack.id}-workbook`, datasetSlug, 'xlsx');
           const blob = hasData
             ? await exportEngine.buildSopExcelWorkbookAsync(packPayload, false)
             : await exportEngine.generateBlankExcelTemplateAsync(roleCols, false);
@@ -983,7 +1401,7 @@ export const DownloadMenu: React.FC<DownloadMenuProps> = ({
         }
         case 'pack_bundle_zip': {
           const { getPackById, mapRoles, getPersistedPackRoleMap, buildDashboard } = await import('../../analytics');
-          const resolvedPack = getPackById(packId || activePackId);
+          const resolvedPack = getPackById(targetPackId);
           const persisted = getPersistedPackRoleMap(datasetSlug, resolvedPack.id);
           const roleMap = mapRoles({ columns, rows: activeRows, datasetId: datasetSlug }, resolvedPack, persisted);
           const builtDash = buildDashboard(resolvedPack, activeRows, roleMap);
@@ -1009,7 +1427,9 @@ export const DownloadMenu: React.FC<DownloadMenuProps> = ({
               aggregation: 'sum' as const,
             })),
           };
-          downloadedFilename = buildSopFileName(`${resolvedPack.id}-bundle`, datasetSlug, 'zip');
+          downloadedFilename = options?.useStandardizedName
+            ? buildStandardizedCenterFileName(item)
+            : buildSopFileName(`${resolvedPack.id}-bundle`, datasetSlug, 'zip');
           const zipBlob = await exportEngine.createCompleteProjectZip(packPayload);
           triggerBlobDownload(zipBlob, downloadedFilename);
           break;
@@ -1091,6 +1511,7 @@ export const DownloadMenu: React.FC<DownloadMenuProps> = ({
         }
       }
 
+      setProgressPct(100);
       addToast({
         type: 'success',
         title: 'Download Complete',
@@ -1115,12 +1536,15 @@ export const DownloadMenu: React.FC<DownloadMenuProps> = ({
         ref={triggerRef}
         type="button"
         onClick={() => {
-          if (!isOpen) computeMenuPosition();
+          if (!isOpen) {
+            computeMenuPosition();
+            setStep(1);
+          }
           setIsOpen((prev) => !prev);
         }}
         disabled={activeExportId !== null}
         aria-label={`${label} (${context.replace(/_/g, ' ')})`}
-        aria-haspopup="menu"
+        aria-haspopup="dialog"
         aria-expanded={isOpen}
         data-testid={`download-menu-trigger-${context}`}
         className={`inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-all cursor-pointer border border-subtle bg-elevated hover:bg-card-hover text-primary shadow-xs disabled:opacity-60 ${
@@ -1147,7 +1571,7 @@ export const DownloadMenu: React.FC<DownloadMenuProps> = ({
         createPortal(
           <div
             ref={panelRef}
-            role="menu"
+            role="dialog"
             aria-label={`${label} options`}
             data-testid={`download-menu-panel-${context}`}
             style={{
@@ -1159,151 +1583,480 @@ export const DownloadMenu: React.FC<DownloadMenuProps> = ({
             }}
             className="rounded-2xl bg-card border border-strong shadow-2xl overflow-hidden animate-fadeIn text-left"
           >
-            {/* Header Banner */}
-            <div className="px-4 py-3 bg-elevated border-b border-subtle flex items-center justify-between gap-2">
-            <div>
-              <div className="text-xs font-bold font-heading text-primary flex items-center gap-1.5">
-                <Download className="w-3.5 h-3.5 text-accent" />
-                <span>SOP-Governed Downloads</span>
+            {/* Header Banner + 3-Step Stepper Navigation */}
+            <div className="px-4 py-3 bg-elevated border-b border-subtle space-y-2.5">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <div className="text-xs font-bold font-heading text-primary flex items-center gap-1.5">
+                    <Download className="w-3.5 h-3.5 text-accent" />
+                    <span>Unified Download Center</span>
+                  </div>
+                  <p className="text-[11px] text-secondary mt-0.5 font-mono truncate max-w-[270px]">
+                    {hasData
+                      ? `${project.name} (${activeRows.length.toLocaleString()} rows)`
+                      : 'No dataset loaded — templates & guides active'}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span
+                    className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-bold border ${
+                      hasData
+                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                        : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                    }`}
+                  >
+                    {hasData ? 'DATA READY' : 'NO DATA'}
+                  </span>
+                  <button
+                    type="button"
+                    aria-label="Close Download Center"
+                    onClick={() => setIsOpen(false)}
+                    className="p-1 rounded-lg text-muted hover:text-primary hover:bg-card transition-colors cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
-              <p className="text-[11px] text-secondary mt-0.5 font-mono truncate max-w-[230px]">
-                {hasData
-                  ? `${project.name} (${activeRows.length.toLocaleString()} rows)`
-                  : 'No dataset loaded — templates & guides active'}
-              </p>
-            </div>
-            <span
-              className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-bold border ${
-                hasData
-                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                  : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-              }`}
-            >
-              {hasData ? 'DATA READY' : 'NO DATA'}
-            </span>
-          </div>
 
-          {/* No-Data Banner with 1-Click "Use sample dataset" action */}
-          {!hasData && (
-            <div
-              data-testid="download-menu-no-data-banner"
-              className="px-4 py-3 bg-amber-500/10 border-b border-subtle flex items-center justify-between gap-3"
-            >
-              <div className="text-[11px] text-secondary leading-snug">
-                <span className="font-bold text-primary block">Load a dataset first</span>
-                <span>Data-backed exports require rows. Never invents fake data.</span>
-              </div>
-              <button
-                type="button"
-                onClick={handleLoadSampleDataset}
-                data-testid="download-menu-load-sample"
-                className="px-3 py-1.5 rounded-xl text-xs font-bold bg-accent text-on-accent hover:opacity-90 transition-all shrink-0 flex items-center gap-1.5 cursor-pointer shadow-xs"
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Use sample dataset</span>
-              </button>
-            </div>
-          )}
-
-          <div className="max-h-96 overflow-y-auto divide-y divide-[var(--border-subtle)]">
-            {/* Section 1: View-Specific Formats */}
-            <div className="p-2">
-              <div className="px-2 py-1 text-[10px] font-mono font-bold uppercase tracking-wider text-muted">
-                View Exports ({context.replace(/_/g, ' ')})
-              </div>
-              <div className="space-y-1 mt-1">
-                {contextItems.map((item) => {
-                  const Icon = item.icon;
-                  const isDisabled = item.requiresData && !hasData;
-                  const isBusy = activeExportId === item.id;
-                  return (
+              {/* 3-Step Indicator Bar */}
+              {(flags.unifiedTheme || flags.depthUI || flags.analyticsPacks) && context !== 'chart' && (
+                <div
+                  data-testid="download-center-stepper"
+                  className="grid grid-cols-3 gap-1.5 pt-1"
+                >
+                  {[
+                    { s: 1 as const, title: '1. What do you want?' },
+                    { s: 2 as const, title: '2. Which report?' },
+                    { s: 3 as const, title: '3. Download' },
+                  ].map((st) => (
                     <button
-                      key={item.id}
+                      key={st.s}
                       type="button"
-                      role="menuitem"
-                      disabled={isDisabled || activeExportId !== null}
-                      aria-disabled={isDisabled}
-                      data-testid={`download-item-${item.id}`}
-                      onClick={() => handleDownloadFormat(item)}
-                      className={`w-full text-left px-3 py-2 rounded-xl transition-all flex items-start gap-3 ${
-                        isDisabled
-                          ? 'opacity-55 cursor-not-allowed bg-input/40'
-                          : 'hover:bg-elevated cursor-pointer'
+                      data-testid={`download-center-step-tab-${st.s}`}
+                      onClick={() => setStep(st.s)}
+                      className={`px-2 py-1.5 rounded-lg text-[10px] font-mono font-bold truncate transition-colors cursor-pointer border text-left ${
+                        step === st.s
+                          ? 'bg-accent text-on-accent border-transparent shadow-2xs'
+                          : 'bg-card text-secondary hover:text-primary border-subtle'
                       }`}
                     >
-                      <div className="p-1.5 rounded-lg bg-elevated border border-subtle text-accent shrink-0 mt-0.5">
-                        {isBusy ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : isDisabled ? (
-                          <Lock className="w-4 h-4 text-muted" />
-                        ) : (
-                          <Icon className="w-4 h-4" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-xs font-semibold text-primary truncate">
-                            {item.label}
-                          </span>
-                          <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-elevated text-secondary border border-subtle shrink-0">
-                            .{item.ext}
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-secondary leading-snug mt-0.5">
-                          {isDisabled ? 'Disabled — Load a dataset first' : item.description}
-                        </p>
-                      </div>
+                      {st.title}
                     </button>
-                  );
-                })}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
 
-            {/* Section 2: Always-Available Guides, Templates & Themes (Works with No Data) */}
-            <div className="p-2 bg-input/30">
-              <div className="px-2 py-1 text-[10px] font-mono font-bold uppercase tracking-wider text-accent flex items-center justify-between">
-                <span>Templates, Guides & Themes</span>
-                <span>Always Ready</span>
+            {/* No-Data Banner with 1-Click "Use sample dataset" action */}
+            {!hasData && (
+              <div
+                data-testid="download-menu-no-data-banner"
+                className="px-4 py-3 bg-amber-500/10 border-b border-subtle flex items-center justify-between gap-3"
+              >
+                <div className="text-[11px] text-secondary leading-snug">
+                  <span className="font-bold text-primary block">Load a dataset first</span>
+                  <span>Data-backed exports require rows. Never invents fake data.</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleLoadSampleDataset}
+                  data-testid="download-menu-load-sample"
+                  className="px-3 py-1.5 rounded-xl text-xs font-bold bg-accent text-on-accent hover:opacity-90 transition-all shrink-0 flex items-center gap-1.5 cursor-pointer shadow-xs"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Use sample dataset</span>
+                </button>
               </div>
-              <div className="space-y-1 mt-1">
-                {NO_DATA_READY_FORMATS.map((item) => {
-                  const Icon = item.icon;
-                  const isBusy = activeExportId === item.id;
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      role="menuitem"
-                      disabled={activeExportId !== null}
-                      data-testid={`download-item-${item.id}`}
-                      onClick={() => handleDownloadFormat(item)}
-                      className="w-full text-left px-3 py-2 rounded-xl hover:bg-elevated transition-all flex items-start gap-3 cursor-pointer"
-                    >
-                      <div className="p-1.5 rounded-lg bg-elevated border border-subtle text-accent shrink-0 mt-0.5">
-                        {isBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Icon className="w-4 h-4" />}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-xs font-semibold text-primary truncate">
-                            {item.label}
-                          </span>
-                          <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-elevated text-secondary border border-subtle shrink-0">
-                            .{item.ext}
-                          </span>
+            )}
+
+            {/* STEP 1: "What do you want?" */}
+            {step === 1 && (
+              <div data-testid="download-center-step-1" className="max-h-96 overflow-y-auto divide-y divide-[var(--border-subtle)]">
+                {/* Section 1: View-Specific Formats */}
+                <div className="p-2.5">
+                  <div className="px-2 py-1 flex items-center justify-between text-[10px] font-mono font-bold uppercase tracking-wider text-muted">
+                    <span>What do you want? ({context.replace(/_/g, ' ')})</span>
+                    {context !== 'chart' && (
+                      <button
+                        type="button"
+                        data-testid="download-center-next-step-2"
+                        onClick={() => setStep(2)}
+                        className="text-accent hover:underline inline-flex items-center gap-1 cursor-pointer"
+                      >
+                        <span>Configure scope &amp; sections</span>
+                        <ArrowRight className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
+                  <div className="space-y-1.5 mt-1">
+                    {contextItems.map((item) => {
+                      const Icon = item.icon;
+                      const isDisabled = item.requiresData && !hasData;
+                      const isBusy = activeExportId === item.id;
+                      const isSelected = selectedItemId === item.id;
+                      return (
+                        <div
+                          key={item.id}
+                          className={`rounded-xl border transition-all ${
+                            isSelected
+                              ? 'border-accent/60 bg-elevated/70'
+                              : 'border-subtle bg-card/50 hover:bg-elevated'
+                          }`}
+                        >
+                          <button
+                            type="button"
+                            role="menuitem"
+                            disabled={isDisabled || activeExportId !== null}
+                            aria-disabled={isDisabled}
+                            data-testid={`download-item-${item.id}`}
+                            onClick={() => {
+                              setSelectedItemId(item.id);
+                              handleDownloadFormat(item);
+                            }}
+                            className={`w-full text-left px-3 py-2.5 rounded-xl transition-all flex items-start gap-3 ${
+                              isDisabled
+                                ? 'opacity-55 cursor-not-allowed bg-input/40'
+                                : 'cursor-pointer'
+                            }`}
+                          >
+                            <div className="p-2 rounded-xl bg-elevated border border-subtle text-accent shrink-0 mt-0.5">
+                              {isBusy ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : isDisabled ? (
+                                <Lock className="w-4 h-4 text-muted" />
+                              ) : (
+                                <Icon className="w-4 h-4" />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="text-xs font-bold text-primary truncate">
+                                  {item.label}
+                                </span>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  {item.sizeEstimate && (
+                                    <span className="text-[10px] font-mono text-muted px-1.5 py-0.5 rounded bg-input border border-subtle">
+                                      {item.sizeEstimate}
+                                    </span>
+                                  )}
+                                  <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-elevated text-secondary border border-subtle">
+                                    .{item.ext}
+                                  </span>
+                                </div>
+                              </div>
+                              <p className="text-[11px] text-secondary leading-snug mt-0.5">
+                                {isDisabled ? 'Disabled — Load a dataset first' : item.description}
+                              </p>
+                            </div>
+                          </button>
+
+                          {item.supportsReportConfig && !isDisabled && context !== 'chart' && (
+                            <div className="px-3 pb-2 pt-0.5 flex items-center justify-end border-t border-subtle/50">
+                              <button
+                                type="button"
+                                data-testid={`download-configure-${item.id}`}
+                                onClick={() => {
+                                  setSelectedItemId(item.id);
+                                  setStep(2);
+                                }}
+                                className="text-[11px] font-mono font-semibold text-accent hover:underline inline-flex items-center gap-1 cursor-pointer"
+                              >
+                                <SlidersHorizontal className="w-3 h-3" />
+                                <span>Choose scope, sections &amp; audience →</span>
+                              </button>
+                            </div>
+                          )}
                         </div>
-                        <p className="text-[11px] text-secondary leading-snug mt-0.5">
-                          {item.description}
-                        </p>
-                      </div>
-                    </button>
-                  );
-                })}
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Section 2: Always-Available Guides, Templates & Themes (Works with No Data) */}
+                <div className="p-2.5 bg-input/30">
+                  <div className="px-2 py-1 text-[10px] font-mono font-bold uppercase tracking-wider text-accent flex items-center justify-between">
+                    <span>Templates, Guides &amp; Themes</span>
+                    <span>Always Ready</span>
+                  </div>
+                  <div className="space-y-1 mt-1">
+                    {NO_DATA_READY_FORMATS.map((item) => {
+                      const Icon = item.icon;
+                      const isBusy = activeExportId === item.id;
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          role="menuitem"
+                          disabled={activeExportId !== null}
+                          data-testid={`download-item-${item.id}`}
+                          onClick={() => handleDownloadFormat(item)}
+                          className="w-full text-left px-3 py-2 rounded-xl hover:bg-elevated transition-all flex items-start gap-3 cursor-pointer"
+                        >
+                          <div className="p-1.5 rounded-lg bg-elevated border border-subtle text-accent shrink-0 mt-0.5">
+                            {isBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Icon className="w-4 h-4" />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-xs font-semibold text-primary truncate">
+                                {item.label}
+                              </span>
+                              <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-elevated text-secondary border border-subtle shrink-0">
+                                .{item.ext}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-secondary leading-snug mt-0.5">
+                              {item.description}
+                            </p>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
+            )}
+
+            {/* STEP 2: "Which report?" (Scope, Sections Checklist, Audience Template) */}
+            {step === 2 && (
+              <div data-testid="download-center-step-2" className="p-4 space-y-4 max-h-96 overflow-y-auto">
+                {/* Report Scope Selector */}
+                <div className="space-y-1.5">
+                  <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-primary">
+                    Report &amp; Presentation Scope
+                  </label>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {[
+                      { id: 'current_dashboard' as const, label: 'Current dashboard' },
+                      { id: 'pack' as const, label: 'Analytics Pack (14)' },
+                      { id: 'custom_builder' as const, label: 'Custom Builder layout' },
+                      { id: 'all' as const, label: 'All (Full Suite)' },
+                    ].map((sc) => (
+                      <button
+                        key={sc.id}
+                        type="button"
+                        data-testid={`download-scope-${sc.id}`}
+                        onClick={() => setReportScope(sc.id)}
+                        className={`px-2.5 py-2 rounded-xl text-xs font-semibold border text-left transition-all cursor-pointer ${
+                          reportScope === sc.id
+                            ? 'bg-accent text-on-accent border-transparent font-bold shadow-2xs'
+                            : 'bg-elevated text-secondary hover:text-primary border-subtle'
+                        }`}
+                      >
+                        {sc.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {reportScope === 'pack' && (
+                    <div className="pt-1.5">
+                      <label htmlFor="download-center-pack-select" className="sr-only">
+                        Select Analytics Pack
+                      </label>
+                      <select
+                        id="download-center-pack-select"
+                        data-testid="download-center-pack-select"
+                        value={selectedPackScopeId}
+                        onChange={(e) => setSelectedPackScopeId(e.target.value)}
+                        className="w-full h-9 px-3 rounded-xl bg-input border border-subtle text-xs font-semibold text-primary focus:outline-none"
+                      >
+                        {PACK_CHOICE_OPTIONS.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+
+                {/* Audience Template Selector */}
+                <div className="space-y-1.5">
+                  <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-primary">
+                    Audience Template
+                  </label>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {(['Board', 'Manager', 'Analyst'] as const).map((aud) => (
+                      <button
+                        key={aud}
+                        type="button"
+                        data-testid={`download-audience-${aud.toLowerCase()}`}
+                        onClick={() => setAudienceTemplate(aud)}
+                        className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+                          audienceTemplate === aud
+                            ? 'bg-accent text-on-accent border-transparent font-bold'
+                            : 'bg-elevated text-secondary hover:text-primary border-subtle'
+                        }`}
+                      >
+                        {aud}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Sections Checklist */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-primary">
+                      Included Sections
+                    </label>
+                    <span className="text-[10px] font-mono text-secondary">
+                      {REPORT_SECTIONS_LIST.filter((s) => selectedSections[s.id]).length}/{REPORT_SECTIONS_LIST.length} active
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {REPORT_SECTIONS_LIST.map((sec) => {
+                      const checked = selectedSections[sec.id];
+                      return (
+                        <label
+                          key={sec.id}
+                          data-testid={`download-section-${sec.id}`}
+                          className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-elevated border border-subtle text-xs text-primary cursor-pointer"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() =>
+                              setSelectedSections((prev) => ({
+                                ...prev,
+                                [sec.id]: !prev[sec.id],
+                              }))
+                            }
+                            className="accent-[var(--accent)] rounded"
+                          />
+                          <span className="truncate">{sec.label}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Step 2 Footer Navigation */}
+                <div className="pt-2 border-t border-subtle flex items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setStep(1)}
+                    className="px-3 py-1.5 rounded-xl bg-elevated border border-subtle text-xs font-semibold text-secondary hover:text-primary inline-flex items-center gap-1 cursor-pointer"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    <span>Back</span>
+                  </button>
+                  <button
+                    type="button"
+                    data-testid="download-center-next-step-3"
+                    onClick={() => setStep(3)}
+                    className="px-4 py-1.5 rounded-xl bg-accent text-on-accent text-xs font-bold hover:opacity-90 inline-flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <span>Review &amp; Download</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 3: Download + Progress + "Copy summary" */}
+            {step === 3 && (
+              <div data-testid="download-center-step-3" className="p-4 space-y-4">
+                <div className="p-3.5 rounded-xl bg-elevated border border-subtle space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-bold text-primary">
+                      {selectedFormatItem.label}
+                    </span>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-card border border-subtle text-accent font-bold">
+                      {selectedFormatItem.sizeEstimate || '~250 KB'}
+                    </span>
+                  </div>
+
+                  <div className="text-[11px] text-secondary space-y-1 font-mono">
+                    <div>
+                      Scope:{' '}
+                      <strong className="text-primary">
+                        {reportScope === 'pack'
+                          ? `Pack (${selectedPackScopeId})`
+                          : reportScope === 'custom_builder'
+                          ? 'Custom Builder'
+                          : reportScope === 'all'
+                          ? 'All Suites'
+                          : 'Current Dashboard'}
+                      </strong>{' '}
+                      · Audience: <strong className="text-primary">{audienceTemplate}</strong>
+                    </div>
+                    <div className="truncate" title={buildStandardizedCenterFileName(selectedFormatItem)}>
+                      File:{' '}
+                      <span
+                        data-testid="download-center-filename"
+                        className="text-accent font-bold"
+                      >
+                        {buildStandardizedCenterFileName(selectedFormatItem)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {progressPct !== null && (
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-[11px] font-mono text-secondary">
+                      <span>Compiling package...</span>
+                      <span>{progressPct}%</span>
+                    </div>
+                    <div className="w-full h-2 rounded-full bg-input overflow-hidden border border-subtle">
+                      <div
+                        className="h-full bg-accent transition-all duration-200"
+                        style={{ width: `${progressPct}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setStep(2)}
+                    className="px-3 py-2 rounded-xl bg-elevated border border-subtle text-xs font-semibold text-secondary hover:text-primary inline-flex items-center gap-1 cursor-pointer"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    <span>Back</span>
+                  </button>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      data-testid="download-center-copy-summary"
+                      onClick={handleCopySummary}
+                      className="px-3 py-2 rounded-xl bg-elevated hover:bg-card-hover border border-subtle text-xs font-semibold text-primary inline-flex items-center gap-1.5 cursor-pointer"
+                    >
+                      {copiedSummary ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3.5 h-3.5 text-accent" />
+                          <span>Copy summary</span>
+                        </>
+                      )}
+                    </button>
+
+                    <button
+                      type="button"
+                      data-testid="download-center-confirm-download"
+                      disabled={(selectedFormatItem.requiresData && !hasData) || activeExportId !== null}
+                      onClick={() =>
+                        handleDownloadFormat(selectedFormatItem, { useStandardizedName: true })
+                      }
+                      className="px-4 py-2 rounded-xl bg-accent text-on-accent text-xs font-bold hover:opacity-90 disabled:opacity-50 inline-flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>Download Now</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>,
+          document.body
+        )}
     </div>
   );
 };
+
