@@ -228,6 +228,8 @@ export const ModernKpiCard: React.FC<ModernKpiCardProps> = ({
       <div className="flex items-end justify-between gap-2 min-w-0">
         <div
           className={`font-bold font-mono tabular-nums leading-none tracking-[-0.03em] shrink-0 whitespace-nowrap ${
+            useDepthVisuals ? 'animate-kpi-reveal' : ''
+          } ${
             unavailable
               ? 'text-base sm:text-lg text-muted'
               : isHero && useDepthVisuals

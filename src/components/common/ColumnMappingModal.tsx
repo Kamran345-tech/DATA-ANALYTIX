@@ -122,6 +122,7 @@ export const ColumnMappingModal: React.FC<ColumnMappingModalProps> = ({
                 </div>
                 <div className="w-full sm:w-64 shrink-0">
                   <select
+                    data-testid={`role-select-${role.value}`}
                     aria-label={`Dataset column for role ${role.label}`}
                     value={mapping[role.value] || ''}
                     onChange={e => setMapping({ ...mapping, [role.value]: e.target.value })}

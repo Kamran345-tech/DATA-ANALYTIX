@@ -96,45 +96,46 @@ const ToastCard: React.FC<ToastCardProps> = ({ toast, onDismiss, isLight }) => {
 
   return (
     <div
+      data-testid="toast-notification"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       role="alert"
       aria-live="polite"
-      className={`relative w-full max-w-sm sm:max-w-md rounded-2xl border backdrop-blur-xl p-4 shadow-2xl transition-all duration-300 transform translate-y-0 opacity-100 overflow-hidden ${getBorderAndBg()}`}
+      className={`relative w-full max-w-[320px] sm:max-w-[340px] rounded-xl border backdrop-blur-xl py-2.5 px-3.5 shadow-xl transition-all duration-200 transform translate-y-0 opacity-100 overflow-hidden ${getBorderAndBg()}`}
     >
-      <div className="flex items-start gap-3">
+      <div className="flex items-start gap-2.5">
         {/* Type Icon */}
         <div className="mt-0.5">{getIcon()}</div>
 
         {/* Content Area */}
-        <div className="flex-1 min-w-0 pr-2">
+        <div className="flex-1 min-w-0 pr-1">
           <div className="flex items-center justify-between gap-2">
-            <h4 className="text-sm font-bold tracking-tight truncate text-primary">
+            <h4 className="text-xs font-bold tracking-tight truncate text-primary">
               {toast.title}
             </h4>
             {toast.stage && (
-              <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full border shrink-0 bg-elevated border-subtle text-accent">
+              <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded-md border shrink-0 bg-elevated border-subtle text-accent">
                 {toast.stage}
               </span>
             )}
           </div>
 
           {toast.message && (
-            <p className="text-xs mt-1 leading-relaxed text-secondary">
+            <p className="text-[11px] mt-0.5 leading-snug text-secondary line-clamp-2">
               {toast.message}
             </p>
           )}
 
           {/* If progress toast: active animated bar with percentage */}
           {toast.type === 'progress' && typeof toast.progress === 'number' && (
-            <div className="mt-3 space-y-1.5">
-              <div className="flex items-center justify-between text-[11px] font-mono">
+            <div className="mt-2 space-y-1">
+              <div className="flex items-center justify-between text-[10px] font-mono">
                 <span className={isLight ? 'text-muted' : 'text-secondary'}>Ingestion Pipeline</span>
                 <span className="font-bold text-accent">{Math.round(toast.progress)}%</span>
               </div>
               <div className={`h-1.5 w-full rounded-full overflow-hidden ${isLight ? 'bg-input' : 'bg-elevated'}`}>
                 <div 
-                  className="h-full rounded-full bg-gradient-to-r from-teal-500/20 via-indigo-500/10 to-transparent transition-all duration-300 ease-out"
+                  className="h-full rounded-full bg-accent transition-all duration-300 ease-out"
                   style={{ width: `${toast.progress}%` }}
                 />
               </div>
@@ -143,23 +144,17 @@ const ToastCard: React.FC<ToastCardProps> = ({ toast, onDismiss, isLight }) => {
 
           {/* Action Button */}
           {toast.action && (
-            <div className="mt-2.5 pt-1">
+            <div className="mt-2 pt-0.5">
               <button
                 type="button"
                 onClick={() => {
                   toast.action?.onClick();
                   onDismiss(toast.id);
                 }}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm cursor-pointer ${
-                  toast.action.variant === 'secondary'
-                    ? isLight
-                      ? 'bg-elevated hover:bg-input text-primary border border-slate-200'
-                      : 'bg-accent hover:bg-accent text-primary border border-teal-500/40'
-                    : 'bg-accent hover:bg-accent text-primary shadow-lg'
-                }`}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer bg-accent text-on-accent hover:opacity-90"
               >
                 <span>{toast.action.label}</span>
-                <ArrowRight className="w-3.5 h-3.5" />
+                <ArrowRight className="w-3 h-3" />
               </button>
             </div>
           )}
@@ -170,13 +165,9 @@ const ToastCard: React.FC<ToastCardProps> = ({ toast, onDismiss, isLight }) => {
           type="button"
           onClick={() => onDismiss(toast.id)}
           aria-label="Dismiss notification"
-          className={`p-1 rounded-lg transition-colors cursor-pointer shrink-0 ${
-            isLight 
-              ? 'text-secondary hover:text-primary hover:bg-elevated' 
-              : 'text-secondary hover:text-primary hover:bg-elevated'
-          }`}
+          className="p-1 rounded-lg transition-colors cursor-pointer shrink-0 text-secondary hover:text-primary hover:bg-elevated"
         >
-          <X className="w-4 h-4" />
+          <X className="w-3.5 h-3.5" />
         </button>
       </div>
 
@@ -197,18 +188,18 @@ export const ToastContainer: React.FC = () => {
   const isLight = themeMode === 'light';
 
   if (!toasts || toasts.length === 0) return null;
-  const visibleToasts = toasts.slice(-2);
+  // Max 1 visible toast at a time
+  const visibleToasts = toasts.slice(-1);
 
   return (
     <aside 
       aria-label="Notifications"
-      className="fixed bottom-4 right-4 z-[120] flex flex-col gap-2 max-w-xs sm:max-w-sm w-full pointer-events-none p-2 sm:p-0"
+      className="fixed bottom-3 left-1/2 -translate-x-1/2 sm:bottom-5 sm:right-5 sm:left-auto sm:translate-x-0 z-[120] flex flex-col items-center sm:items-end gap-2 max-w-[320px] sm:max-w-[340px] w-full pointer-events-none px-3 sm:px-0"
     >
-      {/* List of active toasts (max 2) */}
-      <div className="flex flex-col-reverse gap-2 pointer-events-auto">
+      <div className="flex flex-col-reverse gap-2 pointer-events-auto w-full">
         {visibleToasts.map((item) => (
           <ToastCard 
-            key={item.id} 
+            key={`${item.id}-${item.timestamp}`} 
             toast={item} 
             onDismiss={dismissToast} 
             isLight={isLight} 

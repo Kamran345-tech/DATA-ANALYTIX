@@ -121,10 +121,13 @@ export function inferRoleMapping(
   }));
 
   const usedRawCols = new Set<string>();
+  const explicitlyUnmapped = new Set<string>();
 
   if (userOverrides) {
     for (const [role, col] of Object.entries(userOverrides)) {
-      if (col && columnNames.includes(col)) {
+      if (col === '') {
+        explicitlyUnmapped.add(role);
+      } else if (col && columnNames.includes(col)) {
         mapping[role] = col;
         usedRawCols.add(col);
       }
@@ -133,7 +136,7 @@ export function inferRoleMapping(
 
   const allRoles = [...pack.detect.requiredRoles, ...pack.detect.optionalRoles];
   for (const role of allRoles) {
-    if (mapping[role]) continue;
+    if (mapping[role] || explicitlyUnmapped.has(role)) continue;
     const aliases = (pack.detect.roleAliases[role] || [role]).map(normalizeHeader);
     const exactHit = normalizedCols.find(
       (c) => !usedRawCols.has(c.raw) && (aliases.includes(c.norm) || aliases.includes(c.normUnits))
@@ -145,7 +148,7 @@ export function inferRoleMapping(
   }
 
   for (const role of allRoles) {
-    if (mapping[role]) continue;
+    if (mapping[role] || explicitlyUnmapped.has(role)) continue;
     const aliases = (pack.detect.roleAliases[role] || [role]).map(normalizeHeader);
     const partialHit = normalizedCols.find(
       (c) =>

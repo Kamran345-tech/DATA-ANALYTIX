@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   Landmark,
   Briefcase,
@@ -26,7 +26,13 @@ import {
   RotateCcw,
   LayoutGrid,
   ArrowRight,
+  ArrowLeft,
   TrendingUp,
+  Calendar,
+  Compass,
+  Activity,
+  LineChart,
+  Lightbulb,
 } from 'lucide-react';
 import { usePlatform } from '../../store/usePlatformStore';
 import { useToast } from '../../store/useToast';
@@ -75,6 +81,41 @@ const PACK_ICON_MAP: Record<string, React.ComponentType<{ className?: string }>>
   GraduationCap,
 };
 
+const LENS_META: Record<
+  PackLensKey,
+  {
+    label: string;
+    question: string;
+    actionText: string;
+    Icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
+  }
+> = {
+  descriptive: {
+    label: 'Descriptive',
+    question: 'What happened across core KPIs?',
+    actionText: 'Review top 80/20 Pareto drivers and period totals.',
+    Icon: Compass,
+  },
+  diagnostic: {
+    label: 'Diagnostic',
+    question: 'Why did variance or anomalies occur?',
+    actionText: 'Inspect outlier records and unfavorable variance segments.',
+    Icon: Activity,
+  },
+  predictive: {
+    label: 'Predictive',
+    question: 'Where is the trajectory heading next?',
+    actionText: 'Validate 3-period linear + moving-average projections.',
+    Icon: LineChart,
+  },
+  prescriptive: {
+    label: 'Prescriptive',
+    question: 'What levers should leadership pull now?',
+    actionText: 'Simulate price, volume, cost, and churn sensitivity below.',
+    Icon: Lightbulb,
+  },
+};
+
 function resolveGuideChartType(type: string): ChartGuideId {
   switch (type) {
     case 'line':
@@ -117,6 +158,52 @@ function triggerCsvDownload(csv: string, filename: string): void {
 }
 
 /**
+ * Formats a sample preview number into a compact abbreviated string (e.g. 1.29M, 355K, 94.0M)
+ * so picker card numbers never collide with sparklines or truncate.
+ */
+function formatCompactPreviewNumber(val: number): string {
+  if (!Number.isFinite(val)) return '0';
+  const abs = Math.abs(val);
+  const sign = val < 0 ? '-' : '';
+  if (abs >= 1_000_000_000) {
+    return `${sign}${(abs / 1_000_000_000).toFixed(2).replace(/\.?0+$/, '')}B`;
+  }
+  if (abs >= 1_000_000) {
+    return `${sign}${(abs / 1_000_000).toFixed(2).replace(/\.?0+$/, '')}M`;
+  }
+  if (abs >= 1_000) {
+    return `${sign}${(abs / 1_000).toFixed(1).replace(/\.0$/, '')}K`;
+  }
+  if (Number.isInteger(abs)) {
+    return `${sign}${abs.toLocaleString()}`;
+  }
+  return `${sign}${abs.toFixed(1)}`;
+}
+
+/**
+ * Highlights numeric tokens ($8.16M, 69.2%, +3.5%, etc.) inside narrative sentences
+ * with pack-tinted tabular-nums badges.
+ */
+function renderHighlightedNarrative(text: string, accentColor: string): React.ReactNode {
+  if (!text) return null;
+  const parts = text.split(/([+-]?\$?\d[\d,]*(?:\.\d+)?(?:%|M|B|K|x|d|bps)?)/g);
+  return parts.map((part, idx) => {
+    if (/^[+-]?\$?\d[\d,]*(?:\.\d+)?(?:%|M|B|K|x|d|bps)?$/.test(part) && (part.length > 1 || /\d/.test(part))) {
+      return (
+        <span
+          key={idx}
+          className="font-mono tabular-nums font-bold px-1.5 py-0.5 mx-0.5 rounded-md bg-elevated border border-subtle text-primary"
+          style={{ borderColor: `color-mix(in srgb, ${accentColor} 45%, var(--border-subtle))` }}
+        >
+          {part}
+        </span>
+      );
+    }
+    return <React.Fragment key={idx}>{part}</React.Fragment>;
+  });
+}
+
+/**
  * Extracts a 6-point numeric preview series from a pack's sample dataset rows
  * so every Picker card renders a real mini chart preview from actual pack data.
  */
@@ -124,17 +211,17 @@ function extractPackSamplePreviewSeries(pack: EnrichedAnalyticsPackConfig): {
   values: number[];
   primaryMetricLabel: string;
 } {
-  const sampleRows = pack.sampleDataset.rows || [];
+  const sampleRows: Record<string, any>[] = pack.sampleDataset();
   const primaryMeasure = pack.taxonomy.measures[0] || pack.detect.requiredRoles[1] || 'value';
   const rawVals = sampleRows
     .slice(0, 8)
-    .map(r => {
+    .map((r: Record<string, any>) => {
       const direct = Number(r[primaryMeasure]);
       if (Number.isFinite(direct) && direct !== 0) return direct;
       const firstNumericKey = Object.keys(r).find(k => typeof r[k] === 'number' && Number.isFinite(r[k]));
       return firstNumericKey ? Number(r[firstNumericKey]) : 0;
     })
-    .filter(v => Number.isFinite(v));
+    .filter((v: number) => Number.isFinite(v));
 
   const values = rawVals.length >= 3 ? rawVals.slice(0, 6) : [42, 58, 51, 74, 69, 88];
   const label = primaryMeasure.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
@@ -142,7 +229,9 @@ function extractPackSamplePreviewSeries(pack: EnrichedAnalyticsPackConfig): {
 }
 
 /**
- * Inline SVG Mini Live Preview for Pack Picker Cards (alternates sparkline area, rounded bar chart, and segmented ring+line)
+ * Non-Overlapping Two-Row Inline SVG Mini Live Preview for Pack Picker Cards
+ * Row 1: Full "Sample · <Metric>" label on left + compact abbreviated value (e.g. 1.29M) on right.
+ * Row 2: Dedicated full-width SVG sparkline / bars / ring+line with zero overlap at 1440, 1024, and 375px.
  */
 const PackMiniLivePreview: React.FC<{
   pack: EnrichedAnalyticsPackConfig;
@@ -156,88 +245,123 @@ const PackMiniLivePreview: React.FC<{
   const toColor = pack.theme.gradientTo;
   const variant = index % 3;
 
-  const width = 148;
-  const height = 36;
+  const width = 220;
+  const height = 32;
   const pts = values.map((v, i) => {
-    const x = (i / Math.max(1, values.length - 1)) * (width - 8) + 4;
+    const x = (i / Math.max(1, values.length - 1)) * (width - 12) + 6;
     const y = height - ((v - min) / range) * (height - 10) - 5;
     return { x, y, v };
   });
   const linePath = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
   const areaPath = `${linePath} L${pts[pts.length - 1].x.toFixed(1)},${height} L${pts[0].x.toFixed(1)},${height} Z`;
+  const lastVal = values[values.length - 1] ?? 0;
+  const compactVal = formatCompactPreviewNumber(lastVal);
 
   return (
-    <div className="p-2.5 rounded-xl bg-elevated border border-subtle flex items-center justify-between gap-3">
-      <div className="min-w-0">
-        <div className="text-[10px] font-mono uppercase tracking-wider text-muted truncate">
-          Sample · {primaryMetricLabel}
+    <div
+      data-testid={`pack-mini-preview-${pack.id}`}
+      className="p-3 rounded-xl bg-elevated border border-subtle flex flex-col gap-2 min-w-0"
+    >
+      {/* Row 1: Full "Sample" badge + metric label on left, abbreviated number on right */}
+      <div className="flex items-center justify-between gap-2 min-w-0">
+        <div
+          className="flex items-center gap-1.5 min-w-0 text-[11px] font-mono text-secondary"
+          title={`Sample · ${primaryMetricLabel}: ${lastVal.toLocaleString()}`}
+        >
+          <span
+            className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-card border border-subtle text-primary"
+          >
+            Sample
+          </span>
+          <span className="truncate text-muted">{primaryMetricLabel}</span>
         </div>
-        <div className="text-xs font-mono tabular-nums font-bold text-primary flex items-center gap-1 mt-0.5">
+
+        <div
+          className="shrink-0 text-xs font-mono tabular-nums font-bold text-primary flex items-center gap-1"
+          title={lastVal.toLocaleString()}
+        >
           <TrendingUp className="w-3 h-3 shrink-0" style={{ color: fromColor }} aria-hidden="true" />
-          <span>{values[values.length - 1]?.toLocaleString()}</span>
+          <span>{compactVal}</span>
         </div>
       </div>
 
-      {variant === 0 && (
-        <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="shrink-0 overflow-visible" aria-hidden="true">
-          <defs>
-            <linearGradient id={`mini-area-${pack.id}`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={fromColor} stopOpacity="0.32" />
-              <stop offset="100%" stopColor={toColor} stopOpacity="0.0" />
-            </linearGradient>
-          </defs>
-          <path d={areaPath} fill={`url(#mini-area-${pack.id})`} />
-          <path d={linePath} fill="none" stroke={fromColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          <circle cx={pts[pts.length - 1].x} cy={pts[pts.length - 1].y} r="3" fill={fromColor} />
-        </svg>
-      )}
+      {/* Row 2: Dedicated non-overlapping SVG chart preview */}
+      <div className="w-full h-8 flex items-center">
+        {variant === 0 && (
+          <svg
+            viewBox={`0 0 ${width} ${height}`}
+            className="w-full h-8 block overflow-visible"
+            preserveAspectRatio="none"
+            aria-hidden="true"
+          >
+            <defs>
+              <linearGradient id={`mini-area-${pack.id}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={fromColor} stopOpacity="0.32" />
+                <stop offset="100%" stopColor={toColor} stopOpacity="0.0" />
+              </linearGradient>
+            </defs>
+            <path d={areaPath} fill={`url(#mini-area-${pack.id})`} />
+            <path d={linePath} fill="none" stroke={fromColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            <circle cx={pts[pts.length - 1].x} cy={pts[pts.length - 1].y} r="3" fill={fromColor} />
+          </svg>
+        )}
 
-      {variant === 1 && (
-        <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="shrink-0" aria-hidden="true">
-          {values.map((v, i) => {
-            const barW = 16;
-            const gap = 6;
-            const x = 8 + i * (barW + gap);
-            const barH = Math.max(6, ((v - min * 0.85) / (max - min * 0.85 || 1)) * (height - 6));
-            const y = height - barH;
-            return (
-              <rect
-                key={i}
-                x={x}
-                y={y}
-                width={barW}
-                height={barH}
-                rx="3"
-                fill={i === values.length - 1 ? fromColor : toColor}
-                fillOpacity={i === values.length - 1 ? 0.95 : 0.45 + (i / values.length) * 0.35}
+        {variant === 1 && (
+          <svg
+            viewBox={`0 0 ${width} ${height}`}
+            className="w-full h-8 block"
+            aria-hidden="true"
+          >
+            {values.map((v, i) => {
+              const barW = 24;
+              const gap = 10;
+              const x = 10 + i * (barW + gap);
+              const barH = Math.max(6, ((v - min * 0.85) / (max - min * 0.85 || 1)) * (height - 4));
+              const y = height - barH;
+              return (
+                <rect
+                  key={i}
+                  x={x}
+                  y={y}
+                  width={barW}
+                  height={barH}
+                  rx="3.5"
+                  fill={i === values.length - 1 ? fromColor : toColor}
+                  fillOpacity={i === values.length - 1 ? 0.95 : 0.45 + (i / values.length) * 0.35}
+                />
+              );
+            })}
+          </svg>
+        )}
+
+        {variant === 2 && (
+          <div className="w-full flex items-center gap-3 min-w-0 overflow-hidden">
+            <svg width="28" height="28" viewBox="0 0 32 32" className="-rotate-90 shrink-0" aria-hidden="true">
+              <circle cx="16" cy="16" r="11" fill="none" stroke="var(--border-subtle)" strokeWidth="4" />
+              <circle
+                cx="16"
+                cy="16"
+                r="11"
+                fill="none"
+                stroke={fromColor}
+                strokeWidth="4"
+                strokeLinecap="round"
+                strokeDasharray="69.1"
+                strokeDashoffset="18"
               />
-            );
-          })}
-        </svg>
-      )}
-
-      {variant === 2 && (
-        <div className="flex items-center gap-2 shrink-0">
-          <svg width="32" height="32" viewBox="0 0 32 32" className="-rotate-90" aria-hidden="true">
-            <circle cx="16" cy="16" r="11" fill="none" stroke="var(--border-subtle)" strokeWidth="4" />
-            <circle
-              cx="16"
-              cy="16"
-              r="11"
-              fill="none"
-              stroke={fromColor}
-              strokeWidth="4"
-              strokeLinecap="round"
-              strokeDasharray="69.1"
-              strokeDashoffset="18"
-            />
-          </svg>
-          <svg width="96" height={height} viewBox={`0 0 ${width} ${height}`} className="overflow-visible" aria-hidden="true">
-            <path d={linePath} fill="none" stroke={fromColor} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-            <circle cx={pts[pts.length - 1].x} cy={pts[pts.length - 1].y} r="3" fill={toColor} />
-          </svg>
-        </div>
-      )}
+            </svg>
+            <svg
+              viewBox={`0 0 ${width} ${height}`}
+              className="flex-1 min-w-0 h-8 block"
+              preserveAspectRatio="none"
+              aria-hidden="true"
+            >
+              <path d={linePath} fill="none" stroke={fromColor} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+              <circle cx={pts[pts.length - 1].x - 3} cy={pts[pts.length - 1].y} r="3" fill={toColor} />
+            </svg>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
@@ -258,6 +382,7 @@ export const AnalyticsPacksView: React.FC = () => {
     themeMode,
     activePackId,
     setActivePackId,
+    isProcessing,
   } = usePlatform();
   const { addToast } = useToast();
 
@@ -267,10 +392,15 @@ export const AnalyticsPacksView: React.FC = () => {
   const [packSearchQuery, setPackSearchQuery] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [activeLens, setActiveLens] = useState<PackLensKey>('descriptive');
+  const [dateWindowFilter, setDateWindowFilter] = useState<'all' | 'recent3' | 'recentHalf'>('all');
   const [isMappingModalOpen, setIsMappingModalOpen] = useState<boolean>(false);
   const [mappingGeneration, setMappingGeneration] = useState<number>(0);
 
-  React.useEffect(() => {
+  const dashboardSectionRef = useRef<HTMLElement | null>(null);
+  const dashboardHeadingRef = useRef<HTMLHeadingElement | null>(null);
+  const lensSectionRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
     const handleFlags = (e: any) => setFlags(e.detail || loadFeatureFlags());
     window.addEventListener('dataanalytix:features-updated', handleFlags);
     return () => window.removeEventListener('dataanalytix:features-updated', handleFlags);
@@ -287,7 +417,42 @@ export const AnalyticsPacksView: React.FC = () => {
     [activePackId]
   );
 
-  const activeRows = filteredRows && filteredRows.length > 0 ? filteredRows : cleanRows;
+  // Determine if the user has uploaded/connected a custom dataset (vs startup demo or pack sample)
+  const isStartupRetailDemo =
+    project?.id === 'demo-global-retail-sales' ||
+    project?.sourceFileName === 'enterprise_sales_margin_telemetry.csv';
+  const isPackSampleDataset = Boolean(project?.sourceFileName?.includes('[PACK_SAMPLE]'));
+  const hasCustomUserDataset = Boolean(
+    cleanRows.length > 0 && !isStartupRetailDemo && !isPackSampleDataset
+  );
+
+  // Part A Bug #5: If AnalyticsPacksView is opened while the generic startup "Enterprise Sales & Margin Telemetry"
+  // demo is loaded (and not in start_empty mode), immediately load the active pack's own sample dataset
+  // so Financial & FP&A shows 12/12 KPIs Active on its own domain sample data instead of 2/12.
+  useEffect(() => {
+    if (typeof window !== 'undefined' && sessionStorage.getItem('dataanalytix_start_empty') === 'true') {
+      return;
+    }
+    if (isStartupRetailDemo && cleanRows.length > 0) {
+      const sampleRows = activePack.sampleDataset();
+      ingestDatasetFromRows(`${activePack.name} Sample Dataset`, sampleRows, {
+        connectionType: 'PACK_SAMPLE',
+        database: activePack.name,
+      });
+    }
+  }, [isStartupRetailDemo, activePack, cleanRows.length, ingestDatasetFromRows]);
+
+  const baseActiveRows = filteredRows && filteredRows.length > 0 ? filteredRows : cleanRows;
+  const activeRows = useMemo(() => {
+    if (dateWindowFilter === 'recent3' && baseActiveRows.length > 3) {
+      return baseActiveRows.slice(-3);
+    }
+    if (dateWindowFilter === 'recentHalf' && baseActiveRows.length > 2) {
+      return baseActiveRows.slice(-Math.ceil(baseActiveRows.length / 2));
+    }
+    return baseActiveRows;
+  }, [baseActiveRows, dateWindowFilter]);
+
   const datasetId = project?.id || project?.name || 'default';
 
   // Auto-detect top matching packs for current dataset
@@ -311,20 +476,29 @@ export const AnalyticsPacksView: React.FC = () => {
   }, [packSearchQuery, selectedCategory]);
 
   // Role mapping (auto + persisted user overrides)
+  const persistedOverrides = useMemo(
+    () => getPersistedPackRoleMap(datasetId, activePack.id),
+    [datasetId, activePack.id, mappingGeneration]
+  );
+
   const roleMap = useMemo(() => {
-    const persisted = getPersistedPackRoleMap(datasetId, activePack.id);
-    return mapRoles({ columns, rows: cleanRows, datasetId }, activePack, persisted);
-  }, [activePack, columns, cleanRows, datasetId, mappingGeneration]);
+    return mapRoles({ columns, rows: cleanRows, datasetId }, activePack, persistedOverrides);
+  }, [activePack, columns, cleanRows, datasetId, persistedOverrides]);
+
+  const effectiveRoleOverrides = useMemo(
+    () => ({ ...roleMap, ...persistedOverrides }),
+    [roleMap, persistedOverrides]
+  );
 
   // Built Pack Dashboard & Report
   const dashboard = useMemo(
-    () => buildDashboard(activePack, activeRows, roleMap),
-    [activePack, activeRows, roleMap]
+    () => buildDashboard(activePack, activeRows, effectiveRoleOverrides),
+    [activePack, activeRows, effectiveRoleOverrides]
   );
 
   const report = useMemo(
-    () => buildReport(activePack, activeRows, roleMap),
-    [activePack, activeRows, roleMap]
+    () => buildReport(activePack, activeRows, effectiveRoleOverrides),
+    [activePack, activeRows, effectiveRoleOverrides]
   );
 
   const lensBullets = useMemo(
@@ -413,23 +587,82 @@ export const AnalyticsPacksView: React.FC = () => {
     ]);
   }, [activeRows, primaryNumericCol, priceDelta, volumeDelta, costDelta, churnDelta]);
 
-  const handleTrySampleData = (pack: EnrichedAnalyticsPackConfig) => {
+  const focusAndScrollToDashboard = () => {
+    setShowCatalogGrid(false);
+    if (typeof window === 'undefined') return;
+    const prefersReduced =
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const scrollParent = dashboardSectionRef.current?.closest('main') as HTMLElement | null;
+    if (scrollParent) {
+      scrollParent.scrollTop = 0;
+    }
+    window.scrollTo({ top: 0, behavior: prefersReduced ? 'auto' : 'smooth' });
+    setTimeout(() => {
+      if (scrollParent) {
+        scrollParent.scrollTop = 0;
+      }
+      if (dashboardSectionRef.current) {
+        dashboardSectionRef.current.scrollIntoView({
+          behavior: prefersReduced ? 'auto' : 'smooth',
+          block: 'start',
+        });
+      }
+      if (dashboardHeadingRef.current) {
+        dashboardHeadingRef.current.focus({ preventScroll: true });
+      }
+    }, 20);
+  };
+
+  const handleTrySampleData = (
+    pack: EnrichedAnalyticsPackConfig,
+    options?: { collapseCatalog?: boolean }
+  ) => {
     const sampleRows = pack.sampleDataset();
     setActivePackId(pack.id);
     ingestDatasetFromRows(`${pack.name} Sample Dataset`, sampleRows, {
       connectionType: 'PACK_SAMPLE',
       database: pack.name,
     });
+    if (options?.collapseCatalog !== false) {
+      focusAndScrollToDashboard();
+    }
     addToast({
       id: 'dataset_load_merged_toast',
       type: 'success',
       title: `${pack.name} Ready`,
-      message: `Loaded ${sampleRows.length} sample records and computed ${pack.kpis.length} domain KPIs.`,
+      message: `Loaded ${sampleRows.length} sample records (${pack.kpis.length}/${pack.kpis.length} domain KPIs active).`,
     });
   };
 
   const handleOpenPack = (pack: EnrichedAnalyticsPackConfig) => {
     setActivePackId(pack.id);
+    if (!hasCustomUserDataset && cleanRows.length > 0) {
+      const sampleRows = pack.sampleDataset();
+      ingestDatasetFromRows(`${pack.name} Sample Dataset`, sampleRows, {
+        connectionType: 'PACK_SAMPLE',
+        database: pack.name,
+      });
+    }
+    focusAndScrollToDashboard();
+  };
+
+  const handleSwitchPack = (packId: string) => {
+    const nextPack = getPackById(packId);
+    setActivePackId(nextPack.id);
+    if (!hasCustomUserDataset && cleanRows.length > 0) {
+      const sampleRows = nextPack.sampleDataset();
+      ingestDatasetFromRows(`${nextPack.name} Sample Dataset`, sampleRows, {
+        connectionType: 'PACK_SAMPLE',
+        database: nextPack.name,
+      });
+      addToast({
+        id: 'dataset_load_merged_toast',
+        type: 'success',
+        title: `${nextPack.name} Ready`,
+        message: `Loaded ${sampleRows.length} sample records (${nextPack.kpis.length}/${nextPack.kpis.length} domain KPIs active).`,
+      });
+    }
   };
 
   const handleDownloadTemplate = (pack: EnrichedAnalyticsPackConfig = activePack) => {
@@ -465,6 +698,19 @@ export const AnalyticsPacksView: React.FC = () => {
       }
     }
     setCurrentTab('ai_insights');
+  };
+
+  const handleViewWhyDiagnostic = () => {
+    setActiveLens('diagnostic');
+    if (typeof window !== 'undefined' && lensSectionRef.current) {
+      const prefersReduced =
+        typeof window.matchMedia === 'function' &&
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      lensSectionRef.current.scrollIntoView({
+        behavior: prefersReduced ? 'auto' : 'smooth',
+        block: 'start',
+      });
+    }
   };
 
   const packRoleOptions = useMemo(() => {
@@ -511,233 +757,288 @@ export const AnalyticsPacksView: React.FC = () => {
 
   const topMatch = detectedMatches[0];
   const isTopMatchUncertain = Boolean(topMatch && (topMatch.isUncertain || topMatch.confidence < 60));
+  const hasActiveFilters = Boolean(
+    filters.searchQuery || filters.selectedDimensionValue || dateWindowFilter !== 'all'
+  );
 
   return (
     <div
       style={flags.depthUI ? packCssVars : undefined}
-      className="w-full min-w-0 max-w-7xl mx-auto space-y-8 pb-20 animate-fadeIn overflow-x-hidden"
+      className="w-full min-w-0 max-w-[1280px] mx-auto space-y-6 pb-24 animate-fadeIn overflow-x-hidden"
       data-testid="analytics-packs-view"
     >
-      {/* SECTION 3: HERO HEADER WITH AURORA MESH, STAT METRICS & ISOMETRIC FLOATING CHART */}
-      <div
-        className={`depth-card rounded-[20px] border border-subtle p-5 sm:p-8 space-y-6 min-w-0 overflow-hidden ${
-          flags.depthUI ? 'pack-hero-aurora' : 'bg-card'
-        }`}
-      >
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="space-y-3 min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-secondary">
-              <span className="font-bold uppercase tracking-wider" style={{ color: activePack.theme.gradientFrom }}>
-                Domain Intelligence Studio
-              </span>
-              <span aria-hidden="true">·</span>
-              <span>{ANALYTICS_PACKS.length} Specialized Domains</span>
-              <span aria-hidden="true">·</span>
-              <span>{totalCatalogKpis}+ Audited KPIs</span>
-              <span aria-hidden="true">·</span>
-              <span>4 Analytical Lenses</span>
-            </div>
+      {/* SLIM STICKY "SWITCH PACK" BAR WHEN CATALOG IS COLLAPSED (Part A Bug #4) */}
+      {!showCatalogGrid && (
+        <div
+          data-testid="pack-sticky-switch-bar"
+          className="sticky top-0 z-30 backdrop-blur-md bg-card border border-subtle rounded-2xl p-2.5 shadow-card flex flex-wrap sm:flex-nowrap items-center justify-between gap-2.5"
+        >
+          <button
+            type="button"
+            data-testid="pack-back-to-catalog-btn"
+            onClick={() => setShowCatalogGrid(true)}
+            className="min-h-[40px] px-3 py-1.5 rounded-xl bg-elevated hover:bg-card-hover border border-subtle text-xs font-bold text-primary inline-flex items-center gap-1.5 shrink-0 cursor-pointer transition-colors pack-btn-press"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" style={{ color: activePack.theme.gradientFrom }} />
+            <span>Back to all packs</span>
+          </button>
 
-            <h1 className="font-heading text-2xl sm:text-4xl font-bold text-primary tracking-tight leading-tight">
-              Analytics Packs &amp;{' '}
-              <span className={flags.depthUI ? 'pack-hero-gradient-text' : 'text-accent'}>
-                {activePack.name}
-              </span>
-            </h1>
-
-            <p className="text-xs sm:text-sm text-secondary max-w-2xl leading-relaxed">
-              Every analytics domain gets its own tailored visual identity, auto-built KPI scorecard, 4-lens diagnostics, and boardroom report from a single declarative configuration.
-            </p>
-
-            {/* 3 Hero Stat Metrics + Quick Controls */}
-            <div className="pt-1 flex flex-wrap items-center gap-3 sm:gap-5">
-              <div className="flex items-center gap-4 px-3.5 py-2 rounded-xl bg-elevated border border-subtle text-xs font-mono tabular-nums">
-                <div>
-                  <span className="font-bold text-primary">14</span>{' '}
-                  <span className="text-secondary">Domains</span>
-                </div>
-                <span className="text-muted" aria-hidden="true">·</span>
-                <div>
-                  <span className="font-bold text-primary">{totalCatalogKpis}+</span>{' '}
-                  <span className="text-secondary">KPIs</span>
-                </div>
-                <span className="text-muted" aria-hidden="true">·</span>
-                <div>
-                  <span className="font-bold text-primary">4</span>{' '}
-                  <span className="text-secondary">Lenses</span>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2">
+          <div
+            className="flex items-center gap-1.5 overflow-x-auto py-0.5 min-w-0 flex-1 no-scrollbar"
+            role=" navigation"
+            aria-label="Quick switch analytics pack"
+          >
+            {ANALYTICS_PACKS.map(p => {
+              const isCurrent = p.id === activePack.id;
+              const ChipIcon = PACK_ICON_MAP[p.icon] || Layers;
+              return (
                 <button
+                  key={p.id}
                   type="button"
-                  onClick={() => setShowCatalogGrid(prev => !prev)}
-                  data-testid="toggle-pack-catalog-btn"
-                  className="min-h-[44px] px-4 py-2 rounded-xl border border-subtle bg-elevated hover:bg-card-hover text-xs font-semibold text-primary flex items-center gap-2 cursor-pointer transition-colors pack-btn-press"
+                  data-testid={`pack-chip-${p.id}`}
+                  onClick={() => handleSwitchPack(p.id)}
+                  className={`min-h-[36px] px-2.5 py-1 rounded-xl text-xs font-semibold whitespace-nowrap inline-flex items-center gap-1.5 shrink-0 transition-all cursor-pointer pack-btn-press border ${
+                    isCurrent
+                      ? 'bg-elevated text-primary border-strong shadow-xs'
+                      : 'bg-card text-secondary hover:text-primary border-subtle'
+                  }`}
                 >
-                  <LayoutGrid className="w-3.5 h-3.5" style={{ color: activePack.theme.gradientFrom }} />
-                  <span>{showCatalogGrid ? 'Hide Pack Catalog (14)' : 'Browse All 14 Packs'}</span>
+                  <span
+                    className="w-2 h-2 rounded-full shrink-0"
+                    style={{ backgroundColor: p.theme.gradientFrom }}
+                    aria-hidden="true"
+                  />
+                  <ChipIcon className="w-3.5 h-3.5 shrink-0" />
+                  <span>{p.name}</span>
                 </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
-                <DownloadMenu context="analytics_pack" packId={activePack.id} label="Export Pack" />
+      {/* SECTION 3: HERO HEADER WITH AURORA MESH, STAT METRICS & ISOMETRIC FLOATING CHART */}
+      {showCatalogGrid && (
+        <div
+          className={`depth-card rounded-[20px] border border-subtle p-5 sm:p-7 space-y-5 min-w-0 overflow-hidden ${
+            flags.depthUI ? 'pack-hero-aurora' : 'bg-card'
+          }`}
+        >
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div className="space-y-3 min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-secondary">
+                <span className="font-bold uppercase tracking-wider" style={{ color: activePack.theme.gradientFrom }}>
+                  Domain Intelligence Studio
+                </span>
+                <span aria-hidden="true">·</span>
+                <span>{ANALYTICS_PACKS.length} Specialized Domains</span>
+                <span aria-hidden="true">·</span>
+                <span>{totalCatalogKpis}+ Audited KPIs</span>
+                <span aria-hidden="true">·</span>
+                <span>4 Analytical Lenses</span>
+              </div>
+
+              <h1 className="font-heading text-2xl sm:text-4xl font-bold text-primary tracking-tight leading-tight">
+                Analytics Packs &amp;{' '}
+                <span className={flags.depthUI ? 'pack-hero-gradient-text' : 'text-accent'}>
+                  {activePack.name}
+                </span>
+              </h1>
+
+              <p className="text-xs sm:text-sm text-secondary max-w-2xl leading-relaxed">
+                Every analytics domain gets its own tailored visual identity, auto-built KPI scorecard, 4-lens diagnostics, and boardroom report from a single declarative configuration.
+              </p>
+
+              {/* 3 Hero Stat Metrics + Quick Controls */}
+              <div className="pt-1 flex flex-wrap items-center gap-3 sm:gap-4">
+                <div className="flex items-center gap-4 px-3.5 py-2 rounded-xl bg-elevated border border-subtle text-xs font-mono tabular-nums">
+                  <div>
+                    <span className="font-bold text-primary">14</span>{' '}
+                    <span className="text-secondary">Domains</span>
+                  </div>
+                  <span className="text-muted" aria-hidden="true">·</span>
+                  <div>
+                    <span className="font-bold text-primary">{totalCatalogKpis}+</span>{' '}
+                    <span className="text-secondary">KPIs</span>
+                  </div>
+                  <span className="text-muted" aria-hidden="true">·</span>
+                  <div>
+                    <span className="font-bold text-primary">4</span>{' '}
+                    <span className="text-secondary">Lenses</span>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowCatalogGrid(prev => !prev)}
+                    data-testid="toggle-pack-catalog-btn"
+                    className="min-h-[42px] px-3.5 py-2 rounded-xl border border-subtle bg-elevated hover:bg-card-hover text-xs font-semibold text-primary flex items-center gap-2 cursor-pointer transition-colors pack-btn-press"
+                  >
+                    <LayoutGrid className="w-3.5 h-3.5" style={{ color: activePack.theme.gradientFrom }} />
+                    <span>{showCatalogGrid ? 'Jump to Active Dashboard' : 'Browse All 14 Packs'}</span>
+                  </button>
+
+                  <DownloadMenu context="analytics_pack" packId={activePack.id} label="Export Pack" />
+                </div>
               </div>
             </div>
+
+            {/* Subtle Isometric Floating Chart Illustration (CSS + SVG, Tinted by Active Pack) */}
+            {flags.depthUI && (
+              <div
+                data-testid="pack-hero-iso-illustration"
+                aria-hidden="true"
+                className="hidden md:flex items-center justify-center w-64 h-40 shrink-0 pack-iso-scene select-none pointer-events-none"
+              >
+                <div className="relative w-52 h-32 rounded-2xl border border-subtle bg-elevated p-3.5 shadow-card pack-iso-platform flex flex-col justify-between">
+                  <div className="flex items-center justify-between text-[10px] font-mono">
+                    <span className="font-bold text-primary truncate">{activePack.name}</span>
+                    <span className="font-bold tabular-nums" style={{ color: activePack.theme.gradientFrom }}>
+                      {availableKpiCount}/{dashboard.computedKpis.length} KPIs
+                    </span>
+                  </div>
+                  <svg viewBox="0 0 180 68" className="w-full h-16 overflow-visible">
+                    {[
+                      { x: 12, h: 28, fill: activePack.theme.gradientTo, op: 0.45 },
+                      { x: 46, h: 42, fill: activePack.theme.gradientFrom, op: 0.65 },
+                      { x: 80, h: 35, fill: activePack.theme.gradientTo, op: 0.55 },
+                      { x: 114, h: 52, fill: activePack.theme.gradientFrom, op: 0.85 },
+                      { x: 148, h: 62, fill: activePack.theme.gradientFrom, op: 1.0 },
+                    ].map((b, idx) => (
+                      <rect
+                        key={idx}
+                        x={b.x}
+                        y={66 - b.h}
+                        width="22"
+                        height={b.h}
+                        rx="4"
+                        fill={b.fill}
+                        fillOpacity={b.op}
+                      />
+                    ))}
+                    <path
+                      d="M 23,36 L 57,22 L 91,28 L 125,14 L 159,4"
+                      fill="none"
+                      stroke="var(--text-primary)"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <circle cx="159" cy="4" r="3.5" fill={activePack.theme.gradientFrom} />
+                  </svg>
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Subtle Isometric Floating Chart Illustration (CSS + SVG, Tinted by Active Pack) */}
-          {flags.depthUI && (
-            <div
-              data-testid="pack-hero-iso-illustration"
-              aria-hidden="true"
-              className="hidden md:flex items-center justify-center w-64 h-40 shrink-0 pack-iso-scene select-none pointer-events-none"
-            >
-              <div className="relative w-52 h-32 rounded-2xl border border-subtle bg-elevated p-3.5 shadow-card pack-iso-platform flex flex-col justify-between">
-                <div className="flex items-center justify-between text-[10px] font-mono">
-                  <span className="font-bold text-primary truncate">{activePack.name}</span>
-                  <span className="font-bold tabular-nums" style={{ color: activePack.theme.gradientFrom }}>
-                    {availableKpiCount}/{dashboard.computedKpis.length} KPIs
-                  </span>
-                </div>
-                <svg viewBox="0 0 180 68" className="w-full h-16 overflow-visible">
-                  {[
-                    { x: 12, h: 28, fill: activePack.theme.gradientTo, op: 0.45 },
-                    { x: 46, h: 42, fill: activePack.theme.gradientFrom, op: 0.65 },
-                    { x: 80, h: 35, fill: activePack.theme.gradientTo, op: 0.55 },
-                    { x: 114, h: 52, fill: activePack.theme.gradientFrom, op: 0.85 },
-                    { x: 148, h: 62, fill: activePack.theme.gradientFrom, op: 1.0 },
-                  ].map((b, idx) => (
-                    <rect
-                      key={idx}
-                      x={b.x}
-                      y={66 - b.h}
-                      width="22"
-                      height={b.h}
-                      rx="4"
-                      fill={b.fill}
-                      fillOpacity={b.op}
-                    />
-                  ))}
-                  <path
-                    d="M 23,36 L 57,22 L 91,28 L 125,14 L 159,4"
-                    fill="none"
-                    stroke="var(--text-primary)"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <circle cx="159" cy="4" r="3.5" fill={activePack.theme.gradientFrom} />
-                </svg>
-              </div>
-            </div>
-          )}
-        </div>
+          {/* SECTION 4: VISUAL AUTO-DETECTION BANNER (SVG Circular Confidence Ring + Top 3 Horizontal Bars) */}
+          {detectedMatches.length > 0 && cleanRows.length > 0 && topMatch && (() => {
+            const topPackConfig = getPackById(topMatch.packId);
+            const gaugeColor = isTopMatchUncertain ? 'var(--warning)' : topPackConfig.theme.gradientFrom;
+            const radius = 22;
+            const circumference = 2 * Math.PI * radius;
+            const dashOffset =
+              circumference - (Math.min(100, Math.max(0, topMatch.confidence)) / 100) * circumference;
 
-        {/* SECTION 4: VISUAL AUTO-DETECTION BANNER (SVG Circular Confidence Ring + Top 3 Horizontal Bars) */}
-        {detectedMatches.length > 0 && cleanRows.length > 0 && topMatch && (() => {
-          const topPackConfig = getPackById(topMatch.packId);
-          const gaugeColor = isTopMatchUncertain ? 'var(--warning)' : topPackConfig.theme.gradientFrom;
-          const radius = 22;
-          const circumference = 2 * Math.PI * radius;
-          const dashOffset =
-            circumference - (Math.min(100, Math.max(0, topMatch.confidence)) / 100) * circumference;
-
-          return (
-            <div
-              data-testid="pack-auto-detect-banner"
-              className="p-4 rounded-2xl bg-elevated border border-subtle flex flex-wrap items-center justify-between gap-4"
-            >
-              {/* Left: Circular SVG Confidence Gauge + Verdict */}
-              <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                <div className="relative w-14 h-14 flex items-center justify-center shrink-0">
-                  <svg width="56" height="56" viewBox="0 0 56 56" className="-rotate-90" aria-hidden="true">
-                    <circle
-                      cx="28"
-                      cy="28"
-                      r={radius}
-                      fill="none"
-                      stroke="var(--border-subtle)"
-                      strokeWidth="5"
-                    />
-                    <circle
-                      cx="28"
-                      cy="28"
-                      r={radius}
-                      fill="none"
-                      stroke={gaugeColor}
-                      strokeWidth="5"
-                      strokeLinecap="round"
-                      strokeDasharray={circumference}
-                      strokeDashoffset={dashOffset}
-                    />
-                  </svg>
-                  <span
-                    className="absolute text-[11px] font-mono tabular-nums font-bold"
-                    style={{ color: gaugeColor }}
-                  >
-                    {topMatch.confidence}%
-                  </span>
-                </div>
-
-                <div className="min-w-0 flex-1 space-y-1">
-                  <div className="text-[11px] font-mono uppercase tracking-wider text-muted">
-                    Automated Schema Match · {cleanRows.length.toLocaleString()} Rows
+            return (
+              <div
+                data-testid="pack-auto-detect-banner"
+                className="p-4 rounded-2xl bg-elevated border border-subtle flex flex-wrap items-center justify-between gap-4"
+              >
+                {/* Left: Circular SVG Confidence Gauge + Verdict */}
+                <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                  <div className="relative w-14 h-14 flex items-center justify-center shrink-0">
+                    <svg width="56" height="56" viewBox="0 0 56 56" className="-rotate-90" aria-hidden="true">
+                      <circle
+                        cx="28"
+                        cy="28"
+                        r={radius}
+                        fill="none"
+                        stroke="var(--border-subtle)"
+                        strokeWidth="5"
+                      />
+                      <circle
+                        cx="28"
+                        cy="28"
+                        r={radius}
+                        fill="none"
+                        stroke={gaugeColor}
+                        strokeWidth="5"
+                        strokeLinecap="round"
+                        strokeDasharray={circumference}
+                        strokeDashoffset={dashOffset}
+                      />
+                    </svg>
+                    <span
+                      className="absolute text-[11px] font-mono tabular-nums font-bold"
+                      style={{ color: gaugeColor }}
+                    >
+                      {topMatch.confidence}%
+                    </span>
                   </div>
-                  <div className="text-xs sm:text-sm text-primary min-w-0">
-                    {isTopMatchUncertain ? (
-                      <span data-testid="pack-uncertain-banner" className="font-semibold text-warning">
-                        Not sure, please choose — low schema match ({topMatch.confidence}%)
-                      </span>
-                    ) : (
-                      <span data-testid="pack-recommended-banner" className="font-semibold text-primary">
-                        Recommended for your data: Looks like {topMatch.packName} data ({topMatch.confidence}%)
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
 
-              {/* Center: Top 3 Horizontal Match Bars with Pack Colors */}
-              <div className="w-full md:w-72 space-y-1.5">
-                {detectedMatches.slice(0, 3).map(m => {
-                  const mPack = getPackById(m.packId);
-                  const mColor = m.confidence < 60 ? 'var(--warning)' : mPack.theme.gradientFrom;
-                  return (
-                    <div key={m.packId} className="space-y-0.5">
-                      <div className="flex items-center justify-between text-[11px] font-mono tabular-nums">
-                        <span className="text-primary font-medium truncate max-w-[175px]">{m.packName}</span>
-                        <span className="text-secondary font-bold">{m.confidence}%</span>
-                      </div>
-                      <div className="w-full h-1.5 rounded-full bg-card overflow-hidden border border-subtle">
-                        <div
-                          className="h-full rounded-full transition-all duration-300"
-                          style={{
-                            width: `${Math.max(6, m.confidence)}%`,
-                            backgroundColor: mColor,
-                          }}
-                        />
-                      </div>
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <div className="text-[11px] font-mono uppercase tracking-wider text-muted">
+                      Automated Schema Match · {cleanRows.length.toLocaleString()} Rows
                     </div>
-                  );
-                })}
+                    <div className="text-xs sm:text-sm text-primary min-w-0">
+                      {isTopMatchUncertain ? (
+                        <span data-testid="pack-uncertain-banner" className="font-semibold text-warning">
+                          Not sure, please choose — low schema match ({topMatch.confidence}%)
+                        </span>
+                      ) : (
+                        <span data-testid="pack-recommended-banner" className="font-semibold text-primary">
+                          Recommended for your data: Looks like {topMatch.packName} data ({topMatch.confidence}%)
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Center: Top 3 Horizontal Match Bars with Pack Colors */}
+                <div className="w-full md:w-72 space-y-1.5">
+                  {detectedMatches.slice(0, 3).map(m => {
+                    const mPack = getPackById(m.packId);
+                    const mColor = m.confidence < 60 ? 'var(--warning)' : mPack.theme.gradientFrom;
+                    return (
+                      <div key={m.packId} className="space-y-0.5">
+                        <div className="flex items-center justify-between text-[11px] font-mono tabular-nums">
+                          <span className="text-primary font-medium truncate max-w-[175px]">{m.packName}</span>
+                          <span className="text-secondary font-bold">{m.confidence}%</span>
+                        </div>
+                        <div className="w-full h-1.5 rounded-full bg-card overflow-hidden border border-subtle">
+                          <div
+                            className="h-full rounded-full transition-all duration-300"
+                            style={{
+                              width: `${Math.max(6, m.confidence)}%`,
+                              backgroundColor: mColor,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Right: Clear CTA */}
+                {!isTopMatchUncertain && topMatch.packId !== activePack.id && (
+                  <button
+                    type="button"
+                    onClick={() => handleSwitchPack(topMatch.packId)}
+                    className="min-h-[42px] px-4 py-2 rounded-xl bg-accent text-on-accent text-xs font-bold hover:opacity-90 transition-opacity cursor-pointer shrink-0 flex items-center gap-1.5 pack-btn-press"
+                  >
+                    <span>Use {topMatch.packName}</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
+            );
+          })()}
+        </div>
+      )}
 
-              {/* Right: Clear CTA */}
-              {!isTopMatchUncertain && topMatch.packId !== activePack.id && (
-                <button
-                  type="button"
-                  onClick={() => setActivePackId(topMatch.packId)}
-                  className="min-h-[44px] px-4 py-2 rounded-xl bg-accent text-on-accent text-xs font-bold hover:opacity-90 transition-opacity cursor-pointer shrink-0 flex items-center gap-1.5 pack-btn-press"
-                >
-                  <span>Use {topMatch.packName}</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
-          );
-        })()}
-      </div>
-
-      {/* SECTION 2: 14-PACK CATALOG GRID WITH PER-PACK GLOW, MINI LIVE PREVIEW & HERO KPIS */}
+      {/* SECTION 2: 14-PACK CATALOG GRID WITH PER-PACK GLOW, NON-OVERLAPPING MINI LIVE PREVIEW & SINGLE PRIMARY CTA */}
       {showCatalogGrid && (
         <section aria-label="Analytics Packs Catalog" className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -760,7 +1061,7 @@ export const AnalyticsPacksView: React.FC = () => {
                 placeholder="Search 14 packs (e.g. Financial, OEE, Churn, Healthcare, Retail)..."
                 value={packSearchQuery}
                 onChange={e => setPackSearchQuery(e.target.value)}
-                className="w-full min-h-[44px] pl-9 pr-3 py-2 rounded-xl bg-input border border-subtle text-xs text-primary focus:outline-hidden focus:ring-1 focus:ring-[var(--accent)]"
+                className="w-full h-10 pl-9 pr-3 rounded-xl bg-input border border-subtle text-xs text-primary focus:outline-hidden focus:ring-1 focus:ring-[var(--accent)]"
               />
             </div>
 
@@ -783,7 +1084,7 @@ export const AnalyticsPacksView: React.FC = () => {
                     type="button"
                     data-testid={`pack-category-filter-${slug}`}
                     onClick={() => setSelectedCategory(cat)}
-                    className={`min-h-[40px] px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer pack-btn-press ${
+                    className={`h-9 px-3 rounded-xl text-xs font-semibold transition-colors cursor-pointer pack-btn-press ${
                       isActiveCat
                         ? 'bg-accent text-on-accent'
                         : 'bg-elevated text-secondary hover:text-primary border border-subtle'
@@ -798,7 +1099,7 @@ export const AnalyticsPacksView: React.FC = () => {
 
           <div
             data-testid="analytics-packs-grid"
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"
+            className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-5"
           >
             {filteredCatalogPacks.map((pack, idx) => {
               const Icon = PACK_ICON_MAP[pack.icon] || Layers;
@@ -876,7 +1177,7 @@ export const AnalyticsPacksView: React.FC = () => {
                       </p>
                     </div>
 
-                    {/* Mini Live Preview built from Pack Sample Data */}
+                    {/* Non-overlapping 2-row Mini Live Preview built from Pack Sample Data (Part A Bug #1) */}
                     {flags.depthUI && <PackMiniLivePreview pack={pack} index={idx} />}
 
                     {/* 3 Hero KPI Names */}
@@ -890,24 +1191,40 @@ export const AnalyticsPacksView: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Merged Primary CTA + Subtle Secondary Link */}
-                  <div className="pt-3 border-t border-subtle flex items-center justify-between gap-2">
+                  {/* Part A Bug #2: ONE Primary CTA ("Open with sample data") + subtle text link ("Use my data") */}
+                  <div className="pt-3 border-t border-subtle flex flex-col gap-2">
                     <button
                       type="button"
                       data-testid={`pack-sample-btn-${pack.id}`}
                       onClick={() => handleTrySampleData(pack)}
-                      className="flex-1 min-h-[44px] px-3.5 py-2 rounded-xl bg-accent text-on-accent text-xs font-bold hover:opacity-90 transition-opacity cursor-pointer text-center pack-btn-press"
+                      className="w-full min-h-[42px] px-3.5 py-2 rounded-xl bg-accent text-on-accent text-xs font-bold hover:opacity-90 transition-opacity cursor-pointer flex items-center justify-center gap-1.5 pack-btn-press"
                     >
-                      Try with sample data
+                      <span>Open with sample data</span>
+                      <ArrowRight className="w-3.5 h-3.5 shrink-0" />
                     </button>
-                    <button
-                      type="button"
-                      data-testid={`pack-open-btn-${pack.id}`}
-                      onClick={() => handleOpenPack(pack)}
-                      className="min-h-[44px] px-3 py-2 rounded-xl bg-elevated hover:bg-card-hover text-primary border border-subtle text-xs font-semibold transition-colors cursor-pointer shrink-0 pack-btn-press"
-                    >
-                      Open Pack
-                    </button>
+
+                    <div className="flex items-center justify-center">
+                      <button
+                        type="button"
+                        data-testid={`pack-open-btn-${pack.id}`}
+                        disabled={!hasCustomUserDataset}
+                        onClick={() => handleOpenPack(pack)}
+                        title={
+                          hasCustomUserDataset
+                            ? `Open ${pack.name} using your uploaded dataset (${project?.name})`
+                            : 'Upload a CSV or Excel dataset first to analyze your own data'
+                        }
+                        className={`text-[11px] font-medium py-1 px-2 rounded-lg transition-colors ${
+                          hasCustomUserDataset
+                            ? 'text-secondary hover:text-primary underline underline-offset-4 cursor-pointer'
+                            : 'text-muted opacity-75 cursor-not-allowed'
+                        }`}
+                      >
+                        {hasCustomUserDataset
+                          ? 'Use my data →'
+                          : 'Use my data (upload file first)'}
+                      </button>
+                    </div>
                   </div>
                 </div>
               );
@@ -916,19 +1233,21 @@ export const AnalyticsPacksView: React.FC = () => {
         </section>
       )}
 
-      {/* SECTION 5: ACTIVE PACK DASHBOARD VIEW */}
+      {/* SECTION 5 (PART B): ACTIVE PACK DASHBOARD VIEW (Hierarchy: Header + Filters -> Key Insight -> Hero KPIs -> Charts -> Lens & Report Details) */}
       <section
+        ref={dashboardSectionRef}
         aria-label={`${activePack.name} Dashboard`}
         data-testid="active-pack-dashboard"
-        className="space-y-6 min-w-0"
+        className="space-y-6 min-w-0 scroll-mt-16"
       >
         {/* Active Pack Header Strip Tinted with Pack Gradient */}
         <div
-          className={`depth-card rounded-[20px] border border-subtle p-5 sm:p-6 space-y-5 min-w-0 overflow-hidden ${
+          className={`depth-card rounded-[20px] border border-subtle p-5 sm:p-6 space-y-4 min-w-0 overflow-hidden ${
             flags.depthUI ? 'pack-dashboard-header' : 'bg-card'
           }`}
         >
-          <div className="flex flex-wrap items-start justify-between gap-4 min-w-0">
+          {/* Row 1: Pack Icon + Title + Editable Dataset Name + Grouped Actions Toolbar */}
+          <div className="flex flex-col xl:flex-row xl:items-start justify-between gap-4 min-w-0">
             <div className="flex items-start gap-3.5 min-w-0 flex-1">
               <div
                 className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 mt-0.5 ${
@@ -937,16 +1256,23 @@ export const AnalyticsPacksView: React.FC = () => {
               >
                 <ActiveIcon className="w-6 h-6" />
               </div>
-              <div className="min-w-0 flex-1 space-y-1">
+
+              <div className="min-w-0 flex-1 space-y-1.5">
                 <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
-                  <span
-                    className="font-bold uppercase tracking-wider"
+                  <h2
+                    ref={dashboardHeadingRef}
+                    tabIndex={-1}
+                    data-testid="pack-dashboard-heading"
+                    className="font-bold uppercase tracking-wider focus:outline-hidden"
                     style={{ color: activePack.theme.gradientFrom }}
                   >
                     {activePack.name}
-                  </span>
+                  </h2>
                   <span className="text-muted" aria-hidden="true">·</span>
-                  <span className="text-secondary tabular-nums">
+                  <span
+                    data-testid="pack-active-kpi-badge"
+                    className="px-2 py-0.5 rounded-md bg-elevated border border-subtle text-primary font-bold tabular-nums"
+                  >
                     {availableKpiCount}/{dashboard.computedKpis.length} KPIs Active
                   </span>
                   <span className="text-muted" aria-hidden="true">·</span>
@@ -957,15 +1283,19 @@ export const AnalyticsPacksView: React.FC = () => {
 
                 <EditableDashboardTitle />
 
-                <p className="text-xs text-secondary break-words">
-                  {activePack.description} · Dataset: <span className="font-mono text-primary">{project.name}</span>
+                {/* Full-width readable description measure (never a cramped narrow column) */}
+                <p className="text-xs sm:text-sm text-secondary max-w-3xl leading-relaxed">
+                  {activePack.description} · Active dataset:{' '}
+                  <span className="font-mono text-primary">
+                    {project?.name || `${activePack.name} Sample Dataset`}
+                  </span>
                 </p>
               </div>
             </div>
 
-            {/* Pack Action Bar */}
-            <div className="flex flex-wrap items-center gap-2 max-w-full min-w-0">
-              <label className="sr-only" htmlFor="pack-selector-select">
+            {/* Grouped Action Toolbar (Switch Pack + Map Columns + Template + Ask AI + Export) */}
+            <div className="flex flex-wrap items-center gap-1.5 p-1.5 rounded-2xl bg-elevated border border-subtle shrink-0 self-start">
+              <label htmlFor="pack-selector-select" className="sr-only">
                 Switch Analytics Pack
               </label>
               <select
@@ -973,8 +1303,8 @@ export const AnalyticsPacksView: React.FC = () => {
                 aria-label="Switch Analytics Pack"
                 data-testid="pack-selector-select"
                 value={activePack.id}
-                onChange={e => setActivePackId(e.target.value)}
-                className="min-h-[44px] max-w-full rounded-xl bg-elevated border border-subtle px-3 py-2 text-xs font-semibold text-primary focus:outline-hidden focus:ring-1 focus:ring-[var(--accent)] cursor-pointer"
+                onChange={e => handleSwitchPack(e.target.value)}
+                className="h-9 max-w-[200px] rounded-xl bg-card border border-subtle px-2.5 text-xs font-semibold text-primary focus:outline-hidden focus:ring-1 focus:ring-[var(--accent)] cursor-pointer"
               >
                 {ANALYTICS_PACKS.map(p => (
                   <option key={p.id} value={p.id}>
@@ -987,7 +1317,7 @@ export const AnalyticsPacksView: React.FC = () => {
                 type="button"
                 data-testid="pack-map-columns-btn"
                 onClick={() => setIsMappingModalOpen(true)}
-                className="min-h-[44px] px-3.5 py-2 rounded-xl bg-elevated hover:bg-card-hover border border-subtle text-xs font-semibold text-primary flex items-center gap-1.5 cursor-pointer transition-colors pack-btn-press"
+                className="h-9 px-3 rounded-xl bg-card hover:bg-card-hover border border-subtle text-xs font-semibold text-primary inline-flex items-center gap-1.5 cursor-pointer transition-colors pack-btn-press"
               >
                 <SlidersHorizontal className="w-3.5 h-3.5" style={{ color: activePack.theme.gradientFrom }} />
                 <span>Map Columns</span>
@@ -997,21 +1327,130 @@ export const AnalyticsPacksView: React.FC = () => {
                 type="button"
                 data-testid="pack-download-template-btn"
                 onClick={() => handleDownloadTemplate(activePack)}
-                className="min-h-[44px] px-3.5 py-2 rounded-xl bg-elevated hover:bg-card-hover border border-subtle text-xs font-semibold text-primary flex items-center gap-1.5 cursor-pointer transition-colors pack-btn-press"
+                className="h-9 px-3 rounded-xl bg-card hover:bg-card-hover border border-subtle text-xs font-semibold text-primary inline-flex items-center gap-1.5 cursor-pointer transition-colors pack-btn-press"
               >
                 <Download className="w-3.5 h-3.5" style={{ color: activePack.theme.gradientFrom }} />
-                <span>Download data template</span>
+                <span>Template</span>
               </button>
 
               <button
                 type="button"
                 data-testid="pack-ask-ai-btn"
                 onClick={handleAskAiAboutPack}
-                className="min-h-[44px] px-3.5 py-2 rounded-xl bg-accent text-on-accent text-xs font-bold hover:opacity-90 flex items-center gap-1.5 cursor-pointer transition-opacity pack-btn-press"
+                className="h-9 px-3 rounded-xl bg-accent text-on-accent text-xs font-bold hover:opacity-90 inline-flex items-center gap-1.5 cursor-pointer transition-opacity pack-btn-press"
               >
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>Ask AI about this pack</span>
+                <span>Ask AI</span>
               </button>
+
+              <DownloadMenu context="analytics_pack" packId={activePack.id} label="Export" compact />
+            </div>
+          </div>
+
+          {/* Row 2: Segmented Pill Lens Control in Header + Tidy 1-Row Filter Bar */}
+          <div className="pt-3 border-t border-subtle flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+            {/* Segmented Pill Lens Control with Active Pill Indicator */}
+            <div
+              data-testid="pack-header-lens-pills"
+              className="inline-flex flex-wrap items-center gap-1 p-1 rounded-xl bg-elevated border border-subtle self-start"
+              role="tablist"
+              aria-label="Analytical Lenses"
+            >
+              {(['descriptive', 'diagnostic', 'predictive', 'prescriptive'] as PackLensKey[]).map(lens => {
+                const isActive = activeLens === lens;
+                return (
+                  <button
+                    key={lens}
+                    type="button"
+                    role="tab"
+                    aria-selected={isActive}
+                    data-testid={`pack-lens-tab-${lens}`}
+                    onClick={() => setActiveLens(lens)}
+                    className={`h-8 px-3.5 rounded-lg text-xs font-bold capitalize transition-all cursor-pointer pack-btn-press ${
+                      isActive
+                        ? 'bg-accent text-on-accent shadow-xs'
+                        : 'text-secondary hover:text-primary'
+                    }`}
+                  >
+                    {lens}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Tidy 1-Row Filter Bar (Search + Category Filter + Date Range + Clear-all chip) */}
+            <div className="flex flex-wrap items-center gap-2 flex-1 lg:justify-end">
+              <div className="relative flex-1 sm:flex-initial sm:w-56 min-w-[160px]">
+                <Search className="w-3.5 h-3.5 text-muted absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  aria-label="Filter pack records"
+                  placeholder="Filter rows by keyword..."
+                  value={filters.searchQuery || ''}
+                  onChange={e => setFilters(prev => ({ ...prev, searchQuery: e.target.value }))}
+                  className="w-full h-10 pl-8 pr-3 rounded-xl bg-input border border-subtle text-xs text-primary focus:outline-hidden focus:ring-1 focus:ring-[var(--accent)]"
+                />
+              </div>
+
+              {primaryCategoryCol && dimensionValues.length > 0 && (
+                <div className="flex items-center gap-1.5">
+                  <Filter className="w-3.5 h-3.5 text-muted shrink-0 hidden sm:inline" />
+                  <select
+                    aria-label={`Filter by ${primaryCategoryCol}`}
+                    value={
+                      filters.selectedDimension === primaryCategoryCol
+                        ? filters.selectedDimensionValue || ''
+                        : ''
+                    }
+                    onChange={e => {
+                      const val = e.target.value;
+                      setFilters(prev => ({
+                        ...prev,
+                        selectedDimension: val ? primaryCategoryCol : null,
+                        selectedDimensionValue: val || null,
+                      }));
+                    }}
+                    className="h-10 rounded-xl bg-input border border-subtle px-3 text-xs text-primary focus:outline-hidden cursor-pointer"
+                  >
+                    <option value="">All {primaryCategoryCol}</option>
+                    {dimensionValues.map(v => (
+                      <option key={v} value={v}>
+                        {v}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div className="flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-muted shrink-0 hidden sm:inline" />
+                <select
+                  aria-label="Filter by date range window"
+                  data-testid="pack-date-range-select"
+                  value={dateWindowFilter}
+                  onChange={e => setDateWindowFilter(e.target.value as 'all' | 'recent3' | 'recentHalf')}
+                  className="h-10 rounded-xl bg-input border border-subtle px-3 text-xs text-primary focus:outline-hidden cursor-pointer"
+                >
+                  <option value="all">All periods ({baseActiveRows.length})</option>
+                  <option value="recentHalf">Latest 50% periods</option>
+                  <option value="recent3">Latest 3 periods</option>
+                </select>
+              </div>
+
+              {hasActiveFilters && (
+                <button
+                  type="button"
+                  data-testid="pack-clear-filters-chip"
+                  onClick={() => {
+                    clearAllSlicers();
+                    setDateWindowFilter('all');
+                  }}
+                  className="h-10 px-3 rounded-xl bg-elevated hover:bg-card-hover border border-subtle text-xs font-semibold text-secondary hover:text-primary inline-flex items-center gap-1.5 cursor-pointer pack-btn-press"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Clear all</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -1028,7 +1467,7 @@ export const AnalyticsPacksView: React.FC = () => {
                 <div className="space-y-1 min-w-0">
                   <div className="text-xs sm:text-sm font-bold text-primary">
                     {cleanRows.length === 0
-                      ? `Ready to analyze ${activePack.name} — load sample data or map your file`
+                      ? `Ready to analyze ${activePack.name} — open with sample data or map your file`
                       : `Partial role mapping: ${missingReqRoles.length} required role(s) unmapped`}
                   </div>
                   <p className="text-xs text-secondary leading-relaxed">
@@ -1042,120 +1481,90 @@ export const AnalyticsPacksView: React.FC = () => {
               <div className="w-full sm:w-auto flex flex-wrap items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => handleTrySampleData(activePack)}
-                  className="min-h-[44px] px-3.5 py-2 rounded-xl bg-accent text-on-accent text-xs font-bold hover:opacity-90 transition-opacity cursor-pointer pack-btn-press"
+                  onClick={() => handleTrySampleData(activePack, { collapseCatalog: false })}
+                  className="min-h-[42px] px-3.5 py-2 rounded-xl bg-accent text-on-accent text-xs font-bold hover:opacity-90 transition-opacity cursor-pointer pack-btn-press"
                 >
-                  Try with sample data
+                  Open with sample data
                 </button>
                 <button
                   type="button"
                   onClick={() => setIsMappingModalOpen(true)}
-                  className="min-h-[44px] px-3.5 py-2 rounded-xl bg-card hover:bg-card-hover border border-subtle text-xs font-semibold text-primary transition-colors cursor-pointer pack-btn-press"
+                  className="min-h-[42px] px-3.5 py-2 rounded-xl bg-card hover:bg-card-hover border border-subtle text-xs font-semibold text-primary transition-colors cursor-pointer pack-btn-press"
                 >
                   Map Columns
                 </button>
                 <button
                   type="button"
                   onClick={() => handleDownloadTemplate(activePack)}
-                  className="min-h-[44px] px-3.5 py-2 rounded-xl bg-card hover:bg-card-hover border border-subtle text-xs font-semibold text-primary transition-colors cursor-pointer pack-btn-press"
+                  className="min-h-[42px] px-3.5 py-2 rounded-xl bg-card hover:bg-card-hover border border-subtle text-xs font-semibold text-primary transition-colors cursor-pointer pack-btn-press"
                 >
                   Download data template
                 </button>
               </div>
             </div>
           )}
-
-          {/* Filter Bar */}
-          <div className="pt-3 border-t border-subtle flex flex-wrap items-center gap-3">
-            <div className="relative flex-1 min-w-[200px]">
-              <Search className="w-3.5 h-3.5 text-muted absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                aria-label="Filter pack records"
-                placeholder="Filter rows by keyword or segment..."
-                value={filters.searchQuery || ''}
-                onChange={e => setFilters(prev => ({ ...prev, searchQuery: e.target.value }))}
-                className="w-full min-h-[44px] pl-9 pr-3 py-1.5 rounded-xl bg-input border border-subtle text-xs text-primary focus:outline-hidden focus:ring-1 focus:ring-[var(--accent)]"
-              />
-            </div>
-
-            {primaryCategoryCol && dimensionValues.length > 0 && (
-              <div className="flex items-center gap-2">
-                <Filter className="w-3.5 h-3.5 text-muted shrink-0" />
-                <select
-                  aria-label={`Filter by ${primaryCategoryCol}`}
-                  value={
-                    filters.selectedDimension === primaryCategoryCol
-                      ? filters.selectedDimensionValue || ''
-                      : ''
-                  }
-                  onChange={e => {
-                    const val = e.target.value;
-                    setFilters(prev => ({
-                      ...prev,
-                      selectedDimension: val ? primaryCategoryCol : null,
-                      selectedDimensionValue: val || null,
-                    }));
-                  }}
-                  className="min-h-[44px] rounded-xl bg-input border border-subtle px-3 py-1.5 text-xs text-primary focus:outline-hidden"
-                >
-                  <option value="">All {primaryCategoryCol}</option>
-                  {dimensionValues.map(v => (
-                    <option key={v} value={v}>
-                      {v}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {(filters.searchQuery || filters.selectedDimensionValue) && (
-              <button
-                type="button"
-                onClick={clearAllSlicers}
-                className="min-h-[44px] px-3 py-1.5 rounded-xl bg-elevated hover:bg-card-hover border border-subtle text-xs font-semibold text-secondary hover:text-primary flex items-center gap-1.5 cursor-pointer pack-btn-press"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>Reset Filters</span>
-              </button>
-            )}
-          </div>
         </div>
 
-        {/* HIGHLIGHTED "KEY INSIGHT" NARRATIVE CARD AT TOP OF DASHBOARD */}
+        {/* SKELETON SHIMMER WHILE COMPUTING */}
+        {isProcessing && (
+          <div
+            data-testid="pack-loading-skeleton"
+            className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4"
+            aria-hidden="true"
+          >
+            {[0, 1, 2, 3].map(idx => (
+              <div
+                key={idx}
+                className="h-32 rounded-[20px] border border-subtle pack-skeleton-shimmer"
+              />
+            ))}
+          </div>
+        )}
+
+        {/* 1. HIGHLIGHTED "KEY INSIGHT" HERO CARD FIRST (Part B: highlighted numbers + "View why" link) */}
         {dashboard.executiveNarrative && dashboard.executiveNarrative.length > 0 && (
           <div
             data-testid="pack-key-insight-card"
-            className="pack-insight-banner rounded-2xl p-4 sm:p-5 flex flex-wrap items-start justify-between gap-4"
+            className="pack-insight-banner rounded-[20px] p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
           >
             <div className="flex items-start gap-3.5 min-w-0 flex-1">
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 mt-0.5 pack-icon-tile"
-              >
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 mt-0.5 pack-icon-tile">
                 <Sparkles className="w-5 h-5" />
               </div>
-              <div className="space-y-1 min-w-0 flex-1">
+              <div className="space-y-1.5 min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2 text-[11px] font-mono">
                   <span className="font-bold uppercase tracking-wider" style={{ color: activePack.theme.gradientFrom }}>
-                    Key Domain Narrative
+                    Key Insight
                   </span>
                   <span className="text-muted" aria-hidden="true">·</span>
-                  <span className="text-secondary">Auto-synthesized from {activeRows.length.toLocaleString()} records</span>
+                  <span className="text-secondary">
+                    Synthesized across {activeRows.length.toLocaleString()} records
+                  </span>
                 </div>
                 <p className="text-xs sm:text-sm font-medium text-primary leading-relaxed">
-                  {dashboard.executiveNarrative[0]}
+                  {renderHighlightedNarrative(dashboard.executiveNarrative[0], activePack.theme.gradientFrom)}
                 </p>
                 {dashboard.executiveNarrative[1] && (
                   <p className="text-xs text-secondary leading-relaxed">
-                    {dashboard.executiveNarrative[1]}
+                    {renderHighlightedNarrative(dashboard.executiveNarrative[1], activePack.theme.gradientFrom)}
                   </p>
                 )}
               </div>
             </div>
+
+            <button
+              type="button"
+              data-testid="pack-insight-view-why-btn"
+              onClick={handleViewWhyDiagnostic}
+              className="self-start sm:self-center shrink-0 min-h-[38px] px-3.5 py-1.5 rounded-xl bg-card hover:bg-card-hover border border-subtle text-xs font-bold text-primary inline-flex items-center gap-1.5 cursor-pointer transition-colors pack-btn-press"
+            >
+              <span>View why</span>
+              <ArrowRight className="w-3.5 h-3.5" style={{ color: activePack.theme.gradientFrom }} />
+            </button>
           </div>
         )}
 
-        {/* KPI SCORECARD (Hero Row First + Compact Grid, all direct children of pack-kpi-grid) */}
+        {/* 2. KPI SCORECARD (4 Big Hero KPIs First + Remaining KPIs in Compact Grid) */}
         <div className="space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2.5">
@@ -1251,8 +1660,98 @@ export const AnalyticsPacksView: React.FC = () => {
           </div>
         </div>
 
-        {/* 4 ANALYTICAL LENSES TABS (Segmented Control with Sliding/Active Indicator) */}
-        <div className="depth-card rounded-[20px] bg-card border border-subtle p-5 sm:p-6 space-y-5">
+        {/* 3. DOMAIN VISUALIZATIONS GRID (Glass Panels + Pack Palette + Insight Subtitle) */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <span
+                aria-hidden="true"
+                className="w-5 h-1 rounded-full"
+                style={{
+                  backgroundImage: `linear-gradient(90deg, ${activePack.theme.gradientFrom}, ${activePack.theme.gradientTo})`,
+                }}
+              />
+              <h2 className="font-heading text-sm sm:text-base font-bold uppercase tracking-wider text-primary flex items-center gap-2">
+                <BarChart3 className="w-4 h-4" style={{ color: activePack.theme.gradientFrom }} />
+                <span>Domain Visualizations ({dashboard.charts.length})</span>
+              </h2>
+            </div>
+          </div>
+
+          <div
+            data-testid="pack-charts-grid"
+            className="grid grid-cols-1 lg:grid-cols-2 gap-5"
+          >
+            {dashboard.charts.map(chart => {
+              const guideType = resolveGuideChartType(chart.type);
+              const containerId = `pack-chart-${activePack.id}-${chart.id}`;
+              const catField = chart.categoryField || primaryCategoryCol || 'Category';
+              const valField = chart.valueField || primaryNumericCol || 'Value';
+              const agg = (chart.aggregation || 'sum') as 'sum' | 'avg' | 'count' | 'max' | 'min';
+
+              return (
+                <div
+                  key={chart.id}
+                  id={containerId}
+                  data-testid={`pack-chart-card-${chart.id}`}
+                  className={`depth-card rounded-[20px] border border-subtle p-4 sm:p-5 space-y-4 min-w-0 overflow-hidden ${
+                    flags.depthUI ? 'pack-chart-panel' : 'bg-card'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-2 border-b border-subtle pb-3">
+                    <div className="min-w-0 space-y-0.5">
+                      <h3 className="font-heading text-sm sm:text-base font-bold text-primary truncate" title={chart.title}>
+                        {chart.title}
+                      </h3>
+                      <p className="text-xs text-secondary truncate" title={chart.subtitle}>
+                        {chart.subtitle || `${valField} by ${catField} (${agg.toUpperCase()})`}
+                      </p>
+                    </div>
+                    <DownloadMenu
+                      context="chart"
+                      compact
+                      label="Export"
+                      chartPayload={{
+                        chartId: chart.id,
+                        chartTitle: chart.title,
+                        chartType: guideType,
+                        containerSelector: `#${containerId}`,
+                        categoryField: catField,
+                        valueField: valField,
+                        aggregation: agg,
+                      }}
+                    />
+                  </div>
+
+                  <GuideChartRenderer
+                    chartType={guideType}
+                    rows={activeRows}
+                    categoryField={catField}
+                    secondaryCategoryField={chart.secondaryCategoryField}
+                    valueField={valField}
+                    secondaryValueField={chart.secondaryValueField}
+                    aggregation={agg}
+                    isLight={isLight}
+                    onDrillThrough={(col, val, lbl) =>
+                      openDrillThrough({
+                        title: lbl || `${col}: ${val}`,
+                        filterColumn: col,
+                        filterValue: val,
+                        sourceContext: 'chart_bar',
+                      })
+                    }
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 4. 4-LENS ANALYTICAL DIAGNOSTICS (Structured Cards with Icon, Headline Finding & Recommended Action) */}
+        <div
+          ref={lensSectionRef}
+          className="depth-card rounded-[20px] bg-card border border-subtle p-5 sm:p-6 space-y-5 scroll-mt-16"
+        >
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-subtle pb-4">
             <div className="space-y-0.5">
               <div className="flex items-center gap-2">
@@ -1268,67 +1767,69 @@ export const AnalyticsPacksView: React.FC = () => {
                 </h2>
               </div>
               <p className="text-xs text-secondary">
-                Switch between Descriptive, Diagnostic, Predictive, and Prescriptive intelligence for {activePack.name}.
+                {LENS_META[activeLens].question} — {LENS_META[activeLens].actionText}
               </p>
             </div>
 
-            <div
-              className="inline-flex flex-wrap items-center gap-1 p-1 rounded-2xl bg-elevated border border-subtle"
-              role="tablist"
-              aria-label="Analytical Lenses"
-            >
-              {(['descriptive', 'diagnostic', 'predictive', 'prescriptive'] as PackLensKey[]).map(lens => {
-                const isActive = activeLens === lens;
-                return (
-                  <button
-                    key={lens}
-                    type="button"
-                    role="tab"
-                    aria-selected={isActive}
-                    data-testid={`pack-lens-tab-${lens}`}
-                    onClick={() => setActiveLens(lens)}
-                    className={`min-h-[40px] px-4 py-1.5 rounded-xl text-xs font-bold capitalize transition-all cursor-pointer pack-btn-press ${
-                      isActive
-                        ? 'bg-accent text-on-accent shadow-xs'
-                        : 'text-secondary hover:text-primary'
-                    }`}
-                  >
-                    {lens}
-                  </button>
-                );
-              })}
+            <div className="flex items-center gap-2 text-xs font-mono">
+              <span
+                className="px-2.5 py-1 rounded-lg bg-elevated border border-subtle font-bold uppercase"
+                style={{ color: activePack.theme.gradientFrom }}
+              >
+                Active Lens: {LENS_META[activeLens].label}
+              </span>
             </div>
           </div>
 
-          {/* Active Lens Narrative & Bullets */}
+          {/* Active Lens Finding Card + Interactive Evidence Card */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5" data-testid={`pack-lens-content-${activeLens}`}>
-            <div className="p-4 rounded-xl bg-elevated border border-subtle space-y-3">
-              <div className="flex items-center justify-between gap-2">
-                <h3 className="font-heading text-sm font-bold text-primary capitalize">
-                  {activePack.name} — {activeLens} Lens
-                </h3>
-                <span
-                  className="text-[10px] font-mono uppercase font-bold"
-                  style={{ color: activePack.theme.gradientFrom }}
-                >
-                  {activeLens}
+            {/* Left Card: Icon + Headline Finding + Domain Evidence + Recommended Action */}
+            <div className="p-4 sm:p-5 rounded-2xl bg-elevated border border-subtle flex flex-col justify-between gap-4">
+              <div className="space-y-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 pack-icon-tile">
+                      {React.createElement(LENS_META[activeLens].Icon, { className: 'w-4 h-4' })}
+                    </div>
+                    <div>
+                      <h3 className="font-heading text-sm font-bold text-primary capitalize">
+                        {activePack.name} — {activeLens} Lens
+                      </h3>
+                      <div className="text-[11px] text-secondary">
+                        {LENS_META[activeLens].question}
+                      </div>
+                    </div>
+                  </div>
+                  <span
+                    className="text-[10px] font-mono uppercase font-bold px-2 py-0.5 rounded bg-card border border-subtle shrink-0"
+                    style={{ color: activePack.theme.gradientFrom }}
+                  >
+                    {activeLens}
+                  </span>
+                </div>
+
+                <ul className="space-y-2 pt-1">
+                  {lensBullets.map((b: string, idx: number) => (
+                    <li key={idx} className="text-xs text-primary flex items-start gap-2 leading-relaxed">
+                      <CheckCircle2
+                        className="w-3.5 h-3.5 shrink-0 mt-0.5"
+                        style={{ color: activePack.theme.gradientFrom }}
+                      />
+                      <span>{b}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="pt-3 border-t border-subtle flex items-center justify-between gap-2 text-xs">
+                <span className="font-mono text-[11px] text-secondary">
+                  Recommended Action: <strong className="text-primary">{LENS_META[activeLens].actionText}</strong>
                 </span>
               </div>
-              <ul className="space-y-2 pt-1">
-                {lensBullets.map((b: string, idx: number) => (
-                  <li key={idx} className="text-xs text-primary flex items-start gap-2">
-                    <CheckCircle2
-                      className="w-3.5 h-3.5 shrink-0 mt-0.5"
-                      style={{ color: activePack.theme.gradientFrom }}
-                    />
-                    <span>{b}</span>
-                  </li>
-                ))}
-              </ul>
             </div>
 
-            {/* Interactive Shared Technique Widget matching the active lens */}
-            <div className="p-4 rounded-xl bg-elevated border border-subtle space-y-3">
+            {/* Right Card: Interactive Technique Widget matching the active lens */}
+            <div className="p-4 sm:p-5 rounded-2xl bg-elevated border border-subtle space-y-3">
               {activeLens === 'descriptive' && (
                 <div className="space-y-2.5">
                   <div className="text-xs font-bold text-primary uppercase tracking-wider font-mono">
@@ -1350,7 +1851,7 @@ export const AnalyticsPacksView: React.FC = () => {
                     </div>
                   ) : (
                     <p className="text-xs text-secondary">
-                      Load or map a category and numeric column to view 80/20 concentration.
+                      Open with sample data or map a category and numeric column to compute 80/20 Pareto concentration.
                     </p>
                   )}
                 </div>
@@ -1361,8 +1862,12 @@ export const AnalyticsPacksView: React.FC = () => {
                   <div className="text-xs font-bold text-primary uppercase tracking-wider font-mono">
                     Outlier &amp; Variance Diagnostics
                   </div>
-                  {anomalySummary && (
+                  {anomalySummary ? (
                     <p className="text-xs text-secondary">{anomalySummary.summary}</p>
+                  ) : (
+                    <p className="text-xs text-secondary">
+                      Open with sample data or map numeric columns to run Z-score and IQR outlier diagnostics.
+                    </p>
                   )}
                   {varianceSummary && varianceSummary.rows.length > 0 && (
                     <div className="space-y-1.5 pt-1">
@@ -1401,7 +1906,7 @@ export const AnalyticsPacksView: React.FC = () => {
                     </div>
                   ) : (
                     <p className="text-xs text-secondary">
-                      Map a date and numeric metric column to compute 3-period trend projections.
+                      Open with sample data or map a date and numeric metric column to compute 3-period trend projections.
                     </p>
                   )}
                 </div>
@@ -1488,92 +1993,7 @@ export const AnalyticsPacksView: React.FC = () => {
           </div>
         </div>
 
-        {/* DOMAIN VISUALIZATIONS GRID (Pack-Tinted Palette + Insight Subtitle) */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <span
-                aria-hidden="true"
-                className="w-5 h-1 rounded-full"
-                style={{
-                  backgroundImage: `linear-gradient(90deg, ${activePack.theme.gradientFrom}, ${activePack.theme.gradientTo})`,
-                }}
-              />
-              <h2 className="font-heading text-sm sm:text-base font-bold uppercase tracking-wider text-primary flex items-center gap-2">
-                <BarChart3 className="w-4 h-4" style={{ color: activePack.theme.gradientFrom }} />
-                <span>Domain Visualizations ({dashboard.charts.length})</span>
-              </h2>
-            </div>
-          </div>
-
-          <div
-            data-testid="pack-charts-grid"
-            className="grid grid-cols-1 lg:grid-cols-2 gap-5"
-          >
-            {dashboard.charts.map(chart => {
-              const guideType = resolveGuideChartType(chart.type);
-              const containerId = `pack-chart-${activePack.id}-${chart.id}`;
-              const catField = chart.categoryField || primaryCategoryCol || 'Category';
-              const valField = chart.valueField || primaryNumericCol || 'Value';
-              const agg = (chart.aggregation || 'sum') as 'sum' | 'avg' | 'count' | 'max' | 'min';
-
-              return (
-                <div
-                  key={chart.id}
-                  id={containerId}
-                  data-testid={`pack-chart-card-${chart.id}`}
-                  className="depth-card rounded-[20px] bg-card border border-subtle p-4 sm:p-5 space-y-4 min-w-0 overflow-hidden"
-                >
-                  <div className="flex items-start justify-between gap-2 border-b border-subtle pb-3">
-                    <div className="min-w-0 space-y-0.5">
-                      <h3 className="font-heading text-sm sm:text-base font-bold text-primary truncate" title={chart.title}>
-                        {chart.title}
-                      </h3>
-                      <p className="text-xs text-secondary truncate" title={chart.subtitle}>
-                        {chart.subtitle || `${valField} by ${catField} (${agg.toUpperCase()})`}
-                      </p>
-                    </div>
-                    <DownloadMenu
-                      context="chart"
-                      compact
-                      label="Export"
-                      chartPayload={{
-                        chartId: chart.id,
-                        chartTitle: chart.title,
-                        chartType: guideType,
-                        containerSelector: `#${containerId}`,
-                        categoryField: catField,
-                        valueField: valField,
-                        aggregation: agg,
-                      }}
-                    />
-                  </div>
-
-                  <GuideChartRenderer
-                    chartType={guideType}
-                    rows={activeRows}
-                    categoryField={catField}
-                    secondaryCategoryField={chart.secondaryCategoryField}
-                    valueField={valField}
-                    secondaryValueField={chart.secondaryValueField}
-                    aggregation={agg}
-                    isLight={isLight}
-                    onDrillThrough={(col, val, lbl) =>
-                      openDrillThrough({
-                        title: lbl || `${col}: ${val}`,
-                        filterColumn: col,
-                        filterValue: val,
-                        sourceContext: 'chart_bar',
-                      })
-                    }
-                  />
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Auto-Generated Pack Report Sections */}
+        {/* 5. AUTO-GENERATED PACK EXECUTIVE REPORT SECTIONS */}
         <div
           data-testid="pack-report-sections"
           className="depth-card rounded-[20px] bg-card border border-subtle p-5 sm:p-6 space-y-5"

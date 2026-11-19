@@ -33,6 +33,13 @@ async function bootstrapPacksWorkspace(
       } else {
         sessionStorage.removeItem('dataanalytix_start_empty');
       }
+      localStorage.removeItem('dataanalytix_active_pack');
+      localStorage.removeItem('dataanalytix_active_pack_id');
+      Object.keys(localStorage).forEach((k) => {
+        if (k.startsWith('dataanalytix_pack_roles_')) {
+          localStorage.removeItem(k);
+        }
+      });
       localStorage.setItem('acuitybi_theme', opts.theme);
       localStorage.setItem('dataanalytix_ui', 'classic');
       localStorage.setItem(
@@ -118,17 +125,43 @@ test.describe('Analytics Packs E2E Verification Suite', () => {
 
     // Parametrized verification across ALL 14 packs
     for (const packId of ALL_PACK_IDS) {
+      const backBtn = page.getByTestId('pack-back-to-catalog-btn');
+      if (await backBtn.isVisible().catch(() => false)) {
+        await backBtn.click();
+      }
+
       const packCard = page.getByTestId(`pack-card-${packId}`);
       await expect(packCard).toBeVisible();
 
-      // Load sample data for this pack
+      // Load sample data for this pack ("Open with sample data")
       await page.getByTestId(`pack-sample-btn-${packId}`).click();
 
-      // Verify 8-12 KPIs rendered and available with "i" formula tooltip buttons
+      // Part A Bug #4: Catalog collapses into sticky switch bar and dashboard heading is inside viewport
+      await expect(page.getByTestId('pack-sticky-switch-bar')).toBeVisible();
+      const heading = page.getByTestId('pack-dashboard-heading');
+      await expect(heading).toBeVisible();
+      await expect
+        .poll(
+          async () => {
+            const b = await heading.boundingBox();
+            return b ? b.y : -999;
+          },
+          { message: `Pack ${packId} heading top in viewport`, timeout: 3000 }
+        )
+        .toBeGreaterThanOrEqual(0);
+      const box = await heading.boundingBox();
+      expect(box, `Pack ${packId} dashboard heading boundingBox`).toBeTruthy();
+      expect(box!.y, `Pack ${packId} heading inside viewport height`).toBeLessThan(880);
+
+      // Verify 8-12 KPIs rendered and ALL KPIs are active (activeKpis === totalKpis) with "i" formula tooltip buttons
       const kpiCards = page.locator('[data-testid="pack-kpi-grid"] > [data-testid^="kpi-card-"]');
       const kpiCount = await kpiCards.count();
       expect(kpiCount, `Pack ${packId} KPI count`).toBeGreaterThanOrEqual(8);
       expect(kpiCount, `Pack ${packId} KPI count`).toBeLessThanOrEqual(12);
+
+      await expect(page.getByTestId('pack-active-kpi-badge')).toHaveText(
+        `${kpiCount}/${kpiCount} KPIs Active`
+      );
 
       const tooltipBtns = page.locator('[data-testid="pack-kpi-grid"] [data-testid^="kpi-formula-tooltip-"]');
       expect(await tooltipBtns.count(), `Pack ${packId} formula tooltip count`).toBe(kpiCount);
@@ -160,10 +193,11 @@ test.describe('Analytics Packs E2E Verification Suite', () => {
     }
     await expect(page.getByTestId('pack-whatif-simulator')).toBeVisible();
 
-    // Switch back to financial pack for export verification
-    await page.getByTestId('pack-sample-btn-financial').click();
+    // Switch back to financial pack via sticky pack chip for export verification
+    await page.getByTestId('pack-chip-financial').click();
     await expect(page.getByTestId('kpi-card-fin_revenue')).toBeVisible();
     await expect(page.getByTestId('kpi-card-fin_gross_margin_pct')).toBeVisible();
+    await expect(page.getByTestId('pack-active-kpi-badge')).toHaveText('12/12 KPIs Active');
 
     // Verify Template CSV download button
     const [templateDownload] = await Promise.all([
@@ -274,7 +308,7 @@ test.describe('Analytics Packs E2E Verification Suite', () => {
   test('4. Visual Redesign Verification & Multi-Viewport Screenshot Matrix (1440, 1024, 375 in Light & Dark)', async ({
     page,
   }) => {
-    test.setTimeout(120000);
+    test.setTimeout(150000);
     const outDir = 'public/assets/qa-packs';
     fs.mkdirSync(outDir, { recursive: true });
 
@@ -294,16 +328,16 @@ test.describe('Analytics Packs E2E Verification Suite', () => {
       });
       await expect(page.getByTestId('analytics-packs-view')).toBeVisible({ timeout: 10000 });
 
-      // Load initial sample data so the auto-detection banner and live metrics are active on the picker
-      await page.getByTestId('pack-sample-btn-financial').click();
+      // Financial sample data is auto-loaded on mount (12/12 KPIs Active)
       await expect(page.getByTestId('pack-auto-detect-banner')).toBeVisible();
       await expect(page.getByTestId('pack-hero-iso-illustration')).toBeVisible();
       await expect(page.getByTestId('pack-key-insight-card')).toBeVisible();
+      await expect(page.getByTestId('pack-active-kpi-badge')).toHaveText('12/12 KPIs Active');
 
-      // 1. Picker screenshots across viewports
+      // 1. Picker screenshots across viewports (with catalog expanded)
       for (const vp of viewports) {
         await page.setViewportSize({ width: vp.width, height: vp.height });
-        await page.evaluate(() => window.scrollTo(0, 0));
+        await page.getByTestId('analytics-packs-grid').scrollIntoViewIfNeeded();
         await page.waitForTimeout(150);
         await page.screenshot({
           path: `${outDir}/packs_picker_${vp.width}_${theme}.png`,
@@ -311,10 +345,15 @@ test.describe('Analytics Packs E2E Verification Suite', () => {
         });
       }
 
-      // 2. Financial Pack Dashboard screenshots across viewports
+      // 2. Click "Open with sample data" on Financial -> collapses catalog to sticky bar and scrolls to dashboard
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await page.getByTestId('pack-sample-btn-financial').click();
+      await expect(page.getByTestId('pack-sticky-switch-bar')).toBeVisible();
+      await expect(page.getByTestId('pack-active-kpi-badge')).toHaveText('12/12 KPIs Active');
+
       for (const vp of viewports) {
         await page.setViewportSize({ width: vp.width, height: vp.height });
-        await page.getByTestId('pack-kpi-grid').scrollIntoViewIfNeeded();
+        await page.evaluate(() => window.scrollTo(0, 0));
         await page.waitForTimeout(150);
         await page.screenshot({
           path: `${outDir}/packs_financial_${vp.width}_${theme}.png`,
@@ -322,13 +361,14 @@ test.describe('Analytics Packs E2E Verification Suite', () => {
         });
       }
 
-      // 3. HR Pack Dashboard screenshots across viewports
+      // 3. Switch to HR Pack Dashboard via sticky pack chip -> 9/9 KPIs Active
       await page.setViewportSize({ width: 1440, height: 900 });
-      await page.getByTestId('pack-sample-btn-hr').click();
+      await page.getByTestId('pack-chip-hr').click();
       await expect(page.getByTestId('kpi-card-total_headcount')).toBeVisible();
+      await expect(page.getByTestId('pack-active-kpi-badge')).toHaveText('9/9 KPIs Active');
       for (const vp of viewports) {
         await page.setViewportSize({ width: vp.width, height: vp.height });
-        await page.getByTestId('pack-kpi-grid').scrollIntoViewIfNeeded();
+        await page.evaluate(() => window.scrollTo(0, 0));
         await page.waitForTimeout(150);
         await page.screenshot({
           path: `${outDir}/packs_hr_${vp.width}_${theme}.png`,
@@ -336,8 +376,28 @@ test.describe('Analytics Packs E2E Verification Suite', () => {
         });
       }
 
-      // 4. Empty State (missing roles + Map column button) screenshots across viewports
+      // 4. Pack with Missing Columns (unmap headcount in ColumnMappingModal so partial data state is shown)
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await page.getByTestId('pack-map-columns-btn').click();
+      const headcountSelect = page.getByTestId('role-select-headcount');
+      await expect(headcountSelect).toBeVisible();
+      await headcountSelect.selectOption('');
+      await page.getByTestId('confirm-column-mapping').click();
+      await expect(page.getByTestId('pack-missing-roles-banner')).toBeVisible();
+      await expect(page.getByTestId('kpi-map-col-btn-total_headcount')).toBeVisible();
+      for (const vp of viewports) {
+        await page.setViewportSize({ width: vp.width, height: vp.height });
+        await page.getByTestId('kpi-card-total_headcount').scrollIntoViewIfNeeded();
+        await page.waitForTimeout(150);
+        await page.screenshot({
+          path: `${outDir}/packs_missing_cols_${vp.width}_${theme}.png`,
+          fullPage: false,
+        });
+      }
+
+      // 5. Empty State (0 rows loaded) screenshots across viewports
       await page.evaluate(() => {
+        sessionStorage.setItem('dataanalytix_start_empty', 'true');
         window.dispatchEvent(new CustomEvent('dataanalytix:clear-dataset'));
       });
       await expect(page.getByTestId('pack-missing-roles-banner')).toBeVisible();
@@ -354,4 +414,5 @@ test.describe('Analytics Packs E2E Verification Suite', () => {
     }
   });
 });
+
 

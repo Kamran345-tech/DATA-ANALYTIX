@@ -51,7 +51,7 @@ function notifyListeners() {
 
 export const toast = {
   show: (options: Omit<ToastItem, 'id' | 'timestamp'> & { id?: string }): string => {
-    const isSampleOrDatasetLoad = /sample loaded|dataset loaded|ingested|ready for analysis/i.test(
+    const isSampleOrDatasetLoad = /sample loaded|dataset loaded|ingested|ready/i.test(
       `${options.title || ''} ${options.message || ''}`
     );
     const id =
@@ -60,19 +60,15 @@ export const toast = {
         ? 'dataset_load_merged_toast'
         : `toast_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`);
 
-    const existingIndex = globalToasts.findIndex(t => t.id === id);
     const newItem: ToastItem = {
       id,
-      duration: options.type === 'progress' ? 0 : 4000,
+      duration: options.type === 'progress' ? 0 : (options.duration ?? 4000),
       timestamp: Date.now(),
       ...options,
     };
 
-    if (existingIndex >= 0) {
-      globalToasts[existingIndex] = { ...globalToasts[existingIndex], ...newItem };
-    } else {
-      globalToasts = [...globalToasts, newItem].slice(-2);
-    }
+    // Max 1 visible toast at a time so notifications never stack over dashboard cards
+    globalToasts = [newItem];
     notifyListeners();
     return id;
   },

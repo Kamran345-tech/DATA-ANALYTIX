@@ -553,3 +553,23 @@ describe('Shared Analytics Techniques (src/analytics/techniques/)', () => {
     expect(res.breakEvenRevenue).toBeCloseTo(400, 1);
   });
 });
+
+describe('Part A Bug #5: Every Pack Sample Dataset Computes 100% Active KPIs (activeKpis === totalKpis)', () => {
+  for (const pack of ANALYTICS_PACKS) {
+    it(`pack "${pack.id}" (${pack.name}) shows all KPIs active (${pack.kpis.length}/${pack.kpis.length}) on its own sampleDataset`, () => {
+      const sampleRows = pack.sampleDataset();
+      expect(sampleRows.length).toBeGreaterThanOrEqual(4);
+
+      const roleMap = mapRoles(sampleRows, pack);
+      const dashboard = buildDashboard(pack, sampleRows, roleMap);
+
+      const totalKpis = dashboard.computedKpis.length;
+      const activeKpis = dashboard.computedKpis.filter(k => k.status === 'available').length;
+
+      expect(totalKpis).toBe(pack.kpis.length);
+      expect(activeKpis).toBe(totalKpis);
+      expect(dashboard.unmappedRequiredRoles).toEqual([]);
+    });
+  }
+});
+
