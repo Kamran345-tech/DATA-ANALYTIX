@@ -27,6 +27,7 @@ import {
   PresentationAudience,
   PresentationSlideSpec,
 } from '../../engine/pptxGenerator';
+import { FeedbackThumbsBar } from '../analytics/FeedbackThumbsBar';
 
 export const SlideDeckPreviewPanel: React.FC = () => {
   const {
@@ -108,10 +109,10 @@ export const SlideDeckPreviewPanel: React.FC = () => {
   ]);
 
   // Select 3 representative slides for the 3-Slide Storyboard:
-  // 1) Title & Executive Takeaways, 2) Domain KPI Scorecard (6-8 active tiles), 3) Native Chart & 4-Lens Directives
+  // 1) Title & Cover / Executive Summary, 2) Domain KPI Scorecard (6-8 active tiles), 3) Native Chart & 4-Lens Directives
   const storyboardSlides = useMemo<PresentationSlideSpec[]>(() => {
     const coverSlide = slides.find((s) => s.kind === 'cover') || slides[0];
-    const kpiSlide =
+    const execOrKpiSlide =
       slides.find((s) => s.kind === 'kpis') ||
       slides.find((s) => s.kind === 'executive_summary') ||
       slides[1] ||
@@ -121,7 +122,7 @@ export const SlideDeckPreviewPanel: React.FC = () => {
       slides.find((s) => s.kind === 'diagnostic') ||
       slides[2] ||
       slides[0];
-    return [coverSlide, kpiSlide, chartSlide].filter(Boolean);
+    return [coverSlide, execOrKpiSlide, chartSlide].filter(Boolean);
   }, [slides]);
 
   const currentStageSlide =
@@ -240,34 +241,77 @@ export const SlideDeckPreviewPanel: React.FC = () => {
           </div>
 
           {/* Slide Body according to slide.kind */}
-          {(slide.kind === 'cover' || slide.kind === 'executive_summary') && (
+          {slide.kind === 'cover' && (
+            <div className="space-y-3 my-auto">
+              {slide.coverMeta && (
+                <div className="p-3 rounded-xl bg-elevated border border-subtle space-y-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-secondary">
+                      {slide.coverMeta.periodLabel}
+                    </span>
+                    <span className="px-2 py-0.5 rounded-md bg-card border border-subtle text-[10px] font-mono font-bold text-primary">
+                      {slide.coverMeta.qualityChipLabel}
+                    </span>
+                  </div>
+                  <div className="text-[11px] font-sans text-secondary">
+                    <strong className="text-primary">Prepared by:</strong> {slide.coverMeta.preparedBy}
+                  </div>
+                  <div className="text-[11px] font-mono text-secondary">
+                    <strong className="text-primary">Scope:</strong> {slide.coverMeta.scopeLabel}
+                  </div>
+                </div>
+              )}
+              <div className="p-3 rounded-xl bg-elevated border border-subtle space-y-1.5">
+                <div
+                  className="text-[10px] font-mono font-bold uppercase tracking-wider flex items-center gap-1.5"
+                  style={{ color: slide.accentToken }}
+                >
+                  <CheckCircle2 className="w-3 h-3 shrink-0" />
+                  <span>Presentation Brief &amp; Governance</span>
+                </div>
+                <ul className="space-y-1 text-[11px] font-sans text-primary">
+                  {slide.bullets.slice(0, 3).map((b, idx) => (
+                    <li key={idx} className="line-clamp-2 leading-snug">
+                      • {b}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
+
+          {slide.kind === 'executive_summary' && (
             <div className="space-y-3 my-auto">
               {slide.headlineMetrics.length > 0 && (
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  {slide.headlineMetrics.slice(0, 3).map((m, i) => (
-                    <div
-                      key={i}
-                      className="p-2.5 rounded-xl bg-elevated border border-subtle flex flex-col justify-between gap-1 min-w-0"
-                    >
-                      <span className="text-[9.5px] font-semibold uppercase tracking-wide text-secondary line-clamp-2 leading-tight break-words">
-                        {m.label}
-                      </span>
-                      <div className="flex flex-col gap-0.5 mt-0.5">
-                        <span className="text-sm sm:text-base font-bold font-mono tabular-nums text-primary whitespace-nowrap">
-                          {m.value}
+                  {slide.headlineMetrics.slice(0, 3).map((m, i) => {
+                    const colorCls =
+                      m.deltaState === 'favorable'
+                        ? 'text-success'
+                        : m.deltaState === 'unfavorable'
+                        ? 'text-danger'
+                        : 'text-secondary';
+                    return (
+                      <div
+                        key={i}
+                        className="p-2.5 rounded-xl bg-elevated border border-subtle flex flex-col justify-between gap-1 min-w-0"
+                      >
+                        <span className="text-[9.5px] font-semibold uppercase tracking-wide text-secondary line-clamp-2 leading-tight break-words">
+                          {m.label}
                         </span>
-                        {m.delta && (
-                          <span
-                            className={`text-[10px] font-mono font-semibold whitespace-nowrap ${
-                              m.isFavorable ? 'text-success' : 'text-danger'
-                            }`}
-                          >
-                            {m.delta}
+                        <div className="flex flex-col gap-0.5 mt-0.5">
+                          <span className="text-sm sm:text-base font-bold font-mono tabular-nums text-primary whitespace-nowrap">
+                            {m.value}
                           </span>
-                        )}
+                          {m.delta && (
+                            <span className={`text-[10px] font-mono font-semibold whitespace-nowrap ${colorCls}`}>
+                              {m.delta}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
 
@@ -301,6 +345,12 @@ export const SlideDeckPreviewPanel: React.FC = () => {
                 {activeKpisOnly.slice(0, 6).map((k) => {
                   const hasDelta =
                     typeof k.deltaPercent === 'number' && Number.isFinite(k.deltaPercent);
+                  const deltaColorClass =
+                    k.deltaState === 'favorable'
+                      ? 'text-success'
+                      : k.deltaState === 'unfavorable'
+                      ? 'text-danger'
+                      : 'text-secondary';
                   return (
                     <div
                       key={k.id}
@@ -315,17 +365,15 @@ export const SlideDeckPreviewPanel: React.FC = () => {
                         </span>
                         {hasDelta && (
                           <span
-                            className={`inline-flex items-center gap-0.5 text-[9.5px] font-mono font-bold shrink-0 ${
-                              k.isFavorable ? 'text-success' : 'text-danger'
-                            }`}
+                            data-favorable={k.deltaState || 'neutral'}
+                            className={`inline-flex items-center gap-0.5 text-[9.5px] font-mono font-bold shrink-0 ${deltaColorClass}`}
                           >
                             {k.deltaPercent! >= 0 ? (
                               <TrendingUp className="w-2.5 h-2.5" />
                             ) : (
                               <TrendingDown className="w-2.5 h-2.5" />
                             )}
-                            {k.deltaPercent! > 0 ? '+' : ''}
-                            {k.deltaPercent!.toFixed(1)}%
+                            {k.deltaTextLabel || `${k.deltaPercent! > 0 ? '+' : ''}${k.deltaPercent!.toFixed(1)}%`}
                           </span>
                         )}
                       </div>
@@ -481,12 +529,21 @@ export const SlideDeckPreviewPanel: React.FC = () => {
             </div>
           )}
 
-          {/* Slide Footer */}
+          {/* Slide Footer + Feedback Thumbs */}
           <div className="pt-2 border-t border-subtle flex items-center justify-between gap-2 text-[10px] font-mono text-muted">
             <span className="truncate">{slide.sourceFootnote}</span>
-            <span className="shrink-0">
-              Slide {slide.slideNumber}/{slide.totalSlides}
-            </span>
+            <div className="flex items-center gap-2 shrink-0">
+              <FeedbackThumbsBar
+                targetType="slide"
+                targetId={slide.id}
+                columnNames={columns.map((c) => c.name)}
+                packId={selectedPackId as any}
+                compact
+              />
+              <span>
+                Slide {slide.slideNumber}/{slide.totalSlides}
+              </span>
+            </div>
           </div>
         </div>
       </div>

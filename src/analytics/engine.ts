@@ -19,7 +19,130 @@ import {
   BuiltPackReport,
   ColumnSchema,
   DatasetProfile,
+  MeasureType,
 } from './packs/types';
+import {
+  findLearnedRoleMappings,
+  getPackLearningAdjustment,
+  inferMeasureType,
+  isChartHiddenByFeedback,
+  recordLearnedColumnMapping,
+} from './learning/adaptiveLearningEngine';
+
+export interface KpiDeltaEvaluation {
+  hasDelta: boolean;
+  deltaPercent: number | null;
+  state: 'favorable' | 'unfavorable' | 'neutral';
+  isFavorable: boolean | null;
+  isNeutral: boolean;
+  direction: 'up' | 'down' | 'flat';
+  arrow: '▲' | '▼' | '—';
+  signedText: string;
+  textLabel: string;
+  colorToken: 'var(--success)' | 'var(--danger)' | 'var(--text-secondary)';
+}
+
+/**
+ * Shared delta evaluation rule (Part A4) used identically by web KPI cards and PPTX slides:
+ * - Neutral when |delta| < 0.5% (color = neutral secondary token, never green for -0.1%!).
+ * - When |delta| >= 0.5%: favorable if sign matches goodDirection ('up' -> positive, 'down' -> negative).
+ * - Arrow & text label ("up 0.1%", "down 0.1%", "flat 0.0%") always reflect actual direction.
+ */
+export function evaluateKpiDelta(
+  deltaPercent: number | null | undefined,
+  goodDirection: 'up' | 'down' = 'up'
+): KpiDeltaEvaluation {
+  if (typeof deltaPercent !== 'number' || !Number.isFinite(deltaPercent)) {
+    return {
+      hasDelta: false,
+      deltaPercent: null,
+      state: 'neutral',
+      isFavorable: null,
+      isNeutral: true,
+      direction: 'flat',
+      arrow: '—',
+      signedText: '0.0%',
+      textLabel: 'flat 0.0%',
+      colorToken: 'var(--text-secondary)',
+    };
+  }
+
+  const abs = Math.abs(deltaPercent);
+  const direction: 'up' | 'down' | 'flat' =
+    deltaPercent > 0 ? 'up' : deltaPercent < 0 ? 'down' : 'flat';
+  const arrow: '▲' | '▼' | '—' =
+    direction === 'up' ? '▲' : direction === 'down' ? '▼' : '—';
+  const signedText = `${deltaPercent > 0 ? '+' : ''}${deltaPercent.toFixed(1)}%`;
+  const textLabel =
+    direction === 'flat'
+      ? `flat ${abs.toFixed(1)}%`
+      : `${direction} ${abs.toFixed(1)}%`;
+
+  if (abs < 0.5) {
+    return {
+      hasDelta: true,
+      deltaPercent,
+      state: 'neutral',
+      isFavorable: null,
+      isNeutral: true,
+      direction,
+      arrow,
+      signedText,
+      textLabel,
+      colorToken: 'var(--text-secondary)',
+    };
+  }
+
+  const isFavorable =
+    goodDirection === 'up' ? deltaPercent >= 0.5 : deltaPercent <= -0.5;
+
+  return {
+    hasDelta: true,
+    deltaPercent,
+    state: isFavorable ? 'favorable' : 'unfavorable',
+    isFavorable,
+    isNeutral: false,
+    direction,
+    arrow,
+    signedText,
+    textLabel,
+    colorToken: isFavorable ? 'var(--success)' : 'var(--danger)',
+  };
+}
+
+/**
+ * Validates and reconciles chart title against mapped series count (Part A5):
+ * Any chart title with "vs" or "and" between metrics requires >= 2 plotted series,
+ * or is honestly retitled to the single plotted series.
+ */
+export function validateChartTitleAndSeries(
+  rawTitle: string,
+  seriesNames: string[],
+  categoryName?: string
+): { title: string; hasComparisonKeyword: boolean; isValid: boolean } {
+  const hasVs = /\s+vs\.?\s+/i.test(rawTitle);
+  const hasAnd = /\s+(?:and|&)\s+/i.test(rawTitle);
+  const hasComparisonKeyword = hasVs || hasAnd;
+
+  if (!hasComparisonKeyword || seriesNames.length >= 2) {
+    return {
+      title: rawTitle,
+      hasComparisonKeyword,
+      isValid: true,
+    };
+  }
+
+  const primarySeries = seriesNames[0] || 'Value';
+  const cleanedTitle = categoryName
+    ? `${primarySeries} by ${categoryName}`
+    : `${primarySeries} Analysis`;
+
+  return {
+    title: cleanedTitle,
+    hasComparisonKeyword: false,
+    isValid: true,
+  };
+}
 
 function normalizeHeader(str: string): string {
   return str
@@ -107,6 +230,8 @@ function extractColumnNamesAndRows(
 
 /**
  * Automatically maps dataset column names to a pack's role taxonomy.
+ * Applies user overrides first, then learned alias rules from user corrections (Part B2),
+ * then built-in exact and partial aliases.
  */
 export function inferRoleMapping(
   pack: AnalyticsPackConfig,
@@ -135,6 +260,19 @@ export function inferRoleMapping(
   }
 
   const allRoles = [...pack.detect.requiredRoles, ...pack.detect.optionalRoles];
+
+  // Step 1: Apply Learned Alias Dictionary BEFORE built-in aliases (Part B2)
+  const { roleToColumn: learnedRoleMap } = findLearnedRoleMappings(pack.id, columnNames);
+  for (const role of allRoles) {
+    if (mapping[role] || explicitlyUnmapped.has(role)) continue;
+    const learnedCol = learnedRoleMap[role];
+    if (learnedCol && !usedRawCols.has(learnedCol)) {
+      mapping[role] = learnedCol;
+      usedRawCols.add(learnedCol);
+    }
+  }
+
+  // Step 2: Built-in exact alias matches
   for (const role of allRoles) {
     if (mapping[role] || explicitlyUnmapped.has(role)) continue;
     const aliases = (pack.detect.roleAliases[role] || [role]).map(normalizeHeader);
@@ -147,6 +285,7 @@ export function inferRoleMapping(
     }
   }
 
+  // Step 3: Built-in partial substring matches
   for (const role of allRoles) {
     if (mapping[role] || explicitlyUnmapped.has(role)) continue;
     const aliases = (pack.detect.roleAliases[role] || [role]).map(normalizeHeader);
@@ -200,14 +339,25 @@ export function savePersistedPackRoleMap(
   packId: string,
   roleMap: Record<string, string>
 ): void {
-  if (typeof window === 'undefined' || !window.localStorage) return;
-  try {
-    window.localStorage.setItem(
-      `${ROLE_MAP_STORAGE_PREFIX}${datasetId}_${packId}`,
-      JSON.stringify(roleMap)
-    );
-  } catch {
-    // ignore storage quota errors
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      window.localStorage.setItem(
+        `${ROLE_MAP_STORAGE_PREFIX}${datasetId}_${packId}`,
+        JSON.stringify(roleMap)
+      );
+    } catch {
+      // ignore storage quota errors
+    }
+  }
+  // Automatically feed user role corrections into the learned alias dictionary (Part B2)
+  for (const [role, col] of Object.entries(roleMap)) {
+    if (role && col && col.trim() !== '') {
+      recordLearnedColumnMapping({
+        rawColumnName: col,
+        role,
+        packId: packId as PackId,
+      });
+    }
   }
 }
 
@@ -237,8 +387,8 @@ export function buildPackTemplateCsv(packOrId: AnalyticsPackConfig | PackId): st
 
 /**
  * Ranks all 14 Analytics Packs against an uploaded dataset's schema & sample rows.
- * Returns top matches sorted by confidence (0..100).
- * If confidence < 60, marks `isUncertain: true` and `recommendationMessage: 'Not sure, please choose'`.
+ * Combines learned alias rules, learned pack preferences, value-pattern checks, and column co-occurrence.
+ * Returns top matches sorted by confidence (0..100) with explicit match reasons.
  */
 export function detectPack(
   input:
@@ -254,6 +404,8 @@ export function detectPack(
 
   const matches: PackDetectionMatch[] = ALL_ANALYTICS_PACKS.map((pack) => {
     const roleMapping = inferRoleMapping(pack, colNames);
+    const { roleToColumn: learnedRoles } = findLearnedRoleMappings(pack.id, colNames);
+    const learningAdj = getPackLearningAdjustment(pack.id, colNames);
 
     const reqTotal = Math.max(1, pack.detect.requiredRoles.length);
     const reqMatched = pack.detect.requiredRoles.filter((r) => Boolean(roleMapping[r]));
@@ -269,7 +421,11 @@ export function detectPack(
       const normCol = normalizeHeader(mappedCol);
       const normUnitCol = normalizeHeaderWithUnits(mappedCol);
       const aliases = (pack.detect.roleAliases[role] || [role]).map(normalizeHeader);
-      if (aliases.includes(normCol) || aliases.includes(normUnitCol)) {
+      if (
+        aliases.includes(normCol) ||
+        aliases.includes(normUnitCol) ||
+        Boolean(learnedRoles[role])
+      ) {
         exactDomainHits += 1;
       }
     }
@@ -295,15 +451,29 @@ export function detectPack(
       optRatio * 30 +
       kwRatio * 18 +
       Math.min(18, exactDomainHits * 4.5) +
-      (rows.length > 0 && reqMatched.length === reqTotal ? 6 : 0);
+      (rows.length > 0 && reqMatched.length === reqTotal ? 6 : 0) +
+      learningAdj.scoreDelta;
 
     const nonDateRolesMatched = [...reqMatched, ...optMatched].filter((r) => r !== 'date').length;
-    const confidence =
-      nonDateRolesMatched === 0 && kwHits === 0
+    const baseConfidence =
+      nonDateRolesMatched === 0 && kwHits === 0 && !learningAdj.isChosenPack
         ? Math.min(25, Math.round(rawScore * 0.4))
-        : nonDateRolesMatched === 1 && kwHits === 0
+        : nonDateRolesMatched === 1 && kwHits === 0 && !learningAdj.isChosenPack
         ? Math.min(52, Math.round(rawScore * 0.7))
         : Math.max(0, Math.min(100, Math.round(rawScore)));
+
+    const confidence = learningAdj.isChosenPack
+      ? Math.max(baseConfidence, 82)
+      : Math.max(0, Math.min(100, baseConfidence));
+
+    const matchedColsList = Object.values(roleMapping).slice(0, 5);
+    const matchedReasons: string[] = [];
+    if (matchedColsList.length > 0) {
+      matchedReasons.push(`matched: ${matchedColsList.join(', ')}`);
+    }
+    if (learningAdj.reasons.length > 0) {
+      matchedReasons.push(...learningAdj.reasons);
+    }
 
     const isUncertain = confidence < 60;
     const recommendationMessage = isUncertain
@@ -319,6 +489,9 @@ export function detectPack(
       matchedKeywords: kwHits,
       isUncertain,
       recommendationMessage,
+      matchedReasons,
+      learnedRuleCount: learningAdj.learnedRuleCount,
+      learnedRoles,
     };
   });
 
@@ -348,6 +521,13 @@ export function pickBestPackForDataset(
   if (rows.length === 0 || colNames.length === 0) {
     return matches[0]?.packId || 'financial';
   }
+
+  // If user explicitly chose/learned a pack for this schema, honor it first
+  const topMatch = matches[0];
+  if (topMatch && getPackLearningAdjustment(topMatch.packId, colNames).isChosenPack) {
+    return topMatch.packId;
+  }
+
   const sampleRows = rows.length > 500 ? rows.slice(0, 500) : rows;
   const candidates = matches.filter((m) => m.confidence >= 50).slice(0, 5);
   const pool = candidates.length > 0 ? candidates : matches.slice(0, 3);
@@ -426,6 +606,12 @@ export function computeKpis(
       (r) => pack.detect.roleAliases[r]?.[0] || r
     );
     const description = `${kpi.formulaText} (${kpi.source})`;
+    const measureType: MeasureType =
+      kpi.measureType ||
+      inferMeasureType({
+        columnName: kpi.title,
+        unit: kpi.unit,
+      });
 
     if (!hasRows || missingRoles.length > 0) {
       const mRoles = missingRoles.length > 0 ? missingRoles : kpi.requiredRoles;
@@ -434,6 +620,7 @@ export function computeKpis(
         title: kpi.title,
         label: kpi.title,
         unit: kpi.unit,
+        measureType,
         favorableDirection: kpi.favorableDirection,
         goodDirection: kpi.favorableDirection,
         requiredRoles: kpi.requiredRoles,
@@ -465,6 +652,7 @@ export function computeKpis(
         title: kpi.title,
         label: kpi.title,
         unit: kpi.unit,
+        measureType,
         favorableDirection: kpi.favorableDirection,
         goodDirection: kpi.favorableDirection,
         requiredRoles: kpi.requiredRoles,
@@ -502,7 +690,8 @@ export function computeKpis(
         Math.abs(firstVal) > 1e-9
       ) {
         deltaPct = ((secondVal - firstVal) / Math.abs(firstVal)) * 100;
-        isFavorableDelta = kpi.favorableDirection === 'up' ? deltaPct >= 0 : deltaPct <= 0;
+        const evalDelta = evaluateKpiDelta(deltaPct, kpi.favorableDirection);
+        isFavorableDelta = evalDelta.isFavorable;
       }
 
       const sparkRows = rows.length > 2000 ? sampleRowsForChart(rows, 800).rows : rows;
@@ -524,6 +713,7 @@ export function computeKpis(
       title: kpi.title,
       label: kpi.title,
       unit: kpi.unit,
+      measureType,
       favorableDirection: kpi.favorableDirection,
       goodDirection: kpi.favorableDirection,
       requiredRoles: kpi.requiredRoles,
@@ -633,68 +823,84 @@ export function buildDashboard(
       ? recommendChartsForFields(firstCat?.name || '', firstNum?.name || '', schema, profileRows)
       : [];
 
-  // Evaluate Pack Charts
-  const charts: ComputedPackChart[] = pack.charts.map((chartCfg) => {
-    const xCol = roleMapping[chartCfg.xRole] || null;
-    const mappedYCols = chartCfg.yRoles.map((yr) => roleMapping[yr]).filter(Boolean);
-    const missingRoles = [
-      ...(xCol ? [] : [chartCfg.xRole]),
-      ...chartCfg.yRoles.filter((yr) => !roleMapping[yr]),
-    ];
-    const agg = chartCfg.aggregation || 'sum';
+  // Evaluate Pack Charts (filtering out charts down-voted via feedback on this dataset)
+  const charts: ComputedPackChart[] = pack.charts
+    .filter((chartCfg) => !isChartHiddenByFeedback(chartCfg.id, colNames, pack.id))
+    .map((chartCfg) => {
+      const xCol = roleMapping[chartCfg.xRole] || null;
+      const mappedYCols = chartCfg.yRoles.map((yr) => roleMapping[yr]).filter(Boolean);
+      const missingRoles = [
+        ...(xCol ? [] : [chartCfg.xRole]),
+        ...chartCfg.yRoles.filter((yr) => !roleMapping[yr]),
+      ];
+      const agg = chartCfg.aggregation || 'sum';
+      const measureType: MeasureType =
+        chartCfg.measureType ||
+        inferMeasureType({
+          columnName: mappedYCols[0] || chartCfg.title,
+          aggregation: agg,
+        });
 
-    let chartType: ComputedPackChart['chartType'] = 'bar';
-    if (chartCfg.intent === 'trend') {
-      chartType = mappedYCols.length > 1 ? 'area' : 'line';
-    } else if (chartCfg.intent === 'composition') {
-      chartType = 'donut';
-    } else if (chartCfg.intent === 'comparison' || chartCfg.intent === 'Exception') {
-      chartType = mappedYCols.length > 1 ? 'composed' : 'bar';
-    } else {
-      chartType = 'bar';
-    }
+      const validatedTitle = validateChartTitleAndSeries(
+        chartCfg.title,
+        mappedYCols.length > 0 ? mappedYCols : chartCfg.yRoles,
+        xCol || chartCfg.xRole
+      ).title;
 
-    if (rows.length === 0 || !xCol || mappedYCols.length === 0) {
+      let chartType: ComputedPackChart['chartType'] = 'bar';
+      if (chartCfg.intent === 'trend') {
+        chartType = mappedYCols.length > 1 ? 'area' : 'line';
+      } else if (chartCfg.intent === 'composition') {
+        chartType = 'donut';
+      } else if (chartCfg.intent === 'comparison' || chartCfg.intent === 'Exception') {
+        chartType = mappedYCols.length > 1 ? 'composed' : 'bar';
+      } else {
+        chartType = 'bar';
+      }
+
+      if (rows.length === 0 || !xCol || mappedYCols.length === 0) {
+        return {
+          id: chartCfg.id,
+          title: validatedTitle,
+          subtitle: chartCfg.subtitle,
+          intent: chartCfg.intent,
+          chartType,
+          type: chartType,
+          xColumn: xCol,
+          categoryField: xCol || chartCfg.xRole,
+          yColumns: mappedYCols,
+          valueField: mappedYCols[0] || chartCfg.yRoles[0] || 'value',
+          secondaryValueField: mappedYCols[1] || chartCfg.yRoles[1],
+          aggregation: agg,
+          measureType,
+          data: [],
+          status: 'unavailable',
+          missingRoles,
+        };
+      }
+
+      const aggregated = aggregateChartRows(rows, xCol, mappedYCols, agg);
+      const sampled = sampleRowsForChart(aggregated).rows;
+
       return {
         id: chartCfg.id,
-        title: chartCfg.title,
+        title: validatedTitle,
         subtitle: chartCfg.subtitle,
         intent: chartCfg.intent,
         chartType,
         type: chartType,
         xColumn: xCol,
-        categoryField: xCol || chartCfg.xRole,
+        categoryField: xCol,
         yColumns: mappedYCols,
-        valueField: mappedYCols[0] || chartCfg.yRoles[0] || 'value',
-        secondaryValueField: mappedYCols[1] || chartCfg.yRoles[1],
+        valueField: mappedYCols[0],
+        secondaryValueField: mappedYCols[1],
         aggregation: agg,
-        data: [],
-        status: 'unavailable',
-        missingRoles,
+        measureType,
+        data: sampled,
+        status: 'available',
+        missingRoles: [],
       };
-    }
-
-    const aggregated = aggregateChartRows(rows, xCol, mappedYCols, agg);
-    const sampled = sampleRowsForChart(aggregated).rows;
-
-    return {
-      id: chartCfg.id,
-      title: chartCfg.title,
-      subtitle: chartCfg.subtitle,
-      intent: chartCfg.intent,
-      chartType,
-      type: chartType,
-      xColumn: xCol,
-      categoryField: xCol,
-      yColumns: mappedYCols,
-      valueField: mappedYCols[0],
-      secondaryValueField: mappedYCols[1],
-      aggregation: agg,
-      data: sampled,
-      status: 'available',
-      missingRoles: [],
-    };
-  });
+    });
 
   const readyKpis = kpis.filter((k) => k.status === 'available');
   const unmappedRequired = pack.detect.requiredRoles.filter((r) => !roleMapping[r]);

@@ -34,6 +34,8 @@ export type Role = string;
 
 export type KpiUnit = 'currency' | 'percent' | 'ratio' | 'count' | 'days' | 'score';
 
+export type MeasureType = 'additive' | 'average' | 'ratio';
+
 export type FavorableDirection = 'up' | 'down';
 
 export type ChartIntent =
@@ -70,6 +72,7 @@ export interface PackKpiConfig {
   id: string;
   title: string;
   unit: KpiUnit;
+  measureType?: MeasureType;
   favorableDirection: FavorableDirection;
   requiredRoles: Role[];
   /** Plain-English definition shown in the KPI "i" tooltip */
@@ -90,6 +93,7 @@ export interface PackChartConfig {
   xRole: Role;
   yRoles: Role[];
   aggregation?: 'sum' | 'avg' | 'count';
+  measureType?: MeasureType;
 }
 
 export interface PackLensConfig {
@@ -157,6 +161,12 @@ export interface PackDetectionMatch {
   isUncertain: boolean;
   /** Recommendation banner text ("Recommended for your data" or "Not sure, please choose") */
   recommendationMessage: string;
+  /** Explicit reasons for detection match (e.g. ["matched: Revenue, COGS, Opex", "learned mapping: kharcha"]) */
+  matchedReasons?: string[];
+  /** Number of roles matched via user's learned alias dictionary */
+  learnedRuleCount?: number;
+  /** Roles matched specifically from learned alias rules */
+  learnedRoles?: Record<Role, string>;
 }
 
 export interface ComputedPackKpi {
@@ -164,6 +174,7 @@ export interface ComputedPackKpi {
   title: string;
   label: string;
   unit: KpiUnit;
+  measureType?: MeasureType;
   favorableDirection: FavorableDirection;
   goodDirection: FavorableDirection;
   requiredRoles: Role[];
@@ -199,6 +210,7 @@ export interface ComputedPackChart {
   secondaryCategoryField?: string;
   secondaryValueField?: string;
   aggregation: 'sum' | 'avg' | 'count';
+  measureType?: MeasureType;
   data: Record<string, any>[];
   status: 'available' | 'unavailable' | 'ready';
   missingRoles: Role[];

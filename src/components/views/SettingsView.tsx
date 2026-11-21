@@ -35,6 +35,14 @@ import {
   getStoredThemePreference,
   applyDocumentTheme
 } from '../../utils/theme';
+import {
+  loadLearningStore,
+  deleteLearnedRule,
+  resetAllLearning,
+  setLearningEnabled,
+  exportLearningJson,
+  AdaptiveLearningStoreState,
+} from '../../analytics/learning/adaptiveLearningEngine';
 
 export const SettingsView: React.FC = () => {
   const { 
@@ -60,6 +68,11 @@ export const SettingsView: React.FC = () => {
   const [themeColor, setThemeColor] = useState(brand.themeColor);
   const [savedNotice, setSavedNotice] = useState(false);
   const [features, setFeatures] = useState<FeatureFlags>(() => loadFeatureFlags());
+  const [learningState, setLearningState] = useState<AdaptiveLearningStoreState>(() => loadLearningStore());
+
+  const refreshLearningState = () => {
+    setLearningState(loadLearningStore());
+  };
 
   const handleSelectThemePreference = (pref: ThemePreference) => {
     setThemePref(pref);
@@ -704,6 +717,150 @@ export const SettingsView: React.FC = () => {
             );
           })}
         </div>
+      </div>
+
+      {/* PART B2 & B6: LEARNED PREFERENCES & ADAPTIVE RULES (PRIVACY-FIRST LOCAL LEARNING) */}
+      <div
+        data-testid="settings-learned-preferences"
+        className="depth-card rounded-[20px] p-6 space-y-5 border bg-card border-subtle shadow-sm"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b pb-4 border-subtle">
+          <div>
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-accent font-mono">
+              <Sparkles className="w-4 h-4" /> Self-Training Schema &amp; Pack Memory
+            </div>
+            <h3 className="font-heading text-xl font-bold uppercase tracking-tight mt-1 text-primary">
+              LEARNED PREFERENCES &amp; ADAPTIVE RULES
+            </h3>
+            <p className="text-xs mt-1 text-secondary">
+              Privacy-first local learning: stores only column names, role mappings, and pack preferences in your browser (never row values).
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              data-testid="toggle-learning-enabled-btn"
+              onClick={() => {
+                const next = !learningState.learningEnabled;
+                setLearningEnabled(next);
+                refreshLearningState();
+                success(
+                  next ? 'Adaptive Learning Enabled' : 'Adaptive Learning Paused',
+                  next
+                    ? 'Column mappings and pack choices will be remembered locally.'
+                    : 'Paused recording new schema learning rules.'
+                );
+              }}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold border cursor-pointer transition-colors ${
+                learningState.learningEnabled
+                  ? 'bg-accent-soft text-accent border-subtle'
+                  : 'bg-input text-secondary border-subtle'
+              }`}
+            >
+              {learningState.learningEnabled ? 'Learning: Active' : 'Learning: Paused'}
+            </button>
+
+            <button
+              type="button"
+              data-testid="export-learning-json-btn"
+              onClick={() => {
+                const json = exportLearningJson();
+                const blob = new Blob([json], { type: 'application/json;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'data-analytix-learned-rules.json';
+                a.click();
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+                success('Exported Learned Rules', 'Downloaded privacy-safe learned rules JSON.');
+              }}
+              className="px-3.5 py-1.5 rounded-xl text-xs font-semibold border cursor-pointer bg-input hover:bg-card-hover text-primary border-subtle"
+            >
+              Export JSON
+            </button>
+
+            <button
+              type="button"
+              data-testid="reset-learning-btn"
+              onClick={() => {
+                resetAllLearning();
+                refreshLearningState();
+                success('Learning Reset', 'Cleared all learned column aliases, pack choices, and feedback.');
+              }}
+              className="px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors border cursor-pointer bg-input hover:bg-card-hover text-danger border-subtle"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              Reset learning
+            </button>
+          </div>
+        </div>
+
+        {/* Summary Metrics */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs font-mono">
+          <div className="p-3 rounded-xl bg-input border border-subtle flex items-center justify-between">
+            <span className="text-secondary">Learned Column Rules:</span>
+            <span data-testid="learned-column-rules-count" className="text-primary font-bold">
+              {learningState.aliasRules.length}
+            </span>
+          </div>
+          <div className="p-3 rounded-xl bg-input border border-subtle flex items-center justify-between">
+            <span className="text-secondary">Learned Pack Signatures:</span>
+            <span data-testid="learned-pack-rules-count" className="text-primary font-bold">
+              {learningState.packPreferences.length}
+            </span>
+          </div>
+          <div className="p-3 rounded-xl bg-input border border-subtle flex items-center justify-between">
+            <span className="text-secondary">Recorded Feedback Signals:</span>
+            <span data-testid="learned-feedback-count" className="text-primary font-bold">
+              {learningState.feedbackEntries.length}
+            </span>
+          </div>
+        </div>
+
+        {/* Rules List */}
+        {learningState.aliasRules.length > 0 ? (
+          <div className="overflow-x-auto rounded-xl border border-subtle">
+            <table className="w-full text-left text-xs font-mono">
+              <thead className="bg-input text-secondary border-b border-subtle">
+                <tr>
+                  <th className="p-2.5">Raw Column Header</th>
+                  <th className="p-2.5">Mapped Role</th>
+                  <th className="p-2.5">Pack Scope</th>
+                  <th className="p-2.5">Uses</th>
+                  <th className="p-2.5 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--border-subtle)]">
+                {learningState.aliasRules.map((rule) => (
+                  <tr key={rule.id} className="hover:bg-card-hover">
+                    <td className="p-2.5 text-primary font-bold">{rule.rawColumnName}</td>
+                    <td className="p-2.5 text-accent">{rule.role}</td>
+                    <td className="p-2.5 text-secondary">{rule.packId || 'global'}</td>
+                    <td className="p-2.5 text-secondary">{rule.count}x</td>
+                    <td className="p-2.5 text-right">
+                      <button
+                        type="button"
+                        data-testid={`delete-learned-rule-${rule.id}`}
+                        onClick={() => {
+                          deleteLearnedRule(rule.id);
+                          refreshLearningState();
+                        }}
+                        className="px-2 py-1 rounded bg-elevated hover:bg-card text-danger border border-subtle text-[10px] font-semibold cursor-pointer"
+                      >
+                        Remove
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="p-4 rounded-xl bg-input border border-subtle text-xs text-secondary font-sans">
+            No custom column or pack corrections recorded yet. Whenever you map a column, change a semantic role in &ldquo;How I understood your data&rdquo;, or pick a domain pack, your correction will appear here.
+          </div>
+        )}
       </div>
     </div>
   );

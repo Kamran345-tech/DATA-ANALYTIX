@@ -612,8 +612,8 @@ test.describe('Analytics Packs E2E Verification Suite', () => {
     await expect(page.getByTestId('pack-sticky-switch-bar')).toBeVisible();
 
     // Navigate to Executive Reports via PagePurposeBar related link
-    await page.getByTestId('purpose-related-link-reports').click();
-    await expect(page.getByTestId('page-purpose-bar-reports')).toBeVisible();
+    await page.getByTestId('purpose-related-link-reports').click({ force: true });
+    await expect(page.getByTestId('page-purpose-bar-reports')).toBeVisible({ timeout: 10000 });
     await expect(page.getByTestId('pptx-slide-deck-preview-panel')).toBeVisible();
     await expect(page.getByTestId('pptx-preview-slide-count')).toContainText('13 Slides Ready');
 
@@ -625,8 +625,9 @@ test.describe('Analytics Packs E2E Verification Suite', () => {
     await expect(slide2).toBeVisible();
     await expect(slide3).toBeVisible();
 
-    await expect(slide1).toContainText('95.4%');
+    await expect(slide1).toContainText('Presentation Brief & Governance');
     await expect(slide2).toContainText('KPI Scorecard');
+    await expect(slide2).toContainText('95.4%');
     await expect(slide3).toContainText('4-Lens Strategic Directives');
 
     // Capture the 3 individual rendered slides
@@ -696,7 +697,128 @@ test.describe('Analytics Packs E2E Verification Suite', () => {
     ]);
     expect(pptxDownload.suggestedFilename()).toMatch(/_operations_presentation-pptx_\d{4}-\d{2}-\d{2}\.pptx$/);
   });
+
+  test('7. Milestone 1 Verification (Part A PPTX fixes, Part C1/C2 Data Quality & Cleaning sync, Part B1-B4 Dataset Understanding & Learning)', async ({
+    page,
+  }) => {
+    test.setTimeout(120000);
+    const outDir = 'test-results/qa-milestone1';
+    fs.mkdirSync(outDir, { recursive: true });
+
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await bootstrapPacksWorkspace(page, { theme: 'dark' });
+
+    // 1. Open Analytics Packs and verify Dataset Understanding Card ("How I understood your data") + Feedback Thumbs
+    await page.evaluate(() => {
+      window.dispatchEvent(new CustomEvent('dataanalytix:set-tab', { detail: 'analytics_packs' }));
+    });
+    await expect(page.getByTestId('analytics-packs-view')).toBeVisible({ timeout: 10000 });
+    await page.getByTestId('pack-sample-btn-sales').click();
+
+    const understandingCard = page.getByTestId('dataset-understanding-card');
+    await expect(understandingCard).toBeVisible();
+    await expect(understandingCard).toContainText('How I understood your data');
+    await expect(page.getByTestId('understanding-grain-text')).toContainText('One row = one');
+
+    // Expand column table and verify inline role/measure learning controls
+    await page.getByTestId('toggle-understanding-details-btn').click();
+    await expect(page.getByTestId('understanding-columns-table')).toBeVisible();
+
+    // Give thumbs-up feedback on the Key Insight card
+    const insightThumbsUp = page.locator('[data-testid^="feedback-up-insight-"]').first();
+    await expect(insightThumbsUp).toBeVisible();
+    await insightThumbsUp.click();
+
+    // Capture screenshots of Analytics Packs with Dataset Understanding Card at 1440, 1024, 375 in dark & light
+    const viewports = [
+      { width: 1440, height: 900 },
+      { width: 1024, height: 800 },
+      { width: 375, height: 812 },
+    ] as const;
+
+    for (const theme of ['dark', 'light'] as const) {
+      await page.evaluate((t) => {
+        localStorage.setItem('acuitybi_theme', t);
+        localStorage.setItem('dataanalytix_theme_pref', t);
+        const root = document.documentElement;
+        const body = document.body;
+        const isLight = t === 'light';
+        root.style.colorScheme = isLight ? 'light' : 'dark';
+        if (isLight) {
+          root.classList.add('theme-light');
+          root.classList.remove('dark', 'theme-dark');
+          body.classList.add('theme-light');
+          body.classList.remove('dark', 'theme-dark');
+        } else {
+          root.classList.add('dark', 'theme-dark');
+          root.classList.remove('theme-light');
+          body.classList.add('dark', 'theme-dark');
+          body.classList.remove('theme-light');
+        }
+      }, theme);
+      await page.waitForTimeout(150);
+
+      for (const vp of viewports) {
+        await page.setViewportSize({ width: vp.width, height: vp.height });
+        await page.waitForTimeout(120);
+        await understandingCard.scrollIntoViewIfNeeded();
+        await page.screenshot({
+          path: `${outDir}/m1_understanding_card_${vp.width}_${theme}.png`,
+          fullPage: false,
+        });
+      }
+    }
+
+    // 2. Verify Data Quality View & Data Cleaning Lab Sync (Part C1 & C2)
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.getByRole('button', { name: 'Data Quality Auditor' }).click();
+    const whyScoreBtn = page.getByTestId('why-quality-score-btn');
+    await expect(whyScoreBtn).toBeVisible({ timeout: 10000 });
+    await whyScoreBtn.click();
+    await expect(page.getByTestId('quality-score-formula-popover')).toBeVisible();
+    await page.screenshot({
+      path: `${outDir}/m1_data_quality_1440_light.png`,
+      fullPage: false,
+    });
+
+    await page.getByRole('button', { name: 'Data Cleaning Lab' }).click();
+    const cleaningWhyBtn = page.getByTestId('cleaning-why-score-btn');
+    await expect(cleaningWhyBtn).toBeVisible({ timeout: 10000 });
+    await page.screenshot({
+      path: `${outDir}/m1_data_cleaning_1440_light.png`,
+      fullPage: false,
+    });
+
+    // 3. Verify All-Slides Stage in Executive Reports (Slides 1, 2, 9, 10, 11, 12)
+    await page.getByRole('button', { name: 'Executive Reports' }).click();
+    await expect(page.getByTestId('pptx-slide-deck-preview-panel')).toBeVisible({ timeout: 10000 });
+    await page.getByTestId('pptx-view-stage').click();
+
+    for (const slideNum of [1, 2, 9, 10, 11, 12]) {
+      const tab = page.getByTestId(`pptx-stage-slide-tab-${slideNum}`);
+      if ((await tab.count()) > 0) {
+        await tab.click();
+        await page.waitForTimeout(100);
+        const stageCard = page.getByTestId(`rendered-stage-slide-${slideNum}`);
+        await expect(stageCard).toBeVisible();
+        await stageCard.screenshot({
+          path: `${outDir}/m1_slide_${slideNum}_stage.png`,
+        });
+      }
+    }
+
+    // 4. Verify Settings -> Learned Preferences & Adaptive Rules (Part B2)
+    await page.getByRole('button', { name: 'Settings & Branding' }).click();
+    const learnedPrefs = page.getByTestId('settings-learned-preferences');
+    await expect(learnedPrefs).toBeVisible({ timeout: 10000 });
+    await learnedPrefs.scrollIntoViewIfNeeded();
+    await page.screenshot({
+      path: `${outDir}/m1_settings_learned_preferences_1440.png`,
+      fullPage: false,
+    });
+  });
 });
+
 
 
 

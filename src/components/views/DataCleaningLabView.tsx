@@ -30,8 +30,16 @@ import {
 } from 'lucide-react';
 import { usePlatform } from '../../store/usePlatformStore';
 import { DataType, MessyDataIssue } from '../../types';
-import { detectMessyIssues } from '../../engine/dataQuality';
+import {
+  detectMessyIssues,
+  dismissQualityIssue,
+  evaluateDataQuality,
+  getDismissedQualityIssues,
+  restoreDismissedQualityIssues,
+  QUALITY_SCORE_FORMULA_TEXT,
+} from '../../engine/dataQuality';
 import { DownloadMenu } from '../common/DownloadMenu';
+import { toast } from '../../store/useToast';
 
 export const DataCleaningLabView: React.FC = () => {
   const { 
@@ -77,10 +85,25 @@ export const DataCleaningLabView: React.FC = () => {
   const [diffViewMode, setDiffViewMode] = useState<'cleaned' | 'raw'>('cleaned');
   const [expandedChecklist, setExpandedChecklist] = useState<number | null>(null);
 
-  // Detect messy issues in the current dataset
+  const [showFormulaPopover, setShowFormulaPopover] = useState(false);
+  const [dismissedIds, setDismissedIds] = useState<Set<string>>(() =>
+    getDismissedQualityIssues()
+  );
+
+  // Detect messy issues in the current dataset using the shared quality engine
   const messyIssues = useMemo(() => {
-    return detectMessyIssues(columns, cleanRows);
-  }, [columns, cleanRows]);
+    return detectMessyIssues(columns, cleanRows, dismissedIds);
+  }, [columns, cleanRows, dismissedIds]);
+
+  const liveQualityReport = useMemo(() => {
+    return evaluateDataQuality(columns, cleanRows, dismissedIds);
+  }, [columns, cleanRows, dismissedIds]);
+
+  const baselineRawQuality = useMemo(() => {
+    return evaluateDataQuality(columns, rawRows, new Set());
+  }, [columns, rawRows]);
+
+  const scoreDelta = liveQualityReport.overallScore - baselineRawQuality.overallScore;
 
   // Execute 1-Click Master Auto-Clean
   const handleAutoCleanAll = () => {
@@ -99,6 +122,21 @@ export const DataCleaningLabView: React.FC = () => {
       parameters: issue.actionParameters || {},
       description: `Automated Fix: ${issue.title}`
     });
+  };
+
+  const handleKeepIssueAsIs = (issue: MessyDataIssue) => {
+    const updated = dismissQualityIssue(issue.id);
+    setDismissedIds(new Set(updated));
+    toast.info(
+      'Finding Kept As Is',
+      `Acknowledged [${issue.column}] (${issue.title}). Score updated.`
+    );
+  };
+
+  const handleRestoreDismissed = () => {
+    restoreDismissedQualityIssues();
+    setDismissedIds(new Set());
+    toast.info('Restored Dismissed Findings', 'All acknowledged findings are visible again.');
   };
 
   // Manual form apply
@@ -212,14 +250,26 @@ export const DataCleaningLabView: React.FC = () => {
     }
   };
 
-  // Export cleaned data to CSV
+  // Export cleaned data to CSV with embedded cleaning transformation log
   const handleExportCleanCSV = () => {
     if (cleanRows.length === 0) return;
     const cols = Object.keys(cleanRows[0]);
-    const csvContent = 'data:text/csv;charset=utf-8,' + [
-      cols.join(','),
-      ...cleanRows.map(r => cols.map(c => `"${String(r[c] ?? '').replace(/"/g, '""')}"`).join(','))
-    ].join('\n');
+    const logSummary =
+      transformations.length > 0
+        ? transformations
+            .map((t, i) => `Step ${i + 1} (${t.timestamp}): ${t.action} - ${t.description}`)
+            .join(' | ')
+        : 'Audited baseline (0 transformations applied)';
+    const headerCols = [...cols, '_cleaning_transformation_log'];
+    const csvLines = [
+      headerCols.join(','),
+      ...cleanRows.map((r, idx) => {
+        const baseCells = cols.map(c => `"${String(r[c] ?? '').replace(/"/g, '""')}"`);
+        const logCell = idx === 0 ? `"${logSummary.replace(/"/g, '""')}"` : '""';
+        return [...baseCells, logCell].join(',');
+      })
+    ];
+    const csvContent = 'data:text/csv;charset=utf-8,' + csvLines.join('\n');
     const encoded = encodeURI(csvContent);
     const link = document.createElement('a');
     link.href = encoded;
@@ -331,13 +381,56 @@ export const DataCleaningLabView: React.FC = () => {
         </div>
 
         <div className="flex flex-col sm:flex-row items-center gap-3 shrink-0">
-          <div className={`px-4 py-2.5 rounded-xl text-center border ${
+          {dismissedIds.size > 0 && (
+            <button
+              type="button"
+              onClick={handleRestoreDismissed}
+              data-testid="cleaning-restore-dismissed-btn"
+              className="px-3 py-2 rounded-xl bg-elevated hover:bg-card-hover text-secondary hover:text-primary border border-subtle text-xs font-semibold cursor-pointer"
+            >
+              Restore {dismissedIds.size} Kept Finding(s)
+            </button>
+          )}
+          <div className={`px-4 py-2.5 rounded-xl text-center border relative ${
             isLight ? 'bg-white border-slate-200 shadow-2xs' : 'bg-card border-subtle'
           }`}>
-            <span className={`text-[10px] uppercase font-mono block ${isLight ? 'text-muted font-semibold' : 'text-secondary'}`}>Data Quality</span>
-            <span className="text-2xl font-heading font-extrabold text-sky-600 dark:text-cyan-400">
-              {qualityReport.overallScore}%
-            </span>
+            <div className="flex items-center justify-center gap-1">
+              <span className={`text-[10px] uppercase font-mono block ${isLight ? 'text-muted font-semibold' : 'text-secondary'}`}>Data Quality</span>
+              <button
+                type="button"
+                data-testid="cleaning-why-score-btn"
+                onClick={() => setShowFormulaPopover((p) => !p)}
+                title="Why this score?"
+                className="text-[10px] font-mono text-accent underline cursor-pointer"
+              >
+                Why?
+              </button>
+            </div>
+            <div className="flex items-center justify-center gap-1.5">
+              <span data-testid="cleaning-overall-score" className="text-2xl font-heading font-extrabold text-sky-600 dark:text-cyan-400">
+                {liveQualityReport.overallScore}%
+              </span>
+              {scoreDelta !== 0 && (
+                <span
+                  data-testid="cleaning-score-delta"
+                  className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${
+                    scoreDelta > 0
+                      ? 'bg-emerald-500/15 text-[var(--success)] border border-emerald-500/30'
+                      : 'bg-amber-500/15 text-[var(--warning)] border border-amber-500/30'
+                  }`}
+                >
+                  {scoreDelta > 0 ? `+${scoreDelta}%` : `${scoreDelta}%`}
+                </span>
+              )}
+            </div>
+            {showFormulaPopover && (
+              <div
+                data-testid="cleaning-score-formula-popover"
+                className="mt-2 p-2.5 rounded-lg bg-elevated border border-subtle text-[10px] font-mono text-secondary text-left max-w-xs"
+              >
+                {QUALITY_SCORE_FORMULA_TEXT}
+              </div>
+            )}
           </div>
 
           {messyIssues.length > 0 && (
@@ -467,18 +560,30 @@ export const DataCleaningLabView: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Fix Action Button */}
-                  <div className="pt-3 border-t border-subtle flex items-center justify-between">
-                    <span className="text-[10px] text-muted font-mono uppercase">
+                  {/* Fix Action & Keep As Is Buttons */}
+                  <div className="pt-3 border-t border-subtle flex items-center justify-between gap-2">
+                    <span className="text-[10px] text-muted font-mono uppercase truncate">
                       Operation: {issue.suggestedActionType.replace(/_/g, ' ')}
                     </span>
-                    <button
-                      onClick={() => handleFixIssue(issue)}
-                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-primary font-semibold text-xs shadow-md shadow-sky-600/20 transition-all cursor-pointer"
-                    >
-                      <Wand2 className="w-3.5 h-3.5" />
-                      <span>Fix Now</span>
-                    </button>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        data-testid={`cleaning-keep-btn-${issue.id}`}
+                        onClick={() => handleKeepIssueAsIs(issue)}
+                        className="px-3 py-2 rounded-xl bg-elevated hover:bg-card-hover text-secondary hover:text-primary border border-subtle font-medium text-xs transition-all cursor-pointer"
+                      >
+                        Keep as is
+                      </button>
+                      <button
+                        type="button"
+                        data-testid={`cleaning-fix-btn-${issue.id}`}
+                        onClick={() => handleFixIssue(issue)}
+                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-primary font-semibold text-xs shadow-md shadow-sky-600/20 transition-all cursor-pointer"
+                      >
+                        <Wand2 className="w-3.5 h-3.5" />
+                        <span>Fix Now</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}

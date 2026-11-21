@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { usePlatform } from '../../store/usePlatformStore';
 import { DownloadMenu } from '../common/DownloadMenu';
+import { DatasetUnderstandingCard } from '../analytics/DatasetUnderstandingCard';
 
 type Density = 'compact' | 'comfortable' | 'spacious';
 type SortDirection = 'asc' | 'desc';
@@ -288,6 +289,15 @@ export const DataPreviewView: React.FC = () => {
           <DownloadMenu context="preview" />
         </div>
       </div>
+
+      {/* PART B1: "HOW I UNDERSTOOD YOUR DATA" CARD ON DATA PREVIEW */}
+      {cleanRows.length > 0 && (
+        <DatasetUnderstandingCard
+          datasetName={project.name || 'Dataset'}
+          rows={cleanRows}
+          columns={columns}
+        />
+      )}
 
       {/* 2. MAIN CONTENT AREA */}
       {activeTab === 'grid' ? (

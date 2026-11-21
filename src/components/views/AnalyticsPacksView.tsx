@@ -62,7 +62,10 @@ import {
   computeVariance,
   EnrichedAnalyticsPackConfig,
   PackLensesConfig,
+  recordLearnedPackChoice,
 } from '../../analytics';
+import { DatasetUnderstandingCard } from '../analytics/DatasetUnderstandingCard';
+import { FeedbackThumbsBar } from '../analytics/FeedbackThumbsBar';
 
 type PackLensKey = keyof PackLensesConfig;
 
@@ -651,6 +654,14 @@ export const AnalyticsPacksView: React.FC = () => {
 
   const handleSwitchPack = (packId: string) => {
     const nextPack = getPackById(packId);
+    if (hasCustomUserDataset && columns.length > 0 && nextPack.id !== activePack.id) {
+      recordLearnedPackChoice(
+        columns.map(c => c.name),
+        nextPack.id,
+        activePack.id
+      );
+      setMappingGeneration(g => g + 1);
+    }
     setActivePackId(nextPack.id);
     if (!hasCustomUserDataset && cleanRows.length > 0) {
       const sampleRows = nextPack.sampleDataset();
@@ -985,8 +996,16 @@ export const AnalyticsPacksView: React.FC = () => {
                   </div>
 
                   <div className="min-w-0 flex-1 space-y-1">
-                    <div className="text-[11px] font-mono uppercase tracking-wider text-muted">
-                      Automated Schema Match · {cleanRows.length.toLocaleString()} Rows
+                    <div className="flex flex-wrap items-center gap-2 text-[11px] font-mono uppercase tracking-wider text-muted">
+                      <span>Automated Schema Match · {cleanRows.length.toLocaleString()} Rows</span>
+                      {(topMatch.learnedRuleCount ?? 0) > 0 && (
+                        <span
+                          data-testid="learned-rule-badge"
+                          className="px-2 py-0.5 rounded-md bg-accent-soft text-accent border border-subtle font-bold normal-case"
+                        >
+                          Learned from your earlier correction ({topMatch.learnedRuleCount})
+                        </span>
+                      )}
                     </div>
                     <div className="text-xs sm:text-sm text-primary min-w-0">
                       {isTopMatchUncertain ? (
@@ -999,6 +1018,39 @@ export const AnalyticsPacksView: React.FC = () => {
                         </span>
                       )}
                     </div>
+                    {topMatch.matchedReasons && topMatch.matchedReasons.length > 0 && (
+                      <div
+                        data-testid="pack-match-reasons"
+                        className="text-[11px] font-mono text-secondary truncate"
+                        title={topMatch.matchedReasons.join(' · ')}
+                      >
+                        matched: {topMatch.matchedReasons.slice(0, 4).join(', ')}
+                      </div>
+                    )}
+                    {isTopMatchUncertain && (
+                      <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                        <span className="text-[11px] text-secondary font-mono">Top 3 candidates:</span>
+                        {detectedMatches.slice(0, 3).map(cand => (
+                          <button
+                            key={cand.packId}
+                            type="button"
+                            data-testid={`pack-uncertain-pick-${cand.packId}`}
+                            onClick={() => {
+                              recordLearnedPackChoice(
+                                columns.map(c => c.name),
+                                cand.packId,
+                                topMatch.packId
+                              );
+                              setMappingGeneration(g => g + 1);
+                              handleSwitchPack(cand.packId);
+                            }}
+                            className="px-2.5 py-1 rounded-lg bg-card hover:bg-card-hover border border-subtle text-[11px] font-semibold text-primary cursor-pointer"
+                          >
+                            Choose {cand.packName} ({cand.confidence}%)
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -1027,17 +1079,27 @@ export const AnalyticsPacksView: React.FC = () => {
                   })}
                 </div>
 
-                {/* Right: Clear CTA */}
-                {!isTopMatchUncertain && topMatch.packId !== activePack.id && (
-                  <button
-                    type="button"
-                    onClick={() => handleSwitchPack(topMatch.packId)}
-                    className="min-h-[42px] px-4 py-2 rounded-xl bg-accent text-on-accent text-xs font-bold hover:opacity-90 transition-opacity cursor-pointer shrink-0 flex items-center gap-1.5 pack-btn-press"
-                  >
-                    <span>Use {topMatch.packName}</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
-                )}
+                {/* Right: Feedback + Clear CTA */}
+                <div className="flex flex-wrap items-center gap-2 shrink-0">
+                  <FeedbackThumbsBar
+                    targetType="pack"
+                    targetId={topMatch.packId}
+                    columnNames={columns.map(c => c.name)}
+                    packId={topMatch.packId}
+                    compact
+                    onFeedbackRecorded={() => setMappingGeneration(g => g + 1)}
+                  />
+                  {!isTopMatchUncertain && topMatch.packId !== activePack.id && (
+                    <button
+                      type="button"
+                      onClick={() => handleSwitchPack(topMatch.packId)}
+                      className="min-h-[42px] px-4 py-2 rounded-xl bg-accent text-on-accent text-xs font-bold hover:opacity-90 transition-opacity cursor-pointer shrink-0 flex items-center gap-1.5 pack-btn-press"
+                    >
+                      <span>Use {topMatch.packName}</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
               </div>
             );
           })()}
@@ -1539,6 +1601,18 @@ export const AnalyticsPacksView: React.FC = () => {
           </div>
         )}
 
+        {/* PART B1: "HOW I UNDERSTOOD YOUR DATA" CARD WITH INLINE LEARNING */}
+        {activeRows.length > 0 && (
+          <DatasetUnderstandingCard
+            datasetName={project?.name || activePack.name}
+            rows={activeRows}
+            columns={columns}
+            roleMapping={roleMap}
+            packId={activePack.id}
+            onProfileUpdated={() => setMappingGeneration(g => g + 1)}
+          />
+        )}
+
         {/* 1. HIGHLIGHTED "KEY INSIGHT" HERO CARD FIRST (Part B: highlighted numbers + "View why" link) */}
         {dashboard.executiveNarrative && dashboard.executiveNarrative.length > 0 && (
           <div
@@ -1570,15 +1644,24 @@ export const AnalyticsPacksView: React.FC = () => {
               </div>
             </div>
 
-            <button
-              type="button"
-              data-testid="pack-insight-view-why-btn"
-              onClick={handleViewWhyDiagnostic}
-              className="self-start sm:self-center shrink-0 min-h-[38px] px-3.5 py-1.5 rounded-xl bg-card hover:bg-card-hover border border-subtle text-xs font-bold text-primary inline-flex items-center gap-1.5 cursor-pointer transition-colors pack-btn-press"
-            >
-              <span>View why</span>
-              <ArrowRight className="w-3.5 h-3.5" style={{ color: activePack.theme.gradientFrom }} />
-            </button>
+            <div className="flex flex-wrap items-center gap-2 self-start sm:self-center shrink-0">
+              <FeedbackThumbsBar
+                targetType="insight"
+                targetId={`${activePack.id}-key-insight`}
+                columnNames={columns.map(c => c.name)}
+                packId={activePack.id}
+                compact
+              />
+              <button
+                type="button"
+                data-testid="pack-insight-view-why-btn"
+                onClick={handleViewWhyDiagnostic}
+                className="min-h-[38px] px-3.5 py-1.5 rounded-xl bg-card hover:bg-card-hover border border-subtle text-xs font-bold text-primary inline-flex items-center gap-1.5 cursor-pointer transition-colors pack-btn-press"
+              >
+                <span>View why</span>
+                <ArrowRight className="w-3.5 h-3.5" style={{ color: activePack.theme.gradientFrom }} />
+              </button>
+            </div>
           </div>
         )}
 
@@ -1725,20 +1808,30 @@ export const AnalyticsPacksView: React.FC = () => {
                         {chart.subtitle || `${valField} by ${catField} (${agg.toUpperCase()})`}
                       </p>
                     </div>
-                    <DownloadMenu
-                      context="chart"
-                      compact
-                      label="Export"
-                      chartPayload={{
-                        chartId: chart.id,
-                        chartTitle: chart.title,
-                        chartType: guideType,
-                        containerSelector: `#${containerId}`,
-                        categoryField: catField,
-                        valueField: valField,
-                        aggregation: agg,
-                      }}
-                    />
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <FeedbackThumbsBar
+                        targetType="chart"
+                        targetId={chart.id}
+                        columnNames={columns.map(c => c.name)}
+                        packId={activePack.id}
+                        compact
+                        onFeedbackRecorded={() => setMappingGeneration(g => g + 1)}
+                      />
+                      <DownloadMenu
+                        context="chart"
+                        compact
+                        label="Export"
+                        chartPayload={{
+                          chartId: chart.id,
+                          chartTitle: chart.title,
+                          chartType: guideType,
+                          containerSelector: `#${containerId}`,
+                          categoryField: catField,
+                          valueField: valField,
+                          aggregation: agg,
+                        }}
+                      />
+                    </div>
                   </div>
 
                   <GuideChartRenderer

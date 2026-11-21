@@ -2,6 +2,7 @@ import React, { useId } from 'react';
 import { TrendingUp, TrendingDown, Minus, Info, AlertCircle, SlidersHorizontal } from 'lucide-react';
 import { Tooltip } from '../common/Tooltip';
 import { loadFeatureFlags } from '../../config/features';
+import { evaluateKpiDelta } from '../../analytics/engine';
 
 export interface ModernKpiCardProps {
   kpiId?: string;
@@ -75,12 +76,14 @@ export const ModernKpiCard: React.FC<ModernKpiCardProps> = ({
   const resolvedValue = unavailable ? 'Unavailable' : value || kpi?.formattedValue || '0';
   const resolvedDelta =
     deltaPercent !== undefined ? deltaPercent : kpi?.changePercent !== undefined ? kpi.changePercent : null;
-  const resolvedPositiveFav =
-    isPositiveFavorable !== undefined
+  const resolvedGoodDirection: 'up' | 'down' =
+    goodDirection !== undefined
+      ? goodDirection
+      : isPositiveFavorable !== undefined
       ? isPositiveFavorable
-      : goodDirection
-      ? goodDirection === 'up'
-      : true;
+        ? 'up'
+        : 'down'
+      : 'up';
   const resolvedSparkline = sparkline || sparklineData || [];
   const resolvedFormulaText = formulaText || kpi?.definition || kpi?.calculation || '';
   const resolvedSource = source || kpi?.calculation || '';
@@ -88,15 +91,15 @@ export const ModernKpiCard: React.FC<ModernKpiCardProps> = ({
   const activeAccent = packColor || 'var(--accent)';
   const activeGradientTo = packGradientTo || 'var(--accent-2)';
 
-  const hasDelta = !unavailable && typeof resolvedDelta === 'number' && Number.isFinite(resolvedDelta);
-  const isUp = hasDelta && resolvedDelta! > 0;
-  const isDown = hasDelta && resolvedDelta! < 0;
-  const isNeutralDelta = !hasDelta || Math.abs(resolvedDelta!) < 0.05;
-  const isFavorable = hasDelta
-    ? resolvedPositiveFav
-      ? resolvedDelta! >= -0.5
-      : resolvedDelta! <= 0.5
-    : true;
+  const deltaEval = evaluateKpiDelta(
+    unavailable ? null : resolvedDelta,
+    resolvedGoodDirection
+  );
+  const hasDelta = deltaEval.hasDelta;
+  const isUp = deltaEval.direction === 'up';
+  const isDown = deltaEval.direction === 'down';
+  const isNeutralDelta = deltaEval.isNeutral;
+  const isFavorable = deltaEval.isFavorable === true;
 
   // Build SVG path + area fill for mini sparkline (88x28)
   let sparkPath = '';
@@ -127,7 +130,7 @@ export const ModernKpiCard: React.FC<ModernKpiCardProps> = ({
         }${assumption ? ` | Assumption: ${assumption}` : ''}`
       : '';
 
-  // Phase 1.4: Sparkline color follows meaning (good = positive color, bad = negative, neutral = pack color)
+  // Sparkline color follows meaning (good = positive color, bad = negative, neutral = pack color)
   const strokeColor = isNeutralDelta
     ? activeAccent
     : isFavorable
@@ -213,12 +216,23 @@ export const ModernKpiCard: React.FC<ModernKpiCardProps> = ({
           hasDelta && (
             <span
               data-testid={resolvedId ? `kpi-trend-${resolvedId}` : 'kpi-trend'}
-              data-favorable={isFavorable ? 'true' : 'false'}
+              data-favorable={
+                isNeutralDelta ? 'neutral' : isFavorable ? 'true' : 'false'
+              }
+              data-direction={deltaEval.direction}
               className={`inline-flex items-center gap-1 text-[10px] font-mono tabular-nums font-semibold px-1.5 py-0.5 rounded-lg shrink-0 border border-subtle bg-elevated ${
-                isFavorable ? 'text-success' : 'text-danger'
+                isNeutralDelta
+                  ? 'text-secondary'
+                  : isFavorable
+                  ? 'text-success'
+                  : 'text-danger'
               }`}
-              title={`${resolvedDelta! > 0 ? '+' : ''}${resolvedDelta!.toFixed(1)}% (${
-                isFavorable ? 'Favorable trend' : 'Unfavorable trend'
+              title={`${deltaEval.textLabel} (${
+                isNeutralDelta
+                  ? 'Neutral trend'
+                  : isFavorable
+                  ? 'Favorable trend'
+                  : 'Unfavorable trend'
               })`}
             >
               {isUp ? (
@@ -228,12 +242,13 @@ export const ModernKpiCard: React.FC<ModernKpiCardProps> = ({
               ) : (
                 <Minus className="w-3 h-3 shrink-0" aria-hidden="true" />
               )}
-              <span>
-                {resolvedDelta! > 0 ? '+' : ''}
-                {resolvedDelta!.toFixed(1)}%
-              </span>
+              <span>{deltaEval.textLabel}</span>
               <span className="sr-only">
-                {isFavorable ? 'Favorable' : 'Unfavorable'}
+                {isNeutralDelta
+                  ? 'Neutral'
+                  : isFavorable
+                  ? 'Favorable'
+                  : 'Unfavorable'}
               </span>
             </span>
           )

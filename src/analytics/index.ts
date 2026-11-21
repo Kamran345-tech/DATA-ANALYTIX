@@ -3,3 +3,5 @@ export * from './packs/helpers';
 export * from './packs/registry';
 export * from './engine';
 export * from './techniques';
+export * from './learning/adaptiveLearningEngine';
+

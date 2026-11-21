@@ -31,14 +31,20 @@ export interface DataQualityReport {
   validityScore: number;
   consistencyScore: number;
   totalIssuesCount: number;
+  grade?: 'A+' | 'A' | 'B' | 'C' | 'D';
+  statusLabel?: string;
+  formulaExplanation?: string;
   issues: {
     id: string;
     column: string;
     type: 'missing_values' | 'duplicates' | 'outliers' | 'type_mismatch' | 'formatting';
     severity: 'low' | 'medium' | 'high';
+    title?: string;
     description: string;
     affectedRows: number;
     recommendedAction: string;
+    suggestedActionType?: TransformationStep['action'];
+    actionParameters?: Record<string, any>;
   }[];
 }
 
