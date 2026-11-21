@@ -30,6 +30,9 @@ import {
 } from 'lucide-react';
 import { usePlatform, NavigationTab } from '../../store/usePlatformStore';
 import { loadFeatureFlags, FeatureFlags } from '../../config/features';
+import { SIMPLE_CORE_TAB_IDS, useSidebarNavState } from '../../config/navigationConfig';
+
+export { SIMPLE_CORE_TAB_IDS, useSidebarNavState };
 
 interface NavItemDef {
   id: NavigationTab;
@@ -123,52 +126,15 @@ export interface ModernSidebarProps {
 export const ModernSidebar: React.FC<ModernSidebarProps> = ({ onOpenCommandPalette }) => {
   const { currentTab, setCurrentTab } = usePlatform();
   const [flags, setFlags] = useState<FeatureFlags>(() => loadFeatureFlags());
-
-  const [navMode, setNavMode] = useState<'simple' | 'pro'>(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('dataanalytix_nav_mode');
-      if (stored === 'simple' || stored === 'pro') return stored;
-    }
-    return 'simple';
-  });
-
-  const [recentTabs, setRecentTabs] = useState<NavigationTab[]>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const raw = localStorage.getItem('dataanalytix_recent_tabs');
-        return raw ? JSON.parse(raw) : [];
-      } catch {
-        return [];
-      }
-    }
-    return [];
-  });
+  const { navMode, updateNavMode, recentTabs } = useSidebarNavState('simple');
 
   useEffect(() => {
     const handleFlags = (e: any) => setFlags(e.detail || loadFeatureFlags());
-    const handleNavMode = (e: any) => {
-      if (e.detail === 'simple' || e.detail === 'pro') setNavMode(e.detail);
-    };
-    const handleRecent = (e: any) => {
-      if (Array.isArray(e.detail)) setRecentTabs(e.detail);
-    };
     window.addEventListener('dataanalytix:features-updated', handleFlags);
-    window.addEventListener('dataanalytix:nav-mode-updated', handleNavMode);
-    window.addEventListener('dataanalytix:recent-tabs-updated', handleRecent);
     return () => {
       window.removeEventListener('dataanalytix:features-updated', handleFlags);
-      window.removeEventListener('dataanalytix:nav-mode-updated', handleNavMode);
-      window.removeEventListener('dataanalytix:recent-tabs-updated', handleRecent);
     };
   }, []);
-
-  const updateNavMode = (mode: 'simple' | 'pro') => {
-    setNavMode(mode);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('dataanalytix_nav_mode', mode);
-      window.dispatchEvent(new CustomEvent('dataanalytix:nav-mode-updated', { detail: mode }));
-    }
-  };
 
   const [isRailCollapsed, setIsRailCollapsed] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
@@ -313,6 +279,7 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({ onOpenCommandPalet
                 <button
                   key={item.id}
                   type="button"
+                  data-testid={`sidebar-nav-item-${item.id}`}
                   onClick={() => setCurrentTab(item.id)}
                   title={`${item.label} — ${item.description}`}
                   aria-label={item.label}
@@ -384,6 +351,7 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({ onOpenCommandPalet
                           <button
                             key={item.id}
                             type="button"
+                            data-testid={`sidebar-nav-item-${item.id}`}
                             onClick={() => setCurrentTab(item.id)}
                             title={`${item.label} — ${item.description}`}
                             aria-label={item.label}

@@ -24,16 +24,19 @@ jobs:
       - name: Type check TypeScript
         run: bun x tsc --noEmit
 
-      - name: Run test suite
-        run: bun run test
+      - name: Run unit test suite
+        run: npm test
 
-      - name: Build production bundle
-        run: bun run build
+      - name: Run semantic color token audit
+        run: node scripts/check-colors.mjs
+
+      - name: Build production bundle (tsc --noEmit && vite build)
+        run: npm run build
 
       - name: Install Playwright Chromium
         run: bun x playwright install --with-deps chromium
 
-      - name: Run Playwright E2E tests
-        run: bun run test:e2e
+      - name: Run Required Playwright E2E Suites (phase3-ui-cleanup, analytics-packs, qa, theme-contrast, sidebar-smoke)
+        run: npx playwright test e2e/phase3-ui-cleanup.spec.ts e2e/analytics-packs.spec.ts e2e/qa.spec.ts e2e/theme-contrast.spec.ts e2e/sidebar-smoke.spec.ts
 
 

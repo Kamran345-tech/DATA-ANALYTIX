@@ -234,6 +234,15 @@ const MainContent: React.FC = () => {
         isThemeTransitioning ? 'theme-crossfade-active' : ''
       } flex flex-col font-sans transition-[background-color,color,border-color,opacity] duration-300 ease-out`}
     >
+      {/* Accessibility Skip-to-Content Link (Phase 3.6) */}
+      <a
+        href="#main-content"
+        data-testid="skip-to-main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:rounded-xl focus:bg-accent focus:text-on-accent focus:font-bold focus:text-xs focus:shadow-lg"
+      >
+        Skip to main content
+      </a>
+
       {!isPresentationMode && (
         isModern ? (
           <Suspense fallback={null}>
@@ -262,15 +271,19 @@ const MainContent: React.FC = () => {
         <main
           role="main"
           id="main-content"
+          tabIndex={-1}
           className={`flex-1 overflow-y-auto min-h-0 w-full min-w-0 transition-[background-color,color,border-color,opacity] duration-300 ease-out ${
             isThemeTransitioning ? 'theme-crossfade-active' : ''
           } ${
             flags.unifiedTheme ? 'bg-app text-primary' : isLight ? 'bg-card text-primary' : 'bg-app text-primary'
           } ${
-            isModern ? 'pb-24 md:pb-16 p-3 sm:p-5 lg:p-7' : isPresentationMode ? 'p-3 sm:p-6' : 'pb-20 p-3 sm:p-5 lg:p-7'
+            isModern ? 'pb-24 md:pb-16 p-3 sm:p-5 lg:p-7' : isPresentationMode ? 'p-3 sm:p-6' : 'pb-24 md:pb-20 p-3 sm:p-5 lg:p-7'
           }`}
         >
           <ErrorBoundary>
+            {!isPresentationMode && flags.designSystemV3 && (
+              <GuidedWorkflowStepper onOpenCommandPalette={() => setIsCommandPaletteOpen(true)} />
+            )}
             <Suspense fallback={<SuspenseLoader />}>
               {renderActiveView()}
             </Suspense>
@@ -306,12 +319,12 @@ const MainContent: React.FC = () => {
         </Suspense>
       )}
 
-      {/* Modern UI Auxiliary Features */}
-      {isModern && !isPresentationMode && (
+      {/* Mobile Bottom Nav & Command Palette (Modern or Design System v3) */}
+      {(isModern || flags.designSystemV3) && !isPresentationMode && (
         <>
           <Suspense fallback={null}>
             <ModernMobileBottomNav />
-            <ModernOnboardingChecklist />
+            {isModern && <ModernOnboardingChecklist />}
           </Suspense>
           {isCommandPaletteOpen && (
             <Suspense fallback={null}>
@@ -321,7 +334,7 @@ const MainContent: React.FC = () => {
               />
             </Suspense>
           )}
-          {isWelcomeModalOpen && (
+          {isModern && isWelcomeModalOpen && (
             <div 
               role="dialog"
               aria-modal="true"

@@ -29,6 +29,7 @@ import { usePlatform, NavigationTab } from '../../store/usePlatformStore';
 import { Tooltip } from '../common/Tooltip';
 import { useFirebaseAuth } from '../../store/useFirebaseAuth';
 import { loadFeatureFlags, FeatureFlags } from '../../config/features';
+import { SIMPLE_CORE_TAB_IDS, useSidebarNavState } from '../../config/navigationConfig';
 
 interface NavItem {
   id: NavigationTab;
@@ -277,11 +278,14 @@ export const Sidebar: React.FC = () => {
   const isLight = themeMode === 'light';
   const asideRef = React.useRef<HTMLElement | null>(null);
   const previousFocusRef = React.useRef<HTMLElement | null>(null);
+  const { navMode, updateNavMode, recentTabs } = useSidebarNavState('pro');
 
   React.useEffect(() => {
     const handleFlags = (e: any) => setFlags(e.detail || loadFeatureFlags());
     window.addEventListener('dataanalytix:features-updated', handleFlags);
-    return () => window.removeEventListener('dataanalytix:features-updated', handleFlags);
+    return () => {
+      window.removeEventListener('dataanalytix:features-updated', handleFlags);
+    };
   }, []);
 
   const restoreMobileMenuFocus = React.useCallback(() => {
@@ -427,7 +431,7 @@ export const Sidebar: React.FC = () => {
                   data-testid="nav-mode-simple"
                   onClick={() => updateNavMode('simple')}
                   aria-pressed={navMode === 'simple'}
-                  className={`min-h-[44px] lg:min-h-[32px] py-1.5 px-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                  className={`min-h-[44px] lg:min-h-[32px] py-1.5 px-2 rounded-lg text-xs font-semibold cursor-pointer ${
                     navMode === 'simple'
                       ? 'bg-accent text-on-accent font-bold shadow-2xs'
                       : 'text-secondary hover:text-primary'
@@ -440,7 +444,7 @@ export const Sidebar: React.FC = () => {
                   data-testid="nav-mode-pro"
                   onClick={() => updateNavMode('pro')}
                   aria-pressed={navMode === 'pro'}
-                  className={`min-h-[44px] lg:min-h-[32px] py-1.5 px-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                  className={`min-h-[44px] lg:min-h-[32px] py-1.5 px-2 rounded-lg text-xs font-semibold cursor-pointer ${
                     navMode === 'pro'
                       ? 'bg-accent text-on-accent font-bold shadow-2xs'
                       : 'text-secondary hover:text-primary'
@@ -464,7 +468,7 @@ export const Sidebar: React.FC = () => {
                           key={`rec-${tabId}`}
                           type="button"
                           onClick={() => handleSelectTab(tabId)}
-                          className={`min-h-[44px] lg:min-h-[28px] px-2.5 py-1 rounded-lg text-xs font-medium truncate max-w-[115px] border transition-colors cursor-pointer ${
+                          className={`min-h-[44px] lg:min-h-[28px] px-2.5 py-1 rounded-lg text-xs font-medium truncate max-w-[115px] border cursor-pointer ${
                             currentTab === tabId
                               ? 'bg-accent text-on-accent border-subtle font-bold'
                               : 'bg-input hover:bg-elevated text-secondary border-subtle'
@@ -521,9 +525,11 @@ export const Sidebar: React.FC = () => {
                     >
                       <button
                         type="button"
+                        data-testid={`sidebar-nav-item-${item.id}`}
                         onClick={() => handleSelectTab(item.id)}
                         title={item.label}
                         aria-label={item.label}
+                        aria-current={isActive ? 'page' : undefined}
                         className={`w-full min-h-[44px] lg:min-h-0 flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-colors group cursor-pointer ${
                           isActive 
                             ? isLight

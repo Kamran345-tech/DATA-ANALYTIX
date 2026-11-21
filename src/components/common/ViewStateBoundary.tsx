@@ -13,6 +13,8 @@ export interface EmptyDatasetStateProps {
   description?: string;
   primaryActionLabel?: string;
   onPrimaryAction?: () => void;
+  onLoadSample?: () => void;
+  onUploadFile?: () => void;
   showUploadButton?: boolean;
 }
 
@@ -24,15 +26,27 @@ export const EmptyDatasetState: React.FC<EmptyDatasetStateProps> = ({
   description = 'Load our verified enterprise sample dataset in one click or upload your own CSV, Excel, or JSON file to populate this view.',
   primaryActionLabel = 'Load Sample Dataset',
   onPrimaryAction,
+  onLoadSample,
+  onUploadFile,
   showUploadButton = true,
 }) => {
   const { loadDemoDataset, setCurrentTab } = usePlatform();
 
   const handlePrimary = () => {
-    if (onPrimaryAction) {
+    if (onLoadSample) {
+      onLoadSample();
+    } else if (onPrimaryAction) {
       onPrimaryAction();
     } else {
       loadDemoDataset('global-retail-sales');
+    }
+  };
+
+  const handleUpload = () => {
+    if (onUploadFile) {
+      onUploadFile();
+    } else {
+      setCurrentTab('upload');
     }
   };
 
@@ -68,11 +82,11 @@ export const EmptyDatasetState: React.FC<EmptyDatasetStateProps> = ({
           <span>{primaryActionLabel}</span>
         </button>
 
-        {showUploadButton && (
+        {(showUploadButton || Boolean(onUploadFile)) && (
           <button
             type="button"
             data-testid="empty-state-upload-btn"
-            onClick={() => setCurrentTab('upload')}
+            onClick={handleUpload}
             className="min-h-[44px] px-4 py-2.5 rounded-xl bg-input hover:bg-elevated border border-subtle text-primary text-xs font-semibold inline-flex items-center gap-2 transition-colors cursor-pointer"
           >
             <UploadCloud className="w-4 h-4 text-accent" />

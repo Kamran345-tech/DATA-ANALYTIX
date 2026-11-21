@@ -19,6 +19,7 @@ import { usePlatform } from '../../store/usePlatformStore';
 import { DEMO_DATASETS } from '../../data/demoDatasets';
 import { loadFeatureFlags, FeatureFlags } from '../../config/features';
 import { ColumnMappingModal } from '../common/ColumnMappingModal';
+import { PageHeader } from '../common/PageHeader';
 import type { PackDetectionMatch, AnalyticsPackConfig } from '../../analytics';
 
 export const UploadIngestionView: React.FC = () => {
@@ -158,19 +159,19 @@ export const UploadIngestionView: React.FC = () => {
           primaryAction={{
             label: 'Browse Local File',
             onClick: () => fileInputRef.current?.click(),
-            icon: <UploadCloud className="w-3.5 h-3.5" />,
+            icon: UploadCloud,
             testId: 'upload-header-browse-btn',
           }}
           secondaryActions={[
             {
               label: 'Live Database Connector',
               onClick: () => setCurrentTab('live_connector'),
-              icon: <Database className="w-3.5 h-3.5 text-accent" />,
+              icon: Database,
             },
             {
               label: 'Explore Analytics Packs',
               onClick: () => setCurrentTab('analytics_packs'),
-              icon: <Layers className="w-3.5 h-3.5 text-accent" />,
+              icon: Layers,
             },
           ]}
         />

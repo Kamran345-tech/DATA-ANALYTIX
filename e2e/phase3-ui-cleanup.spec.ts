@@ -94,7 +94,7 @@ test.describe('Phase 3: UI, Design System, Navigation & Accessibility Verificati
 
     // 5. On Upload page: verify PageHeader (sentence case, not ALL-CAPS) & full-width "Recommended for your data" banner
     const pageTitle = page.getByTestId('page-header-title-upload');
-    await expect(pageTitle).toHaveText('Upload & Data Ingestion');
+    await expect(pageTitle).toHaveText('Upload & Ingest Data');
 
     const detectionBanner = page.getByTestId('upload-pack-detection-banner');
     await expect(detectionBanner).toBeVisible();

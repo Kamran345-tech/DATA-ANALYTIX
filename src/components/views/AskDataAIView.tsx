@@ -327,7 +327,7 @@ export const AskDataAIView: React.FC = () => {
           primaryAction={{
             label: 'Summarize Active Pack',
             onClick: () => handleSend(packPromptCards[1].question),
-            icon: <Sparkles className="w-3.5 h-3.5" />,
+            icon: Sparkles,
           }}
         />
       ) : (

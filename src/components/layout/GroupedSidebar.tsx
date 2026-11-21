@@ -24,6 +24,8 @@ import {
 } from 'lucide-react';
 import { usePlatform, NavigationTab } from '../../store/usePlatformStore';
 import { getBrandText, loadFeatureFlags } from '../../config/features';
+import { APP_VERSION_LABEL } from '../../config/appVersion';
+import { SIMPLE_CORE_TAB_IDS, useSidebarNavState } from '../../config/navigationConfig';
 
 interface WorkflowGroup {
   id: string;
@@ -105,19 +107,20 @@ const WORKFLOW_GROUPS: WorkflowGroup[] = [
   }
 ];
 
-import { APP_VERSION_LABEL } from '../../config/appVersion';
-
 export const GroupedSidebar: React.FC = () => {
   const { currentTab, setCurrentTab, isSidebarOpen, setIsSidebarOpen, isPresentationMode } = usePlatform();
   const [flags, setFlags] = useState(() => loadFeatureFlags());
   const brandName = getBrandText('primary', flags);
   const asideRef = React.useRef<HTMLElement | null>(null);
   const previousFocusRef = React.useRef<HTMLElement | null>(null);
+  const { navMode, updateNavMode, recentTabs } = useSidebarNavState('pro');
 
   React.useEffect(() => {
     const handleFlags = (e: any) => setFlags(e.detail || loadFeatureFlags());
     window.addEventListener('dataanalytix:features-updated', handleFlags);
-    return () => window.removeEventListener('dataanalytix:features-updated', handleFlags);
+    return () => {
+      window.removeEventListener('dataanalytix:features-updated', handleFlags);
+    };
   }, []);
 
   // Keep track of which groups are expanded (default: all open)
@@ -236,12 +239,12 @@ export const GroupedSidebar: React.FC = () => {
             </div>
             <div className="min-w-0">
               <div className="font-bold text-sm text-primary tracking-tight leading-none truncate">{brandName}</div>
-              <div className="text-[10px] text-accent font-mono mt-0.5">Workflow Studio</div>
+              <div className="text-xs text-accent font-mono mt-0.5">Workflow Studio</div>
             </div>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
-            <span className="text-[9px] font-semibold px-2 py-0.5 rounded bg-accent-soft border border-subtle text-accent">
-              5 STAGES
+            <span className="text-xs font-semibold px-2 py-0.5 rounded bg-accent-soft border border-subtle text-accent">
+              5 Stages
             </span>
             <button
               type="button"
@@ -254,11 +257,82 @@ export const GroupedSidebar: React.FC = () => {
           </div>
         </div>
 
+        {/* Simple / Pro Mode Toggle & Recently Used (Phase 3.3) */}
+        {flags.designSystemV3 && (
+          <div className="px-3 pt-3 pb-2 border-b border-subtle space-y-2">
+            <div
+              data-testid="nav-mode-toggle"
+              role="group"
+              aria-label="Navigation complexity mode"
+              className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-input border border-subtle"
+            >
+              <button
+                type="button"
+                data-testid="nav-mode-simple"
+                onClick={() => updateNavMode('simple')}
+                aria-pressed={navMode === 'simple'}
+                className={`min-h-[44px] lg:min-h-[32px] py-1.5 px-2 rounded-lg text-xs font-semibold cursor-pointer ${
+                  navMode === 'simple'
+                    ? 'bg-accent text-on-accent font-bold shadow-2xs'
+                    : 'text-secondary hover:text-primary'
+                }`}
+              >
+                Simple (8)
+              </button>
+              <button
+                type="button"
+                data-testid="nav-mode-pro"
+                onClick={() => updateNavMode('pro')}
+                aria-pressed={navMode === 'pro'}
+                className={`min-h-[44px] lg:min-h-[32px] py-1.5 px-2 rounded-lg text-xs font-semibold cursor-pointer ${
+                  navMode === 'pro'
+                    ? 'bg-accent text-on-accent font-bold shadow-2xs'
+                    : 'text-secondary hover:text-primary'
+                }`}
+              >
+                Pro (All)
+              </button>
+            </div>
+
+            {recentTabs.length > 1 && (
+              <div data-testid="sidebar-recent-items" className="space-y-1">
+                <div className="px-1 text-xs font-mono text-muted">Recently Used</div>
+                <div className="flex flex-wrap gap-1">
+                  {recentTabs.slice(0, 3).map((tabId) => {
+                    const found = WORKFLOW_GROUPS.flatMap((g) => g.items).find((i) => i.id === tabId);
+                    if (!found) return null;
+                    return (
+                      <button
+                        key={`rec-${tabId}`}
+                        type="button"
+                        onClick={() => handleSelectTab(tabId)}
+                        className={`min-h-[44px] lg:min-h-[28px] px-2.5 py-1 rounded-lg text-xs font-medium truncate max-w-[115px] border cursor-pointer ${
+                          currentTab === tabId
+                            ? 'bg-accent text-on-accent border-subtle font-bold'
+                            : 'bg-input hover:bg-elevated text-secondary border-subtle'
+                        }`}
+                      >
+                        {found.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Workflow Navigation Groups */}
         <div className="flex-1 overflow-y-auto p-3 space-y-4">
           {WORKFLOW_GROUPS.map((group) => {
+            const visibleItems = group.items.filter(
+              (item) =>
+                (item.id !== 'analytics_packs' || flags.analyticsPacks) &&
+                (!flags.designSystemV3 || navMode === 'pro' || SIMPLE_CORE_TAB_IDS.has(item.id))
+            );
+            if (visibleItems.length === 0) return null;
             const isCollapsed = collapsedGroups[group.id];
-            const hasActiveChild = group.items.some(item => item.id === currentTab);
+            const hasActiveChild = visibleItems.some(item => item.id === currentTab);
 
             return (
               <div key={group.id} className="rounded-xl border border-subtle bg-card overflow-hidden">
@@ -272,7 +346,7 @@ export const GroupedSidebar: React.FC = () => {
                   }`}
                 >
                   <div className="flex items-center gap-2 min-w-0 flex-1">
-                    <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-elevated text-muted shrink-0">
+                    <span className="font-mono text-xs font-bold px-1.5 py-0.5 rounded bg-elevated text-muted shrink-0">
                       {group.stageNumber}
                     </span>
                     <span className="text-xs font-bold tracking-tight text-primary min-w-0 truncate" title={group.title}>
@@ -281,7 +355,7 @@ export const GroupedSidebar: React.FC = () => {
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
                     {group.badge && (
-                      <span className="shrink-0 ml-2 text-[9px] font-medium px-1.5 py-0.2 rounded bg-elevated text-muted">
+                      <span className="shrink-0 ml-2 text-xs font-medium px-1.5 py-0.5 rounded bg-elevated text-muted">
                         {group.badge}
                       </span>
                     )}
@@ -296,9 +370,7 @@ export const GroupedSidebar: React.FC = () => {
                 {/* Group Items */}
                 {!isCollapsed && (
                   <div className="p-1 space-y-0.5 border-t border-subtle">
-                    {group.items
-                      .filter(item => item.id !== 'analytics_packs' || flags.analyticsPacks)
-                      .map((item) => {
+                    {visibleItems.map((item) => {
                       const isActive = currentTab === item.id;
                       const Icon = item.icon;
 
@@ -306,6 +378,7 @@ export const GroupedSidebar: React.FC = () => {
                         <button
                           type="button"
                           key={item.id}
+                          data-testid={`sidebar-nav-item-${item.id}`}
                           onClick={() => handleSelectTab(item.id)}
                           title={`${item.label} — ${item.description}`}
                           aria-label={item.label}
@@ -329,8 +402,8 @@ export const GroupedSidebar: React.FC = () => {
         </div>
 
         {/* Bottom User / Status Bar */}
-        <div className="p-3 border-t border-subtle bg-sidebar text-[11px] text-muted flex items-center justify-between">
-          <span>v2.4 Enterprise</span>
+        <div className="p-3 border-t border-subtle bg-sidebar text-xs text-muted flex items-center justify-between">
+          <span>{APP_VERSION_LABEL} Enterprise</span>
           <button
             type="button"
             onClick={() => handleSelectTab('settings')}
@@ -345,3 +418,4 @@ export const GroupedSidebar: React.FC = () => {
     </>
   );
 };
+

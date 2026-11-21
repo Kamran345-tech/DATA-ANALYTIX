@@ -36,7 +36,7 @@ import { loadFeatureFlags } from '../../config/features';
 export interface PageActionItem {
   label: string;
   onClick: () => void;
-  icon?: React.ComponentType<{ className?: string }> | React.ReactNode;
+  icon?: React.ComponentType<{ className?: string }>;
   disabled?: boolean;
   disabledReason?: string;
   testId?: string;
@@ -533,7 +533,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
                             <div className="min-w-0 flex-1">
                               <div className="truncate">{act.label}</div>
                               {act.disabled && act.disabledReason && (
-                                <div className="text-[11px] text-muted truncate">{act.disabledReason}</div>
+                                <div className="text-xs text-muted truncate">{act.disabledReason}</div>
                               )}
                             </div>
                           </button>
@@ -545,19 +545,22 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
               </div>
             )}
 
-            {primaryAction && (
-              <button
-                type="button"
-                data-testid={primaryAction.testId || `page-primary-action-${pageId}`}
-                disabled={primaryAction.disabled}
-                title={primaryAction.disabled ? primaryAction.disabledReason : primaryAction.label}
-                onClick={primaryAction.onClick}
-                className="min-h-[44px] px-4 py-2 rounded-xl bg-accent hover:opacity-95 text-on-accent text-xs font-semibold inline-flex items-center gap-2 shadow-xs transition-opacity disabled:opacity-50 cursor-pointer whitespace-nowrap"
-              >
-                {primaryAction.icon && <primaryAction.icon className="w-4 h-4 shrink-0" />}
-                <span>{primaryAction.label}</span>
-              </button>
-            )}
+            {primaryAction && (() => {
+              const PrimaryIcon = primaryAction.icon;
+              return (
+                <button
+                  type="button"
+                  data-testid={primaryAction.testId || `page-primary-action-${pageId}`}
+                  disabled={primaryAction.disabled}
+                  title={primaryAction.disabled ? primaryAction.disabledReason : primaryAction.label}
+                  onClick={primaryAction.onClick}
+                  className="min-h-[44px] px-4 py-2 rounded-xl bg-accent hover:opacity-95 text-on-accent text-xs font-semibold inline-flex items-center gap-2 shadow-xs transition-opacity disabled:opacity-50 cursor-pointer whitespace-nowrap"
+                >
+                  {PrimaryIcon && <PrimaryIcon className="w-4 h-4 shrink-0" />}
+                  <span>{primaryAction.label}</span>
+                </button>
+              );
+            })()}
           </div>
         )}
       </div>

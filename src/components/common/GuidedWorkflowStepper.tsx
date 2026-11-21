@@ -100,22 +100,22 @@ export const GuidedWorkflowStepper: React.FC<GuidedWorkflowStepperProps> = ({
       <nav
         aria-label="Guided workflow stages"
         data-testid="guided-workflow-stepper"
-        className="rounded-2xl border border-subtle bg-card px-3 py-2 shadow-2xs flex flex-wrap items-center justify-between gap-2"
+        className="rounded-2xl border border-subtle bg-card px-2.5 sm:px-3 py-2 shadow-2xs flex items-center justify-between gap-1.5 sm:gap-2"
       >
-        <ol className="flex items-center flex-wrap gap-1.5 sm:gap-2 min-w-0 flex-1">
+        <ol className="flex items-center gap-1 sm:gap-1.5 min-w-0 flex-1 overflow-x-auto no-scrollbar">
           {steps.map((step, idx) => {
             const isCurrent = step.matchTabs.includes(currentTab);
             const Icon = step.icon;
 
             return (
               <React.Fragment key={step.id}>
-                <li className="min-w-0">
+                <li className="min-w-0 shrink-0">
                   <button
                     type="button"
                     data-testid={`workflow-step-${step.id}`}
                     onClick={() => setCurrentTab(step.targetTab)}
                     aria-current={isCurrent ? 'step' : undefined}
-                    className={`min-h-[38px] px-2.5 sm:px-3 py-1.5 rounded-xl text-xs transition-colors inline-flex items-center gap-2 cursor-pointer border ${
+                    className={`min-h-[36px] px-2 sm:px-2.5 py-1 rounded-xl text-xs inline-flex items-center gap-1.5 cursor-pointer border ${
                       isCurrent
                         ? 'bg-accent text-on-accent border-subtle font-bold shadow-2xs'
                         : step.isComplete
@@ -124,7 +124,7 @@ export const GuidedWorkflowStepper: React.FC<GuidedWorkflowStepperProps> = ({
                     }`}
                   >
                     <span
-                      className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-mono shrink-0 ${
+                      className={`hidden sm:flex w-4 h-4 rounded-full items-center justify-center text-xs font-mono shrink-0 ${
                         isCurrent
                           ? 'bg-card/20 text-on-accent font-bold'
                           : step.isComplete
@@ -133,14 +133,14 @@ export const GuidedWorkflowStepper: React.FC<GuidedWorkflowStepperProps> = ({
                       }`}
                     >
                       {step.isComplete && !isCurrent ? (
-                        <Check className="w-3 h-3" />
+                        <Check className="w-2.5 h-2.5" />
                       ) : (
-                        <Icon className="w-3 h-3" />
+                        <Icon className="w-2.5 h-2.5" />
                       )}
                     </span>
                     <span className="whitespace-nowrap">{step.label}</span>
                     <span
-                      className={`hidden lg:inline text-xs font-mono truncate max-w-[120px] ${
+                      className={`hidden 2xl:inline text-xs font-mono truncate max-w-[105px] ${
                         isCurrent ? 'text-on-accent/90' : 'text-muted'
                       }`}
                     >
@@ -150,8 +150,8 @@ export const GuidedWorkflowStepper: React.FC<GuidedWorkflowStepperProps> = ({
                 </li>
 
                 {idx < steps.length - 1 && (
-                  <li aria-hidden="true" className="text-muted hidden sm:flex items-center">
-                    <ChevronRight className="w-3.5 h-3.5" />
+                  <li aria-hidden="true" className="text-muted hidden md:flex items-center shrink-0">
+                    <ChevronRight className="w-3 h-3" />
                   </li>
                 )}
               </React.Fragment>
@@ -159,7 +159,7 @@ export const GuidedWorkflowStepper: React.FC<GuidedWorkflowStepperProps> = ({
           })}
         </ol>
 
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
           <button
             type="button"
             data-testid="stepper-page-guide-trigger"
@@ -167,14 +167,14 @@ export const GuidedWorkflowStepper: React.FC<GuidedWorkflowStepperProps> = ({
             aria-label={`How to use ${pageSpec.title}`}
             title={`Quick guide for ${pageSpec.title}`}
             onClick={() => setIsGuideOpen(prev => !prev)}
-            className={`min-h-[38px] px-2.5 py-1.5 rounded-xl border text-xs font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer ${
+            className={`min-h-[36px] px-2 sm:px-2.5 py-1 rounded-xl border text-xs font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer ${
               isGuideOpen
                 ? 'bg-accent-soft text-accent border-strong'
                 : 'bg-input hover:bg-elevated text-secondary hover:text-primary border-subtle'
             }`}
           >
             <HelpCircle className="w-3.5 h-3.5 text-accent" />
-            <span className="hidden md:inline">? Guide</span>
+            <span className="hidden lg:inline">? Guide</span>
           </button>
 
           {onOpenCommandPalette && (
@@ -183,11 +183,11 @@ export const GuidedWorkflowStepper: React.FC<GuidedWorkflowStepperProps> = ({
               data-testid="stepper-command-palette-trigger"
               onClick={onOpenCommandPalette}
               aria-label="Open Command Palette (Ctrl+K)"
-              className="min-h-[38px] px-3 py-1.5 rounded-xl bg-input hover:bg-elevated border border-subtle text-xs text-secondary hover:text-primary inline-flex items-center gap-2 transition-colors cursor-pointer shrink-0"
+              className="min-h-[36px] px-2 sm:px-2.5 py-1 rounded-xl bg-input hover:bg-elevated border border-subtle text-xs text-secondary hover:text-primary inline-flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
             >
               <Search className="w-3.5 h-3.5 text-accent" />
-              <span className="hidden sm:inline">Quick Jump</span>
-              <kbd className="px-1.5 py-0.5 rounded bg-card border border-subtle font-mono text-xs text-muted">
+              <span className="hidden xl:inline">Quick Jump</span>
+              <kbd className="hidden sm:inline px-1.5 py-0.5 rounded bg-card border border-subtle font-mono text-xs text-muted">
                 Ctrl+K
               </kbd>
             </button>

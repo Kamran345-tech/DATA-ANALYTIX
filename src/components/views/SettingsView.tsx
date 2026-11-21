@@ -96,35 +96,64 @@ export const SettingsView: React.FC = () => {
     setTimeout(() => setSavedNotice(false), 2500);
   };
 
+  const activeDatasetId = toDatasetIdentifier(project.name, project.sourceFileName);
+
   return (
     <div className="space-y-8 pb-16 animate-fadeIn max-w-4xl mx-auto">
       {/* Header */}
-      <div className="bg-card border border-subtle rounded-2xl p-6 flex flex-wrap items-center justify-between gap-4">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-accent font-mono">
-            <Settings className="w-4 h-4" /> Central Governance & Identity
+      {features.designSystemV3 ? (
+        <PageHeader
+          pageId="settings"
+          badge={
+            savedNotice ? (
+              <span className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-accent-soft text-accent border border-subtle text-xs font-mono">
+                <Check className="w-3.5 h-3.5" /> Configuration Saved
+              </span>
+            ) : (
+              <span className="px-2.5 py-1 rounded-lg bg-elevated border border-subtle text-xs font-mono text-secondary">
+                {APP_VERSION_LABEL}
+              </span>
+            )
+          }
+          primaryAction={{
+            label: 'Switch to Classic',
+            onClick: () => {
+              const reset = resetFeatureFlags();
+              setFeatures(reset);
+              setUiMode('classic');
+              success('Switched to Classic', 'All feature flags and appearance settings restored to Classic mode.');
+            },
+            icon: RotateCcw,
+          }}
+        />
+      ) : (
+        <div className="bg-card border border-subtle rounded-2xl p-6 flex flex-wrap items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-accent font-mono">
+              <Settings className="w-4 h-4" /> Central Governance &amp; Identity
+            </div>
+            <h1 className="font-heading text-3xl sm:text-4xl font-bold text-primary tracking-wide uppercase">
+              SETTINGS &amp; BRANDING
+            </h1>
+            <p className="text-xs text-secondary">
+              Define corporate branding parameters. Applied universally across dashboards, executive PDF reports, and Power BI themes.
+            </p>
           </div>
-          <h1 className="font-heading text-3xl sm:text-4xl font-bold text-primary tracking-wide uppercase">
-            SETTINGS & BRANDING
-          </h1>
-          <p className="text-xs text-secondary">
-            Define corporate branding parameters. Applied universally across dashboards, executive PDF reports, and Power BI themes.
-          </p>
-        </div>
 
-        {savedNotice && (
-          <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-accent-soft text-accent border border-subtle text-xs font-mono">
-            <Check className="w-4 h-4" /> Configuration Saved
-          </span>
-        )}
-      </div>
+          {savedNotice && (
+            <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-accent-soft text-accent border border-subtle text-xs font-mono">
+              <Check className="w-4 h-4" /> Configuration Saved
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Appearance & Interface Mode Card */}
       <div className="rounded-2xl p-6 space-y-4 border bg-card border-subtle text-primary">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b pb-3 border-subtle">
           <h3 className="font-heading text-xl font-bold uppercase tracking-wide flex items-center gap-2 text-primary">
             <Palette className="w-4 h-4 text-accent" />
-            APPEARANCE & INTERFACE DESIGN
+            APPEARANCE &amp; INTERFACE DESIGN
           </h3>
           <button
             type="button"
@@ -329,17 +358,25 @@ export const SettingsView: React.FC = () => {
         <div className="bg-card border border-subtle rounded-2xl p-6 space-y-4">
           <h3 className="font-heading text-xl font-bold text-primary uppercase tracking-wide flex items-center gap-2">
             <ShieldCheck className="w-4 h-4 text-accent" />
-            PROJECT VERSION & RUNTIME
+            PROJECT VERSION &amp; RUNTIME
           </h3>
 
           <div className="space-y-3 text-xs font-mono">
-            <div className="p-3 rounded-xl bg-input border border-subtle flex justify-between">
-              <span className="text-muted">Project Identifier:</span>
-              <span className="text-primary">{project.id}</span>
+            <div className="p-3 rounded-xl bg-input border border-subtle flex justify-between gap-2">
+              <span className="text-muted shrink-0">Project Identifier:</span>
+              <span
+                data-testid="settings-project-identifier"
+                title={`${project.name} (${activeDatasetId})`}
+                className="text-primary font-semibold truncate text-right"
+              >
+                {activeDatasetId} ({project.name})
+              </span>
             </div>
-            <div className="p-3 rounded-xl bg-input border border-subtle flex justify-between">
-              <span className="text-muted">Active Version:</span>
-              <span className="text-accent font-bold">{project.version}</span>
+            <div className="p-3 rounded-xl bg-input border border-subtle flex justify-between gap-2">
+              <span className="text-muted shrink-0">Active Version:</span>
+              <span data-testid="settings-active-version" className="text-accent font-bold">
+                {project.version || APP_VERSION_LABEL}
+              </span>
             </div>
             <div className="p-3 rounded-xl bg-input border border-subtle flex justify-between">
               <span className="text-muted">Dataset Scope:</span>
