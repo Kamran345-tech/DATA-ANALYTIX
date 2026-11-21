@@ -105,6 +105,12 @@ export function applyDocumentTheme(
     } else {
       root.removeAttribute('data-hero-3d');
     }
+
+    if (flags.designSystemV3) {
+      root.setAttribute('data-design-system-v3', 'true');
+    } else {
+      root.removeAttribute('data-design-system-v3');
+    }
   }
 
   return resolved;

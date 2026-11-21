@@ -118,7 +118,7 @@ export const Navbar: React.FC = () => {
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
             Enterprise Model
           </span>
-          <span className={`text-xs font-mono shrink-0 whitespace-nowrap ${isLight ? 'text-secondary' : 'text-muted'}`}>
+          <span data-testid="navbar-app-version" className={`text-xs font-mono shrink-0 whitespace-nowrap ${isLight ? 'text-secondary' : 'text-muted'}`}>
             · {project.version}
           </span>
         </div>

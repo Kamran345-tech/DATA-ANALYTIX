@@ -86,6 +86,8 @@ export const ModernNavbar: React.FC<ModernNavbarProps> = ({
           <span>{rowCount.toLocaleString()} rows</span>
           <span aria-hidden="true" className="text-[var(--modern-text-subtle)]">·</span>
           <span>{colCount} cols</span>
+          <span aria-hidden="true" className="text-[var(--modern-text-subtle)]">·</span>
+          <span data-testid="navbar-app-version">{project.version}</span>
         </div>
       </div>
 

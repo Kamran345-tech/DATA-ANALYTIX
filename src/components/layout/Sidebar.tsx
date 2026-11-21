@@ -412,18 +412,91 @@ export const Sidebar: React.FC = () => {
           </button>
         </div>
 
-        <div className="p-3 space-y-6">
-          {navSections.map((section, idx) => (
+        <div className="p-3 space-y-5">
+          {/* Simple / Pro Mode Toggle & Recently Used (Phase 3.3) */}
+          {flags.designSystemV3 && (
+            <div className="space-y-2.5 pb-2 border-b border-subtle">
+              <div
+                data-testid="nav-mode-toggle"
+                role="group"
+                aria-label="Navigation complexity mode"
+                className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-input border border-subtle"
+              >
+                <button
+                  type="button"
+                  data-testid="nav-mode-simple"
+                  onClick={() => updateNavMode('simple')}
+                  aria-pressed={navMode === 'simple'}
+                  className={`min-h-[44px] lg:min-h-[32px] py-1.5 px-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                    navMode === 'simple'
+                      ? 'bg-accent text-on-accent font-bold shadow-2xs'
+                      : 'text-secondary hover:text-primary'
+                  }`}
+                >
+                  Simple (8)
+                </button>
+                <button
+                  type="button"
+                  data-testid="nav-mode-pro"
+                  onClick={() => updateNavMode('pro')}
+                  aria-pressed={navMode === 'pro'}
+                  className={`min-h-[44px] lg:min-h-[32px] py-1.5 px-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                    navMode === 'pro'
+                      ? 'bg-accent text-on-accent font-bold shadow-2xs'
+                      : 'text-secondary hover:text-primary'
+                  }`}
+                >
+                  Pro (All)
+                </button>
+              </div>
+
+              {recentTabs.length > 1 && (
+                <div data-testid="sidebar-recent-items" className="space-y-1">
+                  <div className="px-2 text-xs font-mono text-muted">Recently Used</div>
+                  <div className="flex flex-wrap gap-1 px-1">
+                    {recentTabs.slice(0, 3).map((tabId) => {
+                      const found = navSections
+                        .flatMap((s) => s.items)
+                        .find((i) => i.id === tabId);
+                      if (!found) return null;
+                      return (
+                        <button
+                          key={`rec-${tabId}`}
+                          type="button"
+                          onClick={() => handleSelectTab(tabId)}
+                          className={`min-h-[44px] lg:min-h-[28px] px-2.5 py-1 rounded-lg text-xs font-medium truncate max-w-[115px] border transition-colors cursor-pointer ${
+                            currentTab === tabId
+                              ? 'bg-accent text-on-accent border-subtle font-bold'
+                              : 'bg-input hover:bg-elevated text-secondary border-subtle'
+                          }`}
+                        >
+                          {found.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {navSections.map((section, idx) => {
+            const visibleItems = section.items.filter(
+              (item) =>
+                (item.id !== 'analytics_packs' || flags.analyticsPacks) &&
+                (!flags.designSystemV3 || navMode === 'pro' || SIMPLE_CORE_TAB_IDS.has(item.id))
+            );
+            if (visibleItems.length === 0) return null;
+
+            return (
             <div key={idx} className="space-y-1">
-              <h4 className={`px-3 text-[10px] font-bold tracking-wider uppercase font-mono ${
+              <h4 className={`px-3 text-xs font-bold tracking-wider uppercase font-mono ${
                 isLight ? 'text-muted' : 'text-cyan-400/80'
               }`}>
                 {section.title}
               </h4>
               <div className="space-y-0.5 pt-1">
-                {section.items
-                  .filter(item => item.id !== 'analytics_packs' || flags.analyticsPacks)
-                  .map(item => {
+                {visibleItems.map(item => {
                   const Icon = item.icon;
                   const isActive = currentTab === item.id;
                   return (
@@ -494,7 +567,8 @@ export const Sidebar: React.FC = () => {
                 })}
               </div>
             </div>
-          ))}
+          );
+          })}
         </div>
 
         <div className={`mt-auto p-3 border-t space-y-2.5 ${

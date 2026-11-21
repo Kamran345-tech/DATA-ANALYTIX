@@ -86,7 +86,7 @@ const WORKFLOW_GROUPS: WorkflowGroup[] = [
       { id: 'dashboard_builder', label: 'Custom Dashboard Builder', icon: SlidersHorizontal, description: 'Compose customized visual layouts' },
       { id: 'analysis', label: 'Deep Statistical Analysis', icon: TrendingUp, description: 'Correlations, anomalies, and distributions' },
       { id: 'ai_insights', label: 'Ask Data AI', icon: Sparkles, description: 'Natural language questions grounded in metrics' },
-      { id: 'reports', label: 'Executive PDF Reports', icon: FileSpreadsheet, description: 'Print-ready board decks and summaries' },
+      { id: 'reports', label: 'Executive Reports', icon: FileSpreadsheet, description: 'Print-ready board decks and summaries' },
     ]
   },
   {
@@ -104,6 +104,8 @@ const WORKFLOW_GROUPS: WorkflowGroup[] = [
     ]
   }
 ];
+
+import { APP_VERSION_LABEL } from '../../config/appVersion';
 
 export const GroupedSidebar: React.FC = () => {
   const { currentTab, setCurrentTab, isSidebarOpen, setIsSidebarOpen, isPresentationMode } = usePlatform();

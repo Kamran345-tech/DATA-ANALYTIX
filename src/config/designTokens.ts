@@ -166,13 +166,15 @@ export const SOP_PRINT_PALETTE = {
   danger: '#B91C1C',
 } as const;
 
+import { APP_VERSION } from './appVersion';
+
 export const DESIGN_TOKENS = {
-  version: '2.4.0',
+  version: APP_VERSION,
   dark: DARK_TOKENS,
   light: LIGHT_TOKENS,
   brand: {
     name: 'Data Analytix',
-    version: '2.4.0',
+    version: APP_VERSION,
     groundDark: '#0B1120',
     cardDark: '#111A2E',
     textDark: '#E6ECF7',

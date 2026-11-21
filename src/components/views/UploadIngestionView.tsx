@@ -150,87 +150,107 @@ export const UploadIngestionView: React.FC = () => {
   const activeStep = isProcessing ? 2 : columns.length > 0 ? 3 : 1;
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8 pb-16 animate-fadeIn">
-      {/* View Header */}
-      <div className="text-center space-y-4">
-        <div className="space-y-2">
-          <h1 className={`font-heading text-3xl sm:text-4xl font-bold tracking-tight uppercase ${
-            isLight ? 'text-primary' : 'text-primary'
-          }`}>
-            INGEST &amp; ANALYZE BUSINESS DATA
-          </h1>
-          <p className={`text-sm max-w-xl mx-auto ${
-            isLight ? 'text-muted' : 'text-secondary'
-          }`}>
-            Upload your raw file or connect directly to any live database server. The engine validates structure, maps column roles, models star schemas, and compiles dashboards.
-          </p>
+    <div className="max-w-5xl mx-auto space-y-6 pb-16 animate-fadeIn">
+      {/* Shared PageHeader (Design System v3) or Classic Centered Header */}
+      {flags.designSystemV3 ? (
+        <PageHeader
+          pageId="upload"
+          primaryAction={{
+            label: 'Browse Local File',
+            onClick: () => fileInputRef.current?.click(),
+            icon: <UploadCloud className="w-3.5 h-3.5" />,
+            testId: 'upload-header-browse-btn',
+          }}
+          secondaryActions={[
+            {
+              label: 'Live Database Connector',
+              onClick: () => setCurrentTab('live_connector'),
+              icon: <Database className="w-3.5 h-3.5 text-accent" />,
+            },
+            {
+              label: 'Explore Analytics Packs',
+              onClick: () => setCurrentTab('analytics_packs'),
+              icon: <Layers className="w-3.5 h-3.5 text-accent" />,
+            },
+          ]}
+        />
+      ) : (
+        <div className="text-center space-y-4">
+          <div className="space-y-2">
+            <h1 className="font-heading text-3xl sm:text-4xl font-bold tracking-tight uppercase text-primary">
+              INGEST &amp; ANALYZE BUSINESS DATA
+            </h1>
+            <p className={`text-sm max-w-xl mx-auto ${isLight ? 'text-muted' : 'text-secondary'}`}>
+              Upload your raw file or connect directly to any live database server. The engine validates structure, maps column roles, models star schemas, and compiles dashboards.
+            </p>
+          </div>
         </div>
+      )}
 
-        {/* 3-Step Workflow Stepper */}
-        <div className="max-w-2xl mx-auto pt-2">
-          <ol className="grid grid-cols-3 gap-2 sm:gap-4 p-2.5 rounded-2xl border bg-card border-subtle shadow-xs">
-            {[
-              { step: 1, title: 'Select Source', sub: 'CSV, XLSX or Demo' },
-              { step: 2, title: 'Map Column Roles', sub: 'Types & Grain' },
-              { step: 3, title: 'Ready for BI', sub: `${cleanRows.length.toLocaleString()} rows active` }
-            ].map((item) => {
-              const isCompleted = activeStep > item.step;
-              const isCurrent = activeStep === item.step;
-              return (
-                <li
-                  key={item.step}
-                  className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-left transition-all ${
-                    isCurrent
-                      ? isLight
-                        ? 'bg-teal-50 border border-teal-200 text-teal-900'
-                        : 'bg-teal-500/10 border border-teal-500/30 text-teal-300'
-                      : isCompleted
-                      ? isLight
-                        ? 'bg-elevated text-muted'
-                        : 'bg-card text-secondary'
-                      : isLight
-                      ? 'text-secondary'
-                      : 'text-muted'
-                  }`}
-                >
-                  <span className={`w-6 h-6 rounded-full font-mono text-xs font-bold flex items-center justify-center shrink-0 ${
-                    isCurrent
-                      ? 'bg-teal-500 text-primary'
-                      : isCompleted
-                      ? 'bg-emerald-500/20 text-emerald-500 border border-emerald-500/40'
-                      : isLight
-                      ? 'bg-input text-muted'
-                      : 'bg-elevated text-secondary'
-                  }`}>
-                    {isCompleted ? '✓' : item.step}
-                  </span>
-                  <div className="min-w-0">
-                    <div className="text-xs font-bold truncate">{item.title}</div>
-                    <div className="text-[10px] font-mono opacity-75 truncate hidden sm:block">{item.sub}</div>
-                  </div>
-                </li>
-              );
-            })}
-          </ol>
-        </div>
+      {/* 3-Step Workflow Stepper & Ingestion Mode Switcher */}
+      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+        <ol className="grid grid-cols-3 gap-2 sm:gap-3 p-2 rounded-2xl border bg-card border-subtle shadow-xs flex-1">
+          {[
+            { step: 1, title: 'Select Source', sub: 'CSV, XLSX or Demo' },
+            { step: 2, title: 'Map Column Roles', sub: 'Types & Grain' },
+            { step: 3, title: 'Ready for BI', sub: `${cleanRows.length.toLocaleString()} rows active` }
+          ].map((item) => {
+            const isCompleted = activeStep > item.step;
+            const isCurrent = activeStep === item.step;
+            return (
+              <li
+                key={item.step}
+                className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-left transition-all ${
+                  isCurrent
+                    ? isLight
+                      ? 'bg-teal-50 border border-teal-200 text-teal-900'
+                      : 'bg-teal-500/10 border border-teal-500/30 text-teal-300'
+                    : isCompleted
+                    ? isLight
+                      ? 'bg-elevated text-muted'
+                      : 'bg-card text-secondary'
+                    : isLight
+                    ? 'text-secondary'
+                    : 'text-muted'
+                }`}
+              >
+                <span className={`w-6 h-6 rounded-full font-mono text-xs font-bold flex items-center justify-center shrink-0 ${
+                  isCurrent
+                    ? 'bg-teal-500 text-primary'
+                    : isCompleted
+                    ? 'bg-emerald-500/20 text-emerald-500 border border-emerald-500/40'
+                    : isLight
+                    ? 'bg-input text-muted'
+                    : 'bg-elevated text-secondary'
+                }`}>
+                  {isCompleted ? '✓' : item.step}
+                </span>
+                <div className="min-w-0">
+                  <div className="text-xs font-bold truncate">{item.title}</div>
+                  <div className="text-xs font-mono opacity-80 truncate hidden sm:block">{item.sub}</div>
+                </div>
+              </li>
+            );
+          })}
+        </ol>
 
         {/* Ingestion Mode Switcher */}
-        <div className="inline-flex p-1 rounded-2xl border gap-1 shadow-md bg-elevated border-subtle">
+        <div className="inline-flex p-1 rounded-2xl border gap-1 shadow-xs bg-elevated border-subtle self-center md:self-auto shrink-0">
           <button
             type="button"
-            className="px-5 py-2 rounded-xl text-xs font-bold transition-all bg-sky-600 text-primary shadow-md flex items-center gap-2"
+            className="min-h-[40px] px-4 py-2 rounded-xl text-xs font-bold transition-all bg-accent text-on-accent shadow-xs flex items-center gap-2"
           >
-            <UploadCloud className="w-4 h-4 text-primary" />
-            <span>Local Flat File Upload</span>
+            <UploadCloud className="w-4 h-4" />
+            <span>Local File Upload</span>
           </button>
           <button
             type="button"
             onClick={() => setCurrentTab('live_connector')}
-            className="px-5 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer text-secondary hover:text-primary hover:bg-card"
+            className="min-h-[40px] px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer text-secondary hover:text-primary hover:bg-card"
           >
-            <Database className="w-4 h-4 text-sky-600 dark:text-cyan-400" />
-            <span>Live Server &amp; Database Connector</span>
-            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-700 dark:text-cyan-400 border border-sky-500/30 animate-pulse">
+            <Database className="w-4 h-4 text-accent" />
+            <span>Live Database Connector</span>
+            <span className="text-xs font-mono px-1.5 py-0.5 rounded bg-accent-soft text-accent border border-subtle">
               Live
             </span>
           </button>
@@ -263,20 +283,20 @@ export const UploadIngestionView: React.FC = () => {
           </div>
 
           <div className="space-y-1.5">
-            <h3 className={`font-heading text-xl font-bold ${
-              isLight ? 'text-primary' : 'text-primary'
-            }`}>
-              DRAG &amp; DROP RAW SPREADSHEET OR FILE
+            <h3 className="font-heading text-xl font-bold text-primary">
+              {flags.designSystemV3
+                ? 'Drag & Drop Raw Spreadsheet or Data File'
+                : 'DRAG & DROP RAW SPREADSHEET OR FILE'}
             </h3>
-            <p className={`text-xs ${isLight ? 'text-muted' : 'text-secondary'}`}>
+            <p className={`text-sm ${isLight ? 'text-muted' : 'text-secondary'}`}>
               Supports CSV, Microsoft Excel (.xlsx, .xls), JSON, and Delimited TXT
             </p>
-            <div className="flex items-center justify-center gap-2 pt-1 font-mono text-[10px]">
+            <div className="flex items-center justify-center gap-2 pt-1 font-mono text-xs">
               {['.CSV', '.XLSX', '.XLS', '.JSON'].map(ext => (
                 <span
                   key={ext}
                   className={`px-2 py-0.5 rounded border ${
-                    isLight ? 'bg-elevated border-slate-200 text-muted' : 'bg-card border-slate-800 text-secondary'
+                    isLight ? 'bg-elevated border-subtle text-muted' : 'bg-card border-subtle text-secondary'
                   }`}
                 >
                   {ext}
@@ -288,11 +308,7 @@ export const UploadIngestionView: React.FC = () => {
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className={`px-6 py-2.5 rounded-xl text-xs font-semibold border transition-colors cursor-pointer ${
-              isLight 
-                ? 'bg-elevated hover:bg-input text-primary border-slate-300' 
-                : 'bg-elevated hover:bg-input text-primary border-slate-700'
-            }`}
+            className="min-h-[44px] px-6 py-2.5 rounded-xl text-xs font-semibold border transition-colors cursor-pointer bg-elevated hover:bg-input text-primary border-subtle"
           >
             Browse Local Machine
           </button>
@@ -301,7 +317,7 @@ export const UploadIngestionView: React.FC = () => {
 
       {/* Selected File Stage & Analyze Action */}
       {selectedFile && (
-        <div className="depth-card p-5 rounded-[20px] bg-card border border-accent/40 space-y-4">
+        <div className="depth-card p-5 rounded-[20px] bg-card border border-subtle space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-accent-soft text-accent flex items-center justify-center font-bold">
@@ -318,31 +334,31 @@ export const UploadIngestionView: React.FC = () => {
             <button
               onClick={executeAnalysis}
               disabled={isProcessing}
-              className="px-6 py-3 rounded-xl bg-accent hover:opacity-95 text-on-accent font-heading text-sm font-bold tracking-wide uppercase transition-all flex items-center gap-2 disabled:opacity-50 cursor-pointer shadow-lg"
+              className="min-h-[44px] px-6 py-3 rounded-xl bg-accent hover:opacity-95 text-on-accent font-heading text-sm font-bold tracking-wide transition-all flex items-center gap-2 disabled:opacity-50 cursor-pointer shadow-lg"
             >
               {isProcessing ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  <span>PROCESSING...</span>
+                  <span>Processing...</span>
                 </>
               ) : (
                 <>
                   <Sparkles className="w-5 h-5" />
-                  <span>ANALYZE MY DATA</span>
+                  <span>Analyze My Data</span>
                 </>
               )}
             </button>
           </div>
 
           {isProcessing && (
-            <div className="pt-3 border-t border-slate-800 text-xs font-mono text-teal-400 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-teal-400 animate-ping" />
+            <div className="pt-3 border-t border-subtle text-xs font-mono text-accent flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-accent animate-ping" />
               {pipelineStep}
             </div>
           )}
 
           {error && (
-            <div className="pt-3 border-t border-rose-500/30 text-xs text-rose-400 flex items-center gap-2">
+            <div className="pt-3 border-t border-subtle text-xs text-danger flex items-center gap-2">
               <AlertCircle className="w-4 h-4" />
               {error}
             </div>
@@ -350,7 +366,7 @@ export const UploadIngestionView: React.FC = () => {
         </div>
       )}
 
-      {/* Post-Upload Analytics Pack Detection Banner */}
+      {/* Post-Upload Analytics Pack Detection Banner — Redesigned Full-Width Card (Phase 3.4) */}
       {flags.analyticsPacks && columns.length > 0 && detectedPacks.length > 0 && (() => {
         const topMatch = detectedPacks[0];
         const isUncertain = topMatch.isUncertain || topMatch.confidence < 60;
@@ -373,11 +389,11 @@ export const UploadIngestionView: React.FC = () => {
                   } as React.CSSProperties)
                 : undefined
             }
-            className="depth-card pack-insight-banner rounded-[20px] p-5 border bg-card border-subtle shadow-sm space-y-4"
+            className="depth-card pack-insight-banner w-full rounded-[20px] p-5 sm:p-6 border bg-card border-subtle shadow-sm space-y-5"
           >
-            <div className="flex flex-wrap items-center justify-between gap-5">
-              {/* Left: Circular SVG Confidence Gauge + Title */}
-              <div className="flex items-center gap-4 min-w-0 flex-1">
+            {/* Top Row: Gauge + Full-Width Headline + Action Toolbar */}
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div className="flex items-start sm:items-center gap-4 min-w-0 flex-1">
                 <div className="relative w-14 h-14 flex items-center justify-center shrink-0">
                   <svg width="56" height="56" viewBox="0 0 56 56" className="-rotate-90" aria-hidden="true">
                     <circle
@@ -401,7 +417,7 @@ export const UploadIngestionView: React.FC = () => {
                     />
                   </svg>
                   <span
-                    className="absolute text-[11px] font-mono tabular-nums font-bold"
+                    className="absolute text-xs font-mono tabular-nums font-bold"
                     style={{ color: topAccent }}
                   >
                     {topMatch.confidence}%
@@ -414,9 +430,9 @@ export const UploadIngestionView: React.FC = () => {
                       {isUncertain ? 'Low Schema Confidence (<60%)' : 'Recommended for your data'}
                     </span>
                     <span aria-hidden="true">·</span>
-                    <span>{columns.length} columns analyzed</span>
+                    <span>{columns.length} columns analyzed across {cleanRows.length.toLocaleString()} rows</span>
                   </div>
-                  <h3 className="font-heading text-base sm:text-lg font-bold text-primary">
+                  <h3 className="font-heading text-lg sm:text-xl font-bold text-primary leading-snug">
                     {isUncertain
                       ? `Not sure, pick one — closest match is ${topMatch.packName} (${topMatch.confidence}%)`
                       : `Best Match: ${topMatch.packName} (${topMatch.confidence}% schema match)`}
@@ -424,35 +440,7 @@ export const UploadIngestionView: React.FC = () => {
                 </div>
               </div>
 
-              {/* Center: Top 3 Matches Horizontal Bars */}
-              <div className="w-full md:w-64 space-y-1.5">
-                {detectedPacks.slice(0, 3).map(match => {
-                  const matchPack = allPacks.find(p => p.id === match.packId) as any;
-                  const barColor =
-                    match.confidence < 60
-                      ? 'var(--warning)'
-                      : matchPack?.theme?.gradientFrom || 'var(--accent)';
-                  return (
-                    <div key={match.packId} className="space-y-0.5">
-                      <div className="flex items-center justify-between text-[11px] font-mono tabular-nums">
-                        <span className="text-primary font-medium truncate max-w-[160px]">{match.packName}</span>
-                        <span className="text-secondary font-bold">{match.confidence}%</span>
-                      </div>
-                      <div className="w-full h-1.5 rounded-full bg-elevated overflow-hidden border border-subtle">
-                        <div
-                          className="h-full rounded-full"
-                          style={{
-                            width: `${Math.max(6, match.confidence)}%`,
-                            backgroundColor: barColor,
-                          }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Right: Actions */}
+              {/* Actions */}
               <div className="flex flex-wrap items-center gap-2 shrink-0">
                 <label className="sr-only" htmlFor="upload-change-pack-select">
                   Change pack
@@ -497,6 +485,59 @@ export const UploadIngestionView: React.FC = () => {
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               </div>
+            </div>
+
+            {/* Bottom Row: Full-Width 3-Column Recommended Pack Cards */}
+            <div
+              data-testid="upload-top-pack-matches-grid"
+              className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4 border-t border-subtle"
+            >
+              {detectedPacks.slice(0, 3).map((match, idx) => {
+                const matchPack = allPacks.find(p => p.id === match.packId) as any;
+                const barColor =
+                  match.confidence < 60
+                    ? 'var(--warning)'
+                    : matchPack?.theme?.gradientFrom || 'var(--accent)';
+                const isSelectedPack = activePackId === match.packId;
+                return (
+                  <button
+                    key={match.packId}
+                    type="button"
+                    onClick={() => handlePackSelectChange(match.packId)}
+                    className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-2 ${
+                      isSelectedPack
+                        ? 'bg-elevated border-strong shadow-xs'
+                        : 'bg-input/70 border-subtle hover:bg-elevated'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="space-y-0.5 min-w-0">
+                        <span className="text-xs font-mono text-muted block">
+                          Rank #{idx + 1}
+                        </span>
+                        <span className="text-sm font-bold text-primary block leading-snug">
+                          {match.packName}
+                        </span>
+                      </div>
+                      <span
+                        className="text-xs font-mono tabular-nums font-bold px-2 py-0.5 rounded-md bg-card border border-subtle shrink-0"
+                        style={{ color: barColor }}
+                      >
+                        {match.confidence}%
+                      </span>
+                    </div>
+                    <div className="w-full h-1.5 rounded-full bg-card overflow-hidden border border-subtle">
+                      <div
+                        className="h-full rounded-full transition-all"
+                        style={{
+                          width: `${Math.max(8, match.confidence)}%`,
+                          backgroundColor: barColor,
+                        }}
+                      />
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
         );

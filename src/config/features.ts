@@ -37,6 +37,11 @@ export interface FeatureFlags {
   chartGuide: boolean;
   unifiedTheme: boolean;
   analyticsPacks: boolean;
+  designSystemV3: boolean;
+  analystFeatures: boolean;
+  dataEngineerFeatures: boolean;
+  southAsiaLocale: boolean;
+  productQuality: boolean;
 }
 
 export const CLASSIC_FEATURE_FLAGS: FeatureFlags = {
@@ -60,6 +65,11 @@ export const CLASSIC_FEATURE_FLAGS: FeatureFlags = {
   chartGuide: false,
   unifiedTheme: false,
   analyticsPacks: false,
+  designSystemV3: false,
+  analystFeatures: false,
+  dataEngineerFeatures: false,
+  southAsiaLocale: false,
+  productQuality: false,
 };
 
 export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
@@ -83,6 +93,11 @@ export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
   chartGuide: true,
   unifiedTheme: true,
   analyticsPacks: true,
+  designSystemV3: true,
+  analystFeatures: true,
+  dataEngineerFeatures: true,
+  southAsiaLocale: true,
+  productQuality: true,
 };
 
 export const FEATURE_METADATA: FeatureFlagMeta[] = [
@@ -245,6 +260,46 @@ export const FEATURE_METADATA: FeatureFlagMeta[] = [
     description: 'Enables data-driven domain analytics packs (Financial, Sales, Marketing, Customer, Product, Web, Operations, HR, Risk/Fraud, Healthcare, Retail, Manufacturing, Banking/Insurance, Education) with auto-detection, role mapping, 8–16 KPIs, 6–8 intent charts, 4 lenses, and reports.',
     classicBehavior: 'Single general-purpose Executive Dashboard without domain-specific pack detection.',
     newBehavior: '14 domain Analytics Packs with auto-detection banner, role mapping, pack dashboards, and zero-data template downloads.'
+  },
+  {
+    key: 'designSystemV3',
+    label: 'Design System v3 (Typography, PageHeader & Simple/Pro Nav)',
+    category: 'ui',
+    description: 'Enables sentence-case display typography scale (>=12px min, 14px body), shared PageHeader & ActionBar, Simple/Pro navigation toggle, guided workflow stepper, and universal Ctrl+K command palette.',
+    classicBehavior: 'Classic per-page headers and navigation lists.',
+    newBehavior: 'Unified sentence-case typography, shared PageHeader & ActionBar, Simple/Pro navigation, and guided stepper.'
+  },
+  {
+    key: 'analystFeatures',
+    label: 'Data Analyst Workbench (Targets, Period Compare, Tools & Pivot)',
+    category: 'engine',
+    description: 'Adds per-KPI targets & quota lines, global MoM/QoQ/YoY period comparison, interactive Analysis Tools (Cohort, Funnel, A/B Test, What-If, Pareto, RFM), Calculated Fields, and Pivot Table.',
+    classicBehavior: 'Standard KPI cards and statistical charts.',
+    newBehavior: 'Interactive KPI targets, period comparison deltas, 7 Analysis Tools, custom formula builder, and pivot matrix.'
+  },
+  {
+    key: 'dataEngineerFeatures',
+    label: 'Data Engineering Suite v2 (Multi-Table, Drift, Persistence & Live Proxy)',
+    category: 'engine',
+    description: 'Adds multi-file upload/join/union, IndexedDB persistence with dataset versioning, schema drift report, real executed ETL pipeline timings/tests, and SSRF-hardened live database proxy.',
+    classicBehavior: 'Single-file session memory and static pipeline preview.',
+    newBehavior: 'Persistent datasets with version diff, schema drift detection, multi-table joins, and live data tests.'
+  },
+  {
+    key: 'southAsiaLocale',
+    label: 'South Asia & Pakistan Localisation (Urdu RTL & PKR/Lakh/Crore)',
+    category: 'ui',
+    description: 'Adds English / Urdu (RTL) / Roman-Urdu localisation, PKR currency option, lakh/crore number grouping (12,34,567), DD/MM/YYYY dates, and RTL presentation exports.',
+    classicBehavior: 'Standard US/Western number grouping and LTR English labels.',
+    newBehavior: 'Full English/Urdu RTL switch, Roman-Urdu hints, and PKR lakh/crore formatting across UI and exports.'
+  },
+  {
+    key: 'productQuality',
+    label: 'Product Quality & Onboarding Guardrails (In-App Help, PWA & Problem Reporter)',
+    category: 'core',
+    description: 'Adds real completion-tracked onboarding checklist, contextual "?" page guides, opt-in privacy-safe telemetry, Report a Problem modal, and offline PWA support.',
+    classicBehavior: 'Static help documentation tab only.',
+    newBehavior: 'Live onboarding progress tracker, per-page "?" guides, problem diagnostics, and installable PWA shell.'
   }
 ];
 

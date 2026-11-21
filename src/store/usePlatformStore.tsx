@@ -27,6 +27,7 @@ import { DEMO_DATASETS, DemoDatasetInfo } from '../data/demoDatasets';
 import { toast } from './useToast';
 import { safeMin, safeMax } from '../utils/mathUtils';
 import { applyDocumentTheme, subscribeSystemThemeChange } from '../utils/theme';
+import { APP_VERSION_LABEL, toDatasetIdentifier } from '../config/appVersion';
 
 export type NavigationTab = 
   | 'landing'
@@ -253,7 +254,7 @@ const defaultBrand: BrandConfig = {
 };
 
 const defaultProject: ProjectMetadata = {
-  id: 'proj-001',
+  id: toDatasetIdentifier('Global Enterprise Technology Sales & Margin Telemetry', 'enterprise_sales_margin_telemetry.csv'),
   name: 'Global Enterprise Technology Sales & Margin Telemetry',
   companyName: 'Data Analytix',
   department: 'Strategic Analytics & BI',
@@ -261,7 +262,7 @@ const defaultProject: ProjectMetadata = {
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
   isDemo: false,
-  version: 'v1.0.0',
+  version: APP_VERSION_LABEL,
   dataQualityScore: 96,
   rowCount: 120,
   columnCount: 12,
@@ -271,7 +272,21 @@ const defaultProject: ProjectMetadata = {
 const PlatformContext = createContext<PlatformContextType | null>(null);
 
 export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentTab, setCurrentTab] = useState<NavigationTab>('executive_dashboard');
+  const [currentTab, setCurrentTabState] = useState<NavigationTab>('executive_dashboard');
+  const setCurrentTab = React.useCallback((tab: NavigationTab) => {
+    setCurrentTabState(tab);
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        const raw = window.localStorage.getItem('dataanalytix_recent_tabs');
+        const prev: NavigationTab[] = raw ? JSON.parse(raw) : [];
+        const next = [tab, ...prev.filter(t => t !== tab)].slice(0, 5);
+        window.localStorage.setItem('dataanalytix_recent_tabs', JSON.stringify(next));
+        window.dispatchEvent(new CustomEvent('dataanalytix:recent-tabs-updated', { detail: next }));
+      } catch {
+        // ignore quota errors
+      }
+    }
+  }, []);
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(
     typeof window !== 'undefined' ? window.innerWidth >= 1024 : true
   );
@@ -646,7 +661,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     ]);
 
     setProject({
-      id: `demo-${demo.id}`,
+      id: toDatasetIdentifier(demo.name, demo.fileName),
       name: demo.name,
       companyName: 'Badar Analytics Technologies',
       department: 'Enterprise Intelligence',
@@ -654,7 +669,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       isDemo: false,
-      version: 'v1.0.0',
+      version: APP_VERSION_LABEL,
       dataQualityScore: qual.overallScore,
       rowCount: typed.length,
       columnCount: cols.length,
@@ -755,16 +770,17 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setDaxMeasures(dax);
       setTransformations([autoCleanStep]);
 
+      const cleanProjectName = parsed.tableName.replace(/_/g, ' ');
       setProject({
-        id: `proj-${Date.now()}`,
-        name: parsed.tableName.replace(/_/g, ' '),
+        id: toDatasetIdentifier(cleanProjectName, parsed.fileName),
+        name: cleanProjectName,
         companyName: brand.companyName,
         department: brand.department,
         author: brand.author,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         isDemo: false, // REAL USER DATA
-        version: 'v1.0.0',
+        version: APP_VERSION_LABEL,
         dataQualityScore: qual.overallScore,
         rowCount: cleanedRows.length,
         columnCount: parsed.columns.length,
@@ -894,7 +910,17 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }
 
   function updateProjectMetadata(updates: Partial<ProjectMetadata>) {
-    setProject(prev => ({ ...prev, ...updates, updatedAt: new Date().toISOString() }));
+    setProject(prev => {
+      const nextName = updates.name ?? prev.name;
+      const nextSource = updates.sourceFileName ?? prev.sourceFileName;
+      return {
+        ...prev,
+        ...updates,
+        id: updates.id ?? toDatasetIdentifier(nextName, nextSource),
+        version: APP_VERSION_LABEL,
+        updatedAt: new Date().toISOString()
+      };
+    });
   }
 
   function ingestDatasetFromRows(
@@ -938,21 +964,23 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         Boolean(metadata?.database) &&
         metadata?.connectionType !== 'PACK_SAMPLE' &&
         !sourceName.toLowerCase().includes(String(metadata?.database || '').toLowerCase());
+      const resolvedName = shouldPrefixDb ? `${metadata!.database} / ${sourceName}` : sourceName;
+      const resolvedSourceFile = `${sourceName} [${metadata?.connectionType?.toUpperCase() || 'LIVE'}]`;
 
       setProject({
-        id: `live-${Date.now()}`,
-        name: shouldPrefixDb ? `${metadata!.database} / ${sourceName}` : sourceName,
+        id: toDatasetIdentifier(resolvedName, resolvedSourceFile),
+        name: resolvedName,
         companyName: brand.companyName,
         department: brand.department,
         author: brand.author,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         isDemo: false,
-        version: 'v1.0.0',
+        version: APP_VERSION_LABEL,
         dataQualityScore: qual.overallScore,
         rowCount: typed.length,
         columnCount: cols.length,
-        sourceFileName: `${sourceName} [${metadata?.connectionType?.toUpperCase() || 'LIVE'}]`
+        sourceFileName: resolvedSourceFile
       });
 
       logAction('LIVE_DATA_INGESTED', `Connected & ingested ${typed.length} records from ${metadata?.serverHost || 'live server'} (${sourceName}).`);

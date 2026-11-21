@@ -11,6 +11,7 @@ import { loadFeatureFlags, FeatureFlags } from './config/features';
 import { updateHashForTab, getTabFromCurrentHash } from './utils/routing';
 import { applyDocumentTheme } from './utils/theme';
 import { useThemeTransition } from './hooks/useThemeTransition';
+import { GuidedWorkflowStepper } from './components/common/GuidedWorkflowStepper';
 import './styles/modern.css';
 
 // Code-split views and heavy overlays using React.lazy for fast initial load
@@ -70,18 +71,23 @@ const MainContent: React.FC = () => {
   const [isWelcomeModalOpen, setIsWelcomeModalOpen] = useState(false);
   const isThemeTransitioning = useThemeTransition(themeMode, 280);
 
-  // Global Ctrl+K / Cmd+K keyboard shortcut for Command Palette in Modern UI
+  // Global Ctrl+K / Cmd+K keyboard shortcut and custom trigger event for Command Palette (Phase 3.3)
   useEffect(() => {
-    if (uiMode !== 'modern') return;
+    if (uiMode !== 'modern' && !flags.designSystemV3) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         setIsCommandPaletteOpen(prev => !prev);
       }
     };
+    const handleOpenEvent = () => setIsCommandPaletteOpen(true);
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [uiMode]);
+    window.addEventListener('dataanalytix:open-command-palette', handleOpenEvent);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('dataanalytix:open-command-palette', handleOpenEvent);
+    };
+  }, [uiMode, flags.designSystemV3]);
 
   useEffect(() => {
     const handleFlagsUpdate = (e: any) => {

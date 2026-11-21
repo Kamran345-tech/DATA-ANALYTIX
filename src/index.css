@@ -2126,5 +2126,50 @@ html[data-unified-theme="true"] .recharts-cartesian-grid line {
   }
 }
 
+/* ========================================================================== */
+/* PHASE 3: DESIGN SYSTEM V3 TYPOGRAPHY, HEADING SCALE & ACCESSIBILITY        */
+/* ========================================================================== */
+html[data-design-system-v3="true"] main {
+  font-size: 0.875rem; /* 14px body default */
+  line-height: 1.5;
+}
 
+html[data-design-system-v3="true"] main h1,
+html[data-design-system-v3="true"] main h2,
+html[data-design-system-v3="true"] main h3,
+html[data-design-system-v3="true"] main h4 {
+  font-family: var(--font-heading);
+  text-transform: none !important;
+  letter-spacing: -0.02em;
+}
 
+html[data-design-system-v3="true"] main h1 {
+  font-size: clamp(1.5rem, 2.2vw, 2rem);
+  line-height: 1.2;
+}
+
+html[data-design-system-v3="true"] main h2 {
+  font-size: clamp(1.25rem, 1.6vw, 1.5rem);
+  line-height: 1.28;
+}
+
+html[data-design-system-v3="true"] main h3 {
+  font-size: clamp(1.0625rem, 1.25vw, 1.25rem);
+  line-height: 1.32;
+}
+
+/* Minimum 12px (0.75rem) for any micro-label across main views and navigation */
+html[data-design-system-v3="true"] main [class*="text-[9px]"],
+html[data-design-system-v3="true"] main [class*="text-[10px]"],
+html[data-design-system-v3="true"] main [class*="text-[11px]"],
+html[data-design-system-v3="true"] nav [class*="text-[9px]"],
+html[data-design-system-v3="true"] nav [class*="text-[10px]"],
+html[data-design-system-v3="true"] nav [class*="text-[11px]"] {
+  font-size: 0.75rem !important;
+  line-height: 1.125rem !important;
+}
+
+html[data-design-system-v3="true"] :focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}

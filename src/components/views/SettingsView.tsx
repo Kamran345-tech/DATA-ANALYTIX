@@ -43,6 +43,8 @@ import {
   exportLearningJson,
   AdaptiveLearningStoreState,
 } from '../../analytics/learning/adaptiveLearningEngine';
+import { PageHeader } from '../common/PageHeader';
+import { APP_VERSION_LABEL, toDatasetIdentifier } from '../../config/appVersion';
 
 export const SettingsView: React.FC = () => {
   const { 
