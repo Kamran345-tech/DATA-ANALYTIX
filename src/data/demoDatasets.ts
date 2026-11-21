@@ -77,6 +77,13 @@ export const DEMO_DATASETS: DemoDatasetInfo[] = [
         const grossProfit = netRevenue - cogs;
         const marginPct = Math.round((grossProfit / (netRevenue || 1)) * 1000) / 10;
         const quotaTarget = Math.round(netRevenue * (0.94 + ((i % 5) * 0.03)));
+        const reps = ['Elena Vance', 'Marcus Sterling', 'Priya Patel', 'David Kim', 'Sofia Rossi', 'Liam O\'Connor'];
+        const stages = ['Closed Won', 'Closed Won', 'Negotiation', 'Proposal', 'Qualification'];
+        const dealsWon = 1 + (i % 4);
+        const totalOpportunities = dealsWon + 2 + (i % 3);
+        const openPipelineValue = Math.round(quotaTarget * (2.6 + ((i % 4) * 0.25)));
+        const salesCycleDays = 24 + ((i * 5) % 28);
+        const discountRatePct = Math.round(discountRate * 1000) / 10;
 
         rows.push({
           OrderId: `ORD-2025-${(10000 + i).toString()}`,
@@ -86,6 +93,8 @@ export const DEMO_DATASETS: DemoDatasetInfo[] = [
           Region: region,
           Country: country,
           SalesChannel: channel,
+          SalesRep: reps[i % reps.length],
+          DealStage: stages[i % stages.length],
           ProductCategory: prod.cat,
           ProductSubcategory: prod.sub,
           ProductName: prod.name,
@@ -93,11 +102,16 @@ export const DEMO_DATASETS: DemoDatasetInfo[] = [
           UnitPrice: unitPrice,
           GrossRevenue: grossRev,
           DiscountAmount: discountAmount,
+          DiscountRatePct: discountRatePct,
           NetRevenue: netRevenue,
           CostOfGoodsSold: cogs,
           GrossProfit: grossProfit,
           GrossMarginPct: marginPct,
           SalesQuotaTarget: quotaTarget,
+          DealsWon: dealsWon,
+          TotalOpportunities: totalOpportunities,
+          OpenPipelineValue: openPipelineValue,
+          SalesCycleDays: salesCycleDays,
           CustomerCohort: cohort
         });
       }

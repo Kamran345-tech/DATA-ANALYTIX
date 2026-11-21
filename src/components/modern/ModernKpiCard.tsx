@@ -241,20 +241,27 @@ export const ModernKpiCard: React.FC<ModernKpiCardProps> = ({
       </div>
 
       <div className="flex items-end justify-between gap-2 min-w-0">
-        <div
-          data-testid={resolvedId ? `kpi-value-${resolvedId}` : 'kpi-value'}
-          className={`font-bold font-mono tabular-nums leading-none tracking-[-0.03em] shrink-0 whitespace-nowrap ${
-            useDepthVisuals ? 'animate-kpi-reveal' : ''
-          } ${
-            unavailable
-              ? 'text-base sm:text-lg text-muted'
-              : isHero && useDepthVisuals
-              ? 'text-2xl sm:text-[28px] text-primary'
-              : 'text-xl sm:text-[24px] text-primary'
-          }`}
-        >
-          {resolvedValue}
-        </div>
+        {unavailable ? (
+          <div
+            data-testid={resolvedId ? `kpi-value-${resolvedId}` : 'kpi-value'}
+            className="text-xs sm:text-sm font-mono font-semibold text-secondary leading-snug break-words"
+          >
+            {unavailableHint || unavailableReason || 'Map required column to compute'}
+          </div>
+        ) : (
+          <div
+            data-testid={resolvedId ? `kpi-value-${resolvedId}` : 'kpi-value'}
+            className={`font-bold font-mono tabular-nums leading-none tracking-[-0.03em] shrink-0 whitespace-nowrap ${
+              useDepthVisuals ? 'animate-kpi-reveal' : ''
+            } ${
+              isHero && useDepthVisuals
+                ? 'text-2xl sm:text-[28px] text-primary'
+                : 'text-xl sm:text-[24px] text-primary'
+            }`}
+          >
+            {resolvedValue}
+          </div>
+        )}
         {sparkPath && (
           <svg
             width={isHero ? 96 : 80}
@@ -297,7 +304,7 @@ export const ModernKpiCard: React.FC<ModernKpiCardProps> = ({
             <div
               data-testid={resolvedId ? `kpi-missing-col-${resolvedId}` : 'kpi-missing-col'}
               title={unavailableHint || unavailableReason || 'Missing required column'}
-              className="text-[11px] font-mono text-secondary truncate"
+              className="text-[11px] font-mono text-muted truncate"
             >
               {unavailableHint || unavailableReason || 'Add required column to compute'}
             </div>
@@ -309,7 +316,7 @@ export const ModernKpiCard: React.FC<ModernKpiCardProps> = ({
                   e.stopPropagation();
                   onMapColumn();
                 }}
-                className="shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-md bg-card hover:bg-card-hover text-primary border border-subtle text-[10px] font-semibold transition-colors cursor-pointer"
+                className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-card hover:bg-card-hover text-primary border border-subtle text-[10px] font-semibold transition-colors cursor-pointer"
               >
                 <SlidersHorizontal className="w-3 h-3 text-accent" />
                 <span>Map column</span>

@@ -309,7 +309,7 @@ test.describe('Analytics Packs E2E Verification Suite', () => {
     page,
   }) => {
     test.setTimeout(150000);
-    const outDir = 'public/assets/qa-packs';
+    const outDir = 'test-results/qa-packs';
     fs.mkdirSync(outDir, { recursive: true });
 
     const viewports = [
@@ -418,7 +418,7 @@ test.describe('Analytics Packs E2E Verification Suite', () => {
     page,
   }) => {
     test.setTimeout(180000);
-    const outDir = 'public/assets/qa-phase123';
+    const outDir = 'test-results/qa-phase123';
     fs.mkdirSync(outDir, { recursive: true });
 
     await page.setViewportSize({ width: 1440, height: 900 });
@@ -597,7 +597,7 @@ test.describe('Analytics Packs E2E Verification Suite', () => {
     page,
   }) => {
     test.setTimeout(120000);
-    const outDir = 'public/assets/qa-phase4';
+    const outDir = 'test-results/qa-phase4';
     fs.mkdirSync(outDir, { recursive: true });
 
     await page.setViewportSize({ width: 1440, height: 900 });
@@ -615,6 +615,7 @@ test.describe('Analytics Packs E2E Verification Suite', () => {
     await page.getByTestId('purpose-related-link-reports').click();
     await expect(page.getByTestId('page-purpose-bar-reports')).toBeVisible();
     await expect(page.getByTestId('pptx-slide-deck-preview-panel')).toBeVisible();
+    await expect(page.getByTestId('pptx-preview-slide-count')).toContainText('13 Slides Ready');
 
     // Verify all 3 rendered slides are visible in the 3-Slide Storyboard
     const slide1 = page.getByTestId('rendered-slide-1');

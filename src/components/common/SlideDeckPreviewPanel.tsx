@@ -14,14 +14,16 @@ import {
   BarChart3,
   Compass,
   ShieldCheck,
+  Activity,
+  LineChart,
+  Lightbulb,
 } from 'lucide-react';
 import { usePlatform } from '../../store/usePlatformStore';
 import { useToast } from '../../store/useToast';
 import { loadFeatureFlags } from '../../config/features';
-import { ANALYTICS_PACKS, detectPack } from '../../analytics';
+import { ANALYTICS_PACKS, pickBestPackForDataset } from '../../analytics';
 import {
   buildPresentationSlides,
-  generatePresentationPptxBlob,
   PresentationAudience,
   PresentationSlideSpec,
 } from '../../engine/pptxGenerator';
@@ -43,9 +45,9 @@ export const SlideDeckPreviewPanel: React.FC = () => {
 
   const activeRows = filteredRows && filteredRows.length > 0 ? filteredRows : cleanRows;
 
-  // Auto-select active or top detected pack
+  // Auto-select active or best pack with highest active-KPI count for loaded dataset (FIX 3)
   const detectedTopPackId = useMemo(() => {
-    if ( typeof window !== 'undefined') {
+    if (typeof window !== 'undefined') {
       const saved =
         localStorage.getItem('dataanalytix_active_pack_id') ||
         localStorage.getItem('dataanalytix_active_pack');
@@ -53,12 +55,13 @@ export const SlideDeckPreviewPanel: React.FC = () => {
         return saved;
       }
     }
-    const matches = detectPack({
-      columns,
-      rows: activeRows,
-      datasetId: project?.id || 'default',
-    });
-    return matches[0]?.packId || 'operations';
+    return (
+      pickBestPackForDataset({
+        columns,
+        rows: activeRows,
+        datasetId: project?.id || 'default',
+      }) || 'operations'
+    );
   }, [columns, activeRows, project?.id]);
 
   const [selectedPackId, setSelectedPackId] = useState<string>(detectedTopPackId);
@@ -105,7 +108,7 @@ export const SlideDeckPreviewPanel: React.FC = () => {
   ]);
 
   // Select 3 representative slides for the 3-Slide Storyboard:
-  // 1) Cover & Executive Takeaways, 2) Domain KPI Scorecard, 3) Visual Breakdown & 4-Lens Directives
+  // 1) Title & Executive Takeaways, 2) Domain KPI Scorecard (6-8 active tiles), 3) Native Chart & 4-Lens Directives
   const storyboardSlides = useMemo<PresentationSlideSpec[]>(() => {
     const coverSlide = slides.find((s) => s.kind === 'cover') || slides[0];
     const kpiSlide =
@@ -115,17 +118,19 @@ export const SlideDeckPreviewPanel: React.FC = () => {
       slides[0];
     const chartSlide =
       slides.find((s) => s.kind === 'charts') ||
-      slides.find((s) => s.kind === 'insights') ||
+      slides.find((s) => s.kind === 'diagnostic') ||
       slides[2] ||
       slides[0];
     return [coverSlide, kpiSlide, chartSlide].filter(Boolean);
   }, [slides]);
 
-  const currentStageSlide = slides[Math.min(activeSlideIdx, Math.max(0, slides.length - 1))] || slides[0];
+  const currentStageSlide =
+    slides[Math.min(activeSlideIdx, Math.max(0, slides.length - 1))] || slides[0];
 
   const handleDownloadPptx = async () => {
     setIsDownloading(true);
     try {
+      const { generatePresentationPptxBlob } = await import('../../engine/pptxGenerator');
       const { blob, slideCount } = await generatePresentationPptxBlob({
         datasetName: project?.name || 'Enterprise Dataset',
         companyName: brand.companyName,
@@ -164,7 +169,7 @@ export const SlideDeckPreviewPanel: React.FC = () => {
       addToast({
         type: 'success',
         title: 'PPTX Presentation Downloaded',
-        message: `Generated ${slideCount}-slide 16:9 PowerPoint deck: ${filename}`,
+        message: `Generated ${slideCount}-slide 16:9 PowerPoint deck with native charts: ${filename}`,
       });
     } catch (err: any) {
       addToast({
@@ -182,10 +187,13 @@ export const SlideDeckPreviewPanel: React.FC = () => {
   }
 
   const renderSlideCard = (slide: PresentationSlideSpec, testId: string, badgeLabel: string) => {
+    const activeKpisOnly = slide.kpis.filter((k) => k.status === 'available');
+
     return (
       <div
         key={`${testId}-${slide.id}`}
         data-testid={testId}
+        aria-label={slide.altText}
         style={
           {
             '--pack-from': slide.accentToken,
@@ -203,7 +211,7 @@ export const SlideDeckPreviewPanel: React.FC = () => {
           }}
         />
 
-        <div className="p-4 sm:p-5 space-y-3.5 flex-1 flex flex-col justify-between min-w-0">
+        <div className="p-4 sm:p-5 space-y-3 flex-1 flex flex-col justify-between min-w-0">
           {/* Slide Top Meta Header */}
           <div className="space-y-1.5 min-w-0">
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -227,39 +235,41 @@ export const SlideDeckPreviewPanel: React.FC = () => {
               {slide.title}
             </h3>
             <p className="text-[11px] font-sans text-secondary line-clamp-2 leading-relaxed">
-              {slide.subtitle}
+              {slide.soWhat}
             </p>
           </div>
 
           {/* Slide Body according to slide.kind */}
           {(slide.kind === 'cover' || slide.kind === 'executive_summary') && (
             <div className="space-y-3 my-auto">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                {slide.headlineMetrics.slice(0, 3).map((m, i) => (
-                  <div
-                    key={i}
-                    className="p-2.5 rounded-xl bg-elevated border border-subtle flex flex-col justify-between gap-1 min-w-0"
-                  >
-                    <span className="text-[9.5px] font-semibold uppercase tracking-wide text-secondary line-clamp-2 leading-tight break-words">
-                      {m.label}
-                    </span>
-                    <div className="flex flex-col gap-0.5 mt-0.5">
-                      <span className="text-sm sm:text-base font-bold font-mono tabular-nums text-primary whitespace-nowrap">
-                        {m.value}
+              {slide.headlineMetrics.length > 0 && (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  {slide.headlineMetrics.slice(0, 3).map((m, i) => (
+                    <div
+                      key={i}
+                      className="p-2.5 rounded-xl bg-elevated border border-subtle flex flex-col justify-between gap-1 min-w-0"
+                    >
+                      <span className="text-[9.5px] font-semibold uppercase tracking-wide text-secondary line-clamp-2 leading-tight break-words">
+                        {m.label}
                       </span>
-                      {m.delta && (
-                        <span
-                          className={`text-[10px] font-mono font-semibold whitespace-nowrap ${
-                            m.isFavorable ? 'text-success' : 'text-danger'
-                          }`}
-                        >
-                          {m.delta}
+                      <div className="flex flex-col gap-0.5 mt-0.5">
+                        <span className="text-sm sm:text-base font-bold font-mono tabular-nums text-primary whitespace-nowrap">
+                          {m.value}
                         </span>
-                      )}
+                        {m.delta && (
+                          <span
+                            className={`text-[10px] font-mono font-semibold whitespace-nowrap ${
+                              m.isFavorable ? 'text-success' : 'text-danger'
+                            }`}
+                          >
+                            {m.delta}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
 
               <div className="p-3 rounded-xl bg-elevated border border-subtle space-y-1.5">
                 <div
@@ -272,7 +282,7 @@ export const SlideDeckPreviewPanel: React.FC = () => {
                   </span>
                 </div>
                 <ul className="space-y-1 text-[11px] font-sans text-primary">
-                  {slide.bullets.slice(0, 3).map((b, idx) => (
+                  {slide.bullets.slice(0, 4).map((b, idx) => (
                     <li key={idx} className="line-clamp-2 leading-snug">
                       • {b}
                     </li>
@@ -283,54 +293,68 @@ export const SlideDeckPreviewPanel: React.FC = () => {
           )}
 
           {slide.kind === 'kpis' && (
-            <div className="grid grid-cols-2 gap-2 my-auto">
-              {slide.kpis.slice(0, 6).map((k) => {
-                const hasDelta =
-                  typeof k.deltaPercent === 'number' && Number.isFinite(k.deltaPercent);
-                return (
-                  <div
-                    key={k.id}
-                    className="p-2.5 rounded-xl bg-elevated border border-subtle flex flex-col justify-between gap-1 min-w-0"
-                  >
-                    <span className="text-[10px] font-semibold uppercase tracking-wide text-secondary line-clamp-2 leading-tight break-words">
-                      {k.label}
-                    </span>
-                    <div className="flex items-baseline justify-between gap-1.5 flex-wrap">
-                      <span className="text-sm sm:text-base font-bold font-mono tabular-nums text-primary whitespace-nowrap">
-                        {k.formattedValue}
+            <div className="space-y-2 my-auto">
+              <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-secondary">
+                KPI Scorecard ({activeKpisOnly.length} Active Domain Metrics)
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {activeKpisOnly.slice(0, 6).map((k) => {
+                  const hasDelta =
+                    typeof k.deltaPercent === 'number' && Number.isFinite(k.deltaPercent);
+                  return (
+                    <div
+                      key={k.id}
+                      className="p-2.5 rounded-xl bg-elevated border border-subtle flex flex-col justify-between gap-1 min-w-0"
+                    >
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-secondary line-clamp-2 leading-tight break-words">
+                        {k.label}
                       </span>
-                      {hasDelta && (
-                        <span
-                          className={`inline-flex items-center gap-0.5 text-[9.5px] font-mono font-bold shrink-0 ${
-                            k.isFavorable ? 'text-success' : 'text-danger'
-                          }`}
-                        >
-                          {k.deltaPercent! >= 0 ? (
-                            <TrendingUp className="w-2.5 h-2.5" />
-                          ) : (
-                            <TrendingDown className="w-2.5 h-2.5" />
-                          )}
-                          {k.deltaPercent! > 0 ? '+' : ''}
-                          {k.deltaPercent!.toFixed(1)}%
+                      <div className="flex items-baseline justify-between gap-1.5 flex-wrap">
+                        <span className="text-sm sm:text-base font-bold font-mono tabular-nums text-primary whitespace-nowrap">
+                          {k.formattedValue}
                         </span>
-                      )}
+                        {hasDelta && (
+                          <span
+                            className={`inline-flex items-center gap-0.5 text-[9.5px] font-mono font-bold shrink-0 ${
+                              k.isFavorable ? 'text-success' : 'text-danger'
+                            }`}
+                          >
+                            {k.deltaPercent! >= 0 ? (
+                              <TrendingUp className="w-2.5 h-2.5" />
+                            ) : (
+                              <TrendingDown className="w-2.5 h-2.5" />
+                            )}
+                            {k.deltaPercent! > 0 ? '+' : ''}
+                            {k.deltaPercent!.toFixed(1)}%
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           )}
 
-          {(slide.kind === 'charts' || slide.kind === 'insights') && (
+          {(slide.kind === 'charts' ||
+            slide.kind === 'diagnostic' ||
+            slide.kind === 'predictive' ||
+            slide.kind === 'insights') && (
             <div className="grid grid-cols-1 gap-2.5 my-auto">
-              {/* Top: Visual Segment Bar Breakdown */}
+              {/* Top: Native Chart Data Distribution */}
               <div className="p-2.5 rounded-xl bg-elevated border border-subtle space-y-2 min-w-0">
                 <div className="flex items-center justify-between gap-2 text-[10px] font-mono font-bold uppercase tracking-wider text-primary">
                   <span className="inline-flex items-center gap-1 min-w-0">
-                    <BarChart3 className="w-3 h-3 shrink-0" style={{ color: slide.accentToken }} />
+                    {slide.kind === 'predictive' ? (
+                      <LineChart className="w-3 h-3 shrink-0" style={{ color: slide.accentToken }} />
+                    ) : slide.kind === 'diagnostic' ? (
+                      <Activity className="w-3 h-3 shrink-0" style={{ color: slide.accentToken }} />
+                    ) : (
+                      <BarChart3 className="w-3 h-3 shrink-0" style={{ color: slide.accentToken }} />
+                    )}
                     <span className="truncate">{slide.chartTitle}</span>
                   </span>
-                  <span className="text-muted shrink-0">Share %</span>
+                  <span className="text-muted shrink-0">Native PPTX Chart</span>
                 </div>
                 {slide.chartBars.length > 0 ? (
                   <div className="space-y-1.5">
@@ -358,7 +382,7 @@ export const SlideDeckPreviewPanel: React.FC = () => {
                   </div>
                 ) : (
                   <div className="text-[11px] text-secondary py-2">
-                    Template Mode: Load dataset rows to render segment bar distribution.
+                    Load dataset rows to render native editable PowerPoint chart series.
                   </div>
                 )}
               </div>
@@ -386,16 +410,49 @@ export const SlideDeckPreviewPanel: React.FC = () => {
             </div>
           )}
 
+          {slide.kind === 'recommendations' && (
+            <div className="p-3 rounded-xl bg-elevated border border-subtle space-y-2 my-auto">
+              <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
+                <Lightbulb className="w-3.5 h-3.5 shrink-0" style={{ color: slide.accentToken }} />
+                <span>Prescriptive Action Roadmap ({slide.bullets.length} Actions)</span>
+              </div>
+              <ul className="space-y-1.5 text-[11px] font-sans text-primary">
+                {slide.bullets.slice(0, 5).map((b, idx) => (
+                  <li key={idx} className="line-clamp-2 leading-snug">
+                    <span className="font-mono font-bold mr-1" style={{ color: slide.accentToken }}>
+                      {idx + 1}.
+                    </span>
+                    {b}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {(slide.kind === 'data_quality' || slide.kind === 'appendix') && (
-            <div className="p-2.5 rounded-xl bg-elevated border border-subtle space-y-1.5 my-auto">
+            <div className="p-2.5 rounded-xl bg-elevated border border-subtle space-y-2 my-auto">
               <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-primary flex items-center gap-1">
                 <ShieldCheck className="w-3 h-3 shrink-0" style={{ color: slide.accentToken }} />
                 <span>
                   {slide.kind === 'data_quality'
-                    ? `Data Hygiene Certification (${slide.qualitySummary.overallScore}%)`
-                    : 'Audited KPI Formula & Methodology Appendix'}
+                    ? `Data Hygiene (${slide.qualitySummary.overallScore}%) & Assumptions`
+                    : 'Audited KPI Definitions & Column Mapping Appendix'}
                 </span>
               </div>
+
+              {slide.kind === 'data_quality' && slide.unavailableKpis.length > 0 && (
+                <div className="p-2 rounded-lg bg-card border border-subtle space-y-1">
+                  <div className="text-[10px] font-mono font-bold text-secondary">
+                    Skipped KPIs & Missing Columns ({slide.unavailableKpis.length})
+                  </div>
+                  {slide.unavailableKpis.slice(0, 3).map((u) => (
+                    <div key={u.id} className="text-[10px] font-mono text-secondary truncate">
+                      • {u.label}: Add column [{u.missingColumn || 'unmapped'}]
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                 {slide.kind === 'data_quality'
                   ? slide.qualitySummary.schemaPreview.slice(0, 4).map((col, idx) => (
@@ -426,7 +483,7 @@ export const SlideDeckPreviewPanel: React.FC = () => {
 
           {/* Slide Footer */}
           <div className="pt-2 border-t border-subtle flex items-center justify-between gap-2 text-[10px] font-mono text-muted">
-            <span className="truncate">{slide.footerText}</span>
+            <span className="truncate">{slide.sourceFootnote}</span>
             <span className="shrink-0">
               Slide {slide.slideNumber}/{slide.totalSlides}
             </span>
@@ -450,8 +507,11 @@ export const SlideDeckPreviewPanel: React.FC = () => {
               <Presentation className="w-3.5 h-3.5" />
               <span>16:9 Widescreen PPTX Studio</span>
             </span>
-            <span className="text-xs font-mono text-secondary">
-              {slides.length} Slides Ready · Real Computed Telemetry
+            <span
+              data-testid="pptx-preview-slide-count"
+              className="text-xs font-mono text-secondary"
+            >
+              {slides.length} Slides Ready · Native Editable PowerPoint Charts
             </span>
           </div>
           <h2 className="font-heading text-base sm:text-lg font-bold text-primary">
@@ -568,8 +628,8 @@ export const SlideDeckPreviewPanel: React.FC = () => {
               idx === 0
                 ? 'Slide 1 · Cover & Brief'
                 : idx === 1
-                ? 'Slide 2 · KPI Scorecard'
-                : 'Slide 3 · Charts & 4-Lens'
+                ? 'Slide 3 · KPI Scorecard'
+                : 'Slide 4 · Native Chart & 4-Lens'
             )
           )}
         </div>
@@ -589,7 +649,7 @@ export const SlideDeckPreviewPanel: React.FC = () => {
                       : 'bg-card text-secondary hover:text-primary border-subtle'
                   }`}
                 >
-                  {idx + 1}. {s.sectionId.replace(/_/g, ' ')}
+                  {idx + 1}. {s.kind.replace(/_/g, ' ')}
                 </button>
               ))}
             </div>

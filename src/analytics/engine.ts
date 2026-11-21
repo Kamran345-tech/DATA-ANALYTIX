@@ -331,6 +331,55 @@ export function detectPack(
   });
 }
 
+/**
+ * Picks the best Analytics Pack for a loaded dataset by ranking candidate packs
+ * by highest active-KPI count (and active-KPI ratio), breaking ties by detection confidence.
+ */
+export function pickBestPackForDataset(
+  input:
+    | ColumnSchema[]
+    | string[]
+    | Record<string, any>[]
+    | { columns?: (ColumnSchema | string)[]; rows?: Record<string, any>[]; datasetId?: string },
+  explicitRows: Record<string, any>[] = []
+): PackId {
+  const { colNames, rows } = extractColumnNamesAndRows(input, explicitRows);
+  const matches = detectPack(colNames, rows);
+  if (rows.length === 0 || colNames.length === 0) {
+    return matches[0]?.packId || 'financial';
+  }
+  const sampleRows = rows.length > 500 ? rows.slice(0, 500) : rows;
+  const candidates = matches.filter((m) => m.confidence >= 50).slice(0, 5);
+  const pool = candidates.length > 0 ? candidates : matches.slice(0, 3);
+
+  let bestPackId: PackId = pool[0]?.packId || 'financial';
+  let bestActiveCount = -1;
+  let bestActiveRatio = -1;
+  let bestConfidence = -1;
+
+  for (const m of pool) {
+    const pack = getPackById(m.packId);
+    const kpis = computeKpis(pack, sampleRows, m.matchedRoles);
+    const activeCount = kpis.filter((k) => k.status === 'available').length;
+    const activeRatio = pack.kpis.length > 0 ? activeCount / pack.kpis.length : 0;
+
+    if (
+      activeCount > bestActiveCount ||
+      (activeCount === bestActiveCount && activeRatio > bestActiveRatio) ||
+      (activeCount === bestActiveCount &&
+        Math.abs(activeRatio - bestActiveRatio) < 1e-6 &&
+        m.confidence > bestConfidence)
+    ) {
+      bestActiveCount = activeCount;
+      bestActiveRatio = activeRatio;
+      bestConfidence = m.confidence;
+      bestPackId = m.packId;
+    }
+  }
+
+  return bestPackId;
+}
+
 export function formatKpiMetric(value: number | null, unit: ComputedPackKpi['unit']): string {
   if (value === null || !Number.isFinite(value)) return 'Unavailable';
   const abs = Math.abs(value);
