@@ -195,7 +195,9 @@ export const EditableDashboardTitle: React.FC<EditableDashboardTitleProps> = ({
             title={project.name}
             aria-label={project.name}
             className={`font-heading font-extrabold transition-colors min-w-0 max-w-full ${
-              singleLine ? 'truncate' : 'line-clamp-2 [overflow-wrap:anywhere]'
+              singleLine
+                ? 'line-clamp-1 sm:line-clamp-2 [overflow-wrap:anywhere]'
+                : 'line-clamp-2 [overflow-wrap:anywhere]'
             } ${
               isLight 
                 ? 'text-primary group-hover:text-sky-700' 
@@ -204,6 +206,9 @@ export const EditableDashboardTitle: React.FC<EditableDashboardTitleProps> = ({
           >
             {project.name}
           </span>
+          {showEditButton && (
+            <Pencil className={`w-3.5 h-3.5 shrink-0 sm:hidden ${isLight ? 'text-sky-600' : 'text-cyan-400'}`} />
+          )}
         </div>
       </Tooltip>
 
@@ -211,7 +216,7 @@ export const EditableDashboardTitle: React.FC<EditableDashboardTitleProps> = ({
         <button
           type="button"
           onClick={() => setIsEditing(true)}
-          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors shadow-2xs shrink-0 cursor-pointer border whitespace-nowrap ${
+          className={`hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors shadow-2xs shrink-0 cursor-pointer border whitespace-nowrap ${
             isLight
               ? 'bg-elevated hover:bg-sky-50 text-muted hover:text-sky-700 border-slate-300 hover:border-sky-300'
               : 'bg-elevated hover:bg-elevated text-secondary hover:text-cyan-400 border-teal-500/40 hover:border-cyan-400/50'
@@ -219,7 +224,7 @@ export const EditableDashboardTitle: React.FC<EditableDashboardTitleProps> = ({
           title="Rename this dashboard"
         >
           <Pencil className={`w-3.5 h-3.5 shrink-0 ${isLight ? 'text-sky-600' : 'text-cyan-400'}`} />
-          <span className="text-[11px] font-semibold">Rename</span>
+          <span className="text-xs font-semibold">Rename</span>
         </button>
       )}
 

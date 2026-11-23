@@ -36,8 +36,8 @@ export const DataDictionaryLineageView: React.FC = () => {
           <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-sky-400 font-mono">
             <BookOpen className="w-4 h-4" /> Traceability & Data Governance
           </div>
-          <h1 className="font-heading text-3xl sm:text-4xl font-bold text-primary tracking-wide uppercase">
-            DATA DICTIONARY & LINEAGE
+          <h1 className="font-heading text-2xl sm:text-3xl font-bold text-primary tracking-tight leading-tight">
+            Data Dictionary &amp; Lineage
           </h1>
           <p className="text-xs text-secondary">
             End-to-end provenance. Inspect exact column definitions or trace how raw data evolves into KPIs and exports.

@@ -258,9 +258,9 @@ DIVIDE([Total ${primaryMetric}] - SUM('${tableName}'[COGS]), [Total ${primaryMet
             <span className="p-1.5 rounded-lg bg-accent-soft text-accent">
               <Network className="w-5 h-5" />
             </span>
-            <h2 className="text-lg font-bold tracking-tight uppercase text-primary">
-              Data Engineering & Semantic Architecture Suite
-            </h2>
+            <h1 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight leading-tight text-primary">
+              Data Engineering &amp; Semantic Architecture Suite
+            </h1>
           </div>
           <p className="text-xs mt-1 text-secondary">
             End-to-end lineage DAG, automated dbt/Great Expectations assertions, in-browser SQL execution sandbox, and production pipeline exports.

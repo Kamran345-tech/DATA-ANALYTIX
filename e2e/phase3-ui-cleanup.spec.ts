@@ -2,7 +2,15 @@ import { test, expect, Page } from '@playwright/test';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const SCREENSHOT_DIR = path.resolve(process.cwd(), 'test-results/qa-phase3');
+const SCREENSHOT_DIR = path.resolve(process.cwd(), 'artifacts/phase1');
+const LEGACY_SCREENSHOT_DIR = path.resolve(process.cwd(), 'test-results/qa-phase3');
+
+async function saveDualScreenshot(page: Page, fileName: string) {
+  const target1 = path.join(SCREENSHOT_DIR, fileName);
+  const target2 = path.join(LEGACY_SCREENSHOT_DIR, fileName);
+  await page.screenshot({ path: target1, fullPage: false });
+  fs.copyFileSync(target1, target2);
+}
 
 async function bootstrapWorkspace(
   page: Page,
@@ -58,8 +66,8 @@ async function bootstrapWorkspace(
   }
 }
 
-test.describe('Phase 3: Workflow Sidebar, Shrunk Page Header Stack, First-Run Tour & Responsive Screenshots', () => {
-  test('3.1-3.4 Shrunk Executive Dashboard Header (KPIs visible at 1440x900 without scrolling, View options popover with preview), Workflow Stepper & Sidebar, Replayable 3-Step Tour, Upload Banner, Ask AI Cards, Version Sync', async ({
+test.describe('Phase 1 & 3: Workflow Sidebar, Shrunk Page Header Stack, Mobile 375px Stepper/KPIs, First-Run Tour & Responsive Screenshots', () => {
+  test('1.1-1.5 Shrunk Executive Dashboard Header (KPIs visible at 1440x900 without scrolling, View options popover with preview), Workflow Stepper & Sidebar, Replayable 3-Step Tour, Upload Banner, Ask AI Cards, Version Sync', async ({
     page,
   }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
@@ -153,11 +161,12 @@ test.describe('Phase 3: Workflow Sidebar, Shrunk Page Header Stack, First-Run To
     );
   });
 
-  test('3.6 & 3.7 Multi-Viewport Screenshots (1440/1024/375 Light+Dark) for Executive Dashboard, Sidebar, Upload & Ask AI with zero horizontal scroll', async ({
+  test('1.3 & Multi-Viewport Screenshots (1440/1024/375 Light+Dark) for Executive Dashboard, Sidebar, Upload & Ask AI with mobile 375px first-screen KPIs and zero horizontal scroll', async ({
     page,
   }) => {
     test.setTimeout(150000);
     fs.mkdirSync(SCREENSHOT_DIR, { recursive: true });
+    fs.mkdirSync(LEGACY_SCREENSHOT_DIR, { recursive: true });
 
     const viewports = [
       { width: 1440, height: 900, label: '1440' },
@@ -170,16 +179,44 @@ test.describe('Phase 3: Workflow Sidebar, Shrunk Page Header Stack, First-Run To
         await page.setViewportSize({ width: vp.width, height: vp.height });
         await bootstrapWorkspace(page, { theme, skipTour: true });
 
-        // 1. Executive Dashboard + Sidebar first screenful
+        // 1. Wait for lazy ExecutiveDashboard KPI cards to finish rendering before measuring & screenshotting
+        const firstKpi = page.locator('[data-testid^="exec-kpi-value-"]').first();
+        await expect(firstKpi).toBeVisible({ timeout: 15000 });
+
         const execOverflow = await page.evaluate(() => {
           return document.documentElement.scrollWidth > window.innerWidth + 1;
         });
         expect(execOverflow).toBe(false);
 
-        await page.screenshot({
-          path: path.join(SCREENSHOT_DIR, `after-executive-dashboard-${vp.label}-${theme}.png`),
-          fullPage: false,
-        });
+        if (vp.width === 375) {
+          // Verify Phase 1.3 mobile requirements:
+          // - Stepper shows "4/4" counter and "4 Present" is scrolled into view
+          await expect(page.getByTestId('stepper-mobile-step-counter')).toContainText('4/4');
+          const presentStepBox = await page.getByTestId('workflow-step-present').boundingBox();
+          expect(presentStepBox).not.toBeNull();
+          expect(presentStepBox!.x).toBeGreaterThanOrEqual(0);
+          expect(presentStepBox!.x + presentStepBox!.width).toBeLessThanOrEqual(375);
+
+          // - Purpose/Related links collapsed behind "i" button on mobile
+          const infoBtn = page.getByTestId('purpose-info-toggle');
+          await expect(infoBtn).toBeVisible();
+          await expect(page.getByTestId('page-purpose-related')).toBeHidden();
+
+          // - First KPI value is visible in the first 375x812 screenful without scrolling
+          const mobileKpiRect = await page.evaluate(() => {
+            const el = document.querySelector('[data-testid^="exec-kpi-value-"]');
+            if (!el) return null;
+            const r = el.getBoundingClientRect();
+            return { top: r.top, bottom: r.bottom };
+          });
+          expect(mobileKpiRect).not.toBeNull();
+          expect(
+            mobileKpiRect?.bottom ?? 999,
+            'First KPI value must be visible in first 375x812 mobile screen without scrolling'
+          ).toBeLessThan(790);
+        }
+
+        await saveDualScreenshot(page, `after-executive-dashboard-${vp.label}-${theme}.png`);
 
         // 2. Upload page
         await page.getByTestId('workflow-step-upload').click();
@@ -190,10 +227,7 @@ test.describe('Phase 3: Workflow Sidebar, Shrunk Page Header Stack, First-Run To
         });
         expect(uploadOverflow).toBe(false);
 
-        await page.screenshot({
-          path: path.join(SCREENSHOT_DIR, `upload-${vp.label}-${theme}.png`),
-          fullPage: false,
-        });
+        await saveDualScreenshot(page, `upload-${vp.label}-${theme}.png`);
 
         // 3. Ask Data AI page
         if (vp.width === 375) {
@@ -214,10 +248,7 @@ test.describe('Phase 3: Workflow Sidebar, Shrunk Page Header Stack, First-Run To
         });
         expect(aiOverflow).toBe(false);
 
-        await page.screenshot({
-          path: path.join(SCREENSHOT_DIR, `ask-ai-${vp.label}-${theme}.png`),
-          fullPage: false,
-        });
+        await saveDualScreenshot(page, `ask-ai-${vp.label}-${theme}.png`);
       }
     }
   });

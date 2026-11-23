@@ -138,8 +138,8 @@ export const SQLLabView: React.FC = () => {
           <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-accent font-mono">
             <Database className="w-4 h-4" /> Real In-Browser AlaSQL Engine
           </div>
-          <h1 className="font-heading text-3xl sm:text-4xl font-bold tracking-tight uppercase text-primary">
-            LIVE SQL WORKBENCH
+          <h1 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight leading-tight text-primary">
+            Live SQL Workbench
           </h1>
           <p className="text-xs text-secondary">
             Execute standard ANSI SQL against your loaded data tables in memory with zero network latency.

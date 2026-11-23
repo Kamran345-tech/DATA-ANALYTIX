@@ -1035,9 +1035,7 @@ export const DashboardBuilderView: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 pb-12 animate-fadeIn w-full max-w-7xl mx-auto">
-      <PagePurposeBar page="dashboard_builder" />
-
+    <div className="space-y-4 pb-12 animate-fadeIn w-full max-w-7xl mx-auto">
       {/* Download notification toast */}
       {downloadSuccess && (
         <div className="fixed bottom-20 sm:bottom-6 right-6 z-50 bg-sky-950/90 border border-cyan-400 text-cyan-200 px-4 py-2.5 rounded-xl text-xs font-semibold shadow-xl flex items-center gap-2">
@@ -1047,21 +1045,19 @@ export const DashboardBuilderView: React.FC = () => {
       )}
 
       {/* 1. Header & Actions */}
-      <div className="bg-card border-subtle text-primary shadow-sm border rounded-2xl p-4 sm:p-6 space-y-4">
+      <div className="bg-card border-subtle text-primary shadow-sm border rounded-2xl p-4 sm:p-5 space-y-3">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="space-y-1.5 min-w-0 flex-1 basis-[280px]">
-            <div className={`flex items-center gap-2 text-xs font-semibold uppercase tracking-wider font-mono ${isLight ? 'text-sky-700' : 'text-cyan-400'}`}>
+            <div className={`flex items-center gap-2 text-xs font-semibold tracking-wide font-mono ${isLight ? 'text-sky-700' : 'text-cyan-400'}`}>
               <SlidersHorizontal className="w-4 h-4 shrink-0" /> Custom Dashboard Composition Studio
             </div>
-            
-            {/* EDITABLE DASHBOARD NAME */}
-            <div className="flex items-center gap-2 flex-wrap min-w-0 max-w-full">
-              <EditableDashboardTitle className="text-2xl sm:text-3xl font-extrabold uppercase max-w-full" showLabelPrefix={false} />
-            </div>
 
-            <p className={`text-xs ${isLight ? 'text-muted' : 'text-secondary'}`}>
-              Build, customize, and download your analytical dashboard. Switch between Bar, Line, Donut, and Table views in real time.
-            </p>
+            {/* EDITABLE DASHBOARD NAME */}
+            <h1 className="font-heading flex items-center gap-2 flex-wrap min-w-0 max-w-full">
+              <EditableDashboardTitle className="text-2xl sm:text-3xl font-bold tracking-tight leading-tight max-w-full" showLabelPrefix={false} />
+            </h1>
+
+            <PagePurposeBar page="dashboard_builder" inline />
           </div>
 
           <div className="flex flex-wrap items-center gap-2 shrink-0 ml-auto">

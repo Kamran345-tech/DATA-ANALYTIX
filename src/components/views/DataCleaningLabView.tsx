@@ -287,8 +287,8 @@ export const DataCleaningLabView: React.FC = () => {
           <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider font-mono text-accent">
             <Wand2 className="w-4 h-4" /> Automated Messy Data Doctor & Transformation Core
           </div>
-          <h1 className="font-heading text-2xl sm:text-3xl lg:text-4xl font-bold text-primary tracking-wide uppercase">
-            MESSY DATA DIAGNOSTICS & CLEANING LAB
+          <h1 className="font-heading text-2xl sm:text-3xl font-bold text-primary tracking-tight leading-tight">
+            Messy Data Diagnostics &amp; Cleaning Lab
           </h1>
           <p className="text-xs text-secondary">
             Detects untrimmed spaces, duplicate records, mixed casing, dirty currencies, nulls, and outliers with 1-click automated fixes.

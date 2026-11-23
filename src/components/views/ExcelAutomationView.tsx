@@ -453,10 +453,8 @@ in
               <FileSpreadsheet className="w-4 h-4 text-cyan-400" />
               <span>EXCEL AUTOMATION &amp; FORMULA ENGINEERING SPECIALIST (SECTION 5)</span>
             </div>
-            <h1 className={`font-heading text-2xl sm:text-3xl font-extrabold uppercase tracking-tight ${
-              isLight ? 'text-primary' : 'text-primary'
-            }`}>
-              EXCEL FORMULA STUDIO &amp; WORKBOOK COMPLETION
+            <h1 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight leading-tight text-primary">
+              Excel Formula Studio &amp; Workbook Completion
             </h1>
             <p className={`text-xs sm:text-sm max-w-2xl leading-relaxed ${
               isLight ? 'text-muted' : 'text-secondary'

@@ -216,21 +216,23 @@ export const InteractiveSlicersBar: React.FC<{
       {/* =================================================================== */}
       {/* COMPACT ACTIVE-FILTER CHIP BAR + COLLAPSIBLE DRAWER TRIGGER         */}
       {/* =================================================================== */}
-      <div className="px-3.5 py-2.5 flex flex-wrap items-center justify-between gap-2.5 bg-[var(--bg-elevated)]/70">
-        <div className="flex flex-wrap items-center gap-2 min-w-0 flex-1">
+      <div className="px-2.5 sm:px-3.5 py-1.5 sm:py-2 flex flex-nowrap sm:flex-wrap items-center justify-between gap-1.5 sm:gap-2.5 bg-[var(--bg-elevated)]/70">
+        <div className="flex flex-nowrap sm:flex-wrap items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
           <button
             type="button"
             data-testid="shared-filter-drawer-toggle"
             onClick={() => setIsExpanded(!isExpanded)}
             aria-expanded={isExpanded}
             aria-label={isExpanded ? 'Collapse Filters & Slicers Drawer' : 'Open Filters & Slicers Drawer'}
-            className="min-h-[38px] px-3 py-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] hover:bg-[var(--bg-hover)] text-primary text-xs font-semibold inline-flex items-center gap-2 transition-colors cursor-pointer shrink-0"
+            className="min-h-[34px] px-2.5 sm:px-3 py-1 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] hover:bg-[var(--bg-hover)] text-primary text-xs font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
           >
             <SlidersHorizontal className="w-3.5 h-3.5 text-accent" />
-            <span>Filters & Slicers</span>
+            <span>
+              Filters<span className="hidden sm:inline"> &amp; Slicers</span>
+            </span>
             <span
               data-testid="shared-filter-active-count"
-              className={`px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold ${
+              className={`px-1.5 py-0.5 rounded-md text-xs font-mono font-bold ${
                 activeSlicerCount > 0
                   ? 'bg-accent text-[var(--text-on-accent)]'
                   : 'bg-[var(--bg-input)] text-muted'
@@ -242,7 +244,7 @@ export const InteractiveSlicersBar: React.FC<{
           </button>
 
           {/* Quick Inline Search Input (shared across all pages) */}
-          <div className="relative flex-1 min-w-[160px] max-w-[260px]">
+          <div className="relative flex-1 min-w-[105px] sm:min-w-[160px] max-w-[260px]">
             <Search className="w-3.5 h-3.5 text-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
@@ -256,7 +258,7 @@ export const InteractiveSlicersBar: React.FC<{
                 }))
               }
               placeholder="Search dataset rows..."
-              className="w-full min-h-[36px] pl-8 pr-7 py-1 text-xs rounded-xl bg-[var(--bg-input)] border border-[var(--border-subtle)] text-primary placeholder:text-muted focus:outline-none focus:border-accent"
+              className="w-full min-h-[34px] pl-8 pr-7 py-1 text-xs rounded-xl bg-[var(--bg-input)] border border-[var(--border-subtle)] text-primary placeholder:text-muted focus:outline-none focus:border-accent"
             />
             {filters.searchQuery && (
               <button
@@ -384,18 +386,19 @@ export const InteractiveSlicersBar: React.FC<{
         </div>
 
         {/* Right Controls: Row counter, Add Slicer, Clear All */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <div
             data-testid="shared-filter-row-count"
-            className={`px-2.5 py-1 rounded-xl border text-[11px] font-mono flex items-center gap-1.5 ${
+            className={`px-2 sm:px-2.5 py-1 rounded-xl border text-xs font-mono flex items-center gap-1 ${
               isFiltered
                 ? 'bg-[var(--bg-input)] text-accent border-accent/40 font-bold'
                 : 'bg-[var(--bg-input)] text-secondary border-[var(--border-subtle)]'
             }`}
           >
-            <span className={`w-1.5 h-1.5 rounded-full ${isFiltered ? 'bg-accent animate-pulse' : 'bg-muted'}`} />
+            <span className={`w-1.5 h-1.5 rounded-full hidden sm:inline-block ${isFiltered ? 'bg-accent animate-pulse' : 'bg-muted'}`} />
             <span>
-              {filteredRows.length.toLocaleString()} / {cleanRows.length.toLocaleString()} rows
+              {filteredRows.length.toLocaleString()} / {cleanRows.length.toLocaleString()}
+              <span className="hidden sm:inline"> rows</span>
             </span>
           </div>
 

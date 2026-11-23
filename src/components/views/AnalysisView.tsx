@@ -115,8 +115,8 @@ export const AnalysisView: React.FC = () => {
           <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-accent font-mono">
             <Activity className="w-4 h-4" /> Data Analyst Statistical Workbench
           </div>
-          <h1 className="font-heading text-2xl sm:text-3xl lg:text-4xl font-bold text-primary tracking-wide uppercase">
-            STATISTICAL ANALYSIS & EXPLORATORY DATA ANALYSIS (EDA)
+          <h1 className="font-heading text-2xl sm:text-3xl font-bold text-primary tracking-tight leading-tight">
+            Statistical Analysis &amp; Exploratory Data Analysis (EDA)
           </h1>
           <p className="text-xs text-secondary">
             Full-spectrum mathematical discovery. Parametric distributions, bivariate correlations, Tukey IQR anomalies, and time-series forecasting.

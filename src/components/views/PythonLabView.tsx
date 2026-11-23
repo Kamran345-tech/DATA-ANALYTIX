@@ -245,8 +245,8 @@ export const PythonLabView: React.FC = () => {
           <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-accent font-mono">
             <FileCode2 className="w-4 h-4" /> REPRODUCIBLE DATA SCIENCE &amp; CLEANING ENGINE
           </div>
-          <h1 className="font-heading text-3xl sm:text-4xl font-bold text-primary tracking-tight uppercase">
-            PYTHON DATA WORKBENCH &amp; LIVE DASHBOARD
+          <h1 className="font-heading text-2xl sm:text-3xl font-bold text-primary tracking-tight leading-tight">
+            Python Data Workbench &amp; Live Dashboard
           </h1>
           <p className="text-xs sm:text-sm text-secondary">
             Write or edit Pandas cleaning scripts. Whenever you run a script, an <span className="text-accent font-semibold">instant interactive dashboard</span> and monospace statistical output are compiled below.

@@ -96,13 +96,9 @@ export const DataQualityView: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="min-w-0 flex-1">
-          <h1
-            className={`font-heading text-2xl sm:text-3xl font-bold tracking-tight uppercase flex items-center gap-2.5 ${
-              isLight ? 'text-primary' : 'text-primary'
-            }`}
-          >
+          <h1 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight leading-tight flex items-center gap-2.5 text-primary">
             <ShieldCheck className="w-7 h-7 text-accent shrink-0" />
-            <span>DATA QUALITY & HYGIENE AUDITOR</span>
+            <span>Data Quality &amp; Hygiene Auditor</span>
           </h1>
           <p
             className={`text-xs font-mono mt-1 min-w-0 max-w-full ${

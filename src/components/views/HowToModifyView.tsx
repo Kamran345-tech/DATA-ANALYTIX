@@ -63,8 +63,8 @@ export const HowToModifyView: React.FC = () => {
           <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-accent font-mono">
             <Wrench className="w-4 h-4" /> Sovereign User Autonomy Manual
           </div>
-          <h1 className="font-heading text-3xl sm:text-4xl font-bold text-primary tracking-wide uppercase">
-            🔧 HOW TO MODIFY THIS PROJECT
+          <h1 className="font-heading text-2xl sm:text-3xl font-bold text-primary tracking-tight leading-tight">
+            How to Modify This Project
           </h1>
           <p className="text-xs text-secondary">
             Mandatory operating procedure for ongoing maintenance, monthly data refreshes, and independent developer handoff.

@@ -533,11 +533,11 @@ export const ReportsView: React.FC = () => {
               ) : (
                 <div className="flex items-center gap-2.5 flex-wrap min-w-0 max-w-full">
                   <h1
-                    title={reportHeadings.mainTitle || 'EXECUTIVE INTELLIGENCE BRIEF'}
-                    aria-label={reportHeadings.mainTitle || 'EXECUTIVE INTELLIGENCE BRIEF'}
-                    className="font-heading text-3xl sm:text-4xl lg:text-5xl font-extrabold text-primary print:text-black tracking-wide uppercase line-clamp-2 [overflow-wrap:anywhere] min-w-0 max-w-full"
+                    title={reportHeadings.mainTitle || 'Executive Intelligence Brief'}
+                    aria-label={reportHeadings.mainTitle || 'Executive Intelligence Brief'}
+                    className="font-heading text-2xl sm:text-3xl lg:text-4xl font-bold text-primary print:text-black tracking-tight leading-tight line-clamp-2 [overflow-wrap:anywhere] min-w-0 max-w-full"
                   >
-                    {reportHeadings.mainTitle || 'EXECUTIVE INTELLIGENCE BRIEF'}
+                    {reportHeadings.mainTitle || 'Executive Intelligence Brief'}
                   </h1>
                   <button
                     onClick={() => handleStartInlineEdit('mainTitle')}

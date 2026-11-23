@@ -234,10 +234,8 @@ export const DataPreviewView: React.FC = () => {
                 <Table2 className="w-5 h-5 text-cyan-500 dark:text-cyan-400" />
               </div>
               <div className="min-w-0 flex-1">
-                <h1 className={`font-heading text-2xl sm:text-3xl font-extrabold tracking-tight uppercase flex items-center gap-2.5 ${
-                  isLight ? 'text-primary' : 'text-primary'
-                }`}>
-                  DATA PROFILING & PREVIEW
+                <h1 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight leading-tight flex items-center gap-2.5 text-primary">
+                  Data Profiling &amp; Preview
                 </h1>
                 <p className={`text-xs font-mono min-w-0 max-w-full ${isLight ? 'text-muted' : 'text-secondary'}`}>
                   <strong className={isLight ? 'text-primary' : 'text-primary'}>{cleanRows.length.toLocaleString()}</strong> verified rows • <strong className={isLight ? 'text-primary' : 'text-primary'}>{columns.length}</strong> audited columns • Ingested from{' '}

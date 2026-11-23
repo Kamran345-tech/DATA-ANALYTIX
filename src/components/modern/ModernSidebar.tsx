@@ -200,7 +200,9 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({ onOpenCommandPalet
                   >
                     <button
                       type="button"
+                      role="link"
                       onClick={() => setCurrentTab(tabId)}
+                      aria-label={`Pinned: ${found.label}`}
                       className="min-h-[28px] flex items-center gap-2 min-w-0 flex-1 text-left cursor-pointer"
                     >
                       <Icon
@@ -218,7 +220,7 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({ onOpenCommandPalet
                         togglePinTab(tabId);
                       }}
                       title={`Unpin ${found.label}`}
-                      aria-label={`Unpin ${found.label}`}
+                      aria-label="Unpin page from sidebar"
                       className={`p-1 rounded flex items-center justify-center cursor-pointer ${
                         isActive
                           ? 'text-on-accent hover:opacity-80'
@@ -252,7 +254,9 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({ onOpenCommandPalet
                   <button
                     key={`rec-${tabId}`}
                     type="button"
+                    role="link"
                     data-testid={`sidebar-recent-item-${tabId}`}
+                    aria-label={`Recent: ${found.label}`}
                     onClick={() => setCurrentTab(tabId)}
                     className={`px-2 py-1 rounded-lg text-[11px] font-medium border cursor-pointer ${
                       currentTab === tabId
@@ -378,7 +382,7 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({ onOpenCommandPalet
                                 togglePinTab(item.id);
                               }}
                               aria-label={
-                                isPinned ? `Unpin ${item.label}` : `Pin ${item.label}`
+                                isPinned ? 'Unpin page from sidebar' : 'Pin page to sidebar'
                               }
                               aria-pressed={isPinned}
                               title={isPinned ? `Unpin ${item.label}` : `Pin ${item.label}`}

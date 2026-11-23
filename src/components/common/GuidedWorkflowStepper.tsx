@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   UploadCloud,
   Wand2,
@@ -35,7 +35,8 @@ const GROUP_ICONS: Record<WorkflowGroupId, React.ComponentType<{ className?: str
 /**
  * Slim Top Workflow Stepper matching the Sidebar Groups:
  * 1 Upload -> 2 Clean -> 3 Analyze -> 4 Present -> Help & Settings.
- * Highlights the active page's group and expands/focuses that group in the sidebar on click.
+ * Highlights the active page's group, auto-scrolls the active step into view on mobile,
+ * and expands/focuses that group in the sidebar on click.
  */
 export const GuidedWorkflowStepper: React.FC<GuidedWorkflowStepperProps> = ({
   onOpenCommandPalette,
@@ -51,8 +52,28 @@ export const GuidedWorkflowStepper: React.FC<GuidedWorkflowStepperProps> = ({
   } = usePlatform();
 
   const [isGuideOpen, setIsGuideOpen] = useState(false);
+  const olRef = useRef<HTMLOListElement>(null);
 
   const flags = loadFeatureFlags();
+  const activeGroup = findWorkflowGroupForTab(currentTab);
+
+  // Auto-scroll the active workflow step into view on mobile (375/414px)
+  useEffect(() => {
+    const ol = olRef.current;
+    if (!ol) return;
+    if (ol.scrollWidth <= ol.clientWidth) {
+      ol.scrollLeft = 0;
+      return;
+    }
+    const activeBtn = ol.querySelector<HTMLElement>('[data-active="true"]');
+    if (!activeBtn) return;
+    const targetLeft = Math.max(
+      0,
+      activeBtn.offsetLeft - ol.clientWidth / 2 + activeBtn.clientWidth / 2
+    );
+    ol.scrollLeft = targetLeft;
+  }, [currentTab, activeGroup.id]);
+
   if (!flags.designSystemV3) return null;
 
   const hasData = cleanRows.length > 0 && columns.length > 0;
@@ -61,7 +82,6 @@ export const GuidedWorkflowStepper: React.FC<GuidedWorkflowStepperProps> = ({
   const isAnalyzeComplete = hasData && Boolean(activePackId);
   const pageSpec =
     PAGE_HEADER_CATALOG[currentTab] || PAGE_HEADER_CATALOG.executive_dashboard;
-  const activeGroup = findWorkflowGroupForTab(currentTab);
 
   const getStepCompletion = (groupId: WorkflowGroupId): boolean => {
     switch (groupId) {
@@ -95,14 +115,32 @@ export const GuidedWorkflowStepper: React.FC<GuidedWorkflowStepperProps> = ({
     setCurrentTab(target);
   };
 
+  const numericStepIndex =
+    activeGroup.stageNum === '1' ||
+    activeGroup.stageNum === '2' ||
+    activeGroup.stageNum === '3' ||
+    activeGroup.stageNum === '4'
+      ? activeGroup.stageNum
+      : '4';
+
   return (
-    <div className="mb-2.5 space-y-2">
+    <div className="mb-2 space-y-1.5">
       <nav
         aria-label="Guided workflow stages"
         data-testid="guided-workflow-stepper"
-        className="rounded-xl border border-subtle bg-card px-2.5 py-1.5 shadow-2xs flex items-center justify-between gap-1.5"
+        className="rounded-xl border border-subtle bg-card px-2 sm:px-2.5 py-1 shadow-2xs flex flex-nowrap items-center justify-between gap-1.5"
       >
-        <ol className="flex items-center gap-1 min-w-0 flex-1 overflow-x-auto no-scrollbar">
+        <span
+          data-testid="stepper-mobile-step-counter"
+          className="sm:hidden shrink-0 px-1.5 py-0.5 rounded-md bg-accent-soft text-accent font-mono text-xs font-bold"
+        >
+          {numericStepIndex}/4
+        </span>
+
+        <ol
+          ref={olRef}
+          className="relative flex items-center gap-1 min-w-0 flex-1 overflow-x-auto no-scrollbar"
+        >
           {WORKFLOW_SIDEBAR_GROUPS.map((group, idx) => {
             const isCurrent = activeGroup.id === group.id;
             const isComplete = getStepCompletion(group.id);
@@ -117,7 +155,7 @@ export const GuidedWorkflowStepper: React.FC<GuidedWorkflowStepperProps> = ({
                     data-active={isCurrent ? 'true' : 'false'}
                     onClick={() => handleStepClick(group.id, group.defaultTab)}
                     aria-current={isCurrent ? 'step' : undefined}
-                    className={`min-h-[32px] px-2 sm:px-2.5 py-1 rounded-lg text-xs inline-flex items-center gap-1.5 cursor-pointer border ${
+                    className={`min-h-[30px] px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg text-xs inline-flex items-center gap-1.5 cursor-pointer border ${
                       isCurrent
                         ? 'bg-accent text-on-accent border-subtle font-bold shadow-2xs'
                         : isComplete
@@ -165,7 +203,7 @@ export const GuidedWorkflowStepper: React.FC<GuidedWorkflowStepperProps> = ({
             aria-label={`How to use ${pageSpec.title}`}
             title={`Quick guide for ${pageSpec.title}`}
             onClick={() => setIsGuideOpen((prev) => !prev)}
-            className={`min-h-[32px] px-2 sm:px-2.5 py-1 rounded-lg border text-xs font-semibold inline-flex items-center gap-1 cursor-pointer ${
+            className={`min-h-[30px] px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg border text-xs font-semibold inline-flex items-center gap-1 cursor-pointer ${
               isGuideOpen
                 ? 'bg-accent text-on-accent border-subtle font-bold'
                 : 'bg-input hover:bg-elevated text-secondary hover:text-primary border-subtle'
@@ -183,11 +221,11 @@ export const GuidedWorkflowStepper: React.FC<GuidedWorkflowStepperProps> = ({
               data-testid="stepper-command-palette-trigger"
               onClick={onOpenCommandPalette}
               aria-label="Open Command Palette (Ctrl+K)"
-              className="min-h-[32px] px-2 sm:px-2.5 py-1 rounded-lg bg-input hover:bg-elevated border border-subtle text-xs text-secondary hover:text-primary inline-flex items-center gap-1.5 cursor-pointer shrink-0"
+              className="min-h-[30px] px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg bg-input hover:bg-elevated border border-subtle text-xs text-secondary hover:text-primary inline-flex items-center gap-1.5 cursor-pointer shrink-0"
             >
               <Search className="w-3.5 h-3.5 text-accent" />
               <span className="hidden xl:inline">Search</span>
-              <kbd className="hidden sm:inline px-1.5 py-0.5 rounded bg-card border border-subtle font-mono text-[10px] text-muted">
+              <kbd className="hidden sm:inline px-1.5 py-0.5 rounded bg-card border border-subtle font-mono text-xs text-muted">
                 Ctrl+K
               </kbd>
             </button>

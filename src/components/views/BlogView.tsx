@@ -92,8 +92,8 @@ export const BlogView: React.FC = () => {
           <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-accent font-mono">
             <Newspaper className="w-4 h-4" /> SEO & Knowledge Base
           </div>
-          <h1 className="font-heading text-3xl sm:text-4xl font-bold text-primary tracking-wide uppercase">
-            BI ENGINEERING & DATA SCIENCE ARTICLES
+          <h1 className="font-heading text-2xl sm:text-3xl font-bold text-primary tracking-tight leading-tight">
+            BI Engineering &amp; Data Science Articles
           </h1>
           <p className="text-xs text-secondary">
             Architectural guides on Power BI automation, star schema modeling, reproducible Python data science, and deterministic AI grounding.

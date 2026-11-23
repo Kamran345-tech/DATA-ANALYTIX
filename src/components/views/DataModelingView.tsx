@@ -387,7 +387,7 @@ export const DataModelingView: React.FC = () => {
               </span>
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-heading font-extrabold tracking-tight uppercase text-primary">
+            <h1 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight leading-tight text-primary">
               Interactive Star Schema &amp; Data Studio
             </h1>
 

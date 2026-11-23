@@ -559,8 +559,11 @@ export const ExecutiveDashboard: React.FC = () => {
           name: k.label,
           value: k.value ?? 0,
           formattedValue: k.formattedValue,
-          change: k.changePercent ?? 0,
-          changePercent: k.changePercent,
+          change: Math.round((k.changePercent ?? 0) * 10) / 10,
+          changePercent:
+            typeof k.changePercent === 'number'
+              ? Math.round(k.changePercent * 10) / 10
+              : undefined,
           unit: k.unit,
           period: targetPack!.name,
           status: 'On Track',
@@ -771,8 +774,8 @@ export const ExecutiveDashboard: React.FC = () => {
       )}
 
       {/* 1. COMPACT PAGE HEADER WITH MERGED PURPOSE SUBTITLE, SINGLE ACTION BAR & VIEW OPTIONS POPOVER */}
-      <section className="w-full glass-panel-luminous rounded-2xl p-3.5 sm:p-4 shadow-xl relative">
-        <div className="relative z-10 flex flex-col gap-2.5">
+      <section className="w-full glass-panel-luminous rounded-2xl p-2.5 sm:p-4 shadow-xl relative">
+        <div className="relative z-10 flex flex-col gap-1.5 sm:gap-2.5">
           {/* Hidden file input for company logo upload */}
           <input
             ref={fileInputRef}
@@ -783,10 +786,10 @@ export const ExecutiveDashboard: React.FC = () => {
           />
 
           {/* Top Row: Compact Logo + Title + Merged Purpose Subtitle on Left; Telemetry Pill + Single Action Bar on Right */}
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="flex items-start gap-2.5 sm:gap-3 min-w-0 flex-1 basis-[280px] sm:basis-[420px]">
+          <div className="flex flex-wrap items-start justify-between gap-2 sm:gap-3">
+            <div className="flex items-start gap-2 sm:gap-3 min-w-0 flex-1 basis-[260px] sm:basis-[420px]">
               {/* Compact Company Logo Display / Uploader */}
-              <div className="relative group shrink-0">
+              <div className="relative group shrink-0 hidden sm:block">
                 {brand.logoUrl ? (
                   <div className="relative">
                     <img
@@ -821,20 +824,20 @@ export const ExecutiveDashboard: React.FC = () => {
                     title="Upload Company Logo"
                   >
                     <UploadCloud className="w-4 h-4" />
-                    <span className="text-[8px] font-mono uppercase font-bold leading-none">
+                    <span className="text-[10px] font-mono font-bold leading-none">
                       Logo
                     </span>
                   </button>
                 )}
               </div>
 
-              <div className="flex flex-col gap-1 min-w-0 flex-1">
-                <div className="flex items-center gap-1.5 text-[10px] font-bold tracking-wider text-secondary uppercase font-mono flex-wrap">
-                  <span className="text-accent font-bold">{brand.companyName.toUpperCase()}</span>
-                  <span>/</span>
-                  <span>{brand.department.toUpperCase()}</span>
-                  <span aria-hidden="true">·</span>
-                  <span className="inline-flex items-baseline gap-1 min-w-0 max-w-full normal-case font-sans">
+              <div className="flex flex-col gap-0.5 sm:gap-1 min-w-0 flex-1">
+                <div className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-secondary font-mono flex-wrap">
+                  <span className="text-accent font-bold">{brand.companyName}</span>
+                  <span className="hidden sm:inline">/</span>
+                  <span className="hidden sm:inline">{brand.department}</span>
+                  <span aria-hidden="true" className="hidden md:inline">·</span>
+                  <span className="hidden md:inline-flex items-baseline gap-1 min-w-0 max-w-full normal-case font-sans">
                     <span className="text-secondary">Scope:</span>
                     <Tooltip
                       side="bottom"
@@ -852,42 +855,47 @@ export const ExecutiveDashboard: React.FC = () => {
                       </strong>
                     </Tooltip>
                   </span>
-                  <span aria-hidden="true">·</span>
-                  <span className="normal-case font-sans inline-flex items-center gap-1">
+                  <span aria-hidden="true" className="hidden lg:inline">·</span>
+                  <span className="hidden lg:inline-flex normal-case font-sans items-center gap-1">
                     By <EditableAnalystName />
                   </span>
                   <span aria-hidden="true">·</span>
                   <span className="text-accent font-semibold tabular-nums">
                     {filteredRows.length.toLocaleString()} rows
                   </span>
+                  <span aria-hidden="true" className="sm:hidden">·</span>
+                  <span className="sm:hidden text-accent font-semibold tabular-nums">
+                    Q {qualityReport.overallScore}%
+                  </span>
                 </div>
 
-                {/* Title & Rename Control */}
+                {/* Sentence-case Title & Rename Control (no ALL-CAPS monospace page title) */}
                 <div className="flex items-center gap-2 flex-wrap min-w-0 max-w-full">
-                  <h1 className="font-headline-xl text-primary tracking-tight font-extrabold flex items-center gap-2 flex-wrap min-w-0 max-w-full">
+                  <h1 className="font-heading text-primary tracking-tight font-bold flex items-center gap-2 flex-wrap min-w-0 max-w-full">
                     <EditableDashboardTitle
-                      className="text-lg sm:text-xl lg:text-2xl font-extrabold tracking-tight uppercase max-w-full"
+                      className="text-base sm:text-xl lg:text-2xl font-bold tracking-tight max-w-full"
                       showLabelPrefix={false}
+                      singleLine={true}
                     />
                   </h1>
                 </div>
 
-                {/* Merged Purpose Subtitle + Related Quick Links */}
+                {/* Merged Purpose Subtitle + Related Quick Links (collapsed behind 'i' button on mobile) */}
                 <PagePurposeBar page="executive_dashboard" inline />
               </div>
             </div>
 
             {/* Right Column: Telemetry Pill + Single Action Bar (Download, Present, View options, More) */}
-            <div className="flex flex-col sm:items-end gap-2 shrink-0 ml-auto">
-              {/* Telemetry Health Summary (non-overlapping with H1) */}
-              <div className="flex flex-wrap items-center gap-2.5 bg-input border border-subtle px-3 py-1.5 rounded-xl shadow-2xs shrink-0 self-start sm:self-end">
+            <div className="flex flex-wrap sm:flex-col sm:items-end items-center justify-between w-full sm:w-auto gap-1.5 sm:gap-2 shrink-0 sm:ml-auto">
+              {/* Telemetry Health Summary (non-overlapping with H1; inline in breadcrumb on mobile <640px) */}
+              <div className="hidden sm:flex flex-wrap items-center gap-2 bg-input border border-subtle px-2.5 py-1 rounded-xl shadow-2xs shrink-0">
                 <button
                   type="button"
                   onClick={() => setCurrentTab('quality')}
-                  className="flex items-center gap-1.5 cursor-pointer hover:opacity-80 text-left"
+                  className="flex items-center gap-1 cursor-pointer hover:opacity-80 text-left"
                   title="Click to view Data Quality Audit"
                 >
-                  <span className="font-mono text-secondary tracking-wider uppercase font-bold text-[10px] whitespace-nowrap">
+                  <span className="font-mono text-secondary font-bold text-xs whitespace-nowrap">
                     DATA QUALITY
                   </span>
                   <span className="text-accent font-mono text-xs font-bold tabular-nums whitespace-nowrap">
@@ -895,8 +903,8 @@ export const ExecutiveDashboard: React.FC = () => {
                   </span>
                 </button>
                 <div className="w-px h-3.5 bg-[var(--border-subtle)]" />
-                <div className="flex items-center gap-1.5">
-                  <span className="font-mono text-secondary tracking-wider uppercase font-bold text-[10px] whitespace-nowrap">
+                <div className="flex items-center gap-1">
+                  <span className="font-mono text-secondary font-bold text-xs whitespace-nowrap">
                     BUSINESS HEALTH
                   </span>
                   <span className="text-amber-500 font-mono text-xs font-bold flex items-center gap-1 tabular-nums whitespace-nowrap">
@@ -913,7 +921,7 @@ export const ExecutiveDashboard: React.FC = () => {
               {/* Single Action Bar: Download, Present, View options popover, More menu */}
               <div
                 data-testid="exec-single-action-bar"
-                className="flex flex-wrap items-center gap-1.5 sm:gap-2"
+                className="flex flex-nowrap sm:flex-wrap items-center gap-1 sm:gap-2 w-full sm:w-auto"
               >
                 <DownloadMenu context="executive_dashboard" label="Download" />
 
@@ -954,11 +962,12 @@ export const ExecutiveDashboard: React.FC = () => {
                   type="button"
                   data-testid="exec-present-btn"
                   onClick={() => setIsPresentationMode(true)}
-                  className="glass-btn-primary min-h-[36px] px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-xs cursor-pointer whitespace-nowrap shrink-0"
+                  aria-label="Present"
+                  className="glass-btn-primary min-h-[32px] sm:min-h-[36px] px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1 sm:gap-1.5 shadow-xs cursor-pointer whitespace-nowrap shrink-0"
                   title="Open Fullscreen Boardroom Presentation Deck"
                 >
                   <Tv className="w-3.5 h-3.5 shrink-0" />
-                  <span>Present</span>
+                  <span className="hidden sm:inline">Present</span>
                 </button>
 
                 {/* View Options Popover (Perspective + Theme + Live Preview) */}
@@ -967,15 +976,18 @@ export const ExecutiveDashboard: React.FC = () => {
                     type="button"
                     data-testid="exec-view-options-trigger"
                     aria-expanded={isViewOptionsOpen}
+                    aria-label="View options"
                     onClick={() => {
                       setIsViewOptionsOpen((prev) => !prev);
                       setIsMoreActionsOpen(false);
                     }}
-                    className="min-h-[36px] px-3 py-1.5 rounded-xl bg-input hover:bg-elevated border border-subtle text-xs font-semibold text-primary inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+                    className="min-h-[32px] sm:min-h-[36px] px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-input hover:bg-elevated border border-subtle text-xs font-semibold text-primary inline-flex items-center gap-1 sm:gap-1.5 cursor-pointer whitespace-nowrap"
                     title="Customize Dashboard Perspective & Visual Theme"
                   >
                     <Sliders className="w-3.5 h-3.5 text-accent shrink-0" />
-                    <span>View options</span>
+                    <span>
+                      <span className="hidden sm:inline">View </span>options
+                    </span>
                   </button>
 
                   {isViewOptionsOpen && (
@@ -1369,24 +1381,24 @@ export const ExecutiveDashboard: React.FC = () => {
       </section>
 
       {/* 2. 4 EXECUTIVE KPI CARDS - FULLY DYNAMIC & DATASET-DRIVEN */}
-      <section className="space-y-2.5">
-        <div className="flex items-center justify-between px-1">
-          <div className="flex items-center gap-2">
-            <span className="font-label-caps text-label-caps uppercase tracking-wider text-on-surface-variant font-bold text-[11px]">
+      <section className="space-y-2">
+        <div className="flex items-center justify-between px-1 gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="font-heading tracking-wide text-secondary font-bold text-xs truncate">
               Executive Performance Telemetry
             </span>
-            <span className="text-[10px] text-cyan-400 hidden sm:inline font-mono">
-              (Click pencil on any card to change heading & calculation)
+            <span className="text-xs text-accent hidden md:inline font-mono">
+              (Click pencil on any card to change heading &amp; calculation)
             </span>
           </div>
           <button
             type="button"
             onClick={resetKpisToDefault}
-            className="text-[11px] text-on-surface-variant hover:text-cyan-400 flex items-center gap-1 font-mono transition-colors px-2 py-1 rounded hover:bg-white/5 cursor-pointer"
+            className="text-xs text-secondary hover:text-accent flex items-center gap-1 font-mono transition-colors px-2 py-0.5 rounded hover:bg-input cursor-pointer shrink-0"
             title="Reset all cards to automatic engine calculations"
           >
-            <RotateCcw className="w-3 h-3 text-cyan-400" />
-            <span>Reset Auto Metrics</span>
+            <RotateCcw className="w-3 h-3 text-accent" />
+            <span>Reset<span className="hidden sm:inline"> Auto Metrics</span></span>
           </button>
         </div>
 

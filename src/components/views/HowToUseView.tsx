@@ -610,11 +610,7 @@ export const HowToUseView: React.FC = () => {
               </span>
             </div>
 
-            <h1
-              className={`font-heading text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight uppercase ${
-                isLight ? 'text-primary' : 'text-primary'
-              }`}
-            >
+            <h1 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight leading-tight text-primary">
               How to Use Data Analytix
             </h1>
 

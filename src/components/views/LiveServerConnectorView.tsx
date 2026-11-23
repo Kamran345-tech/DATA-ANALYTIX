@@ -292,8 +292,8 @@ export const LiveServerConnectorView: React.FC = () => {
             <Radio className="w-3.5 h-3.5 animate-pulse text-accent" />
             UNIVERSAL DATABASE & LIVE SERVER CONNECTOR
           </div>
-          <h1 className="font-heading text-3xl sm:text-4xl font-bold text-primary tracking-wide uppercase">
-            CONNECT TO ANY DATABASE & SERVER
+          <h1 className="font-heading text-2xl sm:text-3xl font-bold text-primary tracking-tight leading-tight">
+            Connect to Any Database &amp; Server
           </h1>
           <p className="text-xs sm:text-sm text-secondary leading-relaxed">
             Attach credentials for any server: <span className="text-primary font-medium">PostgreSQL, MySQL, SQL Server, MongoDB, Snowflake, Oracle, or REST APIs</span>. Stream live records directly into the analytical pipeline for in-browser SQL or Python cleaning. *(Note: Direct database wire protocols operate in sandbox demo mode; use REST API for live external HTTP endpoints).*

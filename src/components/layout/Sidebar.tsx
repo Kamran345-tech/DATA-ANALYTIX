@@ -303,7 +303,9 @@ export const Sidebar: React.FC = () => {
                     >
                       <button
                         type="button"
+                        role="link"
                         onClick={() => handleSelectTab(tabId)}
+                        aria-label={`Pinned: ${found.label}`}
                         className="min-h-[44px] lg:min-h-[28px] flex items-center gap-2 min-w-0 flex-1 text-left cursor-pointer"
                       >
                         <Icon
@@ -321,7 +323,7 @@ export const Sidebar: React.FC = () => {
                           togglePinTab(tabId);
                         }}
                         title={`Unpin ${found.label}`}
-                        aria-label={`Unpin ${found.label}`}
+                        aria-label="Unpin page from sidebar"
                         className={`min-w-[44px] min-h-[44px] lg:min-w-[24px] lg:min-h-[24px] p-1 rounded flex items-center justify-center cursor-pointer ${
                           isActive
                             ? 'text-on-accent hover:opacity-80'
@@ -356,7 +358,9 @@ export const Sidebar: React.FC = () => {
                     <button
                       key={`rec-${tabId}`}
                       type="button"
+                      role="link"
                       data-testid={`sidebar-recent-item-${tabId}`}
+                      aria-label={`Recent: ${found.label}`}
                       onClick={() => handleSelectTab(tabId)}
                       className={`min-h-[44px] lg:min-h-[26px] px-2 py-1 rounded-lg text-[11px] font-medium border cursor-pointer ${
                         isActive
@@ -491,7 +495,7 @@ export const Sidebar: React.FC = () => {
                                 togglePinTab(item.id);
                               }}
                               aria-label={
-                                isPinned ? `Unpin ${item.label}` : `Pin ${item.label}`
+                                isPinned ? 'Unpin page from sidebar' : 'Pin page to sidebar'
                               }
                               aria-pressed={isPinned}
                               title={

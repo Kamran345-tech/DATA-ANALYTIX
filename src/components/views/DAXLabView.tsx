@@ -68,8 +68,8 @@ export const DAXLabView: React.FC = () => {
           <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[var(--accent-2)] font-mono">
             <Code2 className="w-4 h-4" /> Power BI &amp; Tabular Semantic Engine
           </div>
-          <h1 className="font-heading text-3xl sm:text-4xl font-bold tracking-tight uppercase text-primary">
-            DAX MEASURE WORKBENCH
+          <h1 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight leading-tight text-primary">
+            DAX Measure Workbench
           </h1>
           <p className="text-xs text-secondary">
             Formulas strictly mapped to your active schema: <span className="font-mono text-accent">'{tableName}'</span>. Includes Time Intelligence, YoY, and Financial Margins.
