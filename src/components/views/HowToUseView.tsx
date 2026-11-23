@@ -654,6 +654,18 @@ export const HowToUseView: React.FC = () => {
                 )}
               </button>
             </div>
+
+            <button
+              type="button"
+              data-testid="replay-coach-tour-btn"
+              onClick={() =>
+                window.dispatchEvent(new CustomEvent('dataanalytix:start-coach-tour'))
+              }
+              className="px-3.5 py-2 rounded-xl bg-accent text-on-accent text-xs font-bold inline-flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+            >
+              <Play className="w-3.5 h-3.5" />
+              <span>Replay 3-Step Quick Tour</span>
+            </button>
           </div>
         </div>
 

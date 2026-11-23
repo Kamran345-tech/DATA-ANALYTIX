@@ -808,7 +808,7 @@ test.describe('Analytics Packs E2E Verification Suite', () => {
     }
 
     // 4. Verify Settings -> Learned Preferences & Adaptive Rules (Part B2)
-    await page.getByRole('button', { name: 'Settings & Branding' }).click();
+    await page.getByTestId('sidebar-nav-item-settings').first().click();
     const learnedPrefs = page.getByTestId('settings-learned-preferences');
     await expect(learnedPrefs).toBeVisible({ timeout: 10000 });
     await learnedPrefs.scrollIntoViewIfNeeded();

@@ -12,6 +12,7 @@ import { updateHashForTab, getTabFromCurrentHash } from './utils/routing';
 import { applyDocumentTheme } from './utils/theme';
 import { useThemeTransition } from './hooks/useThemeTransition';
 import { GuidedWorkflowStepper } from './components/common/GuidedWorkflowStepper';
+import { FirstRunCoachTour } from './components/common/FirstRunCoachTour';
 import './styles/modern.css';
 
 // Code-split views and heavy overlays using React.lazy for fast initial load
@@ -322,6 +323,7 @@ const MainContent: React.FC = () => {
       {/* Mobile Bottom Nav & Command Palette (Modern or Design System v3) */}
       {(isModern || flags.designSystemV3) && !isPresentationMode && (
         <>
+          <FirstRunCoachTour />
           <Suspense fallback={null}>
             <ModernMobileBottomNav />
             {isModern && <ModernOnboardingChecklist />}

@@ -4,33 +4,38 @@ import {
   Wand2,
   Layers,
   FileText,
+  HelpCircle,
   Check,
   ChevronRight,
   Search,
-  HelpCircle,
   X,
+  Compass,
 } from 'lucide-react';
 import { NavigationTab, usePlatform } from '../../store/usePlatformStore';
 import { loadFeatureFlags } from '../../config/features';
 import { PAGE_HEADER_CATALOG } from './PageHeader';
-
-interface StepDefinition {
-  id: 'upload' | 'clean' | 'analyze' | 'present';
-  label: string;
-  targetTab: NavigationTab;
-  matchTabs: NavigationTab[];
-  icon: React.ComponentType<{ className?: string }>;
-  statusText: string;
-  isComplete: boolean;
-}
+import {
+  WORKFLOW_SIDEBAR_GROUPS,
+  findWorkflowGroupForTab,
+  WorkflowGroupId,
+} from '../../config/navigationConfig';
 
 export interface GuidedWorkflowStepperProps {
   onOpenCommandPalette?: () => void;
 }
 
+const GROUP_ICONS: Record<WorkflowGroupId, React.ComponentType<{ className?: string }>> = {
+  upload: UploadCloud,
+  clean: Wand2,
+  analyze: Layers,
+  present: FileText,
+  help_settings: HelpCircle,
+};
+
 /**
- * Guided 4-Stage Workflow Stepper: Upload -> Clean -> Analyze -> Present (Phase 3.3).
- * Tracks real dataset progress and lets analysts jump between stages, open the contextual "?" guide, or trigger Ctrl+K search.
+ * Slim Top Workflow Stepper matching the Sidebar Groups:
+ * 1 Upload -> 2 Clean -> 3 Analyze -> 4 Present -> Help & Settings.
+ * Highlights the active page's group and expands/focuses that group in the sidebar on click.
  */
 export const GuidedWorkflowStepper: React.FC<GuidedWorkflowStepperProps> = ({
   onOpenCommandPalette,
@@ -54,71 +59,68 @@ export const GuidedWorkflowStepper: React.FC<GuidedWorkflowStepperProps> = ({
   const isCleanComplete =
     hasData && (qualityReport.overallScore >= 95 || transformations.length > 0);
   const isAnalyzeComplete = hasData && Boolean(activePackId);
-  const pageSpec = PAGE_HEADER_CATALOG[currentTab] || PAGE_HEADER_CATALOG.executive_dashboard;
+  const pageSpec =
+    PAGE_HEADER_CATALOG[currentTab] || PAGE_HEADER_CATALOG.executive_dashboard;
+  const activeGroup = findWorkflowGroupForTab(currentTab);
 
-  const steps: StepDefinition[] = [
-    {
-      id: 'upload',
-      label: '1. Upload',
-      targetTab: 'upload',
-      matchTabs: ['upload', 'live_connector', 'preview'],
-      icon: UploadCloud,
-      statusText: hasData ? `${cleanRows.length.toLocaleString()} rows` : 'Select source',
-      isComplete: hasData,
-    },
-    {
-      id: 'clean',
-      label: '2. Clean',
-      targetTab: 'cleaning',
-      matchTabs: ['cleaning', 'quality', 'modeling', 'data_engineering', 'excel_automation'],
-      icon: Wand2,
-      statusText: hasData ? `${qualityReport.overallScore}% hygiene` : 'Audit & fix',
-      isComplete: isCleanComplete,
-    },
-    {
-      id: 'analyze',
-      label: '3. Analyze',
-      targetTab: flags.analyticsPacks ? 'analytics_packs' : 'analysis',
-      matchTabs: ['analytics_packs', 'analysis', 'sql_lab', 'dax_lab', 'python_lab', 'ai_insights'],
-      icon: Layers,
-      statusText: hasData ? `Pack: ${activePackId.toUpperCase()}` : '14 domain packs',
-      isComplete: isAnalyzeComplete,
-    },
-    {
-      id: 'present',
-      label: '4. Present',
-      targetTab: 'reports',
-      matchTabs: ['executive_dashboard', 'dashboard_builder', 'reports', 'export_center'],
-      icon: FileText,
-      statusText: hasData ? 'Deck & PDF ready' : 'Reports & exports',
-      isComplete: hasData && currentTab === 'reports',
-    },
-  ];
+  const getStepCompletion = (groupId: WorkflowGroupId): boolean => {
+    switch (groupId) {
+      case 'upload':
+        return hasData;
+      case 'clean':
+        return isCleanComplete;
+      case 'analyze':
+        return isAnalyzeComplete;
+      case 'present':
+        return hasData && activeGroup.id === 'present';
+      case 'help_settings':
+        return false;
+    }
+  };
+
+  const getTargetTab = (groupId: WorkflowGroupId, defaultTab: NavigationTab): NavigationTab => {
+    if (groupId === 'analyze' && !flags.analyticsPacks) {
+      return 'analysis';
+    }
+    return defaultTab;
+  };
+
+  const handleStepClick = (groupId: WorkflowGroupId, defaultTab: NavigationTab) => {
+    window.dispatchEvent(
+      new CustomEvent('dataanalytix:focus-sidebar-group', {
+        detail: { groupId },
+      })
+    );
+    const target = getTargetTab(groupId, defaultTab);
+    setCurrentTab(target);
+  };
 
   return (
-    <div className="mb-4 space-y-2">
+    <div className="mb-2.5 space-y-2">
       <nav
         aria-label="Guided workflow stages"
         data-testid="guided-workflow-stepper"
-        className="rounded-2xl border border-subtle bg-card px-2.5 sm:px-3 py-2 shadow-2xs flex items-center justify-between gap-1.5 sm:gap-2"
+        className="rounded-xl border border-subtle bg-card px-2.5 py-1.5 shadow-2xs flex items-center justify-between gap-1.5"
       >
-        <ol className="flex items-center gap-1 sm:gap-1.5 min-w-0 flex-1 overflow-x-auto no-scrollbar">
-          {steps.map((step, idx) => {
-            const isCurrent = step.matchTabs.includes(currentTab);
-            const Icon = step.icon;
+        <ol className="flex items-center gap-1 min-w-0 flex-1 overflow-x-auto no-scrollbar">
+          {WORKFLOW_SIDEBAR_GROUPS.map((group, idx) => {
+            const isCurrent = activeGroup.id === group.id;
+            const isComplete = getStepCompletion(group.id);
+            const Icon = GROUP_ICONS[group.id] || Layers;
 
             return (
-              <React.Fragment key={step.id}>
+              <React.Fragment key={group.id}>
                 <li className="min-w-0 shrink-0">
                   <button
                     type="button"
-                    data-testid={`workflow-step-${step.id}`}
-                    onClick={() => setCurrentTab(step.targetTab)}
+                    data-testid={`workflow-step-${group.id}`}
+                    data-active={isCurrent ? 'true' : 'false'}
+                    onClick={() => handleStepClick(group.id, group.defaultTab)}
                     aria-current={isCurrent ? 'step' : undefined}
-                    className={`min-h-[36px] px-2 sm:px-2.5 py-1 rounded-xl text-xs inline-flex items-center gap-1.5 cursor-pointer border ${
+                    className={`min-h-[32px] px-2 sm:px-2.5 py-1 rounded-lg text-xs inline-flex items-center gap-1.5 cursor-pointer border ${
                       isCurrent
                         ? 'bg-accent text-on-accent border-subtle font-bold shadow-2xs'
-                        : step.isComplete
+                        : isComplete
                         ? 'bg-input hover:bg-elevated text-primary border-subtle font-semibold'
                         : 'bg-transparent hover:bg-input text-secondary border-transparent font-medium'
                     }`}
@@ -127,30 +129,26 @@ export const GuidedWorkflowStepper: React.FC<GuidedWorkflowStepperProps> = ({
                       className={`hidden sm:flex w-4 h-4 rounded-full items-center justify-center text-xs font-mono shrink-0 ${
                         isCurrent
                           ? 'bg-card/20 text-on-accent font-bold'
-                          : step.isComplete
+                          : isComplete
                           ? 'bg-accent-soft text-accent font-bold'
                           : 'bg-elevated text-muted'
                       }`}
                     >
-                      {step.isComplete && !isCurrent ? (
+                      {isComplete && !isCurrent ? (
                         <Check className="w-2.5 h-2.5" />
                       ) : (
                         <Icon className="w-2.5 h-2.5" />
                       )}
                     </span>
-                    <span className="whitespace-nowrap">{step.label}</span>
-                    <span
-                      className={`hidden 2xl:inline text-xs font-mono truncate max-w-[105px] ${
-                        isCurrent ? 'text-on-accent/90' : 'text-muted'
-                      }`}
-                    >
-                      · {step.statusText}
-                    </span>
+                    <span className="whitespace-nowrap">{group.stepperLabel}</span>
                   </button>
                 </li>
 
-                {idx < steps.length - 1 && (
-                  <li aria-hidden="true" className="text-muted hidden md:flex items-center shrink-0">
+                {idx < WORKFLOW_SIDEBAR_GROUPS.length - 1 && (
+                  <li
+                    aria-hidden="true"
+                    className="text-muted hidden md:flex items-center shrink-0"
+                  >
                     <ChevronRight className="w-3 h-3" />
                   </li>
                 )}
@@ -166,14 +164,16 @@ export const GuidedWorkflowStepper: React.FC<GuidedWorkflowStepperProps> = ({
             aria-expanded={isGuideOpen}
             aria-label={`How to use ${pageSpec.title}`}
             title={`Quick guide for ${pageSpec.title}`}
-            onClick={() => setIsGuideOpen(prev => !prev)}
-            className={`min-h-[36px] px-2 sm:px-2.5 py-1 rounded-xl border text-xs font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer ${
+            onClick={() => setIsGuideOpen((prev) => !prev)}
+            className={`min-h-[32px] px-2 sm:px-2.5 py-1 rounded-lg border text-xs font-semibold inline-flex items-center gap-1 cursor-pointer ${
               isGuideOpen
-                ? 'bg-accent-soft text-accent border-strong'
+                ? 'bg-accent text-on-accent border-subtle font-bold'
                 : 'bg-input hover:bg-elevated text-secondary hover:text-primary border-subtle'
             }`}
           >
-            <HelpCircle className="w-3.5 h-3.5 text-accent" />
+            <HelpCircle
+              className={`w-3.5 h-3.5 ${isGuideOpen ? 'text-on-accent' : 'text-accent'}`}
+            />
             <span className="hidden lg:inline">? Guide</span>
           </button>
 
@@ -183,11 +183,11 @@ export const GuidedWorkflowStepper: React.FC<GuidedWorkflowStepperProps> = ({
               data-testid="stepper-command-palette-trigger"
               onClick={onOpenCommandPalette}
               aria-label="Open Command Palette (Ctrl+K)"
-              className="min-h-[36px] px-2 sm:px-2.5 py-1 rounded-xl bg-input hover:bg-elevated border border-subtle text-xs text-secondary hover:text-primary inline-flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+              className="min-h-[32px] px-2 sm:px-2.5 py-1 rounded-lg bg-input hover:bg-elevated border border-subtle text-xs text-secondary hover:text-primary inline-flex items-center gap-1.5 cursor-pointer shrink-0"
             >
               <Search className="w-3.5 h-3.5 text-accent" />
-              <span className="hidden xl:inline">Quick Jump</span>
-              <kbd className="hidden sm:inline px-1.5 py-0.5 rounded bg-card border border-subtle font-mono text-xs text-muted">
+              <span className="hidden xl:inline">Search</span>
+              <kbd className="hidden sm:inline px-1.5 py-0.5 rounded bg-card border border-subtle font-mono text-[10px] text-muted">
                 Ctrl+K
               </kbd>
             </button>
@@ -200,33 +200,47 @@ export const GuidedWorkflowStepper: React.FC<GuidedWorkflowStepperProps> = ({
           data-testid="stepper-page-guide-panel"
           role="region"
           aria-label={`Quick guide for ${pageSpec.title}`}
-          className="rounded-2xl border border-subtle bg-card p-4 space-y-2.5 shadow-xs"
+          className="rounded-xl border border-subtle bg-card p-3.5 space-y-2.5 shadow-xs"
         >
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2 text-xs font-mono font-bold text-accent">
               <HelpCircle className="w-3.5 h-3.5" />
               <span>Quick Guide: {pageSpec.title}</span>
             </div>
-            <button
-              type="button"
-              onClick={() => setIsGuideOpen(false)}
-              aria-label="Close quick guide"
-              className="p-1 rounded-lg text-secondary hover:text-primary hover:bg-input cursor-pointer"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                data-testid="stepper-replay-tour-btn"
+                onClick={() => {
+                  setIsGuideOpen(false);
+                  window.dispatchEvent(new CustomEvent('dataanalytix:start-coach-tour'));
+                }}
+                className="px-2.5 py-1 rounded-lg bg-input hover:bg-elevated border border-subtle text-xs font-semibold text-primary inline-flex items-center gap-1 cursor-pointer"
+              >
+                <Compass className="w-3.5 h-3.5 text-accent" />
+                <span>Replay 3-Step Tour</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsGuideOpen(false)}
+                aria-label="Close quick guide"
+                className="p-1 rounded-lg text-secondary hover:text-primary hover:bg-input cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
           <p className="text-xs text-secondary">{pageSpec.purpose}</p>
-          <ol className="grid grid-cols-1 md:grid-cols-3 gap-2.5 text-xs text-secondary">
+          <ol className="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs text-secondary">
             {pageSpec.guideSteps.map((stepText, idx) => (
               <li
                 key={idx}
-                className="p-3 rounded-xl bg-input border border-subtle flex items-start gap-2.5"
+                className="p-2.5 rounded-lg bg-input border border-subtle flex items-start gap-2"
               >
                 <span className="w-5 h-5 rounded-full bg-accent-soft text-accent font-mono text-xs font-bold flex items-center justify-center shrink-0">
                   {idx + 1}
                 </span>
-                <span className="leading-relaxed text-primary">{stepText}</span>
+                <span className="leading-snug text-primary">{stepText}</span>
               </li>
             ))}
           </ol>
@@ -235,4 +249,3 @@ export const GuidedWorkflowStepper: React.FC<GuidedWorkflowStepperProps> = ({
     </div>
   );
 };
-

@@ -1,123 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
-  UploadCloud,
-  Table2,
-  ShieldAlert,
-  Wand2,
-  Network,
-  TrendingUp,
-  Code2,
-  Database,
-  SlidersHorizontal,
-  Sparkles,
-  FileSpreadsheet,
-  BookOpen,
-  FolderDown,
-  Settings,
   ChevronDown,
   ChevronRight,
-  Database as DbIcon,
-  Layers,
-  LayoutDashboard,
-  Cpu,
   PanelLeftClose,
   PanelLeftOpen,
   Command,
-  FileText,
   Clock,
-  Home,
-  Wrench,
+  Search,
+  Star,
+  X,
 } from 'lucide-react';
 import { usePlatform, NavigationTab } from '../../store/usePlatformStore';
 import { loadFeatureFlags, FeatureFlags } from '../../config/features';
-import { SIMPLE_CORE_TAB_IDS, useSidebarNavState } from '../../config/navigationConfig';
+import {
+  WORKFLOW_SIDEBAR_GROUPS,
+  ALL_WORKFLOW_NAV_ITEMS,
+  DEFAULT_PINNED_TABS,
+  useSidebarNavState,
+} from '../../config/navigationConfig';
 
-export { SIMPLE_CORE_TAB_IDS, useSidebarNavState };
-
-interface NavItemDef {
-  id: NavigationTab;
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-  description: string;
-}
-
-interface NavGroup {
-  id: string;
-  name: string;
-  items: NavItemDef[];
-}
-
-/**
- * 8 Core Items for Simple Navigation Mode (Phase 3.3):
- * Upload, Clean, Analyze (packs), Dashboard, Report/Present, Ask AI, Export, Settings.
- */
-export const SIMPLE_NAV_ITEMS: NavItemDef[] = [
-  { id: 'upload', label: 'Upload Data', icon: UploadCloud, description: 'Ingest CSV, Excel, or JSON files' },
-  { id: 'cleaning', label: 'Data Cleaning Lab', icon: Wand2, description: '1-click deterministic cleaning recipes' },
-  { id: 'analytics_packs', label: 'Analytics Packs', icon: Layers, description: '14 domain dashboards, KPIs & PPTX decks' },
-  { id: 'executive_dashboard', label: 'Executive Dashboard', icon: LayoutDashboard, description: 'Board-ready KPI telemetry & filters' },
-  { id: 'reports', label: 'Executive Reports', icon: FileText, description: 'Print-ready decks and PDF briefs' },
-  { id: 'ai_insights', label: 'Ask Your Data AI', icon: Sparkles, description: 'Natural language analysis grounded in metrics' },
-  { id: 'export_center', label: 'Export Center', icon: FolderDown, description: 'Download Power BI PBIP, Excel, PDF & PPTX' },
-  { id: 'settings', label: 'Settings & Branding', icon: Settings, description: 'Appearance, branding, flags & learned rules' },
-];
-
-const MODERN_NAV_GROUPS: NavGroup[] = [
-  {
-    id: 'group_data',
-    name: 'Data',
-    items: [
-      { id: 'landing', label: 'Home / Overview', icon: Home, description: 'Command center and guided launchpad' },
-      { id: 'upload', label: 'Upload Data', icon: UploadCloud, description: 'Ingest CSV, Excel, or Delimited files' },
-      { id: 'live_connector', label: 'Live Server & DB', icon: DbIcon, description: 'Connect REST APIs or live database streams' },
-      { id: 'preview', label: 'Data Preview & Profile', icon: Table2, description: 'Inspect schema, columns, and raw rows' },
-    ],
-  },
-  {
-    id: 'group_prepare',
-    name: 'Prepare',
-    items: [
-      { id: 'quality', label: 'Data Quality Auditor', icon: ShieldAlert, description: 'Audit nulls, outliers, and data health' },
-      { id: 'cleaning', label: 'Data Cleaning Lab', icon: Wand2, description: '1-click deterministic cleaning recipes' },
-      { id: 'modeling', label: 'Data Modeling (ERD)', icon: Network, description: 'Decompose flat tables into Fact & Dimensions' },
-      { id: 'data_engineering', label: 'Data Engineering (DAG)', icon: Layers, description: 'Visual pipeline flow and data quality tests' },
-      { id: 'excel_automation', label: 'Excel Automation (XLSX)', icon: FileSpreadsheet, description: 'Formula automation and data formatting' },
-    ],
-  },
-  {
-    id: 'group_analyze',
-    name: 'Analyze',
-    items: [
-      { id: 'analytics_packs', label: 'Analytics Packs', icon: Layers, description: '14 domain-specific dashboards, KPIs and reports' },
-      { id: 'analysis', label: 'Statistical Analysis', icon: TrendingUp, description: 'Correlations, Cohort, Funnel, A/B, Pareto & RFM' },
-      { id: 'sql_lab', label: 'SQL Lab', icon: Database, description: 'Execute ANSI SQL queries in-browser' },
-      { id: 'dax_lab', label: 'DAX Lab', icon: Cpu, description: '20+ Time Intelligence business measures' },
-      { id: 'python_lab', label: 'Python Lab', icon: Code2, description: 'Client-side Python data science analysis' },
-      { id: 'ai_insights', label: 'Ask Your Data AI', icon: Sparkles, description: 'Natural language analysis grounded in metrics' },
-    ],
-  },
-  {
-    id: 'group_build',
-    name: 'Build & Present',
-    items: [
-      { id: 'executive_dashboard', label: 'Executive Dashboard', icon: LayoutDashboard, description: 'Board-ready KPI telemetry and visual filters' },
-      { id: 'dashboard_builder', label: 'Dashboard Builder', icon: SlidersHorizontal, description: 'Compose and customize analytical widgets' },
-      { id: 'reports', label: 'Executive Reports', icon: FileText, description: 'Print-ready decks and PDF exports' },
-    ],
-  },
-  {
-    id: 'group_export',
-    name: 'Export & Govern',
-    items: [
-      { id: 'export_center', label: 'Export Center (ZIP)', icon: FolderDown, description: 'Download Power BI PBIP and multi-tab Excel' },
-      { id: 'data_dictionary', label: 'Data Dictionary & Lineage', icon: BookOpen, description: 'Data dictionary, lineage, and catalog' },
-      { id: 'how_to_use', label: 'How to Use Platform', icon: BookOpen, description: 'Complete platform guide and playbook' },
-      { id: 'how_to_modify', label: 'How to Modify Project', icon: Wrench, description: 'Architecture and developer extension guide' },
-      { id: 'blog', label: 'Knowledge Base / Blog', icon: FileText, description: 'Product updates and architecture history' },
-      { id: 'settings', label: 'Settings & Branding', icon: Settings, description: 'Appearance, branding, and feature flags' },
-    ],
-  },
-];
+export { WORKFLOW_SIDEBAR_GROUPS, ALL_WORKFLOW_NAV_ITEMS, DEFAULT_PINNED_TABS, useSidebarNavState };
 
 export interface ModernSidebarProps {
   onOpenCommandPalette?: () => void;
@@ -126,7 +28,16 @@ export interface ModernSidebarProps {
 export const ModernSidebar: React.FC<ModernSidebarProps> = ({ onOpenCommandPalette }) => {
   const { currentTab, setCurrentTab } = usePlatform();
   const [flags, setFlags] = useState<FeatureFlags>(() => loadFeatureFlags());
-  const { navMode, updateNavMode, recentTabs } = useSidebarNavState('simple');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const {
+    pinnedTabs,
+    togglePinTab,
+    isTabPinned,
+    recentTabs,
+    collapsedGroups,
+    toggleGroup,
+  } = useSidebarNavState(currentTab);
 
   useEffect(() => {
     const handleFlags = (e: any) => setFlags(e.detail || loadFeatureFlags());
@@ -143,8 +54,6 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({ onOpenCommandPalet
     return false;
   });
 
-  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
-
   const toggleRail = () => {
     const next = !isRailCollapsed;
     setIsRailCollapsed(next);
@@ -153,14 +62,39 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({ onOpenCommandPalet
     }
   };
 
-  const toggleGroup = (groupId: string) => {
-    setCollapsedGroups((prev) => ({ ...prev, [groupId]: !prev[groupId] }));
-  };
+  const normalizedQuery = searchQuery.trim().toLowerCase();
 
-  const allItemsFlat = React.useMemo(
-    () => MODERN_NAV_GROUPS.flatMap((g) => g.items),
-    []
-  );
+  const filteredGroups = useMemo(() => {
+    return WORKFLOW_SIDEBAR_GROUPS.map((group) => {
+      const items = group.items.filter((item) => {
+        if (item.id === 'analytics_packs' && !flags.analyticsPacks) return false;
+        if (!normalizedQuery) return true;
+        return (
+          item.label.toLowerCase().includes(normalizedQuery) ||
+          item.purpose.toLowerCase().includes(normalizedQuery) ||
+          item.keywords.some((k) => k.toLowerCase().includes(normalizedQuery))
+        );
+      });
+      return { ...group, items };
+    }).filter((g) => g.items.length > 0);
+  }, [flags.analyticsPacks, normalizedQuery]);
+
+  const firstSearchMatch = useMemo(() => {
+    if (!normalizedQuery) return null;
+    const allMatches = filteredGroups.flatMap((g) => g.items);
+    return (
+      allMatches.find((item) => item.label.toLowerCase().includes(normalizedQuery)) ||
+      allMatches[0] ||
+      null
+    );
+  }, [filteredGroups, normalizedQuery]);
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && firstSearchMatch) {
+      e.preventDefault();
+      setCurrentTab(firstSearchMatch.id);
+    }
+  };
 
   return (
     <aside
@@ -170,12 +104,12 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({ onOpenCommandPalet
         isRailCollapsed ? 'w-16' : 'w-64'
       }`}
     >
-      {/* Top Rail Controls + Simple / Pro Switcher */}
-      <div className="p-3 border-b border-subtle space-y-2.5">
+      {/* Top Rail Controls + Search Input */}
+      <div className="p-3 border-b border-subtle space-y-2">
         <div className="flex items-center justify-between gap-2">
           {!isRailCollapsed && (
             <span className="text-xs font-semibold text-secondary pl-1">
-              Workspace Menu
+              Workflow Menu
             </span>
           )}
           <button
@@ -193,65 +127,136 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({ onOpenCommandPalet
           </button>
         </div>
 
-        {/* Simple / Pro Mode Segmented Control (Phase 3.3) */}
-        {!isRailCollapsed && flags.designSystemV3 && (
-          <div
-            data-testid="nav-mode-toggle"
-            role="group"
-            aria-label="Navigation complexity mode"
-            className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-input border border-subtle"
-          >
-            <button
-              type="button"
-              data-testid="nav-mode-simple"
-              onClick={() => updateNavMode('simple')}
-              aria-pressed={navMode === 'simple'}
-              className={`py-1.5 px-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
-                navMode === 'simple'
-                  ? 'bg-accent text-on-accent font-bold shadow-2xs'
-                  : 'text-secondary hover:text-primary'
-              }`}
-            >
-              Simple (8)
-            </button>
-            <button
-              type="button"
-              data-testid="nav-mode-pro"
-              onClick={() => updateNavMode('pro')}
-              aria-pressed={navMode === 'pro'}
-              className={`py-1.5 px-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
-                navMode === 'pro'
-                  ? 'bg-accent text-on-accent font-bold shadow-2xs'
-                  : 'text-secondary hover:text-primary'
-              }`}
-            >
-              Pro (All)
-            </button>
+        {!isRailCollapsed && (
+          <div className="relative flex items-center">
+            <Search className="w-3.5 h-3.5 text-accent absolute left-2.5 pointer-events-none" />
+            <input
+              type="text"
+              data-testid="sidebar-search-input"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={handleSearchKeyDown}
+              placeholder="Search pages (Enter to open)..."
+              aria-label="Search sidebar pages"
+              className="w-full min-h-[34px] pl-8 pr-14 py-1.5 rounded-xl bg-input border border-subtle text-xs text-primary placeholder:text-muted focus:outline-2 focus:outline-accent"
+            />
+            {searchQuery ? (
+              <button
+                type="button"
+                data-testid="sidebar-search-clear"
+                onClick={() => setSearchQuery('')}
+                aria-label="Clear sidebar search"
+                className="absolute right-2 p-1 rounded text-muted hover:text-primary cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={onOpenCommandPalette}
+                title="Open Quick Jump Command Palette (Ctrl+K)"
+                aria-label="Open Command Palette"
+                className="absolute right-1.5 px-1.5 py-0.5 rounded bg-card border border-subtle font-mono text-[10px] text-muted hover:text-primary cursor-pointer"
+              >
+                Ctrl+K
+              </button>
+            )}
           </div>
         )}
       </div>
 
       {/* Nav Items Container */}
-      <div className="flex-1 overflow-y-auto p-2.5 space-y-4">
-        {/* Recently Used Quick List (Phase 3.3) */}
-        {!isRailCollapsed && flags.designSystemV3 && recentTabs.length > 1 && (
-          <div data-testid="sidebar-recent-items" className="space-y-1 pb-2 border-b border-subtle">
-            <div className="px-2 flex items-center gap-1.5 text-xs font-mono text-muted">
+      <div className="flex-1 overflow-y-auto p-2.5 space-y-3">
+        {/* Pinned Pages Section */}
+        {!isRailCollapsed && !normalizedQuery && pinnedTabs.length > 0 && (
+          <div
+            data-testid="sidebar-pinned-section"
+            className="space-y-1 pb-2 border-b border-subtle"
+          >
+            <div className="px-2 flex items-center justify-between text-[11px] font-mono text-muted">
+              <span className="inline-flex items-center gap-1 font-semibold text-secondary">
+                <Star className="w-3 h-3 text-accent fill-current" />
+                <span>Pinned</span>
+              </span>
+              <span>{pinnedTabs.length}/6</span>
+            </div>
+            <div className="grid grid-cols-1 gap-0.5">
+              {pinnedTabs.map((tabId) => {
+                const found = ALL_WORKFLOW_NAV_ITEMS.find((i) => i.id === tabId);
+                if (!found || (found.id === 'analytics_packs' && !flags.analyticsPacks)) {
+                  return null;
+                }
+                const Icon = found.icon;
+                const isActive = currentTab === tabId;
+                return (
+                  <div
+                    key={`pin-${tabId}`}
+                    data-testid={`sidebar-pinned-item-${tabId}`}
+                    className={`flex items-center justify-between gap-1 rounded-xl px-2 py-1 text-xs ${
+                      isActive
+                        ? 'bg-accent text-on-accent font-bold'
+                        : 'text-secondary hover:text-primary hover:bg-elevated'
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setCurrentTab(tabId)}
+                      className="min-h-[28px] flex items-center gap-2 min-w-0 flex-1 text-left cursor-pointer"
+                    >
+                      <Icon
+                        className={`w-3.5 h-3.5 shrink-0 ${
+                          isActive ? 'text-on-accent' : 'text-accent'
+                        }`}
+                      />
+                      <span className="leading-tight line-clamp-1">{found.label}</span>
+                    </button>
+                    <button
+                      type="button"
+                      data-testid={`sidebar-unpin-btn-${tabId}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        togglePinTab(tabId);
+                      }}
+                      title={`Unpin ${found.label}`}
+                      aria-label={`Unpin ${found.label}`}
+                      className={`p-1 rounded flex items-center justify-center cursor-pointer ${
+                        isActive
+                          ? 'text-on-accent hover:opacity-80'
+                          : 'text-accent hover:text-primary'
+                      }`}
+                    >
+                      <Star className="w-3 h-3 fill-current" />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Recent Pages Row (last 3) */}
+        {!isRailCollapsed && !normalizedQuery && recentTabs.length > 0 && (
+          <div
+            data-testid="sidebar-recent-items"
+            className="space-y-1 pb-2 border-b border-subtle"
+          >
+            <div className="px-2 flex items-center gap-1.5 text-[11px] font-mono text-muted">
               <Clock className="w-3 h-3 text-accent" />
-              <span>Recently Used</span>
+              <span>Recent</span>
             </div>
             <div className="flex flex-wrap gap-1 px-1">
               {recentTabs.slice(0, 3).map((tabId) => {
-                const found = allItemsFlat.find((i) => i.id === tabId);
+                const found = ALL_WORKFLOW_NAV_ITEMS.find((i) => i.id === tabId);
                 if (!found) return null;
                 return (
                   <button
                     key={`rec-${tabId}`}
                     type="button"
+                    data-testid={`sidebar-recent-item-${tabId}`}
                     onClick={() => setCurrentTab(tabId)}
-                    className={`px-2 py-1 rounded-lg text-xs font-medium truncate max-w-[115px] border transition-colors cursor-pointer ${
+                    className={`px-2 py-1 rounded-lg text-[11px] font-medium border cursor-pointer ${
                       currentTab === tabId
-                        ? 'bg-accent-soft text-accent border-subtle font-semibold'
+                        ? 'bg-accent text-on-accent border-subtle font-bold'
                         : 'bg-input hover:bg-elevated text-secondary border-subtle'
                     }`}
                   >
@@ -263,125 +268,142 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({ onOpenCommandPalet
           </div>
         )}
 
-        {navMode === 'simple' && flags.designSystemV3 ? (
-          <div data-testid="sidebar-simple-list" className="space-y-1">
-            {!isRailCollapsed && (
-              <div className="px-2 py-1 text-xs font-mono text-muted">
-                Core Workflow (8 Tools)
-              </div>
-            )}
-            {SIMPLE_NAV_ITEMS.filter(
-              (item) => item.id !== 'analytics_packs' || flags.analyticsPacks
-            ).map((item) => {
-              const isActive = currentTab === item.id;
-              const Icon = item.icon;
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  data-testid={`sidebar-nav-item-${item.id}`}
-                  onClick={() => setCurrentTab(item.id)}
-                  title={`${item.label} — ${item.description}`}
-                  aria-label={item.label}
-                  aria-current={isActive ? 'page' : undefined}
-                  className={`w-full min-h-[40px] flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium transition-all text-left group cursor-pointer ${
-                    isActive
-                      ? 'bg-accent text-on-accent font-semibold shadow-2xs'
-                      : 'text-secondary hover:text-primary hover:bg-elevated'
-                  } ${isRailCollapsed ? 'justify-center px-0' : ''}`}
-                >
-                  <Icon
-                    className={`w-4 h-4 shrink-0 ${
-                      isActive ? 'text-on-accent' : 'text-accent group-hover:text-primary'
-                    }`}
-                  />
-                  {!isRailCollapsed && (
-                    <span className="min-w-0 truncate" title={item.label}>
-                      {item.label}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-
-            {!isRailCollapsed && (
-              <button
-                type="button"
-                onClick={() => updateNavMode('pro')}
-                className="w-full mt-2 py-2 px-3 rounded-xl border border-subtle bg-input hover:bg-elevated text-xs font-semibold text-secondary hover:text-primary transition-colors cursor-pointer text-center"
-              >
-                Show all 24 Pro modules →
-              </button>
-            )}
-          </div>
-        ) : (
-          MODERN_NAV_GROUPS.map((group) => {
-            const isGroupCollapsed = !!collapsedGroups[group.id];
+        {/* Collapsible Workflow Groups */}
+        <div className="space-y-2" data-testid="sidebar-workflow-groups">
+          {filteredGroups.map((group) => {
             const hasActiveItem = group.items.some((item) => item.id === currentTab);
+            const isGroupCollapsed = normalizedQuery
+              ? false
+              : Boolean(collapsedGroups[group.id]) && !hasActiveItem;
 
             return (
-              <div key={group.id} className="space-y-1">
+              <div
+                key={group.id}
+                data-testid={`sidebar-group-${group.id}`}
+                className="space-y-1"
+              >
                 {!isRailCollapsed && (
                   <button
                     type="button"
+                    data-testid={`sidebar-group-toggle-${group.id}`}
                     onClick={() => toggleGroup(group.id)}
                     aria-expanded={!isGroupCollapsed}
-                    className="w-full px-2 py-1 flex items-center justify-between text-left text-xs font-semibold text-muted hover:text-primary transition-colors cursor-pointer"
+                    className="w-full px-2 py-1 flex items-center justify-between text-left text-xs font-semibold text-muted hover:text-primary cursor-pointer"
                   >
                     <span className={hasActiveItem ? 'text-accent font-bold' : ''}>
-                      {group.name}
+                      {group.title}
                     </span>
-                    {isGroupCollapsed ? (
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    ) : (
-                      <ChevronDown className="w-3.5 h-3.5" />
-                    )}
+                    <span className="inline-flex items-center gap-1">
+                      <span className="text-[10px] font-mono">{group.items.length}</span>
+                      {isGroupCollapsed ? (
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      ) : (
+                        <ChevronDown className="w-3.5 h-3.5" />
+                      )}
+                    </span>
                   </button>
                 )}
 
                 {(!isGroupCollapsed || isRailCollapsed) && (
                   <div className="space-y-0.5">
-                    {group.items
-                      .filter((item) => item.id !== 'analytics_packs' || flags.analyticsPacks)
-                      .map((item) => {
-                        const isActive = currentTab === item.id;
-                        const Icon = item.icon;
+                    {group.items.map((item) => {
+                      const isActive = currentTab === item.id;
+                      const Icon = item.icon;
+                      const isPinned = isTabPinned(item.id);
+                      const isFirstSearchHit =
+                        Boolean(normalizedQuery) && firstSearchMatch?.id === item.id;
+                      const showInlineBadge =
+                        !isRailCollapsed &&
+                        Boolean(item.shortBadge) &&
+                        item.label.length <= 16;
 
-                        return (
+                      return (
+                        <div
+                          key={item.id}
+                          className={`flex items-center justify-between gap-1 rounded-xl ${
+                            isActive
+                              ? 'bg-accent text-on-accent font-semibold shadow-2xs'
+                              : isFirstSearchHit
+                              ? 'bg-accent-soft text-primary ring-1 ring-accent'
+                              : 'text-secondary hover:text-primary hover:bg-elevated'
+                          }`}
+                        >
                           <button
-                            key={item.id}
                             type="button"
                             data-testid={`sidebar-nav-item-${item.id}`}
                             onClick={() => setCurrentTab(item.id)}
-                            title={`${item.label} — ${item.description}`}
+                            title={`${item.label}${
+                              item.shortBadge ? ` (${item.shortBadge})` : ''
+                            } — ${item.purpose}`}
                             aria-label={item.label}
                             aria-current={isActive ? 'page' : undefined}
-                            className={`w-full min-h-[38px] flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-medium transition-all text-left group relative cursor-pointer ${
-                              isActive
-                                ? 'bg-accent text-on-accent font-semibold shadow-2xs'
-                                : 'text-secondary hover:text-primary hover:bg-elevated'
-                            } ${isRailCollapsed ? 'justify-center px-0' : ''}`}
+                            className={`w-full min-h-[36px] flex items-center justify-between gap-2 px-2.5 py-1.5 text-xs font-medium text-left group cursor-pointer ${
+                              isRailCollapsed ? 'justify-center px-0' : ''
+                            }`}
                           >
-                            <Icon
-                              className={`w-4 h-4 shrink-0 ${
-                                isActive ? 'text-on-accent' : 'text-accent group-hover:text-primary'
-                              }`}
-                            />
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                              <Icon
+                                className={`w-4 h-4 shrink-0 ${
+                                  isActive
+                                    ? 'text-on-accent'
+                                    : 'text-accent group-hover:text-primary'
+                                }`}
+                              />
+                              {!isRailCollapsed && (
+                                <span className="min-w-0 line-clamp-2 leading-tight break-words">
+                                  {item.label}
+                                </span>
+                              )}
+                            </div>
 
-                            {!isRailCollapsed && (
-                              <span className="min-w-0 truncate" title={item.label}>
-                                {item.label}
+                            {showInlineBadge && (
+                              <span
+                                className={`shrink-0 px-1.5 py-0.5 text-[9px] font-mono font-bold rounded uppercase ${
+                                  isActive
+                                    ? 'bg-card/20 text-on-accent'
+                                    : 'bg-input text-muted border border-subtle'
+                                }`}
+                              >
+                                {item.shortBadge}
                               </span>
                             )}
                           </button>
-                        );
-                      })}
+
+                          {!isRailCollapsed && (
+                            <button
+                              type="button"
+                              data-testid={`sidebar-pin-toggle-${item.id}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                togglePinTab(item.id);
+                              }}
+                              aria-label={
+                                isPinned ? `Unpin ${item.label}` : `Pin ${item.label}`
+                              }
+                              aria-pressed={isPinned}
+                              title={isPinned ? `Unpin ${item.label}` : `Pin ${item.label}`}
+                              className={`p-1 mr-1 rounded flex items-center justify-center shrink-0 cursor-pointer ${
+                                isActive
+                                  ? 'text-on-accent hover:opacity-80'
+                                  : isPinned
+                                  ? 'text-accent'
+                                  : 'text-muted opacity-60 hover:opacity-100 hover:text-accent'
+                              }`}
+                            >
+                              <Star
+                                className={`w-3 h-3 ${isPinned ? 'fill-current' : ''}`}
+                              />
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
             );
-          })
-        )}
+          })}
+        </div>
       </div>
 
       {/* Footer shortcut bar */}
@@ -395,11 +417,11 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({ onOpenCommandPalet
         >
           <span className="flex items-center gap-1.5">
             <Command className="w-3.5 h-3.5 text-accent" />
-            {!isRailCollapsed && <span>Search Pages</span>}
+            {!isRailCollapsed && <span>Quick Jump</span>}
           </span>
           {!isRailCollapsed && (
             <kbd className="text-xs font-mono px-1.5 py-0.5 rounded bg-card border border-subtle text-muted">
-              ⌘K
+              Ctrl+K
             </kbd>
           )}
         </button>

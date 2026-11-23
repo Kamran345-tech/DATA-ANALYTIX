@@ -1,119 +1,44 @@
-import React, { useState } from 'react';
-import { 
-  UploadCloud, 
-  Table2, 
-  ShieldAlert, 
-  Wand2, 
-  Network, 
-  TrendingUp, 
-  Code2, 
-  Database, 
-  FileCode2, 
-  SlidersHorizontal, 
-  Sparkles, 
-  FileSpreadsheet, 
-  BookOpen, 
-  FolderDown, 
-  Settings, 
+import React, { useState, useMemo } from 'react';
+import {
+  Settings,
   ChevronDown,
   ChevronRight,
-  Database as DbIcon,
-  Layers,
-  LayoutDashboard,
-  Cpu
+  Search,
+  Star,
+  Clock,
+  X,
 } from 'lucide-react';
 import { usePlatform, NavigationTab } from '../../store/usePlatformStore';
 import { getBrandText, loadFeatureFlags } from '../../config/features';
 import { APP_VERSION_LABEL } from '../../config/appVersion';
-import { SIMPLE_CORE_TAB_IDS, useSidebarNavState } from '../../config/navigationConfig';
-
-interface WorkflowGroup {
-  id: string;
-  title: string;
-  stageNumber: string;
-  badge?: string;
-  items: {
-    id: NavigationTab;
-    label: string;
-    icon: React.ComponentType<{ className?: string }>;
-    description: string;
-  }[];
-}
-
-const WORKFLOW_GROUPS: WorkflowGroup[] = [
-  {
-    id: 'stage_1_data',
-    title: '1. Ingest Data',
-    stageNumber: '01',
-    badge: 'Sources',
-    items: [
-      { id: 'upload', label: 'File Upload & Drag-Drop', icon: UploadCloud, description: 'Ingest local CSVs, Excel, or Delimited files' },
-      { id: 'live_connector', label: 'Live Server Connector', icon: DbIcon, description: 'Live connection to SQL/REST telemetry' },
-      { id: 'preview', label: 'Data Preview & Schema', icon: Table2, description: 'Inspect raw columns and types' },
-      { id: 'data_dictionary', label: 'Data Governance Dictionary', icon: BookOpen, description: 'Column catalog and lineage' },
-    ]
-  },
-  {
-    id: 'stage_2_prepare',
-    title: '2. Audit & Prepare',
-    stageNumber: '02',
-    badge: 'Hygiene',
-    items: [
-      { id: 'quality', label: 'Quality Auditor', icon: ShieldAlert, description: 'Completeness, validity & null audits' },
-      { id: 'cleaning', label: 'Cleaning Lab', icon: Wand2, description: 'Deterministic 1-click clean recipes' },
-      { id: 'excel_automation', label: 'Excel Studio Automation', icon: FileSpreadsheet, description: 'VBA-free formula transformations' },
-    ]
-  },
-  {
-    id: 'stage_3_model',
-    title: '3. Model & Code',
-    stageNumber: '03',
-    badge: 'Engineering',
-    items: [
-      { id: 'modeling', label: 'Star Schema & ERD', icon: Network, description: 'Decompose flat tables into Fact & Dims' },
-      { id: 'data_engineering', label: 'ETL Pipeline DAG', icon: Layers, description: 'Visual pipeline flow and dependencies' },
-      { id: 'dax_lab', label: 'DAX Measure Studio', icon: Cpu, description: '20+ Time Intelligence DAX measures' },
-      { id: 'sql_lab', label: 'SQL In-Browser Lab', icon: Database, description: 'Execute ANSI SQL queries with AlaSQL' },
-      { id: 'python_lab', label: 'Python Sandbox', icon: Code2, description: 'Pyodide client-side data science' },
-    ]
-  },
-  {
-    id: 'stage_4_analyze',
-    title: '4. Analyze & Build',
-    stageNumber: '04',
-    badge: 'Insights',
-    items: [
-      { id: 'executive_dashboard', label: 'Executive Dashboard', icon: LayoutDashboard, description: 'Board-level KPI telemetry & slicers' },
-      { id: 'analytics_packs', label: 'Analytics Packs', icon: Layers, description: '14 domain-specific dashboards, KPIs & reports' },
-      { id: 'dashboard_builder', label: 'Custom Dashboard Builder', icon: SlidersHorizontal, description: 'Compose customized visual layouts' },
-      { id: 'analysis', label: 'Deep Statistical Analysis', icon: TrendingUp, description: 'Correlations, anomalies, and distributions' },
-      { id: 'ai_insights', label: 'Ask Data AI', icon: Sparkles, description: 'Natural language questions grounded in metrics' },
-      { id: 'reports', label: 'Executive Reports', icon: FileSpreadsheet, description: 'Print-ready board decks and summaries' },
-    ]
-  },
-  {
-    id: 'stage_5_export',
-    title: '5. Export & Settings',
-    stageNumber: '05',
-    badge: 'Artifacts',
-    items: [
-      { id: 'landing', label: 'Home / Overview', icon: LayoutDashboard, description: 'Command center and quick jump pathways' },
-      { id: 'export_center', label: 'Export Center (PBIP/Excel)', icon: FolderDown, description: 'Download production ZIP packages' },
-      { id: 'how_to_use', label: 'Module Playbook & Guide', icon: BookOpen, description: 'Comprehensive architectural docs' },
-      { id: 'how_to_modify', label: 'How to Modify Project', icon: FileCode2, description: 'Technical extension & deployment guide' },
-      { id: 'blog', label: 'Knowledge Base / Blog', icon: BookOpen, description: 'Technical whitepapers and articles' },
-      { id: 'settings', label: 'System Settings & Flags', icon: Settings, description: 'Theme, flags, experiments, and quotas' },
-    ]
-  }
-];
+import {
+  WORKFLOW_SIDEBAR_GROUPS,
+  ALL_WORKFLOW_NAV_ITEMS,
+  useSidebarNavState,
+} from '../../config/navigationConfig';
 
 export const GroupedSidebar: React.FC = () => {
-  const { currentTab, setCurrentTab, isSidebarOpen, setIsSidebarOpen, isPresentationMode } = usePlatform();
+  const {
+    currentTab,
+    setCurrentTab,
+    isSidebarOpen,
+    setIsSidebarOpen,
+    isPresentationMode,
+  } = usePlatform();
   const [flags, setFlags] = useState(() => loadFeatureFlags());
+  const [searchQuery, setSearchQuery] = useState('');
   const brandName = getBrandText('primary', flags);
   const asideRef = React.useRef<HTMLElement | null>(null);
   const previousFocusRef = React.useRef<HTMLElement | null>(null);
-  const { navMode, updateNavMode, recentTabs } = useSidebarNavState('pro');
+
+  const {
+    pinnedTabs,
+    togglePinTab,
+    isTabPinned,
+    recentTabs,
+    collapsedGroups,
+    toggleGroup,
+  } = useSidebarNavState(currentTab);
 
   React.useEffect(() => {
     const handleFlags = (e: any) => setFlags(e.detail || loadFeatureFlags());
@@ -123,13 +48,31 @@ export const GroupedSidebar: React.FC = () => {
     };
   }, []);
 
-  // Keep track of which groups are expanded (default: all open)
-  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>(() => ({}));
+  React.useEffect(() => {
+    const handleFocusGroup = (e: Event) => {
+      const groupId = (e as CustomEvent)?.detail?.groupId;
+      if (!groupId || !asideRef.current) return;
+      requestAnimationFrame(() => {
+        const el = asideRef.current?.querySelector<HTMLElement>(
+          `[data-testid="sidebar-group-toggle-${groupId}"]`
+        );
+        if (el) {
+          el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        }
+      });
+    };
+    window.addEventListener('dataanalytix:focus-sidebar-group', handleFocusGroup);
+    return () => {
+      window.removeEventListener('dataanalytix:focus-sidebar-group', handleFocusGroup);
+    };
+  }, []);
 
   const restoreMobileMenuFocus = React.useCallback(() => {
     if (typeof window === 'undefined' || window.innerWidth >= 1024) return;
     requestAnimationFrame(() => {
-      const toggleBtn = document.querySelector<HTMLElement>('[data-testid="mobile-menu-toggle"]');
+      const toggleBtn = document.querySelector<HTMLElement>(
+        '[data-testid="mobile-menu-toggle"]'
+      );
       if (toggleBtn) {
         toggleBtn.focus();
       } else if (previousFocusRef.current) {
@@ -170,17 +113,23 @@ export const GroupedSidebar: React.FC = () => {
           asideRef.current.querySelectorAll<HTMLElement>(
             'button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])'
           )
-        ).filter(el => el.offsetParent !== null);
+        ).filter((el) => el.offsetParent !== null);
         if (focusables.length === 0) return;
         const first = focusables[0];
         const last = focusables[focusables.length - 1];
         if (e.shiftKey) {
-          if (document.activeElement === first || !asideRef.current.contains(document.activeElement)) {
+          if (
+            document.activeElement === first ||
+            !asideRef.current.contains(document.activeElement)
+          ) {
             e.preventDefault();
             last.focus();
           }
         } else {
-          if (document.activeElement === last || !asideRef.current.contains(document.activeElement)) {
+          if (
+            document.activeElement === last ||
+            !asideRef.current.contains(document.activeElement)
+          ) {
             e.preventDefault();
             first.focus();
           }
@@ -194,6 +143,33 @@ export const GroupedSidebar: React.FC = () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [isSidebarOpen, isPresentationMode, setIsSidebarOpen, restoreMobileMenuFocus]);
+
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+
+  const filteredGroups = useMemo(() => {
+    return WORKFLOW_SIDEBAR_GROUPS.map((group) => {
+      const items = group.items.filter((item) => {
+        if (item.id === 'analytics_packs' && !flags.analyticsPacks) return false;
+        if (!normalizedQuery) return true;
+        return (
+          item.label.toLowerCase().includes(normalizedQuery) ||
+          item.purpose.toLowerCase().includes(normalizedQuery) ||
+          item.keywords.some((k) => k.toLowerCase().includes(normalizedQuery))
+        );
+      });
+      return { ...group, items };
+    }).filter((g) => g.items.length > 0);
+  }, [flags.analyticsPacks, normalizedQuery]);
+
+  const firstSearchMatch = useMemo(() => {
+    if (!normalizedQuery) return null;
+    const allMatches = filteredGroups.flatMap((g) => g.items);
+    return (
+      allMatches.find((item) => item.label.toLowerCase().includes(normalizedQuery)) ||
+      allMatches[0] ||
+      null
+    );
+  }, [filteredGroups, normalizedQuery]);
 
   if (isPresentationMode || !isSidebarOpen) {
     return null;
@@ -212,8 +188,11 @@ export const GroupedSidebar: React.FC = () => {
     }
   };
 
-  const toggleGroup = (groupId: string) => {
-    setCollapsedGroups(prev => ({ ...prev, [groupId]: !prev[groupId] }));
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && firstSearchMatch) {
+      e.preventDefault();
+      handleSelectTab(firstSearchMatch.id);
+    }
   };
 
   return (
@@ -224,7 +203,7 @@ export const GroupedSidebar: React.FC = () => {
         className="fixed inset-0 bg-black/70 backdrop-blur-xs z-40 lg:hidden transition-opacity"
         aria-hidden="true"
       />
-      <aside 
+      <aside
         id="app-sidebar-drawer"
         ref={asideRef}
         tabIndex={-1}
@@ -232,173 +211,299 @@ export const GroupedSidebar: React.FC = () => {
         className="fixed inset-y-0 lg:static top-0 lg:top-auto left-0 z-50 lg:z-30 w-72 max-w-[85vw] lg:w-64 shrink-0 bg-sidebar border-r border-subtle flex flex-col h-full max-h-full text-secondary select-none overflow-hidden shadow-lg"
       >
         {/* Brand Header */}
-        <div className="p-4 border-b border-subtle flex items-center justify-between gap-2">
+        <div className="p-3.5 border-b border-subtle flex items-center justify-between gap-2">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center text-on-accent font-bold text-sm shadow-md shrink-0">
+            <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center text-on-accent font-bold text-xs shadow-xs shrink-0">
               DA
             </div>
             <div className="min-w-0">
-              <div className="font-bold text-sm text-primary tracking-tight leading-none truncate">{brandName}</div>
-              <div className="text-xs text-accent font-mono mt-0.5">Workflow Studio</div>
+              <div className="font-bold text-xs text-primary tracking-tight leading-none truncate">
+                {brandName}
+              </div>
+              <div className="text-[11px] text-accent font-mono mt-0.5">
+                Workflow Studio
+              </div>
             </div>
           </div>
-          <div className="flex items-center gap-1.5 shrink-0">
-            <span className="text-xs font-semibold px-2 py-0.5 rounded bg-accent-soft border border-subtle text-accent">
-              5 Stages
-            </span>
-            <button
-              type="button"
-              onClick={handleCloseDrawer}
-              aria-label="Close Navigation Drawer"
-              className="lg:hidden min-w-[44px] min-h-[44px] p-2 rounded-lg flex items-center justify-center text-muted hover:text-primary hover:bg-input"
-            >
-              ✕
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={handleCloseDrawer}
+            aria-label="Close Navigation Drawer"
+            className="lg:hidden min-w-[44px] min-h-[44px] p-2 rounded-lg flex items-center justify-center text-muted hover:text-primary hover:bg-input"
+          >
+            ✕
+          </button>
         </div>
 
-        {/* Simple / Pro Mode Toggle & Recently Used (Phase 3.3) */}
-        {flags.designSystemV3 && (
-          <div className="px-3 pt-3 pb-2 border-b border-subtle space-y-2">
-            <div
-              data-testid="nav-mode-toggle"
-              role="group"
-              aria-label="Navigation complexity mode"
-              className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-input border border-subtle"
-            >
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto p-3 space-y-3">
+          {/* Search Input */}
+          <div className="relative flex items-center">
+            <Search className="w-3.5 h-3.5 text-accent absolute left-2.5 pointer-events-none" />
+            <input
+              type="text"
+              data-testid="sidebar-search-input"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={handleSearchKeyDown}
+              placeholder="Search pages (Enter to open)..."
+              aria-label="Search sidebar pages"
+              className="w-full min-h-[44px] lg:min-h-[34px] pl-8 pr-14 py-1.5 rounded-xl bg-input border border-subtle text-xs text-primary placeholder:text-muted focus:outline-2 focus:outline-accent"
+            />
+            {searchQuery ? (
               <button
                 type="button"
-                data-testid="nav-mode-simple"
-                onClick={() => updateNavMode('simple')}
-                aria-pressed={navMode === 'simple'}
-                className={`min-h-[44px] lg:min-h-[32px] py-1.5 px-2 rounded-lg text-xs font-semibold cursor-pointer ${
-                  navMode === 'simple'
-                    ? 'bg-accent text-on-accent font-bold shadow-2xs'
-                    : 'text-secondary hover:text-primary'
-                }`}
+                data-testid="sidebar-search-clear"
+                onClick={() => setSearchQuery('')}
+                aria-label="Clear sidebar search"
+                className="absolute right-2 p-1 rounded text-muted hover:text-primary cursor-pointer"
               >
-                Simple (8)
+                <X className="w-3.5 h-3.5" />
               </button>
+            ) : (
               <button
                 type="button"
-                data-testid="nav-mode-pro"
-                onClick={() => updateNavMode('pro')}
-                aria-pressed={navMode === 'pro'}
-                className={`min-h-[44px] lg:min-h-[32px] py-1.5 px-2 rounded-lg text-xs font-semibold cursor-pointer ${
-                  navMode === 'pro'
-                    ? 'bg-accent text-on-accent font-bold shadow-2xs'
-                    : 'text-secondary hover:text-primary'
-                }`}
+                onClick={() =>
+                  window.dispatchEvent(new CustomEvent('dataanalytix:open-command-palette'))
+                }
+                title="Open Quick Jump Command Palette (Ctrl+K)"
+                aria-label="Open Command Palette"
+                className="absolute right-1.5 px-1.5 py-0.5 rounded bg-card border border-subtle font-mono text-[10px] text-muted hover:text-primary cursor-pointer"
               >
-                Pro (All)
+                Ctrl+K
               </button>
-            </div>
-
-            {recentTabs.length > 1 && (
-              <div data-testid="sidebar-recent-items" className="space-y-1">
-                <div className="px-1 text-xs font-mono text-muted">Recently Used</div>
-                <div className="flex flex-wrap gap-1">
-                  {recentTabs.slice(0, 3).map((tabId) => {
-                    const found = WORKFLOW_GROUPS.flatMap((g) => g.items).find((i) => i.id === tabId);
-                    if (!found) return null;
-                    return (
-                      <button
-                        key={`rec-${tabId}`}
-                        type="button"
-                        onClick={() => handleSelectTab(tabId)}
-                        className={`min-h-[44px] lg:min-h-[28px] px-2.5 py-1 rounded-lg text-xs font-medium truncate max-w-[115px] border cursor-pointer ${
-                          currentTab === tabId
-                            ? 'bg-accent text-on-accent border-subtle font-bold'
-                            : 'bg-input hover:bg-elevated text-secondary border-subtle'
-                        }`}
-                      >
-                        {found.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
             )}
           </div>
-        )}
 
-        {/* Workflow Navigation Groups */}
-        <div className="flex-1 overflow-y-auto p-3 space-y-4">
-          {WORKFLOW_GROUPS.map((group) => {
-            const visibleItems = group.items.filter(
-              (item) =>
-                (item.id !== 'analytics_packs' || flags.analyticsPacks) &&
-                (!flags.designSystemV3 || navMode === 'pro' || SIMPLE_CORE_TAB_IDS.has(item.id))
-            );
-            if (visibleItems.length === 0) return null;
-            const isCollapsed = collapsedGroups[group.id];
-            const hasActiveChild = visibleItems.some(item => item.id === currentTab);
-
-            return (
-              <div key={group.id} className="rounded-xl border border-subtle bg-card overflow-hidden">
-                {/* Group Accordion Header */}
-                <button
-                  type="button"
-                  onClick={() => toggleGroup(group.id)}
-                  aria-expanded={!isCollapsed}
-                  className={`w-full min-h-[44px] lg:min-h-0 px-3 py-2 flex items-center justify-between text-left transition-colors ${
-                    hasActiveChild ? 'bg-accent-soft text-accent' : 'hover:bg-card-hover text-muted hover:text-primary'
-                  }`}
-                >
-                  <div className="flex items-center gap-2 min-w-0 flex-1">
-                    <span className="font-mono text-xs font-bold px-1.5 py-0.5 rounded bg-elevated text-muted shrink-0">
-                      {group.stageNumber}
-                    </span>
-                    <span className="text-xs font-bold tracking-tight text-primary min-w-0 truncate" title={group.title}>
-                      {group.title}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    {group.badge && (
-                      <span className="shrink-0 ml-2 text-xs font-medium px-1.5 py-0.5 rounded bg-elevated text-muted">
-                        {group.badge}
-                      </span>
-                    )}
-                    {isCollapsed ? (
-                      <ChevronRight className="w-3.5 h-3.5 text-muted shrink-0" />
-                    ) : (
-                      <ChevronDown className="w-3.5 h-3.5 text-muted shrink-0" />
-                    )}
-                  </div>
-                </button>
-
-                {/* Group Items */}
-                {!isCollapsed && (
-                  <div className="p-1 space-y-0.5 border-t border-subtle">
-                    {visibleItems.map((item) => {
-                      const isActive = currentTab === item.id;
-                      const Icon = item.icon;
-
-                      return (
-                        <button
-                          type="button"
-                          key={item.id}
-                          data-testid={`sidebar-nav-item-${item.id}`}
-                          onClick={() => handleSelectTab(item.id)}
-                          title={`${item.label} — ${item.description}`}
-                          aria-label={item.label}
-                          aria-current={isActive ? 'page' : undefined}
-                          className={`w-full min-h-[44px] lg:min-h-0 flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-medium text-left min-w-0 ${
-                            isActive
-                              ? 'bg-accent text-on-accent font-semibold shadow-xs'
-                              : 'text-muted hover:text-primary hover:bg-card-hover'
-                          }`}
-                        >
-                          <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-on-accent' : 'text-muted'}`} />
-                          <span className="min-w-0 truncate" title={item.label}>{item.label}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
+          {/* Pinned Pages Section */}
+          {!normalizedQuery && pinnedTabs.length > 0 && (
+            <div
+              data-testid="sidebar-pinned-section"
+              className="space-y-1 pb-2 border-b border-subtle"
+            >
+              <div className="px-1.5 flex items-center justify-between text-[11px] font-mono text-muted">
+                <span className="inline-flex items-center gap-1 font-semibold text-secondary">
+                  <Star className="w-3 h-3 text-accent fill-current" />
+                  <span>Pinned</span>
+                </span>
+                <span>{pinnedTabs.length}/6</span>
               </div>
-            );
-          })}
+              <div className="grid grid-cols-1 gap-0.5">
+                {pinnedTabs.map((tabId) => {
+                  const found = ALL_WORKFLOW_NAV_ITEMS.find((i) => i.id === tabId);
+                  if (!found || (found.id === 'analytics_packs' && !flags.analyticsPacks)) {
+                    return null;
+                  }
+                  const Icon = found.icon;
+                  const isActive = currentTab === tabId;
+                  return (
+                    <div
+                      key={`pin-${tabId}`}
+                      data-testid={`sidebar-pinned-item-${tabId}`}
+                      className={`flex items-center justify-between gap-1 rounded-xl px-2 py-1 text-xs ${
+                        isActive
+                          ? 'bg-accent text-on-accent font-bold'
+                          : 'text-secondary hover:text-primary hover:bg-elevated'
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => handleSelectTab(tabId)}
+                        className="min-h-[44px] lg:min-h-[28px] flex items-center gap-2 min-w-0 flex-1 text-left cursor-pointer"
+                      >
+                        <Icon
+                          className={`w-3.5 h-3.5 shrink-0 ${
+                            isActive ? 'text-on-accent' : 'text-accent'
+                          }`}
+                        />
+                        <span className="leading-tight line-clamp-1">{found.label}</span>
+                      </button>
+                      <button
+                        type="button"
+                        data-testid={`sidebar-unpin-btn-${tabId}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          togglePinTab(tabId);
+                        }}
+                        title={`Unpin ${found.label}`}
+                        aria-label={`Unpin ${found.label}`}
+                        className={`min-w-[44px] min-h-[44px] lg:min-w-[24px] lg:min-h-[24px] p-1 rounded flex items-center justify-center cursor-pointer ${
+                          isActive
+                            ? 'text-on-accent hover:opacity-80'
+                            : 'text-accent hover:text-primary'
+                        }`}
+                      >
+                        <Star className="w-3 h-3 fill-current" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Recent Pages Row (last 3) */}
+          {!normalizedQuery && recentTabs.length > 0 && (
+            <div
+              data-testid="sidebar-recent-items"
+              className="space-y-1 pb-2 border-b border-subtle"
+            >
+              <div className="px-1.5 flex items-center gap-1 text-[11px] font-mono text-muted">
+                <Clock className="w-3 h-3 text-accent" />
+                <span>Recent</span>
+              </div>
+              <div className="flex flex-wrap gap-1 px-1">
+                {recentTabs.slice(0, 3).map((tabId) => {
+                  const found = ALL_WORKFLOW_NAV_ITEMS.find((i) => i.id === tabId);
+                  if (!found) return null;
+                  const isActive = currentTab === tabId;
+                  return (
+                    <button
+                      key={`rec-${tabId}`}
+                      type="button"
+                      data-testid={`sidebar-recent-item-${tabId}`}
+                      onClick={() => handleSelectTab(tabId)}
+                      className={`min-h-[44px] lg:min-h-[26px] px-2 py-1 rounded-lg text-[11px] font-medium border cursor-pointer ${
+                        isActive
+                          ? 'bg-accent text-on-accent border-subtle font-bold'
+                          : 'bg-input hover:bg-elevated text-secondary border-subtle'
+                      }`}
+                    >
+                      {found.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Collapsible Workflow Groups */}
+          <div className="space-y-2" data-testid="sidebar-workflow-groups">
+            {filteredGroups.map((group) => {
+              const hasActiveChild = group.items.some((item) => item.id === currentTab);
+              const isCollapsed = normalizedQuery
+                ? false
+                : Boolean(collapsedGroups[group.id]) && !hasActiveChild;
+
+              return (
+                <div
+                  key={group.id}
+                  data-testid={`sidebar-group-${group.id}`}
+                  className="rounded-xl border border-subtle bg-card overflow-hidden"
+                >
+                  <button
+                    type="button"
+                    data-testid={`sidebar-group-toggle-${group.id}`}
+                    onClick={() => toggleGroup(group.id)}
+                    aria-expanded={!isCollapsed}
+                    className={`w-full min-h-[44px] lg:min-h-[34px] px-3 py-1.5 flex items-center justify-between text-left cursor-pointer ${
+                      hasActiveChild
+                        ? 'bg-accent-soft text-accent font-bold'
+                        : 'hover:bg-card-hover text-secondary hover:text-primary font-semibold'
+                    }`}
+                  >
+                    <span className="text-xs tracking-tight">{group.title}</span>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span className="text-[10px] font-mono text-muted">
+                        {group.items.length}
+                      </span>
+                      {isCollapsed ? (
+                        <ChevronRight className="w-3.5 h-3.5 text-muted shrink-0" />
+                      ) : (
+                        <ChevronDown className="w-3.5 h-3.5 text-muted shrink-0" />
+                      )}
+                    </div>
+                  </button>
+
+                  {!isCollapsed && (
+                    <div className="p-1 space-y-0.5 border-t border-subtle">
+                      {group.items.map((item) => {
+                        const isActive = currentTab === item.id;
+                        const Icon = item.icon;
+                        const isPinned = isTabPinned(item.id);
+                        const isFirstSearchHit =
+                          Boolean(normalizedQuery) && firstSearchMatch?.id === item.id;
+                        const showInlineBadge =
+                          Boolean(item.shortBadge) && item.label.length <= 16;
+
+                        return (
+                          <div
+                            key={item.id}
+                            className={`flex items-center justify-between gap-1 rounded-lg pr-1 ${
+                              isActive
+                                ? 'bg-accent text-on-accent font-semibold shadow-xs'
+                                : isFirstSearchHit
+                                ? 'bg-accent-soft text-primary ring-1 ring-accent'
+                                : 'text-secondary hover:text-primary hover:bg-card-hover'
+                            }`}
+                          >
+                            <button
+                              type="button"
+                              data-testid={`sidebar-nav-item-${item.id}`}
+                              onClick={() => handleSelectTab(item.id)}
+                              title={`${item.label}${
+                                item.shortBadge ? ` (${item.shortBadge})` : ''
+                              } — ${item.purpose}`}
+                              aria-label={item.label}
+                              aria-current={isActive ? 'page' : undefined}
+                              className="w-full min-h-[44px] lg:min-h-[34px] flex items-center justify-between gap-2 pl-2.5 pr-1 py-1.5 text-xs font-medium text-left min-w-0 cursor-pointer"
+                            >
+                              <div className="flex items-center gap-2 min-w-0 flex-1">
+                                <Icon
+                                  className={`w-4 h-4 shrink-0 ${
+                                    isActive ? 'text-on-accent' : 'text-accent'
+                                  }`}
+                                />
+                                <span className="min-w-0 line-clamp-2 leading-tight break-words">
+                                  {item.label}
+                                </span>
+                              </div>
+                              {showInlineBadge && (
+                                <span
+                                  className={`shrink-0 px-1.5 py-0.5 text-[9px] font-mono font-bold rounded uppercase ${
+                                    isActive
+                                      ? 'bg-card/20 text-on-accent'
+                                      : 'bg-input text-muted border border-subtle'
+                                  }`}
+                                >
+                                  {item.shortBadge}
+                                </span>
+                              )}
+                            </button>
+
+                            <button
+                              type="button"
+                              data-testid={`sidebar-pin-toggle-${item.id}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                togglePinTab(item.id);
+                              }}
+                              aria-label={
+                                isPinned ? `Unpin ${item.label}` : `Pin ${item.label}`
+                              }
+                              aria-pressed={isPinned}
+                              title={isPinned ? `Unpin ${item.label}` : `Pin ${item.label}`}
+                              className={`min-w-[44px] min-h-[44px] lg:min-w-[26px] lg:min-h-[26px] p-1 rounded flex items-center justify-center shrink-0 cursor-pointer ${
+                                isActive
+                                  ? 'text-on-accent hover:opacity-80'
+                                  : isPinned
+                                  ? 'text-accent'
+                                  : 'text-muted opacity-60 hover:opacity-100 hover:text-accent'
+                              }`}
+                            >
+                              <Star
+                                className={`w-3 h-3 ${isPinned ? 'fill-current' : ''}`}
+                              />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         {/* Bottom User / Status Bar */}
@@ -418,4 +523,3 @@ export const GroupedSidebar: React.FC = () => {
     </>
   );
 };
-

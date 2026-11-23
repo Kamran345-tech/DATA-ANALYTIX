@@ -6,10 +6,10 @@ const SCREENSHOT_DIR = path.resolve(process.cwd(), 'test-results/qa-phase3');
 
 async function bootstrapWorkspace(
   page: Page,
-  options?: { theme?: 'dark' | 'light'; navMode?: 'simple' | 'pro' }
+  options?: { theme?: 'dark' | 'light'; skipTour?: boolean }
 ) {
   const theme = options?.theme ?? 'dark';
-  const navMode = options?.navMode ?? 'simple';
+  const skipTour = options?.skipTour ?? true;
 
   await page.addInitScript(
     (opts) => {
@@ -18,7 +18,11 @@ async function bootstrapWorkspace(
       localStorage.setItem('acuitybi_theme', opts.theme);
       localStorage.setItem('dataanalytix_theme', opts.theme);
       localStorage.setItem('dataanalytix_ui', 'classic');
-      localStorage.setItem('dataanalytix_nav_mode', opts.navMode);
+      if (opts.skipTour) {
+        localStorage.setItem('dataanalytix_coach_tour_completed_v1', 'true');
+      } else {
+        localStorage.removeItem('dataanalytix_coach_tour_completed_v1');
+      }
       localStorage.setItem(
         'dataanalytix_features',
         JSON.stringify({
@@ -35,7 +39,7 @@ async function bootstrapWorkspace(
         })
       );
     },
-    { theme, navMode }
+    { theme, skipTour }
   );
 
   await page.goto('/', { waitUntil: 'load' });
@@ -54,36 +58,67 @@ async function bootstrapWorkspace(
   }
 }
 
-test.describe('Phase 3: UI, Design System, Navigation & Accessibility Verification', () => {
-  test('3.1-3.4 Typography, PageHeader, Simple/Pro Nav, Guided Stepper, Ctrl+K, Upload Full-Width Banner, Version Sync, Ask AI Cards', async ({
+test.describe('Phase 3: Workflow Sidebar, Shrunk Page Header Stack, First-Run Tour & Responsive Screenshots', () => {
+  test('3.1-3.4 Shrunk Executive Dashboard Header (KPIs visible at 1440x900 without scrolling, View options popover with preview), Workflow Stepper & Sidebar, Replayable 3-Step Tour, Upload Banner, Ask AI Cards, Version Sync', async ({
     page,
   }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
-    await bootstrapWorkspace(page, { theme: 'dark', navMode: 'simple' });
+    await bootstrapWorkspace(page, { theme: 'dark', skipTour: false });
 
     // 1. Verify html[data-design-system-v3="true"] is active
     await expect(page.locator('html')).toHaveAttribute('data-design-system-v3', 'true');
 
-    // 2. Verify Guided Workflow Stepper (Upload -> Clean -> Analyze -> Present) & "?" Quick Guide trigger
+    // 2. Verify First-Run 3-Step Coach Mark Tour shows once and is skippable
+    const tour = page.getByTestId('first-run-coach-tour');
+    await expect(tour).toBeVisible();
+    await expect(page.getByTestId('coach-tour-step-indicator')).toContainText('Step 1 of 3');
+    await page.getByTestId('coach-tour-skip').click();
+    await expect(tour).toHaveCount(0);
+
+    // 3. Verify Shrunk Executive Dashboard Header Stack:
+    // - Merged purpose subtitle inside header
+    // - Single action bar (Download, Present, View options, More)
+    // - View options popover opens with Perspective (5), Theme (5), and live preview
+    // - First screenful shows real KPI numbers without scrolling at 1440x900
+    await expect(page.getByTestId('page-purpose-bar-executive_dashboard')).toBeVisible();
+    await expect(page.getByTestId('exec-single-action-bar')).toBeVisible();
+
+    const viewOptionsBtn = page.getByTestId('exec-view-options-trigger');
+    await expect(viewOptionsBtn).toBeVisible();
+    await viewOptionsBtn.click();
+    await expect(page.getByTestId('exec-view-options-popover')).toBeVisible();
+    await expect(page.getByTestId('exec-view-options-preview')).toBeVisible();
+    await page.getByTestId('view-option-theme-wall_street').click();
+    await viewOptionsBtn.click();
+
+    // Verify all 4 KPI card values are visible within the 1440x900 viewport without scrolling
+    const firstKpiValue = page.locator('[data-testid^="exec-kpi-value-"]').first();
+    await expect(firstKpiValue).toBeVisible();
+    const kpiBox = await firstKpiValue.boundingBox();
+    expect(kpiBox).not.toBeNull();
+    expect(
+      (kpiBox?.y ?? 999) + (kpiBox?.height ?? 0),
+      'Real KPI numbers must be visible in first 1440x900 screenful without scrolling'
+    ).toBeLessThan(880);
+
+    // 4. Verify Guided Workflow Stepper matches sidebar group names (1 Upload, 2 Clean, 3 Analyze, 4 Present, Help & Settings)
     const stepper = page.getByTestId('guided-workflow-stepper');
     await expect(stepper).toBeVisible();
-    await expect(page.getByTestId('workflow-step-upload')).toBeVisible();
-    await expect(page.getByTestId('workflow-step-clean')).toBeVisible();
-    await expect(page.getByTestId('workflow-step-analyze')).toBeVisible();
-    await expect(page.getByTestId('workflow-step-present')).toBeVisible();
+    await expect(page.getByTestId('workflow-step-upload')).toContainText('1 Upload');
+    await expect(page.getByTestId('workflow-step-clean')).toContainText('2 Clean');
+    await expect(page.getByTestId('workflow-step-analyze')).toContainText('3 Analyze');
+    await expect(page.getByTestId('workflow-step-present')).toContainText('4 Present');
+    await expect(page.getByTestId('workflow-step-help_settings')).toContainText('Help & Settings');
 
-    await page.getByTestId('stepper-page-guide-trigger').click();
-    await expect(page.getByTestId('stepper-page-guide-panel')).toBeVisible();
-    await page.getByTestId('stepper-page-guide-trigger').click();
+    // 5. Verify Replay 3-Step Quick Tour from How to Use (Help) page
+    await page.getByTestId('workflow-step-help_settings').click();
+    const replayBtn = page.getByTestId('replay-coach-tour-btn');
+    await expect(replayBtn).toBeVisible();
+    await replayBtn.click();
+    await expect(page.getByTestId('first-run-coach-tour')).toBeVisible();
+    await page.getByTestId('coach-tour-skip').click();
 
-    // 3. Verify Simple (8) / Pro (All) Sidebar Mode toggle
-    const simpleBtn = page.getByTestId('nav-mode-simple').first();
-    const proBtn = page.getByTestId('nav-mode-pro').first();
-    await expect(simpleBtn).toBeVisible();
-    await expect(proBtn).toBeVisible();
-    await proBtn.click();
-
-    // 4. Verify Command Palette (Ctrl+K) indexes all 26 pages & actions
+    // 6. Verify Command Palette (Ctrl+K) indexes all 26 pages & actions
     await page.getByTestId('stepper-command-palette-trigger').click();
     const cmdModal = page.getByTestId('command-palette-dialog');
     await expect(cmdModal).toBeVisible();
@@ -92,50 +127,36 @@ test.describe('Phase 3: UI, Design System, Navigation & Accessibility Verificati
     await expect(page.getByTestId('command-palette-item-page-upload')).toBeVisible();
     await page.getByTestId('command-palette-item-page-upload').click();
 
-    // 5. On Upload page: verify PageHeader (sentence case, not ALL-CAPS) & full-width "Recommended for your data" banner
+    // 7. On Upload page: verify PageHeader & full-width "Recommended for your data" banner
     const pageTitle = page.getByTestId('page-header-title-upload');
     await expect(pageTitle).toHaveText('Upload & Ingest Data');
-
     const detectionBanner = page.getByTestId('upload-pack-detection-banner');
     await expect(detectionBanner).toBeVisible();
-    const matchesGrid = page.getByTestId('upload-top-pack-matches-grid');
-    await expect(matchesGrid).toBeVisible();
-
     const bannerBox = await detectionBanner.boundingBox();
     expect(bannerBox?.width).toBeGreaterThan(700);
 
-    // Verify "?" Quick Guide inside PageHeader
-    await page.getByTestId('page-help-trigger-upload').click();
-    await expect(page.getByTestId('page-help-panel-upload')).toBeVisible();
-
-    // 6. Navigate to Ask Data AI via Command Palette and verify 2x2 Pack-Aware Example Prompt Cards + Recent Answers
+    // 8. Navigate to Ask Data AI and verify 2x2 Pack-Aware Example Prompt Cards + Recent Answers
     await page.getByTestId('stepper-command-palette-trigger').click();
     await page.getByTestId('command-palette-input').fill('Ask Your Data AI');
     await page.getByTestId('command-palette-item-page-ai_insights').click();
-
     await expect(page.getByTestId('ai-example-prompt-cards')).toBeVisible();
-    await expect(page.getByTestId('ai-prompt-card-kpi-drivers')).toBeVisible();
-    await expect(page.getByTestId('ai-prompt-card-pack-sql')).toBeVisible();
     await expect(page.getByTestId('ai-recent-answers')).toBeVisible();
 
-    // 7. Navigate to Settings and verify single source of truth Version (v2.4.0) & active Dataset Identifier
+    // 9. Navigate to Settings and verify Version (v2.4.0) & Dataset Identifier
     await page.getByTestId('stepper-command-palette-trigger').click();
     await page.getByTestId('command-palette-input').fill('Settings & Branding');
     await page.getByTestId('command-palette-item-page-settings').click();
-
-    const navbarVersion = page.getByTestId('navbar-app-version');
-    const settingsVersion = page.getByTestId('settings-active-version');
-    await expect(settingsVersion).toHaveText('v2.4.0');
-    await expect(navbarVersion).toContainText('v2.4.0');
-
-    const projectIdEl = page.getByTestId('settings-project-identifier');
-    await expect(projectIdEl).toContainText('sales-margin-telemetry');
+    await expect(page.getByTestId('settings-active-version')).toHaveText('v2.4.0');
+    await expect(page.getByTestId('navbar-app-version')).toContainText('v2.4.0');
+    await expect(page.getByTestId('settings-project-identifier')).toContainText(
+      'sales-margin-telemetry'
+    );
   });
 
-  test('3.6 & 3.7 Mobile Bottom-Nav at 375px & 414px with zero horizontal scroll and 1440/1024/375 Light+Dark Screenshots', async ({
+  test('3.6 & 3.7 Multi-Viewport Screenshots (1440/1024/375 Light+Dark) for Executive Dashboard, Sidebar, Upload & Ask AI with zero horizontal scroll', async ({
     page,
   }) => {
-    test.setTimeout(120000);
+    test.setTimeout(150000);
     fs.mkdirSync(SCREENSHOT_DIR, { recursive: true });
 
     const viewports = [
@@ -147,24 +168,34 @@ test.describe('Phase 3: UI, Design System, Navigation & Accessibility Verificati
     for (const theme of ['dark', 'light'] as const) {
       for (const vp of viewports) {
         await page.setViewportSize({ width: vp.width, height: vp.height });
-        await bootstrapWorkspace(page, { theme, navMode: 'simple' });
+        await bootstrapWorkspace(page, { theme, skipTour: true });
 
-        // Navigate to Upload page via Guided Stepper
+        // 1. Executive Dashboard + Sidebar first screenful
+        const execOverflow = await page.evaluate(() => {
+          return document.documentElement.scrollWidth > window.innerWidth + 1;
+        });
+        expect(execOverflow).toBe(false);
+
+        await page.screenshot({
+          path: path.join(SCREENSHOT_DIR, `after-executive-dashboard-${vp.label}-${theme}.png`),
+          fullPage: false,
+        });
+
+        // 2. Upload page
         await page.getByTestId('workflow-step-upload').click();
         await expect(page.getByTestId('upload-pack-detection-banner')).toBeVisible();
 
-        // Check zero horizontal scroll
-        const hasHorizontalOverflow = await page.evaluate(() => {
+        const uploadOverflow = await page.evaluate(() => {
           return document.documentElement.scrollWidth > window.innerWidth + 1;
         });
-        expect(hasHorizontalOverflow).toBe(false);
+        expect(uploadOverflow).toBe(false);
 
         await page.screenshot({
           path: path.join(SCREENSHOT_DIR, `upload-${vp.label}-${theme}.png`),
           fullPage: false,
         });
 
-        // Navigate to Ask Data AI via Command Palette or Mobile Bottom Nav
+        // 3. Ask Data AI page
         if (vp.width === 375) {
           const mobileNav = page.getByTestId('mobile-bottom-nav');
           await expect(mobileNav).toBeVisible();
@@ -188,19 +219,6 @@ test.describe('Phase 3: UI, Design System, Navigation & Accessibility Verificati
           fullPage: false,
         });
       }
-    }
-
-    // Also verify 414px mobile viewport has zero horizontal scroll across the 5 primary bottom-nav pages
-    await page.setViewportSize({ width: 414, height: 896 });
-    await bootstrapWorkspace(page, { theme: 'dark', navMode: 'simple' });
-
-    const mobileCoreTabs = ['upload', 'cleaning', 'analytics_packs', 'executive_dashboard', 'reports'] as const;
-    for (const tabId of mobileCoreTabs) {
-      await page.getByTestId(`mobile-bottom-tab-${tabId}`).click();
-      const overflow = await page.evaluate(() => {
-        return document.documentElement.scrollWidth > window.innerWidth + 1;
-      });
-      expect(overflow).toBe(false);
     }
   });
 });

@@ -157,6 +157,8 @@ export const ExecutiveDashboard: React.FC = () => {
   const [isBundleGenerating, setIsBundleGenerating] = useState(false);
   const [downloadSuccess, setDownloadSuccess] = useState<string | null>(null);
   const [askDataQuery, setAskDataQuery] = useState('');
+  const [isViewOptionsOpen, setIsViewOptionsOpen] = useState(false);
+  const [isMoreActionsOpen, setIsMoreActionsOpen] = useState(false);
 
 
   // Compute filtered value for a KPI based on active slicers/filters
@@ -759,9 +761,7 @@ export const ExecutiveDashboard: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 pb-12 animate-fadeIn w-full">
-      <PagePurposeBar page="executive_dashboard" />
-
+    <div className="space-y-3 pb-12 animate-fadeIn w-full">
       {/* Download notification toast */}
       {downloadSuccess && (
         <div className="fixed bottom-20 sm:bottom-6 right-6 z-50 bg-sky-50 dark:bg-cyan-950/90 border border-sky-300 dark:border-cyan-500/50 text-sky-800 dark:text-cyan-300 px-4 py-2.5 rounded-xl text-xs font-semibold shadow-xl flex items-center gap-2">
@@ -770,12 +770,9 @@ export const ExecutiveDashboard: React.FC = () => {
         </div>
       )}
 
-      {/* 1. TOP SUMMARY & ACTION CONTROLS PANEL */}
-      <section className="w-full glass-panel-luminous rounded-2xl p-5 sm:p-6 shadow-2xl relative overflow-hidden">
-        <div className="absolute -right-20 -top-20 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute left-1/3 -bottom-24 w-72 h-72 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="relative z-10 flex flex-col gap-4">
+      {/* 1. COMPACT PAGE HEADER WITH MERGED PURPOSE SUBTITLE, SINGLE ACTION BAR & VIEW OPTIONS POPOVER */}
+      <section className="w-full glass-panel-luminous rounded-2xl p-3.5 sm:p-4 shadow-xl relative">
+        <div className="relative z-10 flex flex-col gap-2.5">
           {/* Hidden file input for company logo upload */}
           <input
             ref={fileInputRef}
@@ -785,66 +782,60 @@ export const ExecutiveDashboard: React.FC = () => {
             onChange={handleLogoUpload}
           />
 
-          {/* Title row: Logo & Titles on Left, Telemetry Health Badges on Right in normal wrapping flow */}
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="flex items-start gap-3 sm:gap-4 min-w-0 flex-1 basis-[280px] sm:basis-[400px]">
-              {/* Company Logo Display & Uploader Button */}
+          {/* Top Row: Compact Logo + Title + Merged Purpose Subtitle on Left; Telemetry Pill + Single Action Bar on Right */}
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="flex items-start gap-2.5 sm:gap-3 min-w-0 flex-1 basis-[280px] sm:basis-[420px]">
+              {/* Compact Company Logo Display / Uploader */}
               <div className="relative group shrink-0">
                 {brand.logoUrl ? (
                   <div className="relative">
                     <img
                       src={brand.logoUrl}
                       alt={brand.companyName}
-                      className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl object-contain glass-card p-1 shadow-lg transition-transform group-hover:scale-105"
+                      className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl object-contain glass-card p-1 shadow-xs"
                     />
-                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 rounded-2xl transition-opacity flex items-center justify-center gap-1.5">
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 rounded-xl transition-opacity flex items-center justify-center gap-1">
                       <button
+                        type="button"
                         onClick={() => fileInputRef.current?.click()}
-                        className="p-1 rounded-lg bg-elevated text-primary hover:text-accent transition-colors"
+                        className="p-1 rounded bg-elevated text-primary hover:text-accent"
                         title="Change Company Logo"
                       >
-                        <Pencil className="w-3.5 h-3.5" />
+                        <Pencil className="w-3 h-3" />
                       </button>
                       <button
+                        type="button"
                         onClick={removeCompanyLogo}
-                        className="p-1 rounded-lg bg-elevated text-rose-400 hover:text-rose-300 transition-colors"
+                        className="p-1 rounded bg-elevated text-rose-400 hover:text-rose-300"
                         title="Remove Logo"
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <Trash2 className="w-3 h-3" />
                       </button>
                     </div>
                   </div>
                 ) : (
                   <button
+                    type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl border-2 border-dashed border-cyan-500/40 hover:border-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/20 text-accent flex flex-col items-center justify-center gap-1 transition-colors cursor-pointer shadow-xs group"
-                    title="Upload Company Logo (Appears on Dashboard, Top Bar, and PDF Reports)"
+                    className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl border border-dashed border-subtle hover:border-strong bg-input hover:bg-elevated text-accent flex flex-col items-center justify-center gap-0.5 cursor-pointer"
+                    title="Upload Company Logo"
                   >
-                    <UploadCloud className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                    <span className="text-[9px] font-mono uppercase font-bold tracking-tight text-center leading-none">Upload Logo</span>
+                    <UploadCloud className="w-4 h-4" />
+                    <span className="text-[8px] font-mono uppercase font-bold leading-none">
+                      Logo
+                    </span>
                   </button>
                 )}
               </div>
 
-              <div className="flex flex-col gap-1.5 min-w-0 flex-1">
-                <div className="flex items-center gap-1.5 text-[10px] font-bold tracking-widest text-secondary uppercase font-mono flex-wrap">
+              <div className="flex flex-col gap-1 min-w-0 flex-1">
+                <div className="flex items-center gap-1.5 text-[10px] font-bold tracking-wider text-secondary uppercase font-mono flex-wrap">
                   <span className="text-accent font-bold">{brand.companyName.toUpperCase()}</span>
                   <span>/</span>
                   <span>{brand.department.toUpperCase()}</span>
-                  <span>/</span>
-                  <span className="text-accent font-bold">VERIFIED ANALYTICS MODEL</span>
-                </div>
-
-                {/* Title & Rename Control */}
-                <div className="flex items-center gap-2 flex-wrap mt-0.5 min-w-0 max-w-full">
-                  <h1 className="font-headline-xl text-headline-xl text-primary tracking-tight font-extrabold flex items-center gap-2 flex-wrap min-w-0 max-w-full">
-                    <EditableDashboardTitle className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight uppercase max-w-full" showLabelPrefix={false} />
-                  </h1>
-                </div>
-
-                <div className="font-body-sm text-body-sm text-secondary flex items-center gap-2 flex-wrap min-w-0 max-w-full">
-                  <span className="inline-flex items-baseline gap-1 min-w-0 max-w-full">
-                    <span className="shrink-0">Scope:</span>
+                  <span aria-hidden="true">·</span>
+                  <span className="inline-flex items-baseline gap-1 min-w-0 max-w-full normal-case font-sans">
+                    <span className="text-secondary">Scope:</span>
                     <Tooltip
                       side="bottom"
                       title="Dataset Scope"
@@ -853,7 +844,7 @@ export const ExecutiveDashboard: React.FC = () => {
                     >
                       <strong
                         tabIndex={0}
-                        className="text-primary font-semibold line-clamp-2 [overflow-wrap:anywhere] min-w-0 max-w-full focus-visible:outline-2 focus-visible:outline-accent rounded px-0.5"
+                        className="text-primary font-semibold truncate max-w-[200px] focus-visible:outline-2 focus-visible:outline-accent rounded px-0.5"
                         title={project.name}
                         aria-label={project.name}
                       >
@@ -862,187 +853,347 @@ export const ExecutiveDashboard: React.FC = () => {
                     </Tooltip>
                   </span>
                   <span aria-hidden="true">·</span>
-                  <span className="flex items-center gap-1">Prepared by: <EditableAnalystName /></span>
+                  <span className="normal-case font-sans inline-flex items-center gap-1">
+                    By <EditableAnalystName />
+                  </span>
                   <span aria-hidden="true">·</span>
-                  <span>Audited: <strong className="text-accent font-semibold tabular-nums">{filteredRows.length.toLocaleString()} rows</strong></span>
+                  <span className="text-accent font-semibold tabular-nums">
+                    {filteredRows.length.toLocaleString()} rows
+                  </span>
+                </div>
+
+                {/* Title & Rename Control */}
+                <div className="flex items-center gap-2 flex-wrap min-w-0 max-w-full">
+                  <h1 className="font-headline-xl text-primary tracking-tight font-extrabold flex items-center gap-2 flex-wrap min-w-0 max-w-full">
+                    <EditableDashboardTitle
+                      className="text-lg sm:text-xl lg:text-2xl font-extrabold tracking-tight uppercase max-w-full"
+                      showLabelPrefix={false}
+                    />
+                  </h1>
+                </div>
+
+                {/* Merged Purpose Subtitle + Related Quick Links */}
+                <PagePurposeBar page="executive_dashboard" inline />
+              </div>
+            </div>
+
+            {/* Right Column: Telemetry Pill + Single Action Bar (Download, Present, View options, More) */}
+            <div className="flex flex-col sm:items-end gap-2 shrink-0 ml-auto">
+              {/* Telemetry Health Summary (non-overlapping with H1) */}
+              <div className="flex flex-wrap items-center gap-2.5 bg-input border border-subtle px-3 py-1.5 rounded-xl shadow-2xs shrink-0 self-start sm:self-end">
+                <button
+                  type="button"
+                  onClick={() => setCurrentTab('quality')}
+                  className="flex items-center gap-1.5 cursor-pointer hover:opacity-80 text-left"
+                  title="Click to view Data Quality Audit"
+                >
+                  <span className="font-mono text-secondary tracking-wider uppercase font-bold text-[10px] whitespace-nowrap">
+                    DATA QUALITY
+                  </span>
+                  <span className="text-accent font-mono text-xs font-bold tabular-nums whitespace-nowrap">
+                    {qualityReport.overallScore}%
+                  </span>
+                </button>
+                <div className="w-px h-3.5 bg-[var(--border-subtle)]" />
+                <div className="flex items-center gap-1.5">
+                  <span className="font-mono text-secondary tracking-wider uppercase font-bold text-[10px] whitespace-nowrap">
+                    BUSINESS HEALTH
+                  </span>
+                  <span className="text-amber-500 font-mono text-xs font-bold flex items-center gap-1 tabular-nums whitespace-nowrap">
+                    <Award className="w-3 h-3 shrink-0" />
+                    <span>
+                      {analytics.businessHealthScore
+                        ? `${analytics.businessHealthScore.score}/100`
+                        : '80/100'}
+                    </span>
+                  </span>
+                </div>
+              </div>
+
+              {/* Single Action Bar: Download, Present, View options popover, More menu */}
+              <div
+                data-testid="exec-single-action-bar"
+                className="flex flex-wrap items-center gap-1.5 sm:gap-2"
+              >
+                <DownloadMenu context="executive_dashboard" label="Download" />
+
+                {/* Legacy multi-button cluster shown only when Classic flags are active */}
+                {!flags.unifiedTheme && !flags.depthUI && (
+                  <>
+                    <button
+                      onClick={handleDownloadBundleZip}
+                      disabled={isBundleGenerating}
+                      className="glass-btn-primary min-h-[34px] px-3 py-1 rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-xs cursor-pointer whitespace-nowrap shrink-0 disabled:opacity-50"
+                    >
+                      {isBundleGenerating ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-primary shrink-0" />
+                      ) : (
+                        <Download className="w-3.5 h-3.5 shrink-0" />
+                      )}
+                      <span>Download Bundle (ZIP)</span>
+                    </button>
+                    <button
+                      onClick={handleDownloadExecutivePDF}
+                      disabled={isPdfGenerating}
+                      className="glass-btn-secondary min-h-[34px] px-3 py-1 rounded-xl font-semibold text-xs flex items-center gap-1.5 whitespace-nowrap shrink-0 disabled:opacity-50 cursor-pointer"
+                    >
+                      <FileText className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                      <span>Executive Report (PDF)</span>
+                    </button>
+                    <button
+                      onClick={handleDownloadDashboardJSON}
+                      className="glass-btn-secondary min-h-[34px] px-3 py-1 rounded-xl font-semibold text-xs flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
+                    >
+                      <Download className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                      <span>Dashboard (JSON)</span>
+                    </button>
+                  </>
+                )}
+
+                <button
+                  type="button"
+                  data-testid="exec-present-btn"
+                  onClick={() => setIsPresentationMode(true)}
+                  className="glass-btn-primary min-h-[36px] px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-xs cursor-pointer whitespace-nowrap shrink-0"
+                  title="Open Fullscreen Boardroom Presentation Deck"
+                >
+                  <Tv className="w-3.5 h-3.5 shrink-0" />
+                  <span>Present</span>
+                </button>
+
+                {/* View Options Popover (Perspective + Theme + Live Preview) */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    data-testid="exec-view-options-trigger"
+                    aria-expanded={isViewOptionsOpen}
+                    onClick={() => {
+                      setIsViewOptionsOpen((prev) => !prev);
+                      setIsMoreActionsOpen(false);
+                    }}
+                    className="min-h-[36px] px-3 py-1.5 rounded-xl bg-input hover:bg-elevated border border-subtle text-xs font-semibold text-primary inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+                    title="Customize Dashboard Perspective & Visual Theme"
+                  >
+                    <Sliders className="w-3.5 h-3.5 text-accent shrink-0" />
+                    <span>View options</span>
+                  </button>
+
+                  {isViewOptionsOpen && (
+                    <div
+                      data-testid="exec-view-options-popover"
+                      role="dialog"
+                      aria-label="Dashboard View Options"
+                      className="absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl border border-strong bg-card text-primary p-4 shadow-2xl z-50 space-y-3"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-primary flex items-center gap-1.5">
+                          <Sparkles className="w-3.5 h-3.5 text-accent" />
+                          <span>View Options (Perspective &amp; Theme)</span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setIsViewOptionsOpen(false)}
+                          aria-label="Close view options"
+                          className="p-1 rounded-lg text-muted hover:text-primary hover:bg-input cursor-pointer"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      {/* Perspective Selector */}
+                      <div className="space-y-1.5">
+                        <div className="text-[11px] font-mono uppercase tracking-wider text-muted font-bold">
+                          Analytical Perspective (5)
+                        </div>
+                        <div className="grid grid-cols-1 gap-1">
+                          {[
+                            {
+                              id: 'c_suite',
+                              label: 'C-Suite Executive',
+                              desc: 'Strategic revenue pacing, growth & executive directives',
+                            },
+                            {
+                              id: 'operations',
+                              label: 'Operational Velocity',
+                              desc: 'Volume throughput, delivery status & execution bottlenecks',
+                            },
+                            {
+                              id: 'growth',
+                              label: 'Growth & Commercial',
+                              desc: 'Category market shares, product rankings & conversion',
+                            },
+                            {
+                              id: 'finance',
+                              label: 'Financial Controller',
+                              desc: 'Gross margin %, cost absorption & Price-Volume-Mix',
+                            },
+                            {
+                              id: 'wallboard',
+                              label: 'Wallboard Presentation',
+                              desc: 'Fullscreen high-contrast mode for boardrooms',
+                            },
+                          ].map((p) => {
+                            const isSelected = dashboardPersona === p.id;
+                            return (
+                              <button
+                                key={p.id}
+                                type="button"
+                                data-testid={`view-option-perspective-${p.id}`}
+                                onClick={() => handlePersonaSelect(p.id as DashboardPersona)}
+                                className={`px-2.5 py-1.5 rounded-xl text-left text-xs border cursor-pointer flex items-center justify-between gap-2 ${
+                                  isSelected
+                                    ? 'bg-accent text-on-accent border-subtle font-bold'
+                                    : 'bg-input hover:bg-elevated text-primary border-subtle'
+                                }`}
+                              >
+                                <div className="min-w-0">
+                                  <div className="font-semibold">{p.label}</div>
+                                  <div
+                                    className={`text-[10px] truncate ${
+                                      isSelected ? 'text-on-accent/90' : 'text-secondary'
+                                    }`}
+                                  >
+                                    {p.desc}
+                                  </div>
+                                </div>
+                                {isSelected && <Check className="w-3.5 h-3.5 shrink-0" />}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Theme Selector */}
+                      <div className="space-y-1.5">
+                        <div className="text-[11px] font-mono uppercase tracking-wider text-muted font-bold">
+                          Chart Palette Theme (5)
+                        </div>
+                        <div className="grid grid-cols-3 gap-1.5">
+                          {[
+                            { id: 'cyber_emerald', label: 'Azure Blue' },
+                            { id: 'wall_street', label: 'Wall St' },
+                            { id: 'power_bi', label: 'Power BI' },
+                            { id: 'sunset_royal', label: 'Royal' },
+                            { id: 'nordic_light', label: 'Frost' },
+                          ].map((thm) => {
+                            const isSelected = visualTheme === thm.id;
+                            return (
+                              <button
+                                key={thm.id}
+                                type="button"
+                                data-testid={`view-option-theme-${thm.id}`}
+                                onClick={() => {
+                                  handleSetVisualTheme(thm.id as DashboardVisualTheme);
+                                }}
+                                className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold border cursor-pointer text-center ${
+                                  isSelected
+                                    ? 'bg-accent text-on-accent border-subtle font-bold'
+                                    : 'bg-input hover:bg-elevated text-primary border-subtle'
+                                }`}
+                              >
+                                {thm.label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Live Mini Preview Card inside View Options Popover */}
+                      <div
+                        data-testid="exec-view-options-preview"
+                        className="p-2.5 rounded-xl bg-input border border-subtle space-y-1.5"
+                      >
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="font-mono text-muted">Live Theme Preview</span>
+                          <span className="font-semibold text-primary">
+                            {activeThemeConfig.name} · {dashboardPersona.replace('_', ' ').toUpperCase()}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          {activeThemeConfig.barColors.slice(0, 5).map((hex: string, i: number) => (
+                            <span
+                              key={i}
+                              className="h-4 flex-1 rounded-md border border-subtle"
+                              style={{ backgroundColor: hex }}
+                              title={hex}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* More Actions Overflow Menu */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    data-testid="exec-more-actions-trigger"
+                    aria-expanded={isMoreActionsOpen}
+                    onClick={() => {
+                      setIsMoreActionsOpen((prev) => !prev);
+                      setIsViewOptionsOpen(false);
+                    }}
+                    className="min-h-[36px] px-2.5 py-1.5 rounded-xl bg-input hover:bg-elevated border border-subtle text-xs font-semibold text-primary inline-flex items-center gap-1 cursor-pointer"
+                    title="More dashboard actions"
+                  >
+                    <span>More</span>
+                  </button>
+
+                  {isMoreActionsOpen && (
+                    <div
+                      data-testid="exec-more-actions-menu"
+                      role="menu"
+                      className="absolute right-0 mt-2 w-52 rounded-xl border border-strong bg-card text-primary py-1.5 shadow-2xl z-50"
+                    >
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => {
+                          setIsMoreActionsOpen(false);
+                          fileInputRef.current?.click();
+                        }}
+                        className="w-full px-3 py-2 text-left text-xs text-primary hover:bg-elevated flex items-center gap-2 cursor-pointer"
+                      >
+                        <UploadCloud className="w-3.5 h-3.5 text-accent" />
+                        <span>Upload / Change Logo</span>
+                      </button>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => {
+                          setIsMoreActionsOpen(false);
+                          resetKpisToDefault();
+                        }}
+                        className="w-full px-3 py-2 text-left text-xs text-primary hover:bg-elevated flex items-center gap-2 cursor-pointer"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5 text-accent" />
+                        <span>Reset Auto KPI Metrics</span>
+                      </button>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => {
+                          setIsMoreActionsOpen(false);
+                          setCurrentTab('how_to_use');
+                        }}
+                        className="w-full px-3 py-2 text-left text-xs text-primary hover:bg-elevated flex items-center gap-2 cursor-pointer"
+                      >
+                        <HelpCircle className="w-3.5 h-3.5 text-accent" />
+                        <span>How to Use Guide</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
-
-            {/* Telemetry Health Summary (In normal flex-wrap flow: wraps below title on narrow widths, right-aligned on wide) */}
-            <div className="flex flex-wrap items-center gap-3 bg-input border border-subtle px-4 py-2.5 rounded-xl shadow-xs shrink-0 self-start ml-auto">
-              <button
-                type="button"
-                onClick={() => setCurrentTab('quality')}
-                className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity text-left"
-                title="Click to view Data Quality Audit"
-              >
-                <span className="font-mono text-secondary tracking-wider uppercase font-bold text-[11px] whitespace-nowrap">DATA QUALITY</span>
-                <span className="text-accent font-mono text-sm font-bold tabular-nums whitespace-nowrap">
-                  {qualityReport.overallScore}%
-                </span>
-              </button>
-              <div className="w-px h-4 bg-[var(--border-subtle)]" />
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-secondary tracking-wider uppercase font-bold text-[11px] whitespace-nowrap">BUSINESS HEALTH</span>
-                <span className="text-amber-500 font-mono text-sm font-bold flex items-center gap-1 tabular-nums whitespace-nowrap">
-                  <Award className="w-3.5 h-3.5 shrink-0" />
-                  <span>{analytics.businessHealthScore ? `${analytics.businessHealthScore.score}/100` : '80/100'}</span>
-                </span>
-              </div>
-            </div>
           </div>
 
-          {/* Action Toolbar Row: Responsive, Generous Breathing Room, Zero Vertical Text Clamping */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-3 border-t border-white/[0.08]">
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-              {/* Unified SOP Download Center Trigger (Phase 3: ONE Download button) */}
-              <DownloadMenu context="executive_dashboard" label="Download" />
-
-              {/* Legacy multi-button cluster shown only when Classic flags are active */}
-              {!flags.unifiedTheme && !flags.depthUI && (
-                <>
-                  {/* Download Bundle ZIP */}
-                  <button
-                    onClick={handleDownloadBundleZip}
-                    disabled={isBundleGenerating}
-                    className="glass-btn-primary min-h-[38px] px-3.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-2 shadow-sm transition-all cursor-pointer whitespace-nowrap shrink-0 disabled:opacity-50"
-                    title="Download both Dashboard (JSON) and Executive PDF Report in a combined ZIP bundle"
-                  >
-                    {isBundleGenerating ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin text-primary shrink-0" />
-                    ) : (
-                      <Download className="w-3.5 h-3.5 stroke-[2.5] shrink-0" />
-                    )}
-                    <span className="whitespace-nowrap font-bold">Download Bundle (ZIP)</span>
-                    <span className="hidden md:inline-block text-[10px] bg-cyan-900/40 text-cyan-200 px-1.5 py-0.5 rounded font-mono font-normal border border-cyan-400/20">Dashboard + PDF</span>
-                  </button>
-
-                  {/* Executive Report PDF */}
-                  <button
-                    onClick={handleDownloadExecutivePDF}
-                    disabled={isPdfGenerating}
-                    className="glass-btn-secondary min-h-[38px] px-3.5 py-1.5 rounded-xl font-semibold text-xs flex items-center gap-2 whitespace-nowrap shrink-0 disabled:opacity-50 cursor-pointer"
-                    title="Download Executive PDF Report"
-                  >
-                    {isPdfGenerating ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-400 shrink-0" />
-                    ) : (
-                      <FileText className="w-3.5 h-3.5 text-rose-400 shrink-0" />
-                    )}
-                    <span className="whitespace-nowrap">Executive Report (PDF)</span>
-                  </button>
-
-                  {/* Dashboard JSON */}
-                  <button
-                    onClick={handleDownloadDashboardJSON}
-                    className="glass-btn-secondary min-h-[38px] px-3.5 py-1.5 rounded-xl font-semibold text-xs flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer"
-                    title="Download Dashboard Specification as JSON"
-                  >
-                    <Download className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-                    <span className="whitespace-nowrap">Dashboard (JSON)</span>
-                  </button>
-                </>
-              )}
-
-              {/* Fullscreen Boardroom Presentation Deck Button (Phase 3: Keep in-app Present button) */}
-              <button
-                onClick={() => setIsPresentationMode(true)}
-                className="glass-btn-primary min-h-[38px] px-3.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-2 shadow-sm transition-all cursor-pointer whitespace-nowrap shrink-0"
-                title="Open Fullscreen Boardroom Presentation Deck"
-              >
-                <Tv className="w-3.5 h-3.5 shrink-0" />
-                <span className="whitespace-nowrap">Present Deck</span>
-              </button>
-
-              {/* How to Use Shortcut */}
-              <button
-                onClick={() => setCurrentTab('how_to_use')}
-                className="glass-btn-secondary min-h-[38px] px-3.5 py-1.5 rounded-xl font-semibold text-xs flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer"
-                title="View Complete User Guide & Module Directory"
-              >
-                <HelpCircle className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-                <span className="whitespace-nowrap">How to Use</span>
-              </button>
-            </div>
-
-            {/* Live Indicator / Quick Telemetry Note */}
-            <div className="hidden xl:flex items-center gap-2 text-[11px] font-mono text-secondary shrink-0">
-              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shrink-0 shadow-lg" />
-              <span className="whitespace-nowrap">Real-Time Engine Sync Active</span>
-            </div>
-          </div>
-
-          {/* Interactive Power BI Style Slicers Ribbon */}
-          <InteractiveSlicersBar className="w-full my-1.5" />
-
-          {/* Dashboard Persona & Visual Themes Customizer Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-2.5 border-t border-border-subtle">
-            {/* Dashboard Perspectives */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-label-caps text-label-caps uppercase tracking-wider text-cyan-600 dark:text-cyan-400 font-bold flex items-center gap-1.5 text-xs">
-                <Sparkles className="w-4 h-4 text-cyan-500 dark:text-cyan-400" /> PERSPECTIVE:
-              </span>
-              {[
-                { id: 'c_suite', label: '🏛️ C-Suite Executive', desc: 'Strategic high-level revenue pacing, corporate growth & executive directives' },
-                { id: 'operations', label: '⚡ Operational Velocity', desc: 'Transaction volume throughput, delivery status & execution bottlenecks' },
-                { id: 'growth', label: '📈 Growth & Commercial', desc: 'Category market shares, product rankings & customer conversion funnels' },
-                { id: 'finance', label: '💵 Financial Controller', desc: 'Gross margin %, cost absorption efficiency & Price-Volume-Mix (PVM)' },
-                { id: 'wallboard', label: '🌌 Wallboard Presentation', desc: 'High-contrast minimalist mode for boardrooms and monitoring walls' }
-              ].map(p => (
-                <button
-                  key={p.id}
-                  onClick={() => handlePersonaSelect(p.id as DashboardPersona)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1 border shadow-xs ${
-                    dashboardPersona === p.id
-                      ? isLight 
-                        ? 'bg-sky-600 text-primary font-bold border-sky-600 shadow-sm'
-                        : 'bg-cyan-500 dark:bg-cyan-400 text-primary font-bold border-cyan-400 shadow-lg'
-                      : isLight 
-                        ? 'bg-white hover:bg-elevated text-muted hover:text-primary border-slate-200'
-                        : 'bg-surface-panel hover:bg-surface-elevated text-on-surface-variant hover:text-on-surface border-border-subtle'
-                  }`}
-                  title={p.desc}
-                >
-                  <span>{p.label}</span>
-                </button>
-              ))}
-            </div>
-
-            {/* Multiple Visual Theme Switcher */}
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-muted dark:text-on-surface-variant font-mono">
-                THEME:
-              </span>
-              {[
-                { id: 'cyber_emerald', label: '⚡ Azure Blue' },
-                { id: 'wall_street', label: '📈 Wall St' },
-                { id: 'power_bi', label: '📊 Power BI' },
-                { id: 'sunset_royal', label: '👑 Royal' },
-                { id: 'nordic_light', label: '❄️ Frost' }
-              ].map(thm => (
-                <button
-                  key={thm.id}
-                  onClick={() => {
-                    handleSetVisualTheme(thm.id as DashboardVisualTheme);
-                    setDownloadSuccess(`Applied visual theme: ${thm.label}`);
-                    setTimeout(() => setDownloadSuccess(null), 2000);
-                  }}
-                  className={`px-2 py-1 rounded-lg text-xs font-semibold transition-all border ${
-                    visualTheme === thm.id
-                      ? isLight ? 'bg-sky-600 text-primary font-bold border-sky-700 shadow-xs' : 'bg-cyan-400 text-primary font-bold border-cyan-400 shadow-xs'
-                      : isLight ? 'bg-white text-muted border-slate-300 hover:bg-elevated hover:text-primary' : 'bg-elevated text-secondary border-subtle hover:bg-card-hover'
-                  }`}
-                  title={`Switch styling palette to ${thm.label}`}
-                >
-                  {thm.label}
-                </button>
-              ))}
-            </div>
-          </div>
+          {/* Interactive Slicers Ribbon */}
+          <InteractiveSlicersBar className="w-full" />
 
           {/* Navigation View Switcher (Tabs for Data Analysts & Executives) */}
-          <div className="flex gap-2 pt-1 border-t border-white/[0.08] text-xs overflow-x-auto no-scrollbar">
+          <div className="flex gap-1.5 pt-1 border-t border-subtle text-xs overflow-x-auto no-scrollbar">
             <Tooltip
               side="bottom"
               title="Executive Overview"

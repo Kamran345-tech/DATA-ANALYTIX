@@ -173,19 +173,14 @@ export const ModernCommandPalette: React.FC<ModernCommandPaletteProps> = ({ isOp
         },
       },
       {
-        id: 'act-toggle-nav-mode',
-        title: 'Action: Toggle Simple / Pro Sidebar Mode',
-        subtitle: 'Switch between 8-item Simple navigation and full 25+ module Pro list',
+        id: 'act-replay-tour',
+        title: 'Action: Replay 3-Step Platform Coach Tour',
+        subtitle: 'Launch the guided 3-step tour covering Sidebar Groups, Ctrl+K Search, and Downloads',
         category: 'Actions',
-        icon: Layers,
-        keywords: ['simple', 'pro', 'sidebar', 'navigation', 'menu'],
+        icon: HelpCircle,
+        keywords: ['tour', 'onboarding', 'guide', 'help', 'coach', 'walkthrough'],
         onExecute: () => {
-          if (typeof window !== 'undefined') {
-            const cur = localStorage.getItem('dataanalytix_nav_mode') || 'simple';
-            const next = cur === 'simple' ? 'pro' : 'simple';
-            localStorage.setItem('dataanalytix_nav_mode', next);
-            window.dispatchEvent(new CustomEvent('dataanalytix:nav-mode-updated', { detail: next }));
-          }
+          window.dispatchEvent(new CustomEvent('dataanalytix:start-coach-tour'));
           onClose();
         },
       },
