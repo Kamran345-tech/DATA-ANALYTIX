@@ -883,6 +883,28 @@ export const ExecutiveDashboard: React.FC = () => {
                     />
                   </h1>
                 </div>
+
+                {/* Section 2.5 & 2.7: Plain-language summary line + Take a 30-second tour link */}
+                <div className="hidden sm:flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-secondary">
+                  <p data-testid="exec-plain-summary-line" className="font-medium text-secondary">
+                    {filteredRows.length.toLocaleString()} rows analysed. Data quality{' '}
+                    <strong className="text-primary font-semibold">{qualityReport.overallScore}%</strong>.{' '}
+                    {displayKpis[0]
+                      ? `${displayKpis[0].name} is ${(displayKpis[0].status || 'on track').toLowerCase()}.`
+                      : 'Revenue is on track.'}
+                  </p>
+                  <button
+                    type="button"
+                    data-testid="exec-take-tour-link"
+                    onClick={() =>
+                      window.dispatchEvent(new CustomEvent('dataanalytix:start-coach-tour'))
+                    }
+                    className="text-accent hover:underline font-semibold inline-flex items-center gap-1 cursor-pointer shrink-0"
+                  >
+                    <span>Take a 30-second tour</span>
+                    <ArrowUpRight className="w-3 h-3" />
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -908,7 +930,7 @@ export const ExecutiveDashboard: React.FC = () => {
                   <span className="font-mono text-secondary font-bold text-xs whitespace-nowrap">
                     BUSINESS HEALTH
                   </span>
-                  <span className="text-amber-500 font-mono text-xs font-bold flex items-center gap-1 tabular-nums whitespace-nowrap">
+                  <span className="text-accent font-mono text-xs font-bold flex items-center gap-1 tabular-nums whitespace-nowrap">
                     <Award className="w-3 h-3 shrink-0" />
                     <span>
                       {analytics.businessHealthScore
@@ -946,14 +968,14 @@ export const ExecutiveDashboard: React.FC = () => {
                       disabled={isPdfGenerating}
                       className="glass-btn-secondary min-h-[34px] px-3 py-1 rounded-xl font-semibold text-xs flex items-center gap-1.5 whitespace-nowrap shrink-0 disabled:opacity-50 cursor-pointer"
                     >
-                      <FileText className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                      <FileText className="w-3.5 h-3.5 text-accent shrink-0" />
                       <span>Executive Report (PDF)</span>
                     </button>
                     <button
                       onClick={handleDownloadDashboardJSON}
                       className="glass-btn-secondary min-h-[34px] px-3 py-1 rounded-xl font-semibold text-xs flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
                     >
-                      <Download className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                      <Download className="w-3.5 h-3.5 text-accent shrink-0" />
                       <span>Dashboard (JSON)</span>
                     </button>
                   </>
@@ -971,7 +993,7 @@ export const ExecutiveDashboard: React.FC = () => {
                   <span className="hidden sm:inline">Present</span>
                 </button>
 
-                {/* View Options Popover (Perspective + Theme + Live Preview) */}
+                {/* View Options Popover (Perspective + Theme + Live Preview + Reset layout) */}
                 <div className="relative">
                   <button
                     type="button"
@@ -1133,6 +1155,25 @@ export const ExecutiveDashboard: React.FC = () => {
                           ))}
                         </div>
                       </div>
+
+                      {/* Section 2.7: Reset layout item */}
+                      <div className="pt-2 border-t border-subtle flex items-center justify-between">
+                        <button
+                          type="button"
+                          data-testid="view-option-reset-layout"
+                          onClick={() => {
+                            handlePersonaSelect('c_suite');
+                            handleSetVisualTheme('cyber_emerald');
+                            resetKpisToDefault();
+                            setActiveTab('overview');
+                            setIsViewOptionsOpen(false);
+                          }}
+                          className="w-full px-3 py-2 rounded-xl bg-input hover:bg-elevated border border-subtle text-xs font-semibold text-primary flex items-center justify-center gap-1.5 cursor-pointer"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5 text-accent" />
+                          <span>Reset layout</span>
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -1217,7 +1258,7 @@ export const ExecutiveDashboard: React.FC = () => {
               title="Executive Overview"
               tag="C-Suite Summary"
               className="w-auto shrink-0"
-              content="Top-level view combining 4 main business KPIs, AI decision directives, trend telemetry, and segment share breakdown."
+              content="Top-level view combining 4 main business KPIs, trend telemetry, ranking breakdown, and recommended actions."
             >
               <button
                 onClick={() => setActiveTab('overview')}
@@ -1379,19 +1420,23 @@ export const ExecutiveDashboard: React.FC = () => {
                     : 'glass-btn-secondary'
                 }`}
               >
-                <Network className="w-3.5 h-3.5 text-cyan-400" /> Data Engineering Suite
+                <Network className="w-3.5 h-3.5 text-accent" /> Data Engineering Suite
               </button>
             </Tooltip>
           </div>
         </div>
       </section>
 
-      {/* 2. 4 EXECUTIVE KPI CARDS - FULLY DYNAMIC & DATASET-DRIVEN */}
-      <section className="space-y-2">
-        <div className="flex items-center justify-between px-1 gap-2">
+      {/* 2. SECTION 2.4 & 2.7: 4 EXECUTIVE KPI CARDS ("Key numbers") */}
+      <section className="space-y-1.5 sm:space-y-2">
+        <div className="hidden sm:flex items-center justify-between px-1 gap-2">
           <div className="flex items-center gap-2 min-w-0">
-            <span className="font-heading tracking-wide text-secondary font-bold text-xs truncate">
-              Executive Performance Telemetry
+            <span
+              data-testid="exec-key-numbers-heading"
+              title="Executive Performance Telemetry"
+              className="font-heading tracking-wide text-secondary font-bold text-xs truncate cursor-help"
+            >
+              Key numbers
             </span>
             <span className="text-xs text-accent hidden md:inline font-mono">
               (Click pencil on any card to change heading &amp; calculation)
@@ -1408,15 +1453,40 @@ export const ExecutiveDashboard: React.FC = () => {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-5">
           {displayKpis.map((kpi, kIdx) => {
-            const statusTheme = kpi.status === 'Above Target'
-              ? { text: 'text-cyan-400', bg: 'bg-cyan-500/20', dot: 'bg-cyan-400', border: 'border-cyan-500/30', stroke: 'var(--chart-3)' }
-              : kpi.status === 'At Risk'
-              ? { text: 'text-rose-400', bg: 'bg-rose-500/20', dot: 'bg-rose-400', border: 'border-rose-500/30', stroke: 'var(--danger)' }
-              : kpi.status === 'Below Target'
-              ? { text: 'text-amber-400', bg: 'bg-amber-500/20', dot: 'bg-amber-400', border: 'border-amber-500/30', stroke: 'var(--chart-4)' }
-              : { text: 'text-cyan-400', bg: 'bg-cyan-500/15', dot: 'bg-cyan-400', border: 'border-cyan-500/30', stroke: 'var(--chart-3)' };
+            const statusTheme =
+              kpi.status === 'Above Target'
+                ? {
+                    text: 'text-accent',
+                    bg: 'bg-accent-soft',
+                    dot: 'bg-accent',
+                    border: 'border-subtle',
+                    stroke: 'var(--chart-1)',
+                  }
+                : kpi.status === 'At Risk'
+                ? {
+                    text: 'text-danger',
+                    bg: 'bg-elevated',
+                    dot: 'bg-danger',
+                    border: 'border-subtle',
+                    stroke: 'var(--danger)',
+                  }
+                : kpi.status === 'Below Target'
+                ? {
+                    text: 'text-warning',
+                    bg: 'bg-elevated',
+                    dot: 'bg-warning',
+                    border: 'border-subtle',
+                    stroke: 'var(--chart-4)',
+                  }
+                : {
+                    text: 'text-accent',
+                    bg: 'bg-accent-soft',
+                    dot: 'bg-accent',
+                    border: 'border-subtle',
+                    stroke: 'var(--accent)',
+                  };
 
             const filteredKpi = computeFilteredKpi(kpi);
             const rawDelta =
@@ -1448,10 +1518,10 @@ export const ExecutiveDashboard: React.FC = () => {
 
             // Micro sparkline path generator
             const sparklinePaths = [
-              "M 0 28 Q 20 8 38 22 T 68 12 T 85 24 T 100 10",
-              "M 0 14 Q 25 30 45 16 T 75 28 T 100 18",
-              "M 0 32 Q 22 18 42 12 T 72 26 T 100 8",
-              "M 0 20 Q 20 32 50 14 T 80 20 T 100 12"
+              'M 0 28 Q 20 8 38 22 T 68 12 T 85 24 T 100 10',
+              'M 0 14 Q 25 30 45 16 T 75 28 T 100 18',
+              'M 0 32 Q 22 18 42 12 T 72 26 T 100 8',
+              'M 0 20 Q 20 32 50 14 T 80 20 T 100 12',
             ];
             const sparkPath = sparklinePaths[kIdx % sparklinePaths.length];
 
@@ -1461,21 +1531,25 @@ export const ExecutiveDashboard: React.FC = () => {
                 side="bottom"
                 title={kpi.name}
                 tag={kpi.unit || 'Metric'}
-                content={`${kpi.definition} · Source: ${kpi.traceableSource}. Click anywhere to drill down into records. Click pencil icon to customize heading & calculation.`}
+                content={`${kpi.definition} · Source: ${kpi.traceableSource}. Click anywhere to see details. Click pencil icon to customize heading & calculation.`}
               >
-                <div 
+                <div
+                  data-testid={`exec-kpi-card-${kpi.id}`}
                   onClick={() => {
-                    openDrillThrough({ title: kpi.name, subtitle: kpi.definition, kpi, sourceContext: 'kpi_card' });
+                    openDrillThrough({
+                      title: kpi.name,
+                      subtitle: kpi.definition,
+                      kpi,
+                      sourceContext: 'kpi_card',
+                    });
                   }}
-                  className="depth-card glass-card rounded-[20px] p-4 sm:p-5 flex flex-col justify-between relative group cursor-pointer select-none card-3d h-full"
+                  className="depth-card glass-card rounded-[24px] p-2.5 sm:p-5 flex flex-col justify-between relative group cursor-pointer select-none card-3d h-full transition-all duration-200 hover:-translate-y-1 hover:border-strong"
                 >
                   <div className="flex items-start justify-between gap-2 min-w-0">
                     <div className="flex items-start gap-1.5 min-w-0 flex-1">
                       <span
                         data-testid={`exec-kpi-label-${kpi.id}`}
-                        className={`font-sans text-xs font-bold leading-snug line-clamp-2 [word-break:normal] [overflow-wrap:normal] ${
-                          isLight ? 'text-primary' : 'text-primary'
-                        }`}
+                        className="font-sans text-xs font-bold leading-snug line-clamp-2 [word-break:normal] [overflow-wrap:normal] text-secondary group-hover:text-primary transition-colors"
                         title={kpi.name}
                       >
                         {kpi.name}
@@ -1486,39 +1560,39 @@ export const ExecutiveDashboard: React.FC = () => {
                           e.stopPropagation();
                           setEditingKpi(kpi);
                         }}
-                        className={`p-1 -mt-0.5 rounded transition-colors shrink-0 group-hover:opacity-100 opacity-60 ${
-                          isLight ? 'hover:bg-input text-secondary hover:text-sky-600' : 'hover:bg-surface-elevated text-secondary hover:text-cyan-400'
-                        }`}
+                        className="p-0.5 -mt-0.5 rounded transition-colors shrink-0 group-hover:opacity-100 opacity-60 hover:bg-input text-secondary hover:text-accent"
                         title="Customize heading, column & calculation formula"
                       >
                         <Pencil className="w-3.5 h-3.5" />
                       </button>
                     </div>
-                    <span className={`px-2 py-0.5 rounded-full ${statusTheme.bg} ${statusTheme.text} text-[10px] font-mono uppercase font-bold tracking-wide flex items-center gap-1 shrink-0`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${statusTheme.dot}`} /> {kpi.status}
+                    <span
+                      title={`Status: ${kpi.status}`}
+                      className="w-7 h-7 rounded-xl bg-accent-soft border border-subtle text-accent flex items-center justify-center shrink-0 relative"
+                    >
+                      <Activity className="w-3.5 h-3.5" />
+                      <span className={`w-1.5 h-1.5 rounded-full ${statusTheme.dot} absolute -top-0.5 -right-0.5`} />
                     </span>
                   </div>
 
-                  <div className="my-3 flex items-end justify-between gap-2">
+                  <div className="my-1 sm:my-3 flex items-end justify-between gap-2">
                     <div className="flex flex-col min-w-0">
                       <div className="flex items-baseline gap-2 flex-wrap">
                         <span
                           data-testid={`exec-kpi-value-${kpi.id}`}
-                          className={`font-metric-display text-metric-display font-extrabold tracking-tight leading-none truncate tabular-nums ${
-                            isLight ? 'text-primary font-extrabold' : 'text-primary'
-                          }`}
+                          className="font-metric-display text-metric-display font-extrabold tracking-tight leading-none truncate tabular-nums text-primary"
                           title={filteredKpi.formatted}
                         >
                           {filteredKpi.formatted}
                         </span>
                         {filteredKpi.isFiltered && (
-                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-500 dark:text-sky-400 font-bold border border-sky-500/30">
+                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-accent-soft text-accent font-bold border border-subtle">
                             Filtered
                           </span>
                         )}
                       </div>
                       {filteredKpi.isFiltered && (
-                        <div className="text-[11px] font-mono text-muted dark:text-secondary mt-0.5">
+                        <div className="text-[11px] font-mono text-secondary mt-0.5">
                           of {kpi.formattedValue} total
                         </div>
                       )}
@@ -1541,39 +1615,71 @@ export const ExecutiveDashboard: React.FC = () => {
                             }`}
                           >
                             {deltaDirection === 'up' ? (
-                              <ArrowUp className="w-3.5 h-3.5 stroke-[2.5] shrink-0" aria-hidden="true" />
+                              <ArrowUp
+                                className="w-3.5 h-3.5 stroke-[2.5] shrink-0"
+                                aria-hidden="true"
+                              />
                             ) : deltaDirection === 'down' ? (
-                              <ArrowDown className="w-3.5 h-3.5 stroke-[2.5] shrink-0" aria-hidden="true" />
+                              <ArrowDown
+                                className="w-3.5 h-3.5 stroke-[2.5] shrink-0"
+                                aria-hidden="true"
+                              />
                             ) : (
-                              <Minus className="w-3.5 h-3.5 stroke-[2.5] shrink-0" aria-hidden="true" />
+                              <Minus
+                                className="w-3.5 h-3.5 stroke-[2.5] shrink-0"
+                                aria-hidden="true"
+                              />
                             )}
                             <span>{deltaTextLabel}</span>
                           </span>
                         ) : (
-                          <span className={`text-[11px] font-mono ${isLight ? 'text-muted' : 'text-secondary'}`}>
+                          <span className="text-[11px] font-mono text-secondary">
                             Formula: {kpi.aggregation.toUpperCase()}
                           </span>
                         )}
                       </div>
                     </div>
 
-                    {/* Micro inline Sparkline SVG with 3D drop shadow */}
-                    <div className="w-20 sm:w-24 h-10 shrink-0">
-                      <svg className="w-full h-full fill-none stroke-2 overflow-visible" viewBox="0 0 100 40">
+                    {/* Micro inline Sparkline SVG reading active theme tokens */}
+                    <div className="w-20 sm:w-24 h-8 sm:h-10 shrink-0">
+                      <svg
+                        className="w-full h-full fill-none stroke-2 overflow-visible"
+                        viewBox="0 0 100 40"
+                      >
                         <defs>
-                          <filter id={`spark-shadow-${kpi.id}`} x="-20%" y="-20%" width="140%" height="150%">
-                            <feDropShadow dx="0" dy="2" stdDeviation="1.5" floodColor="var(--bg-app)" floodOpacity="0.45" />
+                          <filter
+                            id={`spark-shadow-${kpi.id}`}
+                            x="-20%"
+                            y="-20%"
+                            width="140%"
+                            height="150%"
+                          >
+                            <feDropShadow
+                              dx="0"
+                              dy="2"
+                              stdDeviation="1.5"
+                              floodColor="var(--bg-app)"
+                              floodOpacity="0.45"
+                            />
                           </filter>
                         </defs>
-                        <path d={sparkPath} stroke={statusTheme.stroke} strokeWidth="2.5" strokeLinecap="round" filter={`url(#spark-shadow-${kpi.id})`} />
-                        <path className="fill-current stroke-none opacity-20" d={`${sparkPath} L 100 40 L 0 40 Z`} style={{ color: statusTheme.stroke }} />
+                        <path
+                          d={sparkPath}
+                          stroke={statusTheme.stroke}
+                          strokeWidth="2.2"
+                          strokeLinecap="round"
+                          filter={`url(#spark-shadow-${kpi.id})`}
+                        />
+                        <path
+                          className="fill-current stroke-none opacity-20"
+                          d={`${sparkPath} L 100 40 L 0 40 Z`}
+                          style={{ color: statusTheme.stroke }}
+                        />
                       </svg>
                     </div>
                   </div>
 
-                  <div className={`pt-2 border-t border-border-subtle flex items-center justify-between gap-2 text-xs font-mono ${
-                    isLight ? 'text-muted' : 'text-secondary'
-                  }`}>
+                  <div className="pt-1.5 sm:pt-2 border-t border-subtle flex items-center justify-between gap-2 text-xs font-mono text-secondary">
                     <span
                       data-testid={`exec-kpi-source-${kpi.id}`}
                       className="min-w-0 leading-snug"
@@ -1583,9 +1689,9 @@ export const ExecutiveDashboard: React.FC = () => {
                     </span>
                     <span
                       className={`${statusTheme.text} hover:underline flex items-center gap-1 font-semibold shrink-0 cursor-pointer`}
-                      title={`Scope: ${kpi.period || 'Audited Scope'} — Click to drill down`}
+                      title={`Drill down — Scope: ${kpi.period || 'Audited Scope'}`}
                     >
-                      <span>Drill down</span>
+                      <span>See details</span>
                       <ExternalLink className="w-3 h-3 shrink-0" />
                     </span>
                   </div>
@@ -1596,142 +1702,36 @@ export const ExecutiveDashboard: React.FC = () => {
         </div>
       </section>
 
+
       {/* 3. TAB CONTENT RENDERING */}
       {activeTab === 'overview' && (
         <div className="space-y-6">
-          {/* AI DECISION DIRECTIVES SECTION */}
-          <section className={`w-full rounded-2xl p-5 sm:p-6 border relative overflow-hidden ${
-            isLight
-              ? 'bg-white border-slate-200 shadow-sm'
-              : 'bg-surface-card border-white/10 shadow-xl'
-          }`}>
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-cyan-500/15 text-cyan-500 dark:text-cyan-400 border border-cyan-400/30 flex items-center justify-center shadow-lg">
-                  <Sparkles className="w-4 h-4 text-cyan-500 dark:text-cyan-400" />
-                </div>
-                <div>
-                  <h2 className="font-headline-sm text-headline-sm text-primary dark:text-primary font-bold tracking-tight">
-                    AI DECISION DIRECTIVES: WHAT • WHY • MANAGEMENT ACTION
-                  </h2>
-                  <p className="font-body-sm text-body-sm text-muted dark:text-secondary">
-                    Synthesized causal inferences derived from {filteredRows.length.toLocaleString()} audited records in {project.name}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <span className="px-3 py-1.5 rounded-lg bg-cyan-500/10 text-cyan-600 dark:text-cyan-300 font-label-caps text-label-caps tracking-wider uppercase font-bold flex items-center gap-2 border border-cyan-500/25 shadow-xs">
-                  <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shadow-lg" />
-                  Traceable to Verified Model
-                </span>
-              </div>
-            </div>
-
-            {/* 3 Dynamic Glassmorphic Directives Cards with Real Dataset Inferences */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              {activeDirectives.map((dir, idx) => {
-                const categoryTheme = dir.category === 'Driver' 
-                  ? { bg: 'bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border-cyan-500/30', label: 'DRIVER' }
-                  : dir.category === 'Opportunity'
-                  ? { bg: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30', label: 'OPPORTUNITY' }
-                  : { bg: 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border-indigo-500/30', label: 'OPERATIONAL' };
-
-                return (
-                  <Tooltip
-                    key={dir.id || idx}
-                    side="top"
-                    title={dir.title}
-                    tag={dir.category}
-                    content={dir.significance || dir.why}
-                  >
-                    <div className={`rounded-xl p-4 sm:p-5 border flex flex-col justify-between relative hover:border-cyan-400/50 transition-all card-3d h-full ${
-                      isLight
-                        ? 'bg-white border-slate-200/90 shadow-sm'
-                        : 'bg-surface-panel border-white/10 shadow-lg'
-                    }`}>
-                      <div>
-                        <div className="flex items-center justify-between mb-3.5">
-                          <span className={`font-headline-sm text-headline-sm font-bold truncate pr-2 ${
-                            isLight ? 'text-primary' : 'text-primary'
-                          }`}>
-                            {dir.title}
-                          </span>
-                          <span className={`px-2 py-0.5 rounded font-label-caps text-label-caps tracking-widest uppercase font-bold border shrink-0 ${categoryTheme.bg}`}>
-                            {categoryTheme.label}
-                          </span>
-                        </div>
-                        <div className="space-y-3 text-xs">
-                          <div>
-                            <span className="font-label-caps text-label-caps text-cyan-600 dark:text-cyan-400 uppercase tracking-wider block font-bold text-[11px]">
-                              WHAT
-                            </span>
-                            <p className={`font-body-sm text-body-sm mt-1 leading-relaxed font-medium ${
-                              isLight ? 'text-primary' : 'text-primary'
-                            }`}>
-                              {dir.what}
-                            </p>
-                          </div>
-                          <div>
-                            <span className="font-label-caps text-label-caps text-indigo-600 dark:text-indigo-400 uppercase tracking-wider block font-bold text-[11px]">
-                              WHY
-                            </span>
-                            <p className={`font-body-sm text-body-sm mt-1 leading-relaxed font-normal ${
-                              isLight ? 'text-muted' : 'text-secondary'
-                            }`}>
-                              {dir.why}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                      <div className={`mt-4 p-3 rounded-lg border ${
-                        isLight 
-                          ? 'bg-sky-50 border-sky-200' 
-                          : 'bg-cyan-950/40 border-cyan-500/30 shadow-inner'
-                      }`}>
-                        <span className="font-label-caps text-label-caps text-sky-700 dark:text-cyan-300 uppercase tracking-wider flex items-center gap-1.5 font-bold text-[11px]">
-                          <Zap className="w-3.5 h-3.5 text-sky-600 dark:text-cyan-400" /> MANAGEMENT ACTION
-                        </span>
-                        <p className={`font-body-sm text-body-sm mt-1 font-medium leading-relaxed ${
-                          isLight ? 'text-primary' : 'text-cyan-100'
-                        }`}>
-                          {dir.action}
-                        </p>
-                      </div>
-                    </div>
-                  </Tooltip>
-                );
-              })}
-            </div>
-          </section>
-
-          {/* DUAL TELEMETRY VISUALIZATIONS */}
+          {/* 2.2 HERO CHART & 2.3 RANKING CARD (First screen below 4 KPI cards) */}
           <section className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-            {/* LEFT: Chronological Trend Performance Chart (7 cols) */}
-            <div className={`lg:col-span-7 rounded-2xl p-5 sm:p-6 border flex flex-col justify-between card-3d ${
-              isLight
-                ? 'bg-white border-slate-200 shadow-sm'
-                : 'bg-surface-card border-white/10 shadow-xl'
-            }`}>
+            {/* LEFT: Hero Smooth Area Chart (7 cols) */}
+            <div
+              data-testid="exec-hero-area-chart"
+              className="lg:col-span-7 glass-card depth-card rounded-[24px] p-5 sm:p-6 border border-subtle bg-card shadow-sm flex flex-col justify-between"
+            >
               <div>
                 {/* Header: Title, Metric Selector, Granularity & View Controls */}
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-border-subtle">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-subtle">
                   <div className="flex flex-wrap items-center gap-2">
                     <Tooltip
                       side="right"
                       title="Executive Chronological Telemetry"
-                      tag="Macroeconomic Spline"
+                      tag="Cubic Bezier Spline"
                       content="Transforms granular transactions into executive trajectory curves. Switch between Monthly rollup, Exponential Smoothing, or Raw telemetry to analyze seasonal momentum."
                     >
-                      <div className="flex items-center gap-2 cursor-help">
-                        <div className="w-8 h-8 rounded-xl bg-cyan-500/15 text-cyan-500 dark:text-cyan-400 border border-cyan-400/30 flex items-center justify-center shadow-xs">
-                          <Activity className="w-4 h-4 text-cyan-500 dark:text-cyan-400" />
+                      <div className="flex items-center gap-2.5 cursor-help">
+                        <div className="w-9 h-9 rounded-xl bg-accent-soft text-accent border border-accent/30 flex items-center justify-center shadow-2xs">
+                          <Activity className="w-4 h-4 text-accent" />
                         </div>
                         <div>
-                          <h3 className="font-headline-sm text-headline-sm text-primary dark:text-primary font-bold uppercase tracking-wide">
-                            CHRONOLOGICAL TREND PERFORMANCE
+                          <h3 className="font-headline-sm text-headline-sm text-primary font-bold tracking-tight">
+                            Revenue &amp; Performance Trend
                           </h3>
-                          <p className={`text-[11px] font-mono ${isLight ? 'text-muted' : 'text-secondary'}`}>
+                          <p className="text-[11px] font-mono text-secondary">
                             {trendGranularity === 'auto' ? 'Auto-Aggregated Trajectory' : trendGranularity === 'monthly' ? 'Monthly Calendar Rollup' : trendGranularity === 'smooth' ? 'Gaussian Trendline' : trendGranularity === 'weekly' ? 'Weekly Interval Rollup' : 'Raw Granular Telemetry'}
                           </p>
                         </div>
@@ -1763,10 +1763,7 @@ export const ExecutiveDashboard: React.FC = () => {
 
                   {/* Controls: Metric Select & Granularity Toggles */}
                   <div className="flex flex-wrap items-center gap-2">
-                    {/* Time Rollup Filter */}
-                    <div className={`flex items-center p-0.5 rounded-lg border text-xs font-mono ${
-                      isLight ? 'bg-elevated border-slate-200' : 'bg-surface-panel border-border-subtle'
-                    }`}>
+                    <div className="flex items-center p-0.5 rounded-lg border border-subtle bg-elevated text-xs font-mono">
                       {(['auto', 'monthly', 'smooth', 'raw'] as const).map(mode => (
                         <button
                           key={mode}
@@ -1774,10 +1771,8 @@ export const ExecutiveDashboard: React.FC = () => {
                           onClick={() => setTrendGranularity(mode)}
                           className={`px-2 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer capitalize ${
                             trendGranularity === mode
-                              ? isLight 
-                                ? 'bg-white text-sky-700 shadow-xs border border-slate-200 font-bold' 
-                                : 'bg-cyan-500/20 text-cyan-300 shadow-xs border border-cyan-500/40 font-bold'
-                              : isLight ? 'text-muted hover:text-primary' : 'text-secondary hover:text-primary'
+                              ? 'bg-accent text-on-accent shadow-2xs font-bold'
+                              : 'text-secondary hover:text-primary'
                           }`}
                           title={`Switch trend view to ${mode}`}
                         >
@@ -1786,17 +1781,14 @@ export const ExecutiveDashboard: React.FC = () => {
                       ))}
                     </div>
 
-                    {/* Chart Mode: Area vs Bar */}
-                    <div className={`flex items-center p-0.5 rounded-lg border text-xs ${
-                      isLight ? 'bg-elevated border-slate-200' : 'bg-surface-panel border-border-subtle'
-                    }`}>
+                    <div className="flex items-center p-0.5 rounded-lg border border-subtle bg-elevated text-xs">
                       <button
                         type="button"
                         onClick={() => setTrendChartType('area')}
                         className={`px-2 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
                           trendChartType === 'area'
-                            ? isLight ? 'bg-white text-sky-700 shadow-xs' : 'bg-cyan-500/20 text-cyan-300 shadow-xs'
-                            : isLight ? 'text-muted' : 'text-secondary'
+                            ? 'bg-accent text-on-accent shadow-2xs font-bold'
+                            : 'text-secondary hover:text-primary'
                         }`}
                         title="Area Spline Curve"
                       >
@@ -1807,8 +1799,8 @@ export const ExecutiveDashboard: React.FC = () => {
                         onClick={() => setTrendChartType('bar')}
                         className={`px-2 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
                           trendChartType === 'bar'
-                            ? isLight ? 'bg-white text-sky-700 shadow-xs' : 'bg-cyan-500/20 text-cyan-300 shadow-xs'
-                            : isLight ? 'text-muted' : 'text-secondary'
+                            ? 'bg-accent text-on-accent shadow-2xs font-bold'
+                            : 'text-secondary hover:text-primary'
                         }`}
                         title="Bar Columns"
                       >
@@ -1816,15 +1808,10 @@ export const ExecutiveDashboard: React.FC = () => {
                       </button>
                     </div>
 
-                    {/* Metric Select */}
                     <select
                       value={selectedTrendMetric}
                       onChange={(e) => setSelectedTrendMetric(e.target.value)}
-                      className={`glass-input h-7 px-2 text-xs font-mono rounded-lg border focus:outline-none cursor-pointer ${
-                        isLight 
-                          ? 'bg-white text-primary border-slate-300' 
-                          : 'bg-surface-panel text-primary border-border-subtle'
-                      }`}
+                      className="glass-input h-7 px-2 text-xs font-mono rounded-lg border border-subtle bg-elevated text-primary focus:outline-none cursor-pointer"
                       title="Select metric column"
                     >
                       {numericCols.map(c => (
@@ -1834,7 +1821,7 @@ export const ExecutiveDashboard: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Main Dynamic Chart Engine with Intelligent Aggregation */}
+                {/* Main Hero Area Chart Engine */}
                 {(() => {
                   const rawPoints = currentTrend?.dataPoints || [];
                   if (rawPoints.length < 2) {
@@ -1856,7 +1843,6 @@ export const ExecutiveDashboard: React.FC = () => {
                     return isCurrency ? `$${str}` : str;
                   };
 
-                  // Robust date parsing helper for diverse dataset date formats
                   const parseDatePeriod = (p: string) => {
                     if (!p) return null;
                     const parsed = Date.parse(p);
@@ -1879,7 +1865,6 @@ export const ExecutiveDashboard: React.FC = () => {
                   const firstDate = parseDatePeriod(rawPoints[0]?.period || '');
                   const isDateStr = firstDate !== null;
 
-                  // Effective resolution
                   let effGran = trendGranularity;
                   if (effGran === 'auto') {
                     if (isDateStr && rawPoints.length > 15) {
@@ -1894,7 +1879,6 @@ export const ExecutiveDashboard: React.FC = () => {
                     }
                   }
 
-                  // Build smooth aggregated points
                   let activePoints: { period: string; value: number }[] = [];
                   if (effGran === 'monthly' && isDateStr) {
                     const mMap = new Map<string, { sum: number; count: number; date: Date }>();
@@ -1916,15 +1900,13 @@ export const ExecutiveDashboard: React.FC = () => {
                       const label = mIdx >= 0 && mIdx < 12 ? `${monthNames[mIdx]} '${yr.slice(2)}` : k;
                       return { period: label, value: Math.round(v.sum * 10) / 10 };
                     });
-                    // Fallback to smooth if monthly produced too few points (<3)
                     if (activePoints.length < 3 && rawPoints.length > 5) {
                       effGran = 'smooth';
                       activePoints = [];
                     }
                   }
-                  
-                  if (effGran === 'smooth' || activePoints.length === 0 && effGran !== 'raw') {
-                    // Downsample and apply exponential smoothing to eliminate spiky sawteeth
+
+                  if (effGran === 'smooth' || (activePoints.length === 0 && effGran !== 'raw')) {
                     const targetCount = Math.min(28, Math.max(12, Math.floor(rawPoints.length / 5)));
                     const step = Math.max(1, Math.floor(rawPoints.length / targetCount));
                     let ema = rawPoints[0].value;
@@ -1960,19 +1942,15 @@ export const ExecutiveDashboard: React.FC = () => {
                   const minVal = safeMin(values, 0);
                   const maxVal = safeMax(values, 0);
                   const range = maxVal === minVal ? (maxVal === 0 ? 1 : Math.abs(maxVal) * 0.2) : maxVal - minVal;
+                  const totalVal = rawPoints.reduce((a, b) => a + (b.value || 0), 0);
                   const meanVal = values.reduce((a, b) => a + b, 0) / values.length;
-                  const latestVal = values[values.length - 1];
-                  const firstVal = values[0];
-                  const netChangePct = firstVal !== 0 ? Math.round(((latestVal - firstVal) / Math.abs(firstVal)) * 1000) / 10 : 0;
 
-                  // Find Peak & Trough indices
                   let peakIdx = 0, troughIdx = 0;
                   for (let i = 1; i < values.length; i++) {
                     if (values[i] > values[peakIdx]) peakIdx = i;
                     if (values[i] < values[troughIdx]) troughIdx = i;
                   }
 
-                  // Coordinate system setup
                   const xMin = 35;
                   const xMax = 615;
                   const yMin = 22;
@@ -1988,14 +1966,12 @@ export const ExecutiveDashboard: React.FC = () => {
                     value: p.value
                   }));
 
-                  // 3-Period Simple Moving Average
                   const smaCoords = activePoints.map((p, i) => {
                     const window = activePoints.slice(Math.max(0, i - 2), i + 1);
                     const avg = window.reduce((acc, curr) => acc + curr.value, 0) / window.length;
                     return { x: scaleX(i), y: scaleY(avg), avg };
                   });
 
-                  // Cubic Spline Curve Construction
                   let splinePath = `M ${coords[0].x.toFixed(1)},${coords[0].y.toFixed(1)}`;
                   for (let i = 0; i < coords.length - 1; i++) {
                     const p0 = coords[i];
@@ -2009,7 +1985,6 @@ export const ExecutiveDashboard: React.FC = () => {
                   const areaPath = `${splinePath} L ${coords[coords.length - 1].x.toFixed(1)},160 L ${coords[0].x.toFixed(1)},160 Z`;
                   const yMean = scaleY(meanVal);
 
-                  // Date label indices (non-overlapping)
                   const tickCount = Math.min(6, activePoints.length);
                   const tickStep = Math.max(1, Math.floor((activePoints.length - 1) / (tickCount - 1)));
                   const labelIndices: number[] = [];
@@ -2025,113 +2000,39 @@ export const ExecutiveDashboard: React.FC = () => {
 
                   return (
                     <>
-                      {/* Executive Insight Strip: Latest, Peak, Trough, Mean */}
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 my-3">
-                        <div className={`p-2.5 rounded-xl border flex flex-col justify-between ${
-                          isLight ? 'bg-elevated border-slate-200' : 'bg-surface-panel/80 border-white/10'
-                        }`}>
-                          <span className={`text-[10px] font-mono uppercase tracking-wider font-semibold ${isLight ? 'text-muted' : 'text-secondary'}`}>
-                            Latest Run-Rate
-                          </span>
-                          <div className="flex items-baseline gap-1.5 mt-0.5">
-                            <span className={`font-mono text-sm sm:text-base font-extrabold ${isLight ? 'text-primary' : 'text-primary'}`}>
-                              {formatNum(latestVal)}
-                            </span>
-                            <span className={`text-[10px] font-mono font-bold ${
-                              netChangePct >= 0 ? (isLight ? 'text-emerald-700' : 'text-emerald-400') : (isLight ? 'text-rose-700' : 'text-rose-400')
-                            }`}>
-                              {netChangePct >= 0 ? '+' : ''}{netChangePct}%
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className={`p-2.5 rounded-xl border flex flex-col justify-between ${
-                          isLight ? 'bg-elevated border-slate-200' : 'bg-surface-panel/80 border-white/10'
-                        }`}>
-                          <span className={`text-[10px] font-mono uppercase tracking-wider font-semibold ${isLight ? 'text-muted' : 'text-secondary'}`}>
-                            Series Peak
-                          </span>
-                          <div className="flex items-baseline gap-1.5 mt-0.5">
-                            <span className={`font-mono text-sm sm:text-base font-extrabold ${isLight ? 'text-sky-700' : 'text-cyan-400'}`}>
-                              {formatNum(values[peakIdx])}
-                            </span>
-                            <span className={`text-[10px] font-mono truncate max-w-[65px] ${isLight ? 'text-muted' : 'text-secondary'}`} title={activePoints[peakIdx]?.period}>
-                              {activePoints[peakIdx]?.period}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className={`p-2.5 rounded-xl border flex flex-col justify-between ${
-                          isLight ? 'bg-elevated border-slate-200' : 'bg-surface-panel/80 border-white/10'
-                        }`}>
-                          <span className={`text-[10px] font-mono uppercase tracking-wider font-semibold ${isLight ? 'text-muted' : 'text-secondary'}`}>
-                            Series Trough
-                          </span>
-                          <div className="flex items-baseline gap-1.5 mt-0.5">
-                            <span className={`font-mono text-sm sm:text-base font-extrabold ${isLight ? 'text-amber-700' : 'text-amber-400'}`}>
-                              {formatNum(values[troughIdx])}
-                            </span>
-                            <span className={`text-[10px] font-mono truncate max-w-[65px] ${isLight ? 'text-muted' : 'text-secondary'}`} title={activePoints[troughIdx]?.period}>
-                              {activePoints[troughIdx]?.period}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className={`p-2.5 rounded-xl border flex flex-col justify-between ${
-                          isLight ? 'bg-elevated border-slate-200' : 'bg-surface-panel/80 border-white/10'
-                        }`}>
-                          <span className={`text-[10px] font-mono uppercase tracking-wider font-semibold ${isLight ? 'text-muted' : 'text-secondary'}`}>
-                            Baseline Mean
-                          </span>
-                          <div className="flex items-baseline gap-1.5 mt-0.5">
-                            <span className={`font-mono text-sm sm:text-base font-extrabold ${isLight ? 'text-primary' : 'text-primary'}`}>
-                              {formatNum(meanVal)}
-                            </span>
-                            <span className={`text-[10px] font-mono ${isLight ? 'text-muted' : 'text-secondary'}`}>
-                              avg
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
                       {/* Micro-Legend & Scrubbing Prompt */}
-                      <div className="flex flex-wrap items-center justify-between gap-2 px-1 mb-2 text-[11px] font-mono">
+                      <div className="flex flex-wrap items-center justify-between gap-2 px-1 my-2.5 text-[11px] font-mono">
                         <div className="flex flex-wrap items-center gap-3">
-                          <span className="flex items-center gap-1.5 font-semibold text-cyan-600 dark:text-cyan-400">
-                            <span className="w-3.5 h-1 rounded-full bg-cyan-500 shadow-lg" />
+                          <span className="flex items-center gap-1.5 font-semibold text-accent">
+                            <span className="w-3.5 h-1 rounded-full bg-accent" />
                             <span>Actual ({selectedTrendMetric})</span>
                           </span>
                           {trendChartType === 'area' && (
-                            <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
-                              <span className="w-3.5 h-0.5 border-t-2 border-dashed border-emerald-400" />
+                            <span className="flex items-center gap-1.5 text-status-success">
+                              <span className="w-3.5 h-0.5 border-t-2 border-dashed border-status-success" />
                               <span>3-Period SMA</span>
                             </span>
                           )}
-                          <span className={`flex items-center gap-1.5 ${isLight ? 'text-muted' : 'text-secondary'}`}>
-                            <span className="w-3.5 h-0.5 border-t-2 border-dotted border-slate-400" />
-                            <span>Baseline Mean ({formatNum(meanVal)})</span>
+                          <span className="flex items-center gap-1.5 text-secondary">
+                            <span className="w-3.5 h-0.5 border-t-2 border-dotted border-muted" />
+                            <span>Mean ({formatNum(meanVal)})</span>
                           </span>
                         </div>
-                        <span className={`text-[10px] hidden sm:inline-flex items-center gap-1 ${isLight ? 'text-secondary' : 'text-muted'}`}>
-                          <span>• Hover curve to scrub observations</span>
+                        <span className="text-[10px] hidden sm:inline-flex items-center gap-1 text-muted">
+                          <span>• Hover curve to inspect period</span>
                         </span>
                       </div>
 
-                      {/* Main Telemetry SVG Chart with 3D Depth & Hover Scrubbing */}
-                      <div className={`w-full h-72 relative rounded-xl p-3 flex flex-col justify-between border overflow-hidden ${
-                        isLight 
-                          ? 'bg-elevated border-slate-200 shadow-inner' 
-                          : 'bg-surface-panel/40 border-border-subtle track-3d-recessed'
-                      }`}>
+                      {/* Main Telemetry SVG Chart with cubic-Bezier curve in var(--accent) */}
+                      <div className="w-full h-64 relative rounded-2xl p-3 flex flex-col justify-between border border-subtle bg-elevated/60 overflow-hidden">
                         <div className="w-full flex-1 relative overflow-hidden">
-                          <svg 
-                            className="w-full h-full overflow-hidden select-none cursor-crosshair" 
-                            viewBox="0 0 650 175" 
+                          <svg
+                            className="w-full h-full overflow-hidden select-none cursor-crosshair"
+                            viewBox="0 0 650 175"
                             preserveAspectRatio="none"
                             onMouseMove={(e) => {
                               const rect = e.currentTarget.getBoundingClientRect();
                               const relX = ((e.clientX - rect.left) / rect.width) * 650;
-                              // Find closest point
                               let closestIdx = 0;
                               let minDiff = Infinity;
                               coords.forEach((c, idx) => {
@@ -2157,46 +2058,31 @@ export const ExecutiveDashboard: React.FC = () => {
                             onMouseLeave={() => setHoveredTrendPt(null)}
                           >
                             <defs>
-                              <filter id="trendLine3dShadow" x="-10%" y="-10%" width="130%" height="150%">
-                                <feDropShadow dx="0" dy="4" stdDeviation="3.5" floodColor="var(--bg-app)" floodOpacity="0.55" />
-                              </filter>
                               <linearGradient id="trendLuminousArea" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stopColor={activeThemeConfig.trendActual} stopOpacity="0.35" />
-                                <stop offset="60%" stopColor={activeThemeConfig.trendActual} stopOpacity="0.10" />
-                                <stop offset="100%" stopColor={activeThemeConfig.trendActual} stopOpacity="0.0" />
+                                <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.32" />
+                                <stop offset="65%" stopColor="var(--accent)" stopOpacity="0.08" />
+                                <stop offset="100%" stopColor="var(--accent)" stopOpacity="0.0" />
                               </linearGradient>
-                              <pattern id="telemetryGrid" width="40" height="28" patternUnits="userSpaceOnUse">
-                                <path d="M 40 0 L 0 0 0 28" fill="none" stroke="currentColor" className="text-border-subtle" strokeWidth="0.8" strokeDasharray="2 2" opacity="0.4" />
+                              <pattern id="telemetryGrid" width="48" height="32" patternUnits="userSpaceOnUse">
+                                <path d="M 48 0 L 0 0 0 32" fill="none" stroke="currentColor" className="text-border-subtle" strokeWidth="0.7" opacity="0.25" />
                               </pattern>
                             </defs>
 
                             <rect width="100%" height="100%" fill="url(#telemetryGrid)" />
 
                             {/* Baseline Mean Horizontal Reference */}
-                            <line 
-                              x1={xMin - 5} 
-                              y1={yMean} 
-                              x2={xMax + 5} 
-                              y2={yMean} 
-                              stroke="var(--chart-axis)" 
-                              strokeWidth="1.2" 
-                              strokeDasharray="3 3" 
-                              opacity="0.65" 
+                            <line
+                              x1={xMin - 5}
+                              y1={yMean}
+                              x2={xMax + 5}
+                              y2={yMean}
+                              stroke="var(--chart-axis)"
+                              strokeWidth="1"
+                              strokeDasharray="3 3"
+                              opacity="0.55"
                             />
-                            <text 
-                              x={xMax + 4} 
-                              y={yMean - 4} 
-                              textAnchor="end" 
-                              fill="var(--chart-axis)" 
-                              fontSize="8.5" 
-                              fontFamily="monospace"
-                              fontWeight="bold"
-                            >
-                              Mean: {formatNum(meanVal)}
-                            </text>
 
                             {trendChartType === 'bar' ? (
-                              /* 3D Vertical Columns */
                               coords.map((c, idx) => {
                                 const bW = Math.max(6, Math.min(22, (xMax - xMin) / coords.length * 0.65));
                                 const bH = Math.max(3, yMax - c.y);
@@ -2209,94 +2095,59 @@ export const ExecutiveDashboard: React.FC = () => {
                                       width={bW}
                                       height={bH}
                                       rx="3"
-                                      fill={isHovered ? activeThemeConfig.trendActual : activeThemeConfig.trendActual}
+                                      fill="var(--accent)"
                                       fillOpacity={isHovered ? 1 : 0.85}
-                                      filter="url(#trendLine3dShadow)"
                                       className="transition-all"
-                                    />
-                                    {/* Cylindrical cap specular shine */}
-                                    <rect
-                                      x={c.x - bW / 2}
-                                      y={c.y}
-                                      width={bW}
-                                      height={Math.min(bH, 6)}
-                                      rx="2"
-                                      fill="var(--text-primary)"
-                                      fillOpacity={0.35}
                                     />
                                   </g>
                                 );
                               })
                             ) : (
-                              /* Luminous Spline Area and Paths */
                               <>
-                                {/* Shaded Area under Curve */}
+                                {/* Soft vertical gradient fill fading to transparent */}
                                 <path d={areaPath} fill="url(#trendLuminousArea)" />
 
                                 {/* 3-Period SMA Smooth Trend Line */}
                                 <path
                                   d={smaCoords.map((c, i) => `${i === 0 ? 'M' : 'L'} ${c.x.toFixed(1)} ${c.y.toFixed(1)}`).join(' ')}
                                   fill="none"
-                                  stroke={activeThemeConfig.trendSma}
-                                  strokeWidth="2.2"
+                                  stroke="var(--chart-2)"
+                                  strokeWidth="1.5"
                                   strokeDasharray="4 2"
                                   strokeLinecap="round"
                                   strokeLinejoin="round"
-                                  opacity="0.85"
+                                  opacity="0.75"
                                 />
 
-                                {/* Primary Actual Spline Path with 3D Drop Shadow */}
+                                {/* Primary Actual Cubic-Bezier Spline Path (1.85px in var(--accent)) */}
                                 <path
                                   d={splinePath}
                                   fill="none"
-                                  stroke={activeThemeConfig.trendActual}
-                                  strokeWidth="2.8"
+                                  stroke="var(--accent)"
+                                  strokeWidth="1.85"
                                   strokeLinecap="round"
                                   strokeLinejoin="round"
-                                  filter="url(#trendLine3dShadow)"
                                   className="transition-all"
                                 />
 
                                 {/* Peak Marker */}
                                 {peakPt && (
                                   <g className="select-none pointer-events-none">
-                                    <circle cx={peakPt.x} cy={peakPt.y} r="6" fill={activeThemeConfig.trendActual} fillOpacity="0.25" className="animate-pulse" />
-                                    <circle cx={peakPt.x} cy={peakPt.y} r="3.5" fill="var(--chart-3)" stroke="var(--text-primary)" strokeWidth="1.5" />
-                                    <text 
-                                      x={peakPt.x} 
-                                      y={Math.max(12, peakPt.y - 8)} 
-                                      textAnchor="middle" 
-                                      fill={isLight ? 'var(--chart-3)' : 'var(--chart-3)'} 
-                                      fontSize="9" 
-                                      fontFamily="monospace"
-                                      fontWeight="bold"
-                                    >
-                                      ▲ PEAK {formatNum(peakPt.value)}
-                                    </text>
+                                    <circle cx={peakPt.x} cy={peakPt.y} r="5.5" fill="var(--accent)" fillOpacity="0.25" />
+                                    <circle cx={peakPt.x} cy={peakPt.y} r="3" fill="var(--accent)" stroke="var(--bg-card)" strokeWidth="1.5" />
                                   </g>
                                 )}
 
                                 {/* Trough Marker */}
                                 {troughPt && troughIdx !== peakIdx && (
                                   <g className="select-none pointer-events-none">
-                                    <circle cx={troughPt.x} cy={troughPt.y} r="3" fill="var(--chart-4)" stroke="var(--text-primary)" strokeWidth="1.2" />
-                                    <text 
-                                      x={troughPt.x} 
-                                      y={Math.min(160, troughPt.y + 12)} 
-                                      textAnchor="middle" 
-                                      fill={isLight ? 'var(--chart-4)' : 'var(--chart-4)'} 
-                                      fontSize="8.5" 
-                                      fontFamily="monospace"
-                                      fontWeight="bold"
-                                    >
-                                      ▼ {formatNum(troughPt.value)}
-                                    </text>
+                                    <circle cx={troughPt.x} cy={troughPt.y} r="2.5" fill="var(--chart-4)" stroke="var(--bg-card)" strokeWidth="1.2" />
                                   </g>
                                 )}
                               </>
                             )}
 
-                            {/* Active Hover Cursor Hairline & Spherical Bead */}
+                            {/* Active Hover Crosshair & Bead */}
                             {hoveredTrendPt && (
                               <g className="pointer-events-none">
                                 <line
@@ -2304,64 +2155,56 @@ export const ExecutiveDashboard: React.FC = () => {
                                   y1={yMin}
                                   x2={hoveredTrendPt.x}
                                   y2={yMax + 8}
-                                  stroke={activeThemeConfig.trendActual}
+                                  stroke="var(--accent)"
                                   strokeWidth="1.2"
                                   strokeDasharray="3 3"
-                                  opacity="0.8"
+                                  opacity="0.85"
                                 />
                                 <circle
                                   cx={hoveredTrendPt.x}
                                   cy={hoveredTrendPt.y}
-                                  r="9"
-                                  fill={activeThemeConfig.trendActual}
-                                  fillOpacity="0.25"
-                                  className="animate-pulse"
+                                  r="7"
+                                  fill="var(--accent)"
+                                  fillOpacity="0.22"
                                 />
                                 <circle
                                   cx={hoveredTrendPt.x}
                                   cy={hoveredTrendPt.y}
-                                  r="5"
-                                  fill={activeThemeConfig.trendActual}
-                                  stroke="var(--text-primary)"
-                                  strokeWidth="2"
-                                  filter="url(#trendLine3dShadow)"
-                                />
-                                <circle
-                                  cx={hoveredTrendPt.x - 1.2}
-                                  cy={hoveredTrendPt.y - 1.2}
-                                  r="1.4"
-                                  fill="var(--text-primary)"
+                                  r="4"
+                                  fill="var(--accent)"
+                                  stroke="var(--bg-card)"
+                                  strokeWidth="1.75"
                                 />
                               </g>
                             )}
                           </svg>
 
-                          {/* Floating Interactive Glass Tooltip Card */}
+                          {/* Floating Glass Tooltip Card */}
                           {hoveredTrendPt && (
-                            <div 
-                              className="absolute z-30 pointer-events-none transition-all duration-75 px-3 py-2 rounded-xl border border-subtle shadow-xl bg-[var(--chart-tooltip-bg)] text-primary backdrop-blur-md"
+                            <div
+                              className="absolute z-30 pointer-events-none transition-all duration-75 px-3 py-2 rounded-xl border border-subtle shadow-xl bg-card/95 text-primary backdrop-blur-md"
                               style={{
                                 left: `${Math.min(78, Math.max(12, (hoveredTrendPt.x / 650) * 100))}%`,
                                 top: '8px',
                                 transform: 'translateX(-50%)'
                               }}
                             >
-                              <div className="flex items-center justify-between gap-3 font-mono text-[11px] pb-1 border-b border-border-subtle">
-                                <span className={`font-bold ${isLight ? 'text-primary' : 'text-primary'}`}>{hoveredTrendPt.period}</span>
-                                <span className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${
-                                  hoveredTrendPt.deltaVsMean >= 0 
-                                    ? isLight ? 'bg-emerald-50 text-emerald-700' : 'bg-emerald-500/20 text-emerald-400'
-                                    : isLight ? 'bg-rose-50 text-rose-700' : 'bg-rose-500/20 text-rose-400'
+                              <div className="flex items-center justify-between gap-3 font-mono text-[11px] pb-1 border-b border-subtle">
+                                <span className="font-bold text-primary">{hoveredTrendPt.period}</span>
+                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                                  hoveredTrendPt.deltaVsMean >= 0
+                                    ? 'bg-status-success-soft text-status-success'
+                                    : 'bg-status-error-soft text-status-error'
                                 }`}>
                                   {hoveredTrendPt.deltaVsMean >= 0 ? '+' : ''}{hoveredTrendPt.deltaVsMean}% vs avg
                                 </span>
                               </div>
                               <div className="flex items-baseline gap-2 mt-1">
-                                <span className={`font-mono text-sm font-extrabold ${isLight ? 'text-sky-700' : 'text-cyan-400'}`}>
+                                <span className="font-mono text-sm font-extrabold text-accent">
                                   {formatNum(hoveredTrendPt.value)}
                                 </span>
                                 {hoveredTrendPt.sma !== undefined && (
-                                  <span className={`text-[10px] font-mono ${isLight ? 'text-muted' : 'text-secondary'}`}>
+                                  <span className="text-[10px] font-mono text-secondary">
                                     SMA: {formatNum(hoveredTrendPt.sma)}
                                   </span>
                                 )}
@@ -2370,15 +2213,15 @@ export const ExecutiveDashboard: React.FC = () => {
                           )}
                         </div>
 
-                        {/* Horizontal Date Labels - Clean, non-overlapping */}
-                        <div className="flex justify-between items-center font-mono text-[11px] text-muted dark:text-secondary pt-2 border-t border-border-subtle select-none px-1">
+                        {/* Horizontal Axis Labels in Muted Text */}
+                        <div className="flex justify-between items-center font-mono text-[11px] text-muted pt-2 border-t border-subtle select-none px-1">
                           {labelIndices.map(idx => (
-                            <span 
-                              key={idx} 
+                            <span
+                              key={idx}
                               className={`transition-colors ${
                                 idx === 0 ? 'text-left' : idx === activePoints.length - 1 ? 'text-right' : 'text-center'
                               } ${
-                                hoveredTrendPt?.idx === idx ? (isLight ? 'text-sky-600 font-bold' : 'text-cyan-400 font-bold') : ''
+                                hoveredTrendPt?.idx === idx ? 'text-accent font-bold' : ''
                               }`}
                             >
                               {activePoints[idx]?.period}
@@ -2386,49 +2229,404 @@ export const ExecutiveDashboard: React.FC = () => {
                           ))}
                         </div>
                       </div>
+
+                      {/* 2.2: 3 Compact Summary Metrics under Hero Chart (Total, Average, Best Period) */}
+                      <div
+                        data-testid="exec-hero-summary-metrics"
+                        className="grid grid-cols-3 gap-3 mt-4 pt-3 border-t border-subtle"
+                      >
+                        <div className="p-3 rounded-xl border border-subtle bg-elevated/60 flex flex-col justify-between">
+                          <span className="text-[10px] font-mono uppercase tracking-wider font-semibold text-secondary">
+                            Total ({selectedTrendMetric})
+                          </span>
+                          <span className="font-mono text-sm sm:text-base font-extrabold text-primary mt-0.5 tabular-nums">
+                            {formatNum(totalVal)}
+                          </span>
+                        </div>
+                        <div className="p-3 rounded-xl border border-subtle bg-elevated/60 flex flex-col justify-between">
+                          <span className="text-[10px] font-mono uppercase tracking-wider font-semibold text-secondary">
+                            Period Average
+                          </span>
+                          <span className="font-mono text-sm sm:text-base font-extrabold text-primary mt-0.5 tabular-nums">
+                            {formatNum(meanVal)}
+                          </span>
+                        </div>
+                        <div className="p-3 rounded-xl border border-subtle bg-elevated/60 flex flex-col justify-between">
+                          <span className="text-[10px] font-mono uppercase tracking-wider font-semibold text-secondary">
+                            Best Period ({activePoints[peakIdx]?.period || 'Peak'})
+                          </span>
+                          <span className="font-mono text-sm sm:text-base font-extrabold text-accent mt-0.5 tabular-nums">
+                            {formatNum(values[peakIdx])}
+                          </span>
+                        </div>
+                      </div>
                     </>
                   );
                 })()}
               </div>
+            </div>
 
-              {/* Card Footer: Direction, Trajectory and Telemetry Rate */}
-              <div className={`mt-3 pt-2.5 border-t border-border-subtle flex flex-wrap items-center justify-between gap-2 text-label-sm font-label-sm ${isLight ? 'text-muted' : 'text-secondary'}`}>
-                <div className="flex items-center gap-2">
-                  <span>Direction: <strong className={`capitalize ${isLight ? 'text-primary font-bold' : 'text-primary'}`}>{currentTrend?.direction || 'stable'}</strong> ({currentTrend?.changePercent !== undefined ? `${currentTrend.changePercent >= 0 ? '+' : ''}${currentTrend.changePercent}%` : 'N/A'})</span>
-                  <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-semibold ${
-                    isLight ? 'bg-sky-50 text-sky-700 border border-sky-200' : 'bg-cyan-500/10 text-cyan-300 border border-cyan-500/30'
-                  }`}>
-                    {trendGranularity === 'auto' ? 'Auto Dynamic' : trendGranularity === 'monthly' ? 'Monthly Rollup' : trendGranularity === 'smooth' ? 'Exponential Smoothing' : trendGranularity === 'weekly' ? 'Weekly Interval' : 'Raw Granular'}
+            {/* RIGHT: 2.3 Ranking Card beside the Hero Chart (5 cols) */}
+            <div
+              data-testid="exec-ranking-card"
+              className="lg:col-span-5 glass-card depth-card rounded-[24px] p-5 sm:p-6 border border-subtle bg-card shadow-sm flex flex-col justify-between"
+            >
+              <div>
+                <div className="flex items-center justify-between gap-2 pb-3 border-b border-subtle">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-9 h-9 rounded-xl bg-accent-soft text-accent border border-accent/30 flex items-center justify-center shrink-0">
+                      <BarChart3 className="w-4 h-4 text-accent" />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="font-headline-sm text-headline-sm text-primary font-bold tracking-tight truncate">
+                        Top {selectedDimension || stringCols[0]?.name || 'Segments'}
+                      </h3>
+                      <p className="text-[11px] font-mono text-secondary truncate">
+                        Ranked by {selectedTrendMetric || numericCols[0]?.name || 'Volume'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <select
+                      value={selectedDimension}
+                      onChange={(e) => setSelectedDimension(e.target.value)}
+                      aria-label="Ranking dimension"
+                      className="glass-input h-7 px-2 text-xs font-mono rounded-lg border border-subtle bg-elevated text-primary focus:outline-none cursor-pointer max-w-[120px]"
+                    >
+                      {stringCols.map(c => (
+                        <option key={c.name} value={c.name}>{c.name}</option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      data-testid="exec-ranking-view-all"
+                      onClick={() => setActiveTab('pareto')}
+                      className="text-xs font-semibold text-accent hover:underline inline-flex items-center gap-1 cursor-pointer shrink-0"
+                    >
+                      <span>View all</span>
+                      <ArrowUpRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Top 5 Horizontal Progress Bars (var(--accent) fill, value on right) */}
+                <div className="space-y-3.5 my-4">
+                  {(() => {
+                    const topBars = (currentCategoryData || []).slice(0, 5);
+                    const maxBarVal = Math.max(...topBars.map(b => b.value || 0), 1);
+                    const isCur = /revenue|sales|profit|margin|cost|amount|price/i.test(selectedTrendMetric || '');
+                    const fmtBar = (v: number) => {
+                      const str = v >= 1_000_000 ? `${(v / 1_000_000).toFixed(2)}M` : v >= 1_000 ? `${(v / 1_000).toFixed(1)}K` : Math.round(v).toLocaleString();
+                      return isCur ? `$${str}` : str;
+                    };
+
+                    if (topBars.length === 0) {
+                      return (
+                        <div className="text-xs text-muted py-10 text-center font-mono">
+                          No ranked categories available in current dataset.
+                        </div>
+                      );
+                    }
+
+                    return topBars.map((item, idx) => {
+                      const pct = Math.min(100, Math.max(8, ((item.value || 0) / maxBarVal) * 100));
+                      return (
+                        <div
+                          key={idx}
+                          onClick={() => handleDrilldown(item.category)}
+                          className="group cursor-pointer p-2.5 rounded-xl border border-transparent hover:border-subtle hover:bg-elevated/70 transition-all"
+                          title={`Click to filter by ${item.category}`}
+                        >
+                          <div className="flex items-center justify-between text-xs mb-1.5 gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="w-5 h-5 rounded-md bg-accent-soft text-accent font-mono text-[11px] font-bold inline-flex items-center justify-center shrink-0">
+                                {idx + 1}
+                              </span>
+                              <span className="font-semibold text-primary truncate">
+                                {item.category}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 font-mono tabular-nums shrink-0">
+                              <span className="font-bold text-primary">
+                                {fmtBar(item.value)}
+                              </span>
+                              <span className="text-[11px] text-secondary">
+                                {item.share ? `${item.share.toFixed(1)}%` : '0%'}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="w-full h-2.5 rounded-full overflow-hidden bg-elevated border border-subtle/50">
+                            <div
+                              className="h-full rounded-full bg-accent transition-all duration-500"
+                              style={{ width: `${pct}%`, opacity: Math.max(0.55, 1 - idx * 0.1) }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-subtle flex items-center justify-between text-xs text-secondary">
+                <span className="font-mono text-[11px]">
+                  Showing top {Math.min(5, (currentCategoryData || []).length)} of {(currentCategoryData || []).length} segments
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('pareto')}
+                  className="text-accent hover:underline font-semibold inline-flex items-center gap-1 cursor-pointer"
+                >
+                  <span>See Pareto breakdown</span>
+                  <ExternalLink className="w-3 h-3" />
+                </button>
+              </div>
+            </div>
+          </section>
+
+          {/* 2.6 "WHAT TO DO NEXT" STRIP (3 Big Cards below Hero & Ranking) */}
+          {(() => {
+            const qualityScore = qualityReport?.overallScore ?? 100;
+            const findingsCount = qualityReport?.issues?.length ?? 0;
+            const suggestFixData = findingsCount > 0 || qualityScore < 90;
+            return (
+              <section
+                data-testid="exec-what-to-do-next"
+                aria-label="What to do next"
+                className="rounded-[24px] p-5 sm:p-6 border border-subtle bg-card shadow-sm"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+                  <div>
+                    <h2 className="text-base sm:text-lg font-bold text-primary tracking-tight">
+                      What to do next
+                    </h2>
+                    <p className="text-xs text-secondary">
+                      Recommended workflow based on your dataset health and analysis coverage
+                    </p>
+                  </div>
+                  <span className="text-[11px] font-mono px-2.5 py-1 rounded-full bg-accent-soft text-accent border border-accent/30 font-semibold">
+                    {suggestFixData ? 'Recommended: Step 1 (Clean data)' : 'Recommended: Step 2 (Explore packs)'}
                   </span>
                 </div>
-                <span className={`${isLight ? 'text-sky-700' : 'text-cyan-400'} flex items-center gap-1.5 font-semibold`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${isLight ? 'bg-sky-600 shadow-lg' : 'bg-cyan-400 shadow-lg'}`} /> Verified Telemetry Rate: 100%
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Card 1: Fix data issues */}
+                  <button
+                    type="button"
+                    data-testid="next-step-fix-data"
+                    onClick={() => setCurrentTab('quality')}
+                    className={`group text-left rounded-2xl p-4 sm:p-5 border transition-all cursor-pointer flex flex-col justify-between ${
+                      suggestFixData
+                        ? 'bg-accent-soft/40 border-accent shadow-sm hover:-translate-y-0.5'
+                        : 'bg-elevated/60 border-subtle hover:border-accent/50 hover:-translate-y-0.5'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-2 mb-3">
+                        <span className="inline-flex items-center gap-1.5 text-xs font-mono font-bold uppercase tracking-wider text-accent">
+                          <span className="w-6 h-6 rounded-lg bg-accent text-on-accent inline-flex items-center justify-center text-xs font-extrabold">
+                            1
+                          </span>
+                          Fix data issues
+                        </span>
+                        {suggestFixData && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-accent text-on-accent">
+                            Suggested next step
+                          </span>
+                        )}
+                      </div>
+                      <h3 className="text-sm sm:text-base font-bold text-primary mb-1">
+                        {findingsCount > 0
+                          ? `${findingsCount} quality finding${findingsCount === 1 ? '' : 's'} detected`
+                          : `Data quality at ${qualityScore}%`}
+                      </h3>
+                      <p className="text-xs text-secondary leading-relaxed">
+                        Inspect missing values, duplicates, and statistical outliers in the Data Quality Auditor before sharing reports.
+                      </p>
+                    </div>
+                    <div className="mt-4 pt-2.5 border-t border-subtle flex items-center justify-between text-xs font-semibold text-accent">
+                      <span>Open Data Quality Auditor</span>
+                      <ArrowUpRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                    </div>
+                  </button>
+
+                  {/* Card 2: Explore */}
+                  <button
+                    type="button"
+                    data-testid="next-step-explore-packs"
+                    onClick={() => setCurrentTab('analytics_packs')}
+                    className={`group text-left rounded-2xl p-4 sm:p-5 border transition-all cursor-pointer flex flex-col justify-between ${
+                      !suggestFixData
+                        ? 'bg-accent-soft/40 border-accent shadow-sm hover:-translate-y-0.5'
+                        : 'bg-elevated/60 border-subtle hover:border-accent/50 hover:-translate-y-0.5'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-2 mb-3">
+                        <span className="inline-flex items-center gap-1.5 text-xs font-mono font-bold uppercase tracking-wider text-accent">
+                          <span className="w-6 h-6 rounded-lg bg-accent text-on-accent inline-flex items-center justify-center text-xs font-extrabold">
+                            2
+                          </span>
+                          Explore
+                        </span>
+                        {!suggestFixData && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-accent text-on-accent">
+                            Suggested next step
+                          </span>
+                        )}
+                      </div>
+                      <h3 className="text-sm sm:text-base font-bold text-primary mb-1">
+                        14 domain Analytics Packs
+                      </h3>
+                      <p className="text-xs text-secondary leading-relaxed">
+                        Auto-detect suitable KPIs, cohort curves, and variance breakdowns tailored to your dataset schema.
+                      </p>
+                    </div>
+                    <div className="mt-4 pt-2.5 border-t border-subtle flex items-center justify-between text-xs font-semibold text-accent">
+                      <span>Open Analytics Packs</span>
+                      <ArrowUpRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                    </div>
+                  </button>
+
+                  {/* Card 3: Share */}
+                  <button
+                    type="button"
+                    data-testid="next-step-share-export"
+                    onClick={() => setCurrentTab('export_center')}
+                    className="group text-left rounded-2xl p-4 sm:p-5 border border-subtle bg-elevated/60 hover:border-accent/50 hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col justify-between"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-2 mb-3">
+                        <span className="inline-flex items-center gap-1.5 text-xs font-mono font-bold uppercase tracking-wider text-accent">
+                          <span className="w-6 h-6 rounded-lg bg-accent text-on-accent inline-flex items-center justify-center text-xs font-extrabold">
+                            3
+                          </span>
+                          Share
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-card text-secondary border border-subtle">
+                          PPTX • PDF • XLSX
+                        </span>
+                      </div>
+                      <h3 className="text-sm sm:text-base font-bold text-primary mb-1">
+                        Executive decks &amp; reports
+                      </h3>
+                      <p className="text-xs text-secondary leading-relaxed">
+                        Download native editable PowerPoint slides, multi-page PDF briefings, or cleaned Excel workbooks.
+                      </p>
+                    </div>
+                    <div className="mt-4 pt-2.5 border-t border-subtle flex items-center justify-between text-xs font-semibold text-accent">
+                      <span>Open Download Center</span>
+                      <ArrowUpRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                    </div>
+                  </button>
+                </div>
+              </section>
+            );
+          })()}
+
+          {/* 2.7 PLAIN WORDS: "What to do about it" (with technical title in tooltip) */}
+          <section className="w-full rounded-[24px] p-5 sm:p-6 border border-subtle bg-card shadow-sm relative overflow-hidden">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-accent-soft text-accent border border-accent/30 flex items-center justify-center shadow-2xs">
+                  <Sparkles className="w-4 h-4 text-accent" />
+                </div>
+                <div>
+                  <h2
+                    data-testid="exec-what-to-do-about-it-heading"
+                    title="AI Decision Directives: WHAT • WHY • MANAGEMENT ACTION"
+                    className="font-headline-sm text-headline-sm text-primary font-bold tracking-tight"
+                  >
+                    What to do about it
+                  </h2>
+                  <p className="font-body-sm text-body-sm text-secondary">
+                    Synthesized findings and recommended actions from {filteredRows.length.toLocaleString()} records in {project.name}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="px-3 py-1.5 rounded-lg bg-accent-soft text-accent font-label-caps text-label-caps tracking-wider uppercase font-bold flex items-center gap-2 border border-accent/30">
+                  <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+                  Verified against dataset
                 </span>
               </div>
             </div>
 
-            {/* RIGHT: Segment Share Donut & Decomposition (5 cols) */}
-            <div className={`lg:col-span-5 rounded-2xl p-5 sm:p-6 border flex flex-col justify-between card-3d ${
-              isLight
-                ? 'bg-white border-slate-200 shadow-sm'
-                : 'bg-surface-card border-white/10 shadow-xl'
-            }`}>
-              <div>
-                <div className="flex items-center justify-between pb-3 border-b border-border-subtle">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Tooltip
-                      side="left"
-                      title="Segment Share of Total"
-                      tag="Composition Donut"
-                      content="Decomposes total business volume across categorical segments with an interactive center rollup. Click on any segment row below to drill into filtered transaction rows."
-                    >
-                      <div className="flex items-center gap-2 cursor-help">
-                        <PieChart className="w-5 h-5 text-cyan-500 dark:text-cyan-400" />
-                        <h3 className="font-headline-sm text-headline-sm text-primary dark:text-primary font-bold uppercase tracking-wide">
-                          SEGMENT SHARE OF TOTAL
-                        </h3>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              {activeDirectives.map((dir, idx) => {
+                const categoryTheme = dir.category === 'Driver'
+                  ? { bg: 'bg-accent-soft text-accent border-accent/30', label: 'DRIVER' }
+                  : dir.category === 'Opportunity'
+                  ? { bg: 'bg-status-warning-soft text-status-warning border-status-warning/30', label: 'OPPORTUNITY' }
+                  : { bg: 'bg-status-info-soft text-status-info border-status-info/30', label: 'OPERATIONAL' };
+
+                return (
+                  <Tooltip
+                    key={dir.id || idx}
+                    side="top"
+                    title={dir.title}
+                    tag={dir.category}
+                    content={dir.significance || dir.why}
+                  >
+                    <div className="rounded-2xl p-4 sm:p-5 border border-subtle bg-elevated/50 flex flex-col justify-between relative hover:border-accent/50 transition-all h-full">
+                      <div>
+                        <div className="flex items-center justify-between mb-3.5">
+                          <span className="font-headline-sm text-headline-sm font-bold truncate pr-2 text-primary">
+                            {dir.title}
+                          </span>
+                          <span className={`px-2 py-0.5 rounded font-label-caps text-label-caps tracking-widest uppercase font-bold border shrink-0 ${categoryTheme.bg}`}>
+                            {categoryTheme.label}
+                          </span>
+                        </div>
+                        <div className="space-y-3 text-xs">
+                          <div>
+                            <span className="font-label-caps text-label-caps text-accent uppercase tracking-wider block font-bold text-[11px]">
+                              WHAT
+                            </span>
+                            <p className="font-body-sm text-body-sm mt-1 leading-relaxed font-medium text-primary">
+                              {dir.what}
+                            </p>
+                          </div>
+                          <div>
+                            <span className="font-label-caps text-label-caps text-secondary uppercase tracking-wider block font-bold text-[11px]">
+                              WHY
+                            </span>
+                            <p className="font-body-sm text-body-sm mt-1 leading-relaxed font-normal text-secondary">
+                              {dir.why}
+                            </p>
+                          </div>
+                        </div>
                       </div>
-                    </Tooltip>
+                      <div className="mt-4 p-3 rounded-xl border border-accent/25 bg-accent-soft/40">
+                        <span className="font-label-caps text-label-caps text-accent uppercase tracking-wider flex items-center gap-1.5 font-bold text-[11px]">
+                          <Zap className="w-3.5 h-3.5 text-accent" /> RECOMMENDED ACTION
+                        </span>
+                        <p className="font-body-sm text-body-sm mt-1 font-medium leading-relaxed text-primary">
+                          {dir.action}
+                        </p>
+                      </div>
+                    </div>
+                  </Tooltip>
+                );
+              })}
+            </div>
+          </section>
+
+          {/* SEGMENT SHARE DONUT & ASK YOUR DATA CARDS */}
+          <section className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+            {/* Segment Share Donut & Decomposition (7 cols) */}
+            <div className="lg:col-span-7 rounded-[24px] p-5 sm:p-6 border border-subtle bg-card shadow-sm flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between pb-3 border-b border-subtle">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex items-center gap-2">
+                      <PieChart className="w-5 h-5 text-accent" />
+                      <h3 className="font-headline-sm text-headline-sm text-primary font-bold uppercase tracking-wide">
+                        SEGMENT SHARE OF TOTAL
+                      </h3>
+                    </div>
 
                     {flags.chartGuide && (() => {
                       const rule = getChartGuideRule('donut');
@@ -2454,15 +2652,11 @@ export const ExecutiveDashboard: React.FC = () => {
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <span className="font-label-sm text-label-sm text-muted dark:text-secondary uppercase font-bold">DIMENSION:</span>
+                    <span className="font-label-sm text-label-sm text-secondary uppercase font-bold">DIMENSION:</span>
                     <select
                       value={selectedDimension}
                       onChange={(e) => setSelectedDimension(e.target.value)}
-                      className={`glass-input h-8 px-2.5 font-label-sm text-label-sm rounded-lg border focus:outline-none cursor-pointer ${
-                        isLight 
-                          ? 'bg-white text-primary border-slate-300' 
-                          : 'bg-surface-panel text-primary border-border-subtle'
-                      }`}
+                      className="glass-input h-8 px-2.5 font-label-sm text-label-sm rounded-lg border border-subtle bg-elevated text-primary focus:outline-none cursor-pointer"
                     >
                       {stringCols.map(c => (
                         <option key={c.name} value={c.name}>{c.name}</option>
@@ -2471,34 +2665,25 @@ export const ExecutiveDashboard: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Donut & Breakdown Layout */}
                 {(() => {
                   const segments = (currentCategoryData || []).slice(0, 6);
                   const totalCatValue = segments.reduce((acc, curr) => acc + (curr.value || 0), 0);
                   const colors = activeThemeConfig.donutColors;
-
-                  const circumference = 2 * Math.PI * 38; // ~238.76
+                  const circumference = 2 * Math.PI * 38;
                   let runningOffset = 0;
 
                   return (
                     <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center my-4">
-                      {/* Donut Graphic with 3D Depth */}
                       <div className="sm:col-span-5 flex items-center justify-center relative">
                         <div className="w-40 h-40 relative flex items-center justify-center">
                           <svg className="w-full h-full transform -rotate-90 overflow-visible" viewBox="0 0 100 100">
-                            <defs>
-                              <filter id="donut3dDepth" x="-20%" y="-20%" width="140%" height="150%">
-                                <feDropShadow dx="0" dy="4" stdDeviation="3.5" floodColor="var(--bg-app)" floodOpacity="0.55" />
-                              </filter>
-                            </defs>
-                            <circle 
-                              cx="50" 
-                              cy="50" 
-                              r="38" 
-                              fill="transparent" 
-                              stroke={isLight ? 'var(--text-primary)' : 'var(--bg-card)'} 
-                              strokeWidth="12" 
-                              filter="url(#donut3dDepth)"
+                            <circle
+                              cx="50"
+                              cy="50"
+                              r="38"
+                              fill="transparent"
+                              stroke="var(--bg-elevated)"
+                              strokeWidth="12"
                             />
                             {totalCatValue > 0 && segments.map((seg, idx) => {
                               const shareRatio = seg.value / totalCatValue;
@@ -2516,52 +2701,42 @@ export const ExecutiveDashboard: React.FC = () => {
                                   strokeWidth="12"
                                   strokeDasharray={`${dash.toFixed(2)} ${(circumference - dash).toFixed(2)}`}
                                   strokeDashoffset={-offset}
-                                  filter="url(#donut3dDepth)"
                                   className="transition-all duration-300"
                                 />
                               );
                             })}
                           </svg>
-                          {/* Donut Center Aggregate with 3D Embossed Medallion */}
-                          <div className={`w-22 h-22 rounded-full flex flex-col items-center justify-center text-center pointer-events-none px-1 border transition-all ${
-                            isLight 
-                              ? 'bg-white border-slate-200 shadow-md' 
-                              : 'medallion-3d border-white/15'
-                          }`}>
-                            <span className="font-label-caps text-label-caps uppercase text-muted dark:text-secondary font-bold tracking-wider text-[10px]">TOTAL</span>
-                            <span className={`font-headline-lg text-headline-lg font-extrabold leading-tight my-0.5 ${
-                              isLight ? 'text-primary' : 'text-primary'
-                            }`}>
+                          <div className="w-22 h-22 rounded-full flex flex-col items-center justify-center text-center pointer-events-none px-1 border border-subtle bg-card shadow-xs">
+                            <span className="font-label-caps text-label-caps uppercase text-secondary font-bold tracking-wider text-[10px]">TOTAL</span>
+                            <span className="font-headline-lg text-headline-lg font-extrabold leading-tight my-0.5 text-primary">
                               {totalCatValue >= 1000000 ? `${(totalCatValue / 1000000).toFixed(1)}M` : totalCatValue >= 1000 ? `${(totalCatValue / 1000).toFixed(1)}k` : Math.round(totalCatValue).toLocaleString()}
                             </span>
-                            <span className="text-[10px] font-mono text-cyan-600 dark:text-cyan-400 font-medium truncate max-w-[80px]" title={selectedDimension}>
+                            <span className="text-[10px] font-mono text-accent font-medium truncate max-w-[80px]" title={selectedDimension}>
                               {selectedDimension || 'Volume'}
                             </span>
                           </div>
                         </div>
                       </div>
 
-                      {/* Segment Metric Legend */}
                       <div className="sm:col-span-7 flex flex-col gap-1.5 font-label-sm text-label-sm">
                         {segments.length > 0 ? (
                           segments.map((seg, idx) => (
-                            <div 
-                              key={idx} 
+                            <div
+                              key={idx}
                               onClick={() => handleDrilldown(seg.category)}
-                              className={`flex items-center justify-between p-2 rounded-lg transition-all border cursor-pointer ${
-                                isLight 
-                                  ? 'bg-elevated hover:bg-sky-50 border-slate-200' 
-                                  : 'bg-surface-panel/80 hover:bg-surface-elevated border-white/10 shadow-2xs hover:border-cyan-400/30'
-                              }`}
+                              className="flex items-center justify-between p-2 rounded-lg transition-all border border-subtle bg-elevated/60 hover:border-accent/40 cursor-pointer"
                               title={`Click to filter granular rows by ${seg.category}`}
                             >
                               <div className="flex items-center gap-2 min-w-0">
-                                <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${colors[idx % colors.length].dot}`} />
-                                <span className={`font-medium truncate max-w-[130px] ${isLight ? 'text-primary' : 'text-primary'}`}>{seg.category}</span>
+                                <span
+                                  className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                                  style={{ backgroundColor: colors[idx % colors.length].stroke }}
+                                />
+                                <span className="font-medium truncate max-w-[140px] text-primary">{seg.category}</span>
                               </div>
                               <div className="flex items-center gap-2.5 font-mono flex-shrink-0">
-                                <span className={`font-bold ${isLight ? 'text-primary' : 'text-primary'}`}>{seg.share ? `${seg.share.toFixed(1)}%` : '0%'}</span>
-                                <span className={`text-[10px] ${isLight ? 'text-muted' : 'text-secondary'}`}>{seg.value >= 1000 ? `${(seg.value / 1000).toFixed(1)}k` : seg.value.toLocaleString()}</span>
+                                <span className="font-bold text-primary">{seg.share ? `${seg.share.toFixed(1)}%` : '0%'}</span>
+                                <span className="text-[10px] text-secondary">{seg.value >= 1000 ? `${(seg.value / 1000).toFixed(1)}k` : seg.value.toLocaleString()}</span>
                               </div>
                             </div>
                           ))
@@ -2576,159 +2751,36 @@ export const ExecutiveDashboard: React.FC = () => {
                 })()}
               </div>
 
-              <div className={`pt-2.5 border-t border-border-subtle flex items-center justify-between text-label-sm font-label-sm ${isLight ? 'text-muted' : 'text-secondary'}`}>
-                <span>Active Segments: <strong className={isLight ? 'text-primary font-bold' : 'text-primary font-bold'}>{currentCategoryData?.length || 0}</strong></span>
-                <span 
+              <div className="pt-2.5 border-t border-subtle flex items-center justify-between text-label-sm font-label-sm text-secondary">
+                <span>Active Segments: <strong className="text-primary font-bold">{currentCategoryData?.length || 0}</strong></span>
+                <span
                   onClick={() => setActiveTab('pareto')}
-                  className={`${isLight ? 'text-sky-700 hover:text-sky-900' : 'text-cyan-400 hover:text-cyan-300'} hover:underline flex items-center gap-1 cursor-pointer font-semibold`}
+                  className="text-accent hover:underline flex items-center gap-1 cursor-pointer font-semibold"
                 >
                   <span>Inspect Pareto Tail</span>
                   <ExternalLink className="w-3 h-3" />
                 </span>
               </div>
             </div>
-          </section>
-
-          {/* TOP-PRODUCT BARS & ASK YOUR DATA CARDS */}
-          <section className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-            {/* Top-Product / Top-Performer Horizontal Bars (7 cols) */}
-            <div className={`lg:col-span-7 depth-card rounded-[20px] p-5 sm:p-6 border flex flex-col justify-between ${
-              isLight
-                ? 'bg-white border-slate-200 shadow-sm'
-                : 'bg-surface-card border-white/10 shadow-xl'
-            }`}>
-              <div>
-                <div className="flex items-center justify-between pb-3 border-b border-border-subtle">
-                  <div className="flex items-center gap-2">
-                    <BarChart3 className="w-5 h-5 text-teal-500 dark:text-teal-400" />
-                    <div>
-                      <h3 className="font-headline-sm text-headline-sm text-primary dark:text-primary font-bold uppercase tracking-wide">
-                        TOP PRODUCTS &amp; SEGMENTS
-                      </h3>
-                      <p className={`text-[11px] font-mono ${isLight ? 'text-muted' : 'text-secondary'}`}>
-                        Ranked performance by {selectedTrendMetric || numericCols[0]?.name || 'Volume'} across {selectedDimension || stringCols[0]?.name || 'Category'}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {flags.chartGuide && (() => {
-                      const rule = getChartGuideRule('bar');
-                      if (!rule) return null;
-                      return (
-                        <Tooltip
-                          side="top"
-                          title={`Why this chart: ${rule.name}`}
-                          tag={rule.fits}
-                          content={`${formatChartGuideReason(rule.id)} Example: "${rule.question}"`}
-                        >
-                          <button
-                            type="button"
-                            aria-label={`Why this chart: ${rule.name}. ${formatChartGuideReason(rule.id)}`}
-                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-mono font-semibold border border-accent/35 bg-accent-soft text-accent cursor-help focus-visible:outline-2 focus-visible:outline-accent"
-                          >
-                            <HelpCircle className="w-3 h-3 shrink-0" aria-hidden="true" />
-                            <span>Why this chart</span>
-                          </button>
-                        </Tooltip>
-                      );
-                    })()}
-                    <span className="text-[11px] font-mono px-2.5 py-1 rounded-lg bg-teal-500/10 text-teal-600 dark:text-teal-300 border border-teal-500/25 font-semibold">
-                      Top {Math.min(5, (currentCategoryData || []).length)} Ranked
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-3 my-4 no-depth-3d chart-viewport">
-                  {(() => {
-                    const topBars = (currentCategoryData || []).slice(0, 5);
-                    const maxBarVal = Math.max(...topBars.map(b => b.value || 0), 1);
-                    const isCur = /revenue|sales|profit|margin|cost|amount|price/i.test(selectedTrendMetric || '');
-                    const fmtBar = (v: number) => {
-                      const str = v >= 1_000_000 ? `${(v / 1_000_000).toFixed(2)}M` : v >= 1_000 ? `${(v / 1_000).toFixed(1)}K` : Math.round(v).toLocaleString();
-                      return isCur ? `$${str}` : str;
-                    };
-
-                    if (topBars.length === 0) {
-                      return (
-                        <div className="text-xs text-muted py-8 text-center font-mono">
-                          No ranked product or category segments available in current dataset.
-                        </div>
-                      );
-                    }
-
-                    return topBars.map((item, idx) => {
-                      const pct = Math.min(100, Math.max(8, ((item.value || 0) / maxBarVal) * 100));
-                      const barHex = idx === 0 ? 'var(--chart-1)' : idx === 1 ? 'var(--chart-3)' : idx === 2 ? 'var(--chart-2)' : 'var(--chart-7)';
-                      return (
-                        <div
-                          key={idx}
-                          onClick={() => handleDrilldown(item.category)}
-                          className="group cursor-pointer p-2 rounded-xl hover:bg-elevated dark:hover:bg-white/[0.03] transition-colors"
-                        >
-                          <div className="flex items-center justify-between text-xs mb-1.5">
-                            <div className="flex items-center gap-2 min-w-0">
-                              <span className="font-mono text-[11px] font-bold text-secondary w-5">#{idx + 1}</span>
-                              <span className={`font-semibold truncate ${isLight ? 'text-primary' : 'text-primary'}`}>
-                                {item.category}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2 font-mono tabular-nums shrink-0">
-                              <span className={`font-bold ${isLight ? 'text-primary' : 'text-primary'}`}>
-                                {fmtBar(item.value)}
-                              </span>
-                              <span className={`text-[11px] ${isLight ? 'text-muted' : 'text-secondary'}`}>
-                                ({item.share ? `${item.share.toFixed(1)}%` : '0%'})
-                              </span>
-                            </div>
-                          </div>
-                          <div className={`w-full h-2.5 rounded-full overflow-hidden ${isLight ? 'bg-elevated' : 'bg-elevated'}`}>
-                            <div
-                              className="h-full rounded-full transition-all duration-500"
-                              style={{ width: `${pct}%`, backgroundColor: barHex }}
-                            />
-                          </div>
-                        </div>
-                      );
-                    });
-                  })()}
-                </div>
-              </div>
-
-              <div className={`pt-2.5 border-t border-border-subtle flex items-center justify-between text-xs ${isLight ? 'text-muted' : 'text-secondary'}`}>
-                <span className="font-mono text-[11px]">Click any bar to inspect underlying rows</span>
-                <button
-                  type="button"
-                  onClick={() => setCurrentTab('analysis')}
-                  className="text-teal-600 dark:text-teal-400 hover:underline font-semibold flex items-center gap-1 cursor-pointer"
-                >
-                  <span>Deep Dive Analysis</span>
-                  <ExternalLink className="w-3 h-3" />
-                </button>
-              </div>
-            </div>
 
             {/* "Ask your data" Card (5 cols) */}
-            <div className={`lg:col-span-5 depth-card rounded-[20px] p-5 sm:p-6 border flex flex-col justify-between ${
-              isLight
-                ? 'bg-white border-slate-200 shadow-sm'
-                : 'bg-surface-card border-white/10 shadow-xl'
-            }`}>
+            <div className="lg:col-span-5 depth-card rounded-[24px] p-5 sm:p-6 border border-subtle bg-card shadow-sm flex flex-col justify-between">
               <div>
-                <div className="flex items-center justify-between pb-3 border-b border-border-subtle">
+                <div className="flex items-center justify-between pb-3 border-b border-subtle">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-xl bg-indigo-500/15 text-indigo-500 dark:text-indigo-400 border border-indigo-400/30 flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-xl bg-accent-soft text-accent border border-accent/30 flex items-center justify-center">
                       <Sparkles className="w-4 h-4" />
                     </div>
                     <div>
-                      <h3 className="font-headline-sm text-headline-sm text-primary dark:text-primary font-bold tracking-wide">
+                      <h3 className="font-headline-sm text-headline-sm text-primary font-bold tracking-wide">
                         Ask your data
                       </h3>
-                      <p className={`text-[11px] font-mono ${isLight ? 'text-muted' : 'text-secondary'}`}>
+                      <p className="text-[11px] font-mono text-secondary">
                         Natural-language query grounded on {filteredRows.length.toLocaleString()} rows
                       </p>
                     </div>
                   </div>
-                  <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-600 dark:text-indigo-300 border border-indigo-500/20 font-bold">
+                  <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded bg-accent-soft text-accent border border-accent/25 font-bold">
                     Verified AI
                   </span>
                 </div>
@@ -2750,11 +2802,7 @@ export const ExecutiveDashboard: React.FC = () => {
                       value={askDataQuery}
                       onChange={(e) => setAskDataQuery(e.target.value)}
                       placeholder={`Ask about ${selectedTrendMetric || 'revenue'}, ${selectedDimension || 'segments'}, or anomalies...`}
-                      className={`w-full rounded-xl pl-3.5 pr-24 py-3 text-xs border focus:outline-none transition-all ${
-                        isLight
-                          ? 'bg-elevated border-slate-300 text-primary focus:border-teal-500'
-                          : 'bg-card border-slate-700/80 text-primary focus:border-teal-400'
-                      }`}
+                      className="w-full rounded-xl pl-3.5 pr-24 py-3 text-xs border border-subtle bg-elevated text-primary focus:outline-none focus:border-accent transition-all"
                     />
                     <button
                       type="submit"
@@ -2766,7 +2814,7 @@ export const ExecutiveDashboard: React.FC = () => {
                   </div>
 
                   <div className="space-y-1.5">
-                    <span className={`text-[10px] font-mono uppercase tracking-wider block ${isLight ? 'text-muted' : 'text-secondary'}`}>
+                    <span className="text-[10px] font-mono uppercase tracking-wider block text-secondary">
                       Suggested questions:
                     </span>
                     <div className="flex flex-wrap gap-1.5">
@@ -2782,11 +2830,7 @@ export const ExecutiveDashboard: React.FC = () => {
                             setAskDataQuery(suggestion);
                             setCurrentTab('ai_insights');
                           }}
-                          className={`text-[11px] px-2.5 py-1.5 rounded-lg border text-left transition-all cursor-pointer ${
-                            isLight
-                              ? 'bg-elevated hover:bg-teal-50 text-muted border-slate-200 hover:border-teal-300'
-                              : 'bg-card hover:bg-elevated text-secondary border-slate-800 hover:border-teal-500/40'
-                          }`}
+                          className="text-[11px] px-2.5 py-1.5 rounded-lg border border-subtle bg-elevated hover:border-accent/40 text-secondary hover:text-primary text-left transition-all cursor-pointer"
                         >
                           {suggestion}
                         </button>
@@ -2796,12 +2840,12 @@ export const ExecutiveDashboard: React.FC = () => {
                 </form>
               </div>
 
-              <div className={`pt-2.5 border-t border-border-subtle flex items-center justify-between text-xs ${isLight ? 'text-muted' : 'text-secondary'}`}>
+              <div className="pt-2.5 border-t border-subtle flex items-center justify-between text-xs text-secondary">
                 <span className="font-mono text-[11px]">Zero-hallucination schema grounding</span>
                 <button
                   type="button"
                   onClick={() => setCurrentTab('ai_insights')}
-                  className="text-indigo-600 dark:text-indigo-400 hover:underline font-semibold flex items-center gap-1 cursor-pointer"
+                  className="text-accent hover:underline font-semibold flex items-center gap-1 cursor-pointer"
                 >
                   <span>Open Ask Data AI</span>
                   <ExternalLink className="w-3 h-3" />

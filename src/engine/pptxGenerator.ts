@@ -19,6 +19,7 @@ import {
   computeQualityGrade,
   computeQualityStatusLabel,
 } from './dataQuality';
+import { getActiveThemeTokens } from '../utils/themeStudio';
 
 export type PresentationScope =
   | 'current'
@@ -1798,51 +1799,47 @@ export async function generatePresentationPptxBlob(
   pptx.title = `${options.datasetName || 'Analytics'} Presentation`;
 
   const isLight = options.themeMode === 'light';
+  const activeTokens = getActiveThemeTokens(isLight ? 'light' : 'dark');
+  const stripHash = (h: string) => h.replace(/^#/, '').toUpperCase();
+
   const bgHex = resolveCssTokenToPptxHex(
     'var(--bg-app)',
-    isLight ? 'F8FAFC' : '0B1120'
+    stripHash(activeTokens.bgApp)
   );
   const cardHex = resolveCssTokenToPptxHex(
     'var(--bg-card)',
-    isLight ? 'FFFFFF' : '111827'
+    stripHash(activeTokens.bgCard)
   );
   const elevatedHex = resolveCssTokenToPptxHex(
     'var(--bg-elevated)',
-    isLight ? 'F1F5F9' : '1E293B'
+    stripHash(activeTokens.bgElevated)
   );
   const borderHex = resolveCssTokenToPptxHex(
     'var(--border-subtle)',
-    isLight ? 'E2E8F0' : '334155'
+    stripHash(activeTokens.borderSubtle)
   );
   const textPrimaryHex = resolveCssTokenToPptxHex(
     'var(--text-primary)',
-    isLight ? '0F172A' : 'F8FAFC'
+    stripHash(activeTokens.textPrimary)
   );
   const textSecondaryHex = resolveCssTokenToPptxHex(
     'var(--text-secondary)',
-    isLight ? '475569' : '94A3B8'
+    stripHash(activeTokens.textSecondary)
   );
   const accentHex = resolveCssTokenToPptxHex(
-    slides[0]?.accentToken || 'var(--accent)',
-    '14B8A6'
+    'var(--accent)',
+    stripHash(activeTokens.accent)
   );
   const gradientToHex = resolveCssTokenToPptxHex(
-    slides[0]?.gradientToToken || 'var(--accent-2)',
-    '38BDF8'
+    'var(--accent-2)',
+    stripHash(activeTokens.accent2)
   );
   const successHex = resolveCssTokenToPptxHex('var(--success)', '10B981');
   const dangerHex = resolveCssTokenToPptxHex('var(--danger)', 'EF4444');
   const warningHex = resolveCssTokenToPptxHex('var(--warning)', 'F59E0B');
-  const chartPaletteHex = [
-    accentHex,
-    gradientToHex,
-    successHex,
-    '38BDF8',
-    'A855F7',
-    'F59E0B',
-    'EC4899',
-    '6366F1',
-  ];
+  const chartPaletteHex = activeTokens.chartPalette.map((fallbackHex, idx) =>
+    resolveCssTokenToPptxHex(`var(--chart-${idx + 1})`, stripHash(fallbackHex))
+  );
 
   const resolveDeltaHex = (
     state?: 'favorable' | 'unfavorable' | 'neutral'

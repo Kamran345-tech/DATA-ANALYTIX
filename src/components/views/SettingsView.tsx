@@ -23,6 +23,7 @@ import {
 import { usePlatform } from '../../store/usePlatformStore';
 import { useFirebaseAuth } from '../../store/useFirebaseAuth';
 import { useToast } from '../../store/useToast';
+import { ThemeStudioPanel } from '../common/ThemeStudioPanel';
 import { 
   FEATURE_METADATA, 
   loadFeatureFlags, 
@@ -147,6 +148,9 @@ export const SettingsView: React.FC = () => {
           )}
         </div>
       )}
+
+      {/* Theme Studio (Section 1.1: One source of truth for all colours) */}
+      {features.unifiedTheme && <ThemeStudioPanel />}
 
       {/* Appearance & Interface Mode Card */}
       <div className="rounded-2xl p-6 space-y-4 border bg-card border-subtle text-primary">

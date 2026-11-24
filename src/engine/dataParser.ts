@@ -150,6 +150,92 @@ export async function parseFile(file: File): Promise<ParseResult> {
 }
 
 /**
+ * Synchronous / deterministic parser for raw CSV text with real-world messiness:
+ * - Strips UTF-8 BOM and blank/whitespace-only rows
+ * - Deduplicates repeated column headers (e.g., "Revenue", "Revenue" -> "Revenue", "Revenue_2")
+ * - Parses currency symbols (Rs, PKR, $, €, ₹), South Asian Lakh/Crore, accounting negatives, and percentages
+ * - Normalizes dates in ISO (YYYY-MM-DD), DD/MM/YYYY, and MM/DD/YYYY formats
+ */
+export function parseMessyCsvText(
+  csvText: string,
+  fileName = 'uploaded.csv'
+): ParseResult {
+  const cleanedText = csvText.replace(/^\uFEFF/, '');
+  const lines = cleanedText
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0 && !/^[,;\t\s]+$/.test(l));
+
+  if (lines.length < 2) {
+    return {
+      fileName,
+      tableName: fileName.replace(/\.[^/.]+$/, '').replace(/[^a-zA-Z0-9_]/g, '_'),
+      columns: [],
+      rows: [],
+      detectedTypes: {},
+      delimiter: ',',
+      parseDiagnostics: { totalRows: 0, failedNumericCasts: 0 },
+    };
+  }
+
+  const splitCsvLine = (line: string): string[] => {
+    const out: string[] = [];
+    let cur = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') {
+        inQuotes = !inQuotes;
+      } else if (ch === ',' && !inQuotes) {
+        out.push(cur.trim());
+        cur = '';
+      } else {
+        cur += ch;
+      }
+    }
+    out.push(cur.trim());
+    return out;
+  };
+
+  const rawHeaders = splitCsvLine(lines[0]);
+  const seenCounts = new Map<string, number>();
+  const columns: string[] = rawHeaders.map((h, idx) => {
+    const base = h.trim() || `Column_${idx + 1}`;
+    const count = (seenCounts.get(base.toLowerCase()) || 0) + 1;
+    seenCounts.set(base.toLowerCase(), count);
+    return count === 1 ? base : `${base}_${count}`;
+  });
+
+  const rawRows: Record<string, any>[] = [];
+  for (let i = 1; i < lines.length; i++) {
+    const cells = splitCsvLine(lines[i]);
+    const hasAnyValue = cells.some((c) => c.trim().length > 0);
+    if (!hasAnyValue) continue;
+    const rowObj: Record<string, any> = {};
+    columns.forEach((col, idx) => {
+      rowObj[col] = cells[idx] ?? '';
+    });
+    rawRows.push(rowObj);
+  }
+
+  const detectedTypes = inferTypes(columns, rawRows);
+  const { typedRows, failedNumericCasts } = castRowsWithDiagnostics(rawRows, detectedTypes);
+
+  return {
+    fileName,
+    tableName: fileName.replace(/\.[^/.]+$/, '').replace(/[^a-zA-Z0-9_]/g, '_'),
+    columns,
+    rows: typedRows,
+    detectedTypes,
+    delimiter: ',',
+    parseDiagnostics: {
+      totalRows: typedRows.length,
+      failedNumericCasts,
+    },
+  };
+}
+
+/**
  * Robust number parsing supporting:
  * - Currency symbols ($, €, £, ¥) and ISO codes (PKR, USD, EUR, etc.)
  * - European comma decimals (1.234,56 or 1234,56)
@@ -187,14 +273,42 @@ export function parseRobustNumber(val: any): { value: number | null; isValidNumb
     cleaned = cleaned.slice(1).trim();
   }
 
-  // Strip known currency symbols and 3-4 letter uppercase currency codes (e.g. PKR, USD, EUR, GBP, AUD, CAD)
-  cleaned = cleaned.replace(/^([$\u20AC\u00A3\u00A5\u20B9\u20A8]|PKR|USD|EUR|GBP|AUD|CAD|INR|JPY|CNY)\s*/i, '');
-  cleaned = cleaned.replace(/\s*([$\u20AC\u00A3\u00A5\u20B9\u20A8]|PKR|USD|EUR|GBP|AUD|CAD|INR|JPY|CNY)$/i, '');
+  // Strip known currency symbols and 3-4 letter uppercase currency codes (e.g. Rs, PKR, USD, EUR, GBP, AUD, CAD)
+  cleaned = cleaned.replace(/^([$\u20AC\u00A3\u00A5\u20B9\u20A8]|Rs\.?|PKR|USD|EUR|GBP|AUD|CAD|INR|JPY|CNY|AED|SAR)\s*/i, '');
+  cleaned = cleaned.replace(/\s*([$\u20AC\u00A3\u00A5\u20B9\u20A8]|Rs\.?|PKR|USD|EUR|GBP|AUD|CAD|INR|JPY|CNY|AED|SAR)$/i, '');
 
   // Strip trailing percentage symbol
   const isPercent = cleaned.endsWith('%');
   if (isPercent) {
     cleaned = cleaned.slice(0, -1).trim();
+  }
+
+  // Detect South Asian (Lakh / Crore) & global (K / M / B) magnitude suffixes
+  let multiplier = 1;
+  const suffixMatch = cleaned.match(
+    /(?:^|\d|\s)(crores?|cr\.?|lakhs?|lacs?|million|mn|billion|bn|thousand|k|m|b)\s*$/i
+  );
+  if (suffixMatch) {
+    const unitToken = suffixMatch[1].toLowerCase().replace(/\.$/, '');
+    if (unitToken === 'crore' || unitToken === 'crores' || unitToken === 'cr') {
+      multiplier = 1e7;
+      cleaned = cleaned.replace(/(crores?|cr\.?)\s*$/i, '').trim();
+    } else if (unitToken === 'lakh' || unitToken === 'lakhs' || unitToken === 'lac' || unitToken === 'lacs') {
+      multiplier = 1e5;
+      cleaned = cleaned.replace(/(lakhs?|lacs?)\s*$/i, '').trim();
+    } else if (unitToken === 'billion' || unitToken === 'bn' || unitToken === 'b') {
+      multiplier = 1e9;
+      cleaned = cleaned.replace(/(billion|bn|b)\s*$/i, '').trim();
+    } else if (unitToken === 'million' || unitToken === 'mn' || unitToken === 'm') {
+      multiplier = 1e6;
+      cleaned = cleaned.replace(/(million|mn|m)\s*$/i, '').trim();
+    } else if (unitToken === 'thousand' || unitToken === 'k') {
+      multiplier = 1e3;
+      cleaned = cleaned.replace(/(thousand|k)\s*$/i, '').trim();
+    }
+  } else if (/\d\s*L$/i.test(cleaned)) {
+    multiplier = 1e5;
+    cleaned = cleaned.replace(/L$/i, '').trim();
   }
 
   // Handle decimal vs thousand separators
@@ -216,13 +330,13 @@ export function parseRobustNumber(val: any): { value: number | null; isValidNumb
     if (/,\d{1,2}$/.test(cleaned)) {
       cleaned = cleaned.replace(',', '.');
     } else {
-      // Thousands separator: 1,000 -> 1000
+      // Thousands separator: 1,000 or 1,23,456 -> 1000 / 123456
       cleaned = cleaned.replace(/,/g, '');
     }
   }
 
-  const num = Number(cleaned);
-  if (isNaN(num)) {
+  const num = Number(cleaned) * multiplier;
+  if (isNaN(num) || !Number.isFinite(num)) {
     return { value: null, isValidNumber: false };
   }
 

@@ -410,13 +410,26 @@ function readStoredAccordionState(): Record<string, boolean> {
   }
 }
 
+const SIDEBAR_COLLAPSED_KEY = 'dataanalytix_sidebar_collapsed_v1';
+
+function readStoredSidebarCollapsed(): boolean {
+  if (typeof window === 'undefined' || !window.localStorage) return false;
+  try {
+    return window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Shared Sidebar State Hook:
  * - Migrates & deletes legacy `dataanalytix_nav_mode`
- * - Manages Pinned pages (star toggle, max 6, persisted in localStorage)
+ * - Manages Favorites / Pinned pages (star toggle, max 6, persisted in localStorage)
+ * - Dispatches `dataanalytix:favorites-limit-reached` when user tries to add a 7th favorite
  * - Manages Recent pages (last 3, persisted in localStorage)
  * - Manages Collapsible Workflow Group accordion state (persisted in localStorage,
  *   with the group containing `currentTab` auto-expanded)
+ * - Manages collapsed slim-rail state (`isSidebarCollapsed`)
  */
 export function useSidebarNavState(currentTab?: NavigationTab) {
   useEffect(() => {
@@ -427,6 +440,9 @@ export function useSidebarNavState(currentTab?: NavigationTab) {
   const [recentTabs, setRecentTabs] = useState<NavigationTab[]>(readStoredRecentTabs);
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>(
     readStoredAccordionState
+  );
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(
+    readStoredSidebarCollapsed
   );
 
   // Sync across components via custom events
@@ -442,6 +458,10 @@ export function useSidebarNavState(currentTab?: NavigationTab) {
     const handleAccordion = (e: Event) => {
       const detail = (e as CustomEvent).detail;
       if (detail && typeof detail === 'object') setCollapsedGroups(detail);
+    };
+    const handleCollapsed = (e: Event) => {
+      const detail = Boolean((e as CustomEvent).detail);
+      setIsSidebarCollapsed(detail);
     };
     const handleFocusGroup = (e: Event) => {
       const groupId = (e as CustomEvent)?.detail?.groupId as WorkflowGroupId | undefined;
@@ -459,11 +479,13 @@ export function useSidebarNavState(currentTab?: NavigationTab) {
     window.addEventListener('dataanalytix:recent-tabs-updated', handleRecent);
     window.addEventListener('dataanalytix:pinned-tabs-updated', handlePinned);
     window.addEventListener('dataanalytix:accordion-updated', handleAccordion);
+    window.addEventListener('dataanalytix:sidebar-collapsed-updated', handleCollapsed);
     window.addEventListener('dataanalytix:focus-sidebar-group', handleFocusGroup);
     return () => {
       window.removeEventListener('dataanalytix:recent-tabs-updated', handleRecent);
       window.removeEventListener('dataanalytix:pinned-tabs-updated', handlePinned);
       window.removeEventListener('dataanalytix:accordion-updated', handleAccordion);
+      window.removeEventListener('dataanalytix:sidebar-collapsed-updated', handleCollapsed);
       window.removeEventListener('dataanalytix:focus-sidebar-group', handleFocusGroup);
     };
   }, []);
@@ -483,17 +505,23 @@ export function useSidebarNavState(currentTab?: NavigationTab) {
     }
   }, [currentTab, collapsedGroups]);
 
-  const togglePinTab = useCallback((tabId: NavigationTab) => {
+  const togglePinTab = useCallback((tabId: NavigationTab): { limitReached: boolean; pinned: boolean } => {
     const prev = readStoredPinnedTabs();
     const exists = prev.includes(tabId);
-    let next: NavigationTab[];
-    if (exists) {
-      next = prev.filter((id) => id !== tabId);
-    } else if (prev.length >= MAX_PINNED_TABS) {
-      next = [...prev.slice(0, MAX_PINNED_TABS - 1), tabId];
-    } else {
-      next = [...prev, tabId];
+    if (!exists && prev.length >= MAX_PINNED_TABS) {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('dataanalytix:favorites-limit-reached', {
+            detail: { tabId, max: MAX_PINNED_TABS },
+          })
+        );
+      }
+      return { limitReached: true, pinned: false };
     }
+    const next: NavigationTab[] = exists
+      ? prev.filter((id) => id !== tabId)
+      : [...prev, tabId];
+
     if (typeof window !== 'undefined' && window.localStorage) {
       try {
         window.localStorage.setItem(PINNED_TABS_KEY, JSON.stringify(next));
@@ -505,6 +533,42 @@ export function useSidebarNavState(currentTab?: NavigationTab) {
     if (typeof window !== 'undefined') {
       window.dispatchEvent(
         new CustomEvent('dataanalytix:pinned-tabs-updated', { detail: next })
+      );
+    }
+    return { limitReached: false, pinned: !exists };
+  }, []);
+
+  const clearFavorites = useCallback(() => {
+    const next: NavigationTab[] = [];
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        window.localStorage.setItem(PINNED_TABS_KEY, JSON.stringify(next));
+      } catch {
+        // ignore
+      }
+    }
+    setPinnedTabs(next);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('dataanalytix:pinned-tabs-updated', { detail: next })
+      );
+    }
+  }, []);
+
+  const toggleSidebarCollapsed = useCallback((force?: boolean) => {
+    const prev = readStoredSidebarCollapsed();
+    const next = typeof force === 'boolean' ? force : !prev;
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        window.localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(next));
+      } catch {
+        // ignore
+      }
+    }
+    setIsSidebarCollapsed(next);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('dataanalytix:sidebar-collapsed-updated', { detail: next })
       );
     }
   }, []);
@@ -554,11 +618,15 @@ export function useSidebarNavState(currentTab?: NavigationTab) {
   return {
     pinnedTabs,
     togglePinTab,
+    clearFavorites,
     isTabPinned,
     recentTabs,
     setRecentTabs,
     collapsedGroups,
     toggleGroup,
     expandGroup,
+    isSidebarCollapsed,
+    toggleSidebarCollapsed,
   };
 }
+

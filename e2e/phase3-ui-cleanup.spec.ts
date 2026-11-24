@@ -76,19 +76,45 @@ test.describe('Phase 1 & 3: Workflow Sidebar, Shrunk Page Header Stack, Mobile 3
     // 1. Verify html[data-design-system-v3="true"] is active
     await expect(page.locator('html')).toHaveAttribute('data-design-system-v3', 'true');
 
-    // 2. Verify First-Run 3-Step Coach Mark Tour (Fix 4):
+    // 2. Verify First-Run 3-Step Coach Mark Tour (Fix A.1 & A.3 at 1440x900):
+    // - Wait for Executive Dashboard KPI cards to render
     // - Spotlights real target ([data-coach-spotlight="true"])
-    // - Placed BESIDE the sidebar on desktop (x >= 268, never overlapping the 256px sidebar)
+    // - First KPI card's full bounding box ([data-testid^="exec-kpi-card-"]) AND dashboard header
+    //   must NOT intersect the tour card at 1440x900
+    const firstKpiCardDesktop = page.locator('[data-testid^="exec-kpi-card-"]').first();
+    await expect(firstKpiCardDesktop).toBeVisible({ timeout: 15000 });
     const tour = page.getByTestId('first-run-coach-tour');
     await expect(tour).toBeVisible();
     await expect(page.getByTestId('coach-tour-step-indicator')).toContainText('Step 1 of 3');
-    const tourBox = await tour.boundingBox();
-    expect(tourBox).not.toBeNull();
-    expect(
-      tourBox!.x,
-      'Desktop coach tour card must be placed beside the 256px sidebar, not over it'
-    ).toBeGreaterThanOrEqual(268);
     await expect(page.locator('[data-coach-spotlight="true"]').first()).toBeVisible();
+
+    const desktopTourIntersection = await page.evaluate(() => {
+      const tourEl = document.querySelector('[data-testid="first-run-coach-tour"]');
+      const kpiCardEl = document.querySelector('[data-testid^="exec-kpi-card-"]');
+      const headerEl = document.querySelector('#main-content section.glass-panel-luminous');
+      if (!tourEl || !kpiCardEl || !headerEl) return null;
+      const t = tourEl.getBoundingClientRect();
+      const k = kpiCardEl.getBoundingClientRect();
+      const h = headerEl.getBoundingClientRect();
+      const intersects = (a: DOMRect, b: DOMRect) =>
+        !(a.right <= b.left || a.left >= b.right || a.bottom <= b.top || a.top >= b.bottom);
+      return {
+        intersectsKpiCard: intersects(t, k),
+        intersectsHeader: intersects(t, h),
+        tourBox: { left: t.left, top: t.top, right: t.right, bottom: t.bottom },
+        kpiCardBox: { left: k.left, top: k.top, right: k.right, bottom: k.bottom },
+      };
+    });
+    expect(desktopTourIntersection).not.toBeNull();
+    expect(
+      desktopTourIntersection!.intersectsKpiCard,
+      'At 1440x900, the first KPI card bounding box must not intersect the coach tour card'
+    ).toBe(false);
+    expect(
+      desktopTourIntersection!.intersectsHeader,
+      'At 1440x900, the dashboard header bounding box must not intersect the coach tour card'
+    ).toBe(false);
+
     await page.getByTestId('coach-tour-skip').click();
     await expect(tour).toHaveCount(0);
 
@@ -220,38 +246,54 @@ test.describe('Phase 1 & 3: Workflow Sidebar, Shrunk Page Header Stack, Mobile 3
     );
   });
 
-  test('1.3, Fix 4 Mobile Bottom-Sheet Tour & Phase 2.5 Multi-Viewport Screenshots (1440/1024/375 Light+Dark)', async ({
+  test('1.3, Fix A.2 & A.3 Mobile Bottom-Sheet Tour & Phase 2.5 Multi-Viewport Screenshots (1440/1024/375 Light+Dark)', async ({
     page,
   }) => {
     test.setTimeout(180000);
     fs.mkdirSync(SCREENSHOT_DIR, { recursive: true });
     fs.mkdirSync(LEGACY_SCREENSHOT_DIR, { recursive: true });
 
-    // First verify Fix 4 on Mobile (375x812): Coach tour renders as bottom sheet that leaves first KPI cards visible
+    // Verify Fix A.2 & A.3 on Mobile (375x812):
+    // Coach tour renders as compact bottom sheet (<= 120px) and the FULL first KPI card bounding box
+    // ([data-testid^="exec-kpi-card-"], including delta & source line) does NOT intersect the tour card
     await page.setViewportSize({ width: 375, height: 812 });
     await bootstrapWorkspace(page, { theme: 'dark', skipTour: false });
-    const mobileFirstKpi = page.locator('[data-testid^="exec-kpi-value-"]').first();
-    await expect(mobileFirstKpi).toBeVisible({ timeout: 15000 });
+    const mobileFirstKpiCard = page.locator('[data-testid^="exec-kpi-card-"]').first();
+    await expect(mobileFirstKpiCard).toBeVisible({ timeout: 15000 });
     const mobileTour = page.getByTestId('first-run-coach-tour');
     await expect(mobileTour).toBeVisible();
 
     const mobileOverlapCheck = await page.evaluate(() => {
-      const kpiEl = document.querySelector('[data-testid^="exec-kpi-value-"]');
+      const kpiCardEl = document.querySelector('[data-testid^="exec-kpi-card-"]');
       const tourEl = document.querySelector('[data-testid="first-run-coach-tour"]');
-      if (!kpiEl || !tourEl) return null;
-      const kpiRect = kpiEl.getBoundingClientRect();
-      const tourRect = tourEl.getBoundingClientRect();
+      if (!kpiCardEl || !tourEl) return null;
+      const k = kpiCardEl.getBoundingClientRect();
+      const t = tourEl.getBoundingClientRect();
+      const intersects = !(
+        t.right <= k.left ||
+        t.left >= k.right ||
+        t.bottom <= k.top ||
+        t.top >= k.bottom
+      );
       return {
-        kpiBottom: kpiRect.bottom,
-        tourTop: tourRect.top,
-        tourBottom: tourRect.bottom,
+        intersects,
+        kpiCardBottom: k.bottom,
+        tourTop: t.top,
+        tourHeight: t.height,
+        hasBottomPaddingAttr: document.documentElement.getAttribute('data-coach-tour-open') === 'true',
       };
     });
     expect(mobileOverlapCheck).not.toBeNull();
+    expect(mobileOverlapCheck!.hasBottomPaddingAttr).toBe(true);
+    expect(mobileOverlapCheck!.tourHeight).toBeLessThanOrEqual(120);
+    expect(
+      mobileOverlapCheck!.intersects,
+      'At 375x812, the full first KPI card bounding box must not intersect the coach tour bottom sheet'
+    ).toBe(false);
     expect(
       mobileOverlapCheck!.tourTop,
-      'Mobile bottom-sheet tour must stay below the first KPI card so KPIs remain visible'
-    ).toBeGreaterThan(mobileOverlapCheck!.kpiBottom);
+      'Mobile bottom-sheet tour top must be below the full first KPI card bottom (including delta & footer)'
+    ).toBeGreaterThan(mobileOverlapCheck!.kpiCardBottom);
     await page.getByTestId('coach-tour-skip').click();
 
     const viewports = [
@@ -364,5 +406,125 @@ test.describe('Phase 1 & 3: Workflow Sidebar, Shrunk Page Header Stack, Mobile 3
       }
     }
   });
+
+  test('Section 1-5 E2E: Theme Studio recolours tokens & auto-adjusts low-contrast custom accent; Dashboard Look cards; Glass Sidebar Favorites empty state, 6-item limit toast & slim rail collapse; How to Use downloads non-empty PDF (%PDF) and PPTX (PK)', async ({
+    page,
+  }) => {
+    test.setTimeout(150000);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await bootstrapWorkspace(page, { theme: 'dark', skipTour: true });
+
+    // 1. Verify Section 2 Dashboard Look elements on Executive Dashboard
+    await expect(page.getByTestId('topbar-pill-nav')).toBeVisible();
+    await expect(page.getByTestId('exec-plain-summary-line')).toBeVisible();
+    await expect(page.getByTestId('exec-key-numbers-heading')).toHaveText('Key numbers');
+    await expect(page.getByTestId('exec-hero-area-chart')).toBeVisible();
+    await expect(page.getByTestId('exec-hero-summary-metrics')).toBeVisible();
+    await expect(page.getByTestId('exec-ranking-card')).toBeVisible();
+    await expect(page.getByTestId('exec-ranking-view-all')).toBeVisible();
+    await expect(page.getByTestId('exec-what-to-do-next')).toBeVisible();
+    await expect(page.getByTestId('next-step-fix-data')).toBeVisible();
+    await expect(page.getByTestId('next-step-explore-packs')).toBeVisible();
+    await expect(page.getByTestId('next-step-share-export')).toBeVisible();
+    await expect(page.getByTestId('exec-what-to-do-about-it-heading')).toHaveText(
+      'What to do about it'
+    );
+
+    // 2. Verify Section 1 Theme Studio live recolouring & low-contrast custom accent auto-adjustment
+    await page.getByTestId('navbar-theme-studio-btn').click();
+    await expect(page.getByTestId('theme-studio-panel')).toBeVisible();
+
+    await page.getByTestId('theme-preset-violet').click();
+    const violetAccent = await page.evaluate(() =>
+      document.documentElement.style.getPropertyValue('--accent').trim()
+    );
+    expect(violetAccent.toUpperCase()).toBe('#A78BFA');
+
+    // Enter a low-contrast custom hex on dark background (#151922) -> auto-adjusted with note
+    const hexInput = page.getByTestId('theme-custom-hex-input');
+    await hexInput.fill('#151922');
+    await expect(page.getByTestId('theme-contrast-adjusted-note')).toBeVisible();
+    await expect(page.getByTestId('theme-contrast-adjusted-note')).toContainText(
+      'Adjusted for readability'
+    );
+
+    // Reset to default and close Theme Studio popover
+    await page.getByTestId('theme-studio-reset-btn').click();
+    await page.getByTestId('theme-studio-close-btn').click();
+
+    // 3. Verify Section 3 Glass Sidebar: Favorites 6-item limit toast, empty state, and slim rail collapse
+    const sidebar = page.locator('aside#app-sidebar-drawer');
+    await expect(sidebar.getByTestId('sidebar-favorites-section')).toBeVisible();
+    await expect(sidebar.getByTestId('sidebar-favorites-count')).toContainText('4 of 6');
+    await expect(sidebar.getByTestId('sidebar-dataset-health-card')).toBeVisible();
+    await expect(sidebar.getByTestId('sidebar-user-row')).toBeVisible();
+
+    // Expand group 'analyze' so we can star 3 more items (5th, 6th, and 7th to trigger limit toast)
+    const analyzeToggle = sidebar.getByTestId('sidebar-group-toggle-analyze');
+    if ((await analyzeToggle.getAttribute('aria-expanded')) === 'false') {
+      await analyzeToggle.click();
+    }
+    await sidebar.getByTestId('sidebar-pin-toggle-sql_lab').click();
+    await expect(sidebar.getByTestId('sidebar-favorites-count')).toContainText('5 of 6');
+    await sidebar.getByTestId('sidebar-pin-toggle-python_lab').click();
+    await expect(sidebar.getByTestId('sidebar-favorites-count')).toContainText('6 of 6');
+
+    // Attempt to pin a 7th item -> limit toast appears and count stays 6 of 6
+    await sidebar.getByTestId('sidebar-pin-toggle-dax_lab').click();
+    await expect(sidebar.getByTestId('sidebar-favorites-limit-toast')).toContainText(
+      'Favorites are full. Remove one to add another.'
+    );
+    await expect(sidebar.getByTestId('sidebar-favorites-count')).toContainText('6 of 6');
+
+    // Clear all favorites -> verify empty state with 2 suggestion chips
+    await sidebar.getByTestId('sidebar-favorites-clear-btn').click();
+    await expect(sidebar.getByTestId('sidebar-favorites-empty')).toBeVisible();
+    await sidebar.getByTestId('favorite-suggest-executive_dashboard').click();
+    await expect(sidebar.getByTestId('sidebar-favorites-count')).toContainText('1 of 6');
+
+    // Collapse sidebar to slim icon rail and expand back
+    await page.getByTestId('sidebar-collapse-toggle').click();
+    await expect(page.getByTestId('sidebar-slim-rail')).toBeVisible();
+    await expect(sidebar).toHaveAttribute('data-collapsed', 'true');
+    await page.getByTestId('sidebar-collapse-toggle').click();
+    await expect(sidebar).toHaveAttribute('data-collapsed', 'false');
+
+    // 4. Verify Section 5 How to Use: Downloadable Guide (PDF %PDF and PPTX PK)
+    const helpToggle = sidebar.getByTestId('sidebar-group-toggle-help_settings');
+    if ((await helpToggle.getAttribute('aria-expanded')) === 'false') {
+      await helpToggle.click();
+    }
+    await sidebar.getByTestId('sidebar-nav-item-how_to_use').click();
+    await expect(page.getByTestId('user-guide-handout-preview')).toBeVisible();
+    await expect(page.getByTestId('download-guide-pdf-btn')).toBeVisible();
+    await expect(page.getByTestId('download-guide-pptx-btn')).toBeVisible();
+    await expect(page.getByTestId('download-guide-bottom-pdf-btn')).toBeVisible();
+    await expect(page.getByTestId('download-guide-bottom-pptx-btn')).toBeVisible();
+
+    // Download PDF and verify %PDF magic bytes
+    const [pdfDownload] = await Promise.all([
+      page.waitForEvent('download'),
+      page.getByTestId('download-guide-pdf-btn').click(),
+    ]);
+    expect(pdfDownload.suggestedFilename()).toBe('DATA-ANALYTIX-User-Guide.pdf');
+    const pdfPath = await pdfDownload.path();
+    expect(pdfPath).not.toBeNull();
+    const pdfBuf = fs.readFileSync(pdfPath!);
+    expect(pdfBuf.subarray(0, 4).toString('utf8')).toBe('%PDF');
+    expect(pdfBuf.byteLength).toBeGreaterThan(5000);
+
+    // Download PPTX and verify PK zip magic bytes
+    const [pptxDownload] = await Promise.all([
+      page.waitForEvent('download'),
+      page.getByTestId('download-guide-pptx-btn').click(),
+    ]);
+    expect(pptxDownload.suggestedFilename()).toBe('DATA-ANALYTIX-User-Guide.pptx');
+    const pptxPath = await pptxDownload.path();
+    expect(pptxPath).not.toBeNull();
+    const pptxBuf = fs.readFileSync(pptxPath!);
+    expect(pptxBuf.subarray(0, 2).toString('utf8')).toBe('PK');
+    expect(pptxBuf.byteLength).toBeGreaterThan(15000);
+  });
 });
+
 

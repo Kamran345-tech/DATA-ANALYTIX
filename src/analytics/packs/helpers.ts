@@ -48,6 +48,34 @@ export function parseRealNumber(raw: unknown): number | null {
     s = s.slice(1).trim();
   }
 
+  // Detect South Asian (Lakh / Crore) & global (K / M / B) magnitude suffixes before stripping spaces
+  let multiplier = 1;
+  const suffixMatch = s.match(
+    /(?:^|\d|\s)(crores?|cr\.?|lakhs?|lacs?|million|mn|billion|bn|thousand|k|m|b)\s*$/i
+  );
+  if (suffixMatch) {
+    const unitToken = suffixMatch[1].toLowerCase().replace(/\.$/, '');
+    if (unitToken === 'crore' || unitToken === 'crores' || unitToken === 'cr') {
+      multiplier = 1e7; // 1 Crore = 10,000,000
+      s = s.replace(/(crores?|cr\.?)\s*$/i, '').trim();
+    } else if (unitToken === 'lakh' || unitToken === 'lakhs' || unitToken === 'lac' || unitToken === 'lacs') {
+      multiplier = 1e5; // 1 Lakh = 100,000
+      s = s.replace(/(lakhs?|lacs?)\s*$/i, '').trim();
+    } else if (unitToken === 'billion' || unitToken === 'bn' || unitToken === 'b') {
+      multiplier = 1e9;
+      s = s.replace(/(billion|bn|b)\s*$/i, '').trim();
+    } else if (unitToken === 'million' || unitToken === 'mn' || unitToken === 'm') {
+      multiplier = 1e6;
+      s = s.replace(/(million|mn|m)\s*$/i, '').trim();
+    } else if (unitToken === 'thousand' || unitToken === 'k') {
+      multiplier = 1e3;
+      s = s.replace(/(thousand|k)\s*$/i, '').trim();
+    }
+  } else if (/\d\s*L$/i.test(s)) {
+    multiplier = 1e5; // e.g. "Rs 12.5L" = 1,250,000
+    s = s.replace(/L$/i, '').trim();
+  }
+
   // Remove internal spaces
   s = s.replace(/\s+/g, '');
   if (!s) return null;
@@ -67,7 +95,7 @@ export function parseRealNumber(raw: unknown): number | null {
     return null;
   }
 
-  const parsed = Number(s);
+  const parsed = Number(s) * multiplier;
   if (!Number.isFinite(parsed)) return null;
   const signed = isNegative ? -parsed : parsed;
   return Object.is(signed, -0) ? 0 : signed;

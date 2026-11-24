@@ -2192,3 +2192,10 @@ html[data-design-system-v3="true"] :focus-visible {
   z-index: 35;
 }
 
+@media (max-width: 767px) {
+  html[data-coach-tour-open="true"] #main-content {
+    padding-bottom: 132px !important;
+  }
+}
+
+

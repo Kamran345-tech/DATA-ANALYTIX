@@ -368,10 +368,15 @@ describe('TASK 2: Auto-Detect Accuracy across 42 Messy CSV Fixtures & Confusion 
   });
 });
 
-describe('TASK 3: Real-Data Robustness (Currency/Percent/Accounting Strings, Mixed Dates, 100k Rows < 3s)', () => {
-  it('parses currency, percent, thousand-separator, and accounting-negative strings accurately', () => {
+describe('TASK 3 & Phase 2.4: Real-Data Robustness (Currency/Lakh/Crore/Percent/Accounting Strings, 3 Date Formats, Empty Rows, Duplicate Headers, 100k Rows < 10s)', () => {
+  it('parses currency, South Asian Lakh/Crore, percent, thousand-separator, and accounting-negative strings accurately', () => {
     expect(parseRealNumber('Rs 1,200')).toBe(1200);
     expect(parseRealNumber('PKR 45,000.50')).toBeCloseTo(45000.5, 2);
+    expect(parseRealNumber('Rs 4.5 Lakh')).toBe(450000);
+    expect(parseRealNumber('PKR 12.2 Lakhs')).toBe(1220000);
+    expect(parseRealNumber('Rs 2.5 Crore')).toBe(25000000);
+    expect(parseRealNumber('INR 1.75 Cr')).toBe(17500000);
+    expect(parseRealNumber('₹ 1,25,000')).toBe(125000);
     expect(parseRealNumber('12.5%')).toBeCloseTo(12.5, 2);
     expect(parseRealNumber('(300)')).toBe(-300);
     expect(parseRealNumber('($1,450.25)')).toBeCloseTo(-1450.25, 2);
@@ -392,27 +397,95 @@ describe('TASK 3: Real-Data Robustness (Currency/Percent/Accounting Strings, Mix
     expect(mixed.warning).toContain('Mixed DD/MM/YYYY and MM/DD/YYYY');
     expect(mixed.normalizedValues[0]).toBe('2025-01-25');
     expect(mixed.normalizedValues[1]).toBe('2025-01-25');
+    expect(mixed.normalizedValues[2]).toBe('2025-03-01');
 
     // 3. Excel serial date (45658 -> 2025-01-01)
     const excel = parseAndNormalizeDates([45658]);
     expect(excel.normalizedValues[0]).toBe('2025-01-01');
   });
 
-  it('renders a 100,000-row pack dashboard in < 3,000 ms without freezing', () => {
+  it('Phase 2.4: parses a messy CSV containing currency symbols, Lakh/Crore, 3 date formats (ISO, DD/MM/YYYY, MM/DD/YYYY), empty rows, and duplicate headers', async () => {
+    const { parseMessyCsvText } = await import('../src/engine/dataParser');
+    const messyCsv = [
+      '\uFEFFDate,Region,Revenue,Quota,Margin_Pct,Revenue',
+      '   ',
+      ',,,,,',
+      '2025-01-15,North America,"Rs 4.5 Lakh","Rs 4.0 Lakh",32.5%,"Rs 12,000"',
+      '25/02/2025,EMEA,"PKR 1.2 Crore","PKR 1.0 Crore",28.0%,"($300)"',
+      '03/18/2025,APAC,"$850,000","$800,000",35.2%,"€ 2.500,50"',
+      '   ',
+      '2025-04-10,LATAM,"₹ 15,00,000","₹ 12,00,000",30.1%,"Rs 2.5 Lakh"',
+      '',
+    ].join('\r\n');
+
+    const parsed = parseMessyCsvText(messyCsv, 'messy_regional_sales.csv');
+
+    // Duplicate "Revenue" header must be deduplicated as "Revenue" and "Revenue_2"
+    expect(parsed.columns).toEqual([
+      'Date',
+      'Region',
+      'Revenue',
+      'Quota',
+      'Margin_Pct',
+      'Revenue_2',
+    ]);
+    // Empty and comma-only lines must be stripped, leaving exactly 4 valid data rows
+    expect(parsed.rows.length).toBe(4);
+    expect(parsed.detectedTypes.Revenue).toBe('number');
+    expect(parsed.detectedTypes.Quota).toBe('number');
+    expect(parsed.detectedTypes.Margin_Pct).toBe('number');
+    expect(parsed.detectedTypes.Date).toBe('date');
+
+    // Check Lakh/Crore & currency numeric values
+    expect(parsed.rows[0].Revenue).toBe(450000);
+    expect(parsed.rows[1].Revenue).toBe(12000000);
+    expect(parsed.rows[2].Revenue).toBe(850000);
+    expect(parsed.rows[3].Revenue).toBe(1500000);
+    expect(parsed.rows[1].Revenue_2).toBe(-300);
+    expect(parsed.rows[2].Revenue_2).toBeCloseTo(2500.5, 2);
+
+    // Check 3 date formats normalized to ISO YYYY-MM-DD
+    expect(parsed.rows[0].Date).toBe('2025-01-15');
+    expect(parsed.rows[1].Date).toBe('2025-02-25');
+    expect(parsed.rows[2].Date).toBe('2025-03-18');
+    expect(parsed.rows[3].Date).toBe('2025-04-10');
+  });
+
+  it('Phase 2.4: completes full 100,000-row upload pipeline (type inference + dataset profiling + pack detection + dashboard KPI & chart computation) in < 3,000 ms (well under 10s limit)', async () => {
+    const { inferTypes } = await import('../src/engine/dataParser');
+    const { profileDataset } = await import('../src/engine/dataProfiler');
     const salesPack = getPackById('sales');
     const baseRows = salesPack.sampleDataset();
     const largeRows: Record<string, any>[] = new Array(100000);
     for (let i = 0; i < 100000; i++) {
       largeRows[i] = baseRows[i % baseRows.length];
     }
+    const colNames = Object.keys(baseRows[0]);
 
     const t0 = performance.now();
+    const detectedTypes = inferTypes(colNames, largeRows);
+    const tInfer = performance.now();
+    const columns = profileDataset(colNames, largeRows, detectedTypes);
+    const tProfile = performance.now();
+    const detectedPacks = detectPack({ columns, rows: largeRows });
+    const tDetect = performance.now();
     const dash = buildDashboard(salesPack, largeRows);
-    const elapsedMs = performance.now() - t0;
+    const tEnd = performance.now();
 
+    const totalMs = Number((tEnd - t0).toFixed(1));
+    const totalSec = Number((totalMs / 1000).toFixed(3));
+    console.log(
+      `[Phase 2.4 100k-Row Pipeline Timing] total=${totalMs}ms (${totalSec}s) | inferTypes=${(
+        tInfer - t0
+      ).toFixed(1)}ms | profileDataset=${(tProfile - tInfer).toFixed(1)}ms | detectPack=${(
+        tDetect - tProfile
+      ).toFixed(1)}ms | buildDashboard=${(tEnd - tDetect).toFixed(1)}ms`
+    );
+
+    expect(detectedPacks[0].packId).toBe('sales');
     expect(dash.computedKpis.length).toBe(salesPack.kpis.length);
     expect(dash.charts.length).toBe(salesPack.charts.length);
-    expect(elapsedMs).toBeLessThan(3000);
+    expect(totalMs).toBeLessThan(3000);
   });
 });
 

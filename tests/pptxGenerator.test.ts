@@ -297,42 +297,69 @@ describe('Phase 4 & Part A1-A9: 13-Slide 16:9 PPTX Presentation Generator, Overf
     expect(bestPackId).toBe('sales');
   });
 
-  it('Phase 2.1 (A8/A9): renders light-theme variant decks across all 14 packs with 13 slides, native charts, and 0 text overflows', async () => {
+  it('Phase 2.1 (A8/A9): renders dark and light variant decks across all 14 packs (28 decks total) with 13 slides, native charts, and 0 text overflows', async () => {
+    const deckReport: {
+      Pack: string;
+      Variant: 'dark' | 'light';
+      Slides: number;
+      NativeCharts: number;
+      Overflows: number;
+      SizeKB: number;
+    }[] = [];
+
     for (const pack of ANALYTICS_PACKS) {
       const rows = pack.sampleDataset();
       const columns = buildColumnsForRows(rows);
 
-      const { blob, slideCount, slides } = await generatePresentationPptxBlob({
-        datasetName: `${pack.name} Light Deck`,
-        companyName: 'DATA ANALYTIX',
-        department: 'Executive Intelligence',
-        scope: 'pack',
-        packId: pack.id,
-        audience: 'manager',
-        themeMode: 'light',
-        rows,
-        columns,
-      });
+      for (const themeMode of ['dark', 'light'] as const) {
+        const { blob, slideCount, slides } = await generatePresentationPptxBlob({
+          datasetName: `${pack.name} (${themeMode})`,
+          companyName: 'DATA ANALYTIX',
+          department: 'Executive Intelligence',
+          scope: 'pack',
+          packId: pack.id,
+          audience: 'manager',
+          themeMode,
+          rows,
+          columns,
+        });
 
-      expect(slideCount).toBe(13);
-      expect(slides.length).toBe(13);
-      expect(blob.size).toBeGreaterThan(25000);
+        expect(slideCount).toBe(13);
+        expect(slides.length).toBe(13);
+        expect(blob.size).toBeGreaterThan(25000);
 
-      for (const s of slides) {
-        const overflow = estimateSlideOverflow(s);
-        expect(overflow.overflowCount).toBe(0);
+        let totalOverflows = 0;
+        for (const s of slides) {
+          const overflow = estimateSlideOverflow(s);
+          totalOverflows += overflow.overflowCount;
+          expect(overflow.overflowCount).toBe(0);
+        }
+
+        const zip = await JSZip.loadAsync(await blob.arrayBuffer());
+        const fileNames = Object.keys(zip.files);
+        const slideXmls = fileNames.filter((f) => /^ppt\/slides\/slide\d+\.xml$/.test(f));
+        const chartXmls = fileNames.filter((f) => /^ppt\/charts\/chart\d+\.xml$/.test(f));
+        expect(slideXmls.length).toBe(13);
+        expect(chartXmls.length).toBeGreaterThanOrEqual(6);
+
+        if (themeMode === 'light') {
+          const slide1Xml = await zip.file('ppt/slides/slide1.xml')!.async('string');
+          expect(slide1Xml).toContain('F8FAFC');
+        }
+
+        deckReport.push({
+          Pack: `${pack.id} (${pack.name})`,
+          Variant: themeMode,
+          Slides: slideXmls.length,
+          NativeCharts: chartXmls.length,
+          Overflows: totalOverflows,
+          SizeKB: Math.round(blob.size / 1024),
+        });
       }
-
-      const zip = await JSZip.loadAsync(await blob.arrayBuffer());
-      const fileNames = Object.keys(zip.files);
-      const slideXmls = fileNames.filter((f) => /^ppt\/slides\/slide\d+\.xml$/.test(f));
-      const chartXmls = fileNames.filter((f) => /^ppt\/charts\/chart\d+\.xml$/.test(f));
-      expect(slideXmls.length).toBe(13);
-      expect(chartXmls.length).toBeGreaterThanOrEqual(6);
-
-      const slide1Xml = await zip.file('ppt/slides/slide1.xml')!.async('string');
-      expect(slide1Xml).toContain('F8FAFC');
     }
+
+    console.table(deckReport);
+    expect(deckReport.length).toBe(28);
   });
 });
 

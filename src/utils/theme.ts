@@ -1,4 +1,9 @@
 import { FeatureFlags, loadFeatureFlags } from '../config/features';
+import {
+  applyThemeStudioTokensToDOM,
+  loadThemeStudioConfig,
+  STORAGE_KEY_THEME_STUDIO,
+} from './themeStudio';
 
 export type ThemePreference = 'dark' | 'light' | 'system';
 export type ResolvedTheme = 'dark' | 'light';
@@ -47,6 +52,17 @@ export function applyDocumentTheme(
   if (typeof window !== 'undefined' && window.localStorage) {
     window.localStorage.setItem(STORAGE_KEY_THEME, resolved);
     window.localStorage.setItem(STORAGE_KEY_THEME_PREF, modeOrPref);
+    try {
+      const studioCfg = loadThemeStudioConfig();
+      if (studioCfg.mode !== modeOrPref) {
+        window.localStorage.setItem(
+          STORAGE_KEY_THEME_STUDIO,
+          JSON.stringify({ ...studioCfg, mode: modeOrPref })
+        );
+      }
+    } catch {
+      // ignore
+    }
   }
 
   if (typeof document !== 'undefined') {
@@ -111,6 +127,9 @@ export function applyDocumentTheme(
     } else {
       root.removeAttribute('data-design-system-v3');
     }
+
+    const studioCfg = loadThemeStudioConfig();
+    applyThemeStudioTokensToDOM({ ...studioCfg, mode: modeOrPref }, resolved, flags);
   }
 
   return resolved;
