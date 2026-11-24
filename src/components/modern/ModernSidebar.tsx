@@ -136,7 +136,7 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({ onOpenCommandPalet
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={handleSearchKeyDown}
-              placeholder="Search pages (Enter to open)..."
+              placeholder="Search pages"
               aria-label="Search sidebar pages"
               className="w-full min-h-[34px] pl-8 pr-14 py-1.5 rounded-xl bg-input border border-subtle text-xs text-primary placeholder:text-muted focus:outline-2 focus:outline-accent"
             />

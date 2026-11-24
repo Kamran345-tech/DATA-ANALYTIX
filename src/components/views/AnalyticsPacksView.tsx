@@ -1024,7 +1024,10 @@ export const AnalyticsPacksView: React.FC = () => {
                         className="text-[11px] font-mono text-secondary truncate"
                         title={topMatch.matchedReasons.join(' · ')}
                       >
-                        matched: {topMatch.matchedReasons.slice(0, 4).join(', ')}
+                        {`matched: ${topMatch.matchedReasons
+                          .slice(0, 4)
+                          .map(r => r.replace(/^matched:\s*/i, ''))
+                          .join(', ')}`}
                       </div>
                     )}
                     {isTopMatchUncertain && (

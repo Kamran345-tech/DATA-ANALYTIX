@@ -76,19 +76,37 @@ test.describe('Phase 1 & 3: Workflow Sidebar, Shrunk Page Header Stack, Mobile 3
     // 1. Verify html[data-design-system-v3="true"] is active
     await expect(page.locator('html')).toHaveAttribute('data-design-system-v3', 'true');
 
-    // 2. Verify First-Run 3-Step Coach Mark Tour shows once and is skippable
+    // 2. Verify First-Run 3-Step Coach Mark Tour (Fix 4):
+    // - Spotlights real target ([data-coach-spotlight="true"])
+    // - Placed BESIDE the sidebar on desktop (x >= 268, never overlapping the 256px sidebar)
     const tour = page.getByTestId('first-run-coach-tour');
     await expect(tour).toBeVisible();
     await expect(page.getByTestId('coach-tour-step-indicator')).toContainText('Step 1 of 3');
+    const tourBox = await tour.boundingBox();
+    expect(tourBox).not.toBeNull();
+    expect(
+      tourBox!.x,
+      'Desktop coach tour card must be placed beside the 256px sidebar, not over it'
+    ).toBeGreaterThanOrEqual(268);
+    await expect(page.locator('[data-coach-spotlight="true"]').first()).toBeVisible();
     await page.getByTestId('coach-tour-skip').click();
     await expect(tour).toHaveCount(0);
 
-    // 3. Verify Shrunk Executive Dashboard Header Stack:
-    // - Merged purpose subtitle inside header
-    // - Single action bar (Download, Present, View options, More)
-    // - View options popover opens with Perspective (5), Theme (5), and live preview
-    // - First screenful shows real KPI numbers without scrolling at 1440x900
-    await expect(page.getByTestId('page-purpose-bar-executive_dashboard')).toBeVisible();
+    // 3. Verify Shrunk Executive Dashboard Header Stack & Fixes 1, 2, 3, 5:
+    // - Fix 3: Full-width purpose line under the title (width > 800px at 1440x900)
+    const purposeBar = page.getByTestId('page-purpose-bar-executive_dashboard');
+    await expect(purposeBar).toBeVisible();
+    const purposeBox = await purposeBar.boundingBox();
+    expect(purposeBox).not.toBeNull();
+    expect(
+      purposeBox!.width,
+      'Desktop purpose line must span full width under the title'
+    ).toBeGreaterThan(800);
+
+    // - Fix 5a: Sidebar search input placeholder is shortened to "Search pages"
+    const searchInput = page.getByTestId('sidebar-search-input').first();
+    await expect(searchInput).toHaveAttribute('placeholder', 'Search pages');
+
     await expect(page.getByTestId('exec-single-action-bar')).toBeVisible();
 
     const viewOptionsBtn = page.getByTestId('exec-view-options-trigger');
@@ -108,6 +126,47 @@ test.describe('Phase 1 & 3: Workflow Sidebar, Shrunk Page Header Stack, Mobile 3
       (kpiBox?.y ?? 999) + (kpiBox?.height ?? 0),
       'Real KPI numbers must be visible in first 1440x900 screenful without scrolling'
     ).toBeLessThan(880);
+
+    // - Fix 1: KPI card labels & source lines never truncate mid-word with single-line ellipsis
+    const kpiTruncationCheck = await page.evaluate(() => {
+      const labels = Array.from(document.querySelectorAll('[data-testid^="exec-kpi-label-"]'));
+      const sources = Array.from(document.querySelectorAll('[data-testid^="exec-kpi-source-"]'));
+      const truncatedLabels = labels
+        .filter((el) => el.scrollWidth > el.clientWidth + 2)
+        .map((el) => el.textContent);
+      const truncatedSources = sources
+        .filter((el) => el.scrollWidth > el.clientWidth + 2)
+        .map((el) => el.textContent);
+      const missingTooltips = [...labels, ...sources].filter(
+        (el) => !(el.getAttribute('title') || '').trim()
+      ).length;
+      return {
+        labelCount: labels.length,
+        truncatedLabels,
+        truncatedSources,
+        missingTooltips,
+      };
+    });
+    expect(kpiTruncationCheck.labelCount).toBe(4);
+    expect(kpiTruncationCheck.truncatedLabels).toEqual([]);
+    expect(kpiTruncationCheck.truncatedSources).toEqual([]);
+    expect(kpiTruncationCheck.missingTooltips).toBe(0);
+
+    // - Fix 2: KPI delta uses clear arrow icon + "up/down/flat X.X%" text coloured by goodDirection
+    const deltaCheck = await page.evaluate(() => {
+      const deltas = Array.from(document.querySelectorAll('[data-testid^="exec-kpi-delta-"]'));
+      return deltas.map((el) => ({
+        text: (el.textContent || '').trim(),
+        hasSvgIcon: Boolean(el.querySelector('svg')),
+        favorableAttr: el.getAttribute('data-favorable'),
+      }));
+    });
+    expect(deltaCheck.length).toBe(4);
+    for (const d of deltaCheck) {
+      expect(d.hasSvgIcon).toBe(true);
+      expect(d.text).toMatch(/^(up|down|flat)\s+\d+\.\d%$/i);
+      expect(['true', 'false', 'neutral']).toContain(d.favorableAttr);
+    }
 
     // 4. Verify Guided Workflow Stepper matches sidebar group names (1 Upload, 2 Clean, 3 Analyze, 4 Present, Help & Settings)
     const stepper = page.getByTestId('guided-workflow-stepper');
@@ -161,12 +220,39 @@ test.describe('Phase 1 & 3: Workflow Sidebar, Shrunk Page Header Stack, Mobile 3
     );
   });
 
-  test('1.3 & Multi-Viewport Screenshots (1440/1024/375 Light+Dark) for Executive Dashboard, Sidebar, Upload & Ask AI with mobile 375px first-screen KPIs and zero horizontal scroll', async ({
+  test('1.3, Fix 4 Mobile Bottom-Sheet Tour & Phase 2.5 Multi-Viewport Screenshots (1440/1024/375 Light+Dark)', async ({
     page,
   }) => {
-    test.setTimeout(150000);
+    test.setTimeout(180000);
     fs.mkdirSync(SCREENSHOT_DIR, { recursive: true });
     fs.mkdirSync(LEGACY_SCREENSHOT_DIR, { recursive: true });
+
+    // First verify Fix 4 on Mobile (375x812): Coach tour renders as bottom sheet that leaves first KPI cards visible
+    await page.setViewportSize({ width: 375, height: 812 });
+    await bootstrapWorkspace(page, { theme: 'dark', skipTour: false });
+    const mobileFirstKpi = page.locator('[data-testid^="exec-kpi-value-"]').first();
+    await expect(mobileFirstKpi).toBeVisible({ timeout: 15000 });
+    const mobileTour = page.getByTestId('first-run-coach-tour');
+    await expect(mobileTour).toBeVisible();
+
+    const mobileOverlapCheck = await page.evaluate(() => {
+      const kpiEl = document.querySelector('[data-testid^="exec-kpi-value-"]');
+      const tourEl = document.querySelector('[data-testid="first-run-coach-tour"]');
+      if (!kpiEl || !tourEl) return null;
+      const kpiRect = kpiEl.getBoundingClientRect();
+      const tourRect = tourEl.getBoundingClientRect();
+      return {
+        kpiBottom: kpiRect.bottom,
+        tourTop: tourRect.top,
+        tourBottom: tourRect.bottom,
+      };
+    });
+    expect(mobileOverlapCheck).not.toBeNull();
+    expect(
+      mobileOverlapCheck!.tourTop,
+      'Mobile bottom-sheet tour must stay below the first KPI card so KPIs remain visible'
+    ).toBeGreaterThan(mobileOverlapCheck!.kpiBottom);
+    await page.getByTestId('coach-tour-skip').click();
 
     const viewports = [
       { width: 1440, height: 900, label: '1440' },
@@ -189,13 +275,19 @@ test.describe('Phase 1 & 3: Workflow Sidebar, Shrunk Page Header Stack, Mobile 3
         expect(execOverflow).toBe(false);
 
         if (vp.width === 375) {
-          // Verify Phase 1.3 mobile requirements:
+          // Verify Phase 1.3 & Fix 5b mobile requirements:
           // - Stepper shows "4/4" counter and "4 Present" is scrolled into view
           await expect(page.getByTestId('stepper-mobile-step-counter')).toContainText('4/4');
           const presentStepBox = await page.getByTestId('workflow-step-present').boundingBox();
           expect(presentStepBox).not.toBeNull();
           expect(presentStepBox!.x).toBeGreaterThanOrEqual(0);
           expect(presentStepBox!.x + presentStepBox!.width).toBeLessThanOrEqual(375);
+
+          // - Fix 5b: Mobile View options button shows icon + "View" (not just "options")
+          const viewBtnText = await page
+            .getByTestId('exec-view-options-trigger')
+            .innerText();
+          expect(viewBtnText.trim()).toBe('View');
 
           // - Purpose/Related links collapsed behind "i" button on mobile
           const infoBtn = page.getByTestId('purpose-info-toggle');
@@ -229,7 +321,27 @@ test.describe('Phase 1 & 3: Workflow Sidebar, Shrunk Page Header Stack, Mobile 3
 
         await saveDualScreenshot(page, `upload-${vp.label}-${theme}.png`);
 
-        // 3. Ask Data AI page
+        // 3. Clean stage (Data Cleaning Lab / Quality Auditor) - Phase 2.5 review
+        await page.getByTestId('workflow-step-clean').click();
+        await expect(page.locator('text=Loading analytical module...')).toHaveCount(0, {
+          timeout: 15000,
+        });
+        const cleanOverflow = await page.evaluate(() => {
+          return document.documentElement.scrollWidth > window.innerWidth + 1;
+        });
+        expect(cleanOverflow).toBe(false);
+        await saveDualScreenshot(page, `quality-auditor-${vp.label}-${theme}.png`);
+
+        // 4. Analyze stage (Analytics Packs) - Phase 2.5 review
+        await page.getByTestId('workflow-step-analyze').click();
+        await expect(page.getByTestId('analytics-packs-view')).toBeVisible();
+        const packsOverflow = await page.evaluate(() => {
+          return document.documentElement.scrollWidth > window.innerWidth + 1;
+        });
+        expect(packsOverflow).toBe(false);
+        await saveDualScreenshot(page, `analytics-packs-${vp.label}-${theme}.png`);
+
+        // 5. Ask Data AI page
         if (vp.width === 375) {
           const mobileNav = page.getByTestId('mobile-bottom-nav');
           await expect(mobileNav).toBeVisible();
@@ -253,3 +365,4 @@ test.describe('Phase 1 & 3: Workflow Sidebar, Shrunk Page Header Stack, Mobile 3
     }
   });
 });
+

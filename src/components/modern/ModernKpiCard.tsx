@@ -1,5 +1,5 @@
 import React, { useId } from 'react';
-import { TrendingUp, TrendingDown, Minus, Info, AlertCircle, SlidersHorizontal } from 'lucide-react';
+import { ArrowUp, ArrowDown, Minus, Info, AlertCircle, SlidersHorizontal } from 'lucide-react';
 import { Tooltip } from '../common/Tooltip';
 import { loadFeatureFlags } from '../../config/features';
 import { evaluateKpiDelta } from '../../analytics/engine';
@@ -185,7 +185,7 @@ export const ModernKpiCard: React.FC<ModernKpiCardProps> = ({
               title={resolvedLabel}
               aria-label={resolvedLabel}
               data-testid={resolvedId ? `kpi-label-${resolvedId}` : 'kpi-label'}
-              className={`font-semibold uppercase tracking-[0.04em] line-clamp-2 leading-snug break-words ${
+              className={`font-semibold uppercase tracking-[0.04em] line-clamp-2 leading-snug [word-break:normal] [overflow-wrap:normal] ${
                 isHero && useDepthVisuals ? 'text-xs text-primary' : 'text-[11px] text-secondary'
               }`}
             >
@@ -236,11 +236,11 @@ export const ModernKpiCard: React.FC<ModernKpiCardProps> = ({
               })`}
             >
               {isUp ? (
-                <TrendingUp className="w-3 h-3 shrink-0" aria-hidden="true" />
+                <ArrowUp className="w-3.5 h-3.5 stroke-[2.5] shrink-0" aria-hidden="true" />
               ) : isDown ? (
-                <TrendingDown className="w-3 h-3 shrink-0" aria-hidden="true" />
+                <ArrowDown className="w-3.5 h-3.5 stroke-[2.5] shrink-0" aria-hidden="true" />
               ) : (
-                <Minus className="w-3 h-3 shrink-0" aria-hidden="true" />
+                <Minus className="w-3.5 h-3.5 stroke-[2.5] shrink-0" aria-hidden="true" />
               )}
               <span>{deltaEval.textLabel}</span>
               <span className="sr-only">

@@ -5,6 +5,9 @@ import {
   AlertTriangle, 
   CheckCircle, 
   Sparkles, 
+  ArrowUp,
+  ArrowDown,
+  Minus,
   ArrowUpRight, 
   ArrowDownRight, 
   ShieldCheck, 
@@ -572,6 +575,7 @@ export const ExecutiveDashboard: React.FC = () => {
           aggregation: 'sum',
           definition: k.formulaText,
           traceableSource: `${targetPack!.id}.${k.id}`,
+          goodDirection: k.goodDirection || 'up',
           isPackSynced: true,
         } as KPI));
       }
@@ -879,9 +883,6 @@ export const ExecutiveDashboard: React.FC = () => {
                     />
                   </h1>
                 </div>
-
-                {/* Merged Purpose Subtitle + Related Quick Links (collapsed behind 'i' button on mobile) */}
-                <PagePurposeBar page="executive_dashboard" inline />
               </div>
             </div>
 
@@ -986,7 +987,7 @@ export const ExecutiveDashboard: React.FC = () => {
                   >
                     <Sliders className="w-3.5 h-3.5 text-accent shrink-0" />
                     <span>
-                      <span className="hidden sm:inline">View </span>options
+                      View<span className="hidden sm:inline"> options</span>
                     </span>
                   </button>
 
@@ -1201,6 +1202,11 @@ export const ExecutiveDashboard: React.FC = () => {
             </div>
           </div>
 
+          {/* Full-width Merged Purpose Subtitle + Related Quick Links under the title row */}
+          <div className="w-full pt-1 border-t border-subtle">
+            <PagePurposeBar page="executive_dashboard" inline />
+          </div>
+
           {/* Interactive Slicers Ribbon */}
           <InteractiveSlicersBar className="w-full" />
 
@@ -1402,9 +1408,8 @@ export const ExecutiveDashboard: React.FC = () => {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-5">
           {displayKpis.map((kpi, kIdx) => {
-            const isPositive = (kpi.changePercent ?? 0) >= 0;
             const statusTheme = kpi.status === 'Above Target'
               ? { text: 'text-cyan-400', bg: 'bg-cyan-500/20', dot: 'bg-cyan-400', border: 'border-cyan-500/30', stroke: 'var(--chart-3)' }
               : kpi.status === 'At Risk'
@@ -1414,6 +1419,32 @@ export const ExecutiveDashboard: React.FC = () => {
               : { text: 'text-cyan-400', bg: 'bg-cyan-500/15', dot: 'bg-cyan-400', border: 'border-cyan-500/30', stroke: 'var(--chart-3)' };
 
             const filteredKpi = computeFilteredKpi(kpi);
+            const rawDelta =
+              typeof kpi.changePercent === 'number' && Number.isFinite(kpi.changePercent)
+                ? Math.round(kpi.changePercent * 10) / 10
+                : null;
+            const goodDirection: 'up' | 'down' =
+              (kpi as any).goodDirection ||
+              (/cost|churn|attrition|defect|bounce|delay|latency|risk|expense|loss|return|cancel|wait|readmission|denial|cpa|cac/i.test(
+                kpi.name
+              )
+                ? 'down'
+                : 'up');
+            const absDelta = rawDelta !== null ? Math.abs(rawDelta) : 0;
+            const deltaDirection: 'up' | 'down' | 'flat' =
+              rawDelta === null ? 'flat' : rawDelta > 0 ? 'up' : rawDelta < 0 ? 'down' : 'flat';
+            const deltaTextLabel =
+              deltaDirection === 'up'
+                ? `up ${absDelta.toFixed(1)}%`
+                : deltaDirection === 'down'
+                ? `down ${absDelta.toFixed(1)}%`
+                : 'flat 0.0%';
+            const isNeutralDelta = rawDelta === null || absDelta < 0.5;
+            const isFavorableDelta =
+              !isNeutralDelta &&
+              ((goodDirection === 'up' && (rawDelta ?? 0) > 0) ||
+                (goodDirection === 'down' && (rawDelta ?? 0) < 0));
+            const cleanSourceLabel = (kpi.sourceColumn || 'metric').replace(/_/g, ' ');
 
             // Micro sparkline path generator
             const sparklinePaths = [
@@ -1430,7 +1461,7 @@ export const ExecutiveDashboard: React.FC = () => {
                 side="bottom"
                 title={kpi.name}
                 tag={kpi.unit || 'Metric'}
-                content={`${kpi.definition} Click anywhere to drill down into records. Click pencil icon to customize heading & calculation.`}
+                content={`${kpi.definition} · Source: ${kpi.traceableSource}. Click anywhere to drill down into records. Click pencil icon to customize heading & calculation.`}
               >
                 <div 
                   onClick={() => {
@@ -1438,11 +1469,15 @@ export const ExecutiveDashboard: React.FC = () => {
                   }}
                   className="depth-card glass-card rounded-[20px] p-4 sm:p-5 flex flex-col justify-between relative group cursor-pointer select-none card-3d h-full"
                 >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <span className={`font-mono text-xs uppercase tracking-wider font-bold truncate max-w-[130px] sm:max-w-[155px] ${
-                        isLight ? 'text-muted' : 'text-secondary'
-                      }`} title={kpi.name}>
+                  <div className="flex items-start justify-between gap-2 min-w-0">
+                    <div className="flex items-start gap-1.5 min-w-0 flex-1">
+                      <span
+                        data-testid={`exec-kpi-label-${kpi.id}`}
+                        className={`font-sans text-xs font-bold leading-snug line-clamp-2 [word-break:normal] [overflow-wrap:normal] ${
+                          isLight ? 'text-primary' : 'text-primary'
+                        }`}
+                        title={kpi.name}
+                      >
                         {kpi.name}
                       </span>
                       <button
@@ -1451,7 +1486,7 @@ export const ExecutiveDashboard: React.FC = () => {
                           e.stopPropagation();
                           setEditingKpi(kpi);
                         }}
-                        className={`p-1 rounded transition-colors shrink-0 group-hover:opacity-100 opacity-60 ${
+                        className={`p-1 -mt-0.5 rounded transition-colors shrink-0 group-hover:opacity-100 opacity-60 ${
                           isLight ? 'hover:bg-input text-secondary hover:text-sky-600' : 'hover:bg-surface-elevated text-secondary hover:text-cyan-400'
                         }`}
                         title="Customize heading, column & calculation formula"
@@ -1487,19 +1522,33 @@ export const ExecutiveDashboard: React.FC = () => {
                           of {kpi.formattedValue} total
                         </div>
                       )}
-                      <div className="flex items-center gap-1 mt-1.5 text-xs font-mono">
-                        {kpi.changePercent !== undefined ? (
-                          <>
-                            {isPositive ? (
-                              <ArrowUpRight className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
+                      <div
+                        data-testid={`exec-kpi-delta-${kpi.id}`}
+                        data-direction={deltaDirection}
+                        data-favorable={
+                          isNeutralDelta ? 'neutral' : isFavorableDelta ? 'true' : 'false'
+                        }
+                        className="flex items-center gap-1.5 mt-1.5 text-xs font-mono flex-wrap"
+                      >
+                        {rawDelta !== null ? (
+                          <span
+                            className={`inline-flex items-center gap-1 font-bold tabular-nums px-1.5 py-0.5 rounded-md border border-subtle bg-elevated ${
+                              isNeutralDelta
+                                ? 'text-secondary'
+                                : isFavorableDelta
+                                ? 'text-success'
+                                : 'text-danger'
+                            }`}
+                          >
+                            {deltaDirection === 'up' ? (
+                              <ArrowUp className="w-3.5 h-3.5 stroke-[2.5] shrink-0" aria-hidden="true" />
+                            ) : deltaDirection === 'down' ? (
+                              <ArrowDown className="w-3.5 h-3.5 stroke-[2.5] shrink-0" aria-hidden="true" />
                             ) : (
-                              <ArrowDownRight className="w-3.5 h-3.5 text-rose-500" />
+                              <Minus className="w-3.5 h-3.5 stroke-[2.5] shrink-0" aria-hidden="true" />
                             )}
-                            <span className={`font-bold tabular-nums ${isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'}`}>
-                              {isPositive ? '+' : ''}{kpi.changePercent}%
-                            </span>
-                            <span className={isLight ? 'text-muted' : 'text-secondary'}>vs prior window</span>
-                          </>
+                            <span>{deltaTextLabel}</span>
+                          </span>
                         ) : (
                           <span className={`text-[11px] font-mono ${isLight ? 'text-muted' : 'text-secondary'}`}>
                             Formula: {kpi.aggregation.toUpperCase()}
@@ -1522,15 +1571,22 @@ export const ExecutiveDashboard: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className={`pt-2 border-t border-border-subtle flex items-center justify-between text-xs font-mono ${
+                  <div className={`pt-2 border-t border-border-subtle flex items-center justify-between gap-2 text-xs font-mono ${
                     isLight ? 'text-muted' : 'text-secondary'
                   }`}>
-                    <span className="truncate max-w-[150px]" title={kpi.traceableSource}>
-                      Src: {kpi.traceableSource}
+                    <span
+                      data-testid={`exec-kpi-source-${kpi.id}`}
+                      className="min-w-0 leading-snug"
+                      title={`Source: ${kpi.traceableSource} · ${kpi.calculation || kpi.definition}`}
+                    >
+                      Col: {cleanSourceLabel}
                     </span>
-                    <span className={`${statusTheme.text} hover:underline flex items-center gap-0.5 font-semibold shrink-0 cursor-pointer`}>
-                      <span>{kpi.period || 'Audited Scope'}</span>
-                      <ExternalLink className="w-3 h-3" />
+                    <span
+                      className={`${statusTheme.text} hover:underline flex items-center gap-1 font-semibold shrink-0 cursor-pointer`}
+                      title={`Scope: ${kpi.period || 'Audited Scope'} — Click to drill down`}
+                    >
+                      <span>Drill down</span>
+                      <ExternalLink className="w-3 h-3 shrink-0" />
                     </span>
                   </div>
                 </div>

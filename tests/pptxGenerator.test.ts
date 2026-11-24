@@ -296,4 +296,43 @@ describe('Phase 4 & Part A1-A9: 13-Slide 16:9 PPTX Presentation Generator, Overf
     const bestPackId = pickBestPackForDataset(columns, rows);
     expect(bestPackId).toBe('sales');
   });
+
+  it('Phase 2.1 (A8/A9): renders light-theme variant decks across all 14 packs with 13 slides, native charts, and 0 text overflows', async () => {
+    for (const pack of ANALYTICS_PACKS) {
+      const rows = pack.sampleDataset();
+      const columns = buildColumnsForRows(rows);
+
+      const { blob, slideCount, slides } = await generatePresentationPptxBlob({
+        datasetName: `${pack.name} Light Deck`,
+        companyName: 'DATA ANALYTIX',
+        department: 'Executive Intelligence',
+        scope: 'pack',
+        packId: pack.id,
+        audience: 'manager',
+        themeMode: 'light',
+        rows,
+        columns,
+      });
+
+      expect(slideCount).toBe(13);
+      expect(slides.length).toBe(13);
+      expect(blob.size).toBeGreaterThan(25000);
+
+      for (const s of slides) {
+        const overflow = estimateSlideOverflow(s);
+        expect(overflow.overflowCount).toBe(0);
+      }
+
+      const zip = await JSZip.loadAsync(await blob.arrayBuffer());
+      const fileNames = Object.keys(zip.files);
+      const slideXmls = fileNames.filter((f) => /^ppt\/slides\/slide\d+\.xml$/.test(f));
+      const chartXmls = fileNames.filter((f) => /^ppt\/charts\/chart\d+\.xml$/.test(f));
+      expect(slideXmls.length).toBe(13);
+      expect(chartXmls.length).toBeGreaterThanOrEqual(6);
+
+      const slide1Xml = await zip.file('ppt/slides/slide1.xml')!.async('string');
+      expect(slide1Xml).toContain('F8FAFC');
+    }
+  });
 });
+
