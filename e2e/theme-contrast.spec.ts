@@ -66,6 +66,7 @@ async function initThemeTestPage(
     ({ thm }) => {
       sessionStorage.setItem('acuitybi_guest_mode', 'true');
       localStorage.setItem('dataanalytix_ui', 'classic');
+      localStorage.setItem('dataanalytix_coach_tour_completed_v1', 'true');
       localStorage.setItem('acuitybi_theme', thm);
       localStorage.setItem('acuitybi_theme_preference', thm);
       localStorage.setItem('dataanalytix_theme_pref', thm);
@@ -418,8 +419,12 @@ test.describe('Comprehensive Browser Verification: Default Flags, 120-Char Title
 
     await initThemeTestPage(page, 'dark', 1440, 900);
 
-    // Rename project to 120-char name via EditableDashboardTitle on Executive Dashboard
-    const titleTrigger = page.getByTestId('clamped-dashboard-title').last();
+    // Ensure Executive Dashboard is active and rename project to 120-char name via EditableDashboardTitle
+    await page.evaluate(() => {
+      window.dispatchEvent(new CustomEvent('dataanalytix:set-tab', { detail: 'executive_dashboard' }));
+    });
+    const titleTrigger = page.locator('main [data-testid="clamped-dashboard-title"]').first();
+    await expect(titleTrigger).toBeVisible({ timeout: 15000 });
     await titleTrigger.click();
     const renameInput = page.locator('input[placeholder="Type custom dashboard name..."]');
     await expect(renameInput).toBeVisible();

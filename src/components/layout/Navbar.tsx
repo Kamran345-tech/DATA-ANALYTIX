@@ -125,8 +125,8 @@ export const Navbar: React.FC = () => {
 
   return (
     <header className="sticky top-0 z-40 shrink-0 px-2 sm:px-4 py-1.5 sm:py-2 flex items-center justify-between gap-1.5 sm:gap-2 glass-nav transition-colors duration-200 max-w-full overflow-x-clip">
-      {/* Left branding & drawer trigger */}
-      <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 shrink">
+      {/* Left branding & drawer trigger — shrink-0 so the 5 pill tabs always keep their own dedicated space */}
+      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
         <button
           type="button"
           data-testid="mobile-menu-toggle"
@@ -150,28 +150,22 @@ export const Navbar: React.FC = () => {
           <BrandLogo size="sm" showSubtitle={false} />
         </button>
 
-        {/* Project Title & Status Indicator */}
-        <div className="hidden xl:flex items-center gap-1.5 pl-2.5 border-l border-subtle min-w-0 shrink">
-          <EditableDashboardTitle
-            className="text-xs max-w-[110px] 2xl:max-w-[170px]"
-            iconSize="sm"
-            showEditButton={false}
-            singleLine={true}
-          />
+        {/* App Version Indicator (2xl+ only so pill tabs have dedicated room at 1280px and 1440px) */}
+        <div className="hidden 2xl:flex items-center gap-1.5 pl-2 border-l border-subtle shrink-0">
           <span
             data-testid="navbar-app-version"
             className="text-xs font-mono shrink-0 whitespace-nowrap text-muted"
           >
-            · {project.version}
+            {project.version}
           </span>
         </div>
 
-        {/* Section 2.1: Horizontal Pill-Tab Navigation for main views */}
+        {/* Section 2.1 & Item 3: Horizontal Pill-Tab Navigation with dedicated non-shrinking space */}
         {isNewLookActive && (
           <nav
             data-testid="topbar-pill-nav"
             aria-label="Main view navigation"
-            className="hidden lg:flex items-center gap-1 p-1 rounded-2xl bg-input/90 border border-subtle ml-1 shrink-0"
+            className="hidden lg:flex items-center gap-1 p-1 rounded-2xl bg-input/90 border border-subtle ml-1.5 shrink-0"
           >
             {TOPBAR_PILL_TABS.map((tab) => {
               if (tab.id === 'analytics_packs' && !flags.analyticsPacks) return null;
@@ -183,7 +177,7 @@ export const Navbar: React.FC = () => {
                   data-testid={tab.testId}
                   onClick={() => setCurrentTab(tab.id)}
                   aria-current={isActive ? 'page' : undefined}
-                  className={`px-2.5 py-1 rounded-xl text-xs transition-all cursor-pointer whitespace-nowrap ${
+                  className={`px-2.5 xl:px-3 py-1 rounded-xl text-xs transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                     isActive
                       ? 'bg-accent text-on-accent font-bold shadow-xs'
                       : 'text-secondary hover:text-primary hover:bg-elevated font-medium'
@@ -197,38 +191,56 @@ export const Navbar: React.FC = () => {
         )}
       </div>
 
-      {/* Center Search with Ctrl+K badge */}
-      <div className="hidden md:flex items-center relative w-36 lg:w-44 xl:w-56 shrink-0">
-        <Search className="w-3.5 h-3.5 absolute left-3 pointer-events-none z-10 text-secondary" />
-        <input
-          type="text"
-          placeholder="Search data..."
-          value={filters.searchQuery}
-          onChange={(e) => setFilters((prev) => ({ ...prev, searchQuery: e.target.value }))}
-          className="glass-input w-full text-xs pl-8 pr-12 py-1.5 rounded-xl transition-colors focus:outline-none"
-        />
-        {filters.searchQuery ? (
-          <button
-            type="button"
-            onClick={() => setFilters((prev) => ({ ...prev, searchQuery: '' }))}
-            className="absolute right-2 text-xs p-0.5 rounded transition-colors z-10 text-muted hover:text-primary"
-            aria-label="Clear search"
-          >
-            ×
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={() =>
-              window.dispatchEvent(new CustomEvent('dataanalytix:open-command-palette'))
-            }
-            title="Open Command Palette (Ctrl+K)"
-            aria-label="Open Command Palette"
-            className="absolute right-1.5 px-1.5 py-0.5 rounded bg-card border border-subtle font-mono text-[10px] text-muted hover:text-primary cursor-pointer"
-          >
-            Ctrl+K
-          </button>
-        )}
+      {/* Center Search: collapses to an icon button below 1280px (< xl), full input at >= 1280px */}
+      <div className="flex items-center shrink-0">
+        <button
+          type="button"
+          data-testid="navbar-search-icon-btn"
+          onClick={() =>
+            window.dispatchEvent(new CustomEvent('dataanalytix:open-command-palette'))
+          }
+          title="Search pages & data (Ctrl+K)"
+          aria-label="Search pages and data"
+          className="hidden md:inline-flex xl:hidden items-center justify-center p-2 rounded-xl glass-btn-secondary cursor-pointer shrink-0"
+        >
+          <Search className="w-4 h-4 text-secondary" />
+        </button>
+
+        <div
+          data-testid="navbar-search-box"
+          className="hidden xl:flex items-center relative w-32 2xl:w-52 shrink-0"
+        >
+          <Search className="w-3.5 h-3.5 absolute left-2.5 pointer-events-none z-10 text-secondary" />
+          <input
+            type="text"
+            placeholder="Search..."
+            value={filters.searchQuery}
+            onChange={(e) => setFilters((prev) => ({ ...prev, searchQuery: e.target.value }))}
+            className="glass-input w-full text-xs pl-7 pr-11 py-1.5 rounded-xl transition-colors focus:outline-none"
+          />
+          {filters.searchQuery ? (
+            <button
+              type="button"
+              onClick={() => setFilters((prev) => ({ ...prev, searchQuery: '' }))}
+              className="absolute right-2 text-xs p-0.5 rounded transition-colors z-10 text-muted hover:text-primary"
+              aria-label="Clear search"
+            >
+              ×
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() =>
+                window.dispatchEvent(new CustomEvent('dataanalytix:open-command-palette'))
+              }
+              title="Open Command Palette (Ctrl+K)"
+              aria-label="Open Command Palette"
+              className="absolute right-1.5 px-1.5 py-0.5 rounded bg-card border border-subtle font-mono text-[10px] text-muted hover:text-primary cursor-pointer"
+            >
+              Ctrl+K
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Right controls */}
@@ -313,7 +325,7 @@ export const Navbar: React.FC = () => {
             {isThemeStudioOpen && (
               <div
                 data-testid="navbar-theme-studio-popover"
-                className="fixed sm:absolute right-2 sm:right-0 top-14 sm:top-full sm:mt-2 w-[calc(100vw-1rem)] max-w-[380px] z-50 shadow-2xl rounded-2xl"
+                className="fixed sm:absolute right-2 sm:right-0 top-14 sm:top-full sm:mt-2 w-[calc(100vw-1rem)] max-w-[440px] sm:w-[440px] z-50 shadow-2xl rounded-2xl"
               >
                 <ThemeStudioPanel
                   compact
@@ -419,6 +431,7 @@ export const Navbar: React.FC = () => {
             <button
               type="button"
               onClick={() => setCurrentTab('how_to_use')}
+              aria-label="How to Use"
               className={`flex items-center gap-1.5 px-2 py-1.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
                 currentTab === 'how_to_use'
                   ? 'glass-btn-primary text-on-accent'
@@ -426,13 +439,13 @@ export const Navbar: React.FC = () => {
               }`}
             >
               <HelpCircle className="w-3.5 h-3.5 text-accent shrink-0" />
-              <span className="hidden xl:inline font-medium whitespace-nowrap">How to Use</span>
+              <span className="hidden 2xl:inline font-medium whitespace-nowrap">How to Use</span>
             </button>
           </Tooltip>
         </div>
 
-        {/* Quality Score Indicator */}
-        <div className="hidden xl:block shrink-0">
+        {/* Quality Score Indicator (2xl+ since sidebar & alerts badge show health score) */}
+        <div className="hidden 2xl:block shrink-0">
           <Tooltip
             side="bottom"
             title="Data Quality Audit"
@@ -451,8 +464,8 @@ export const Navbar: React.FC = () => {
           </Tooltip>
         </div>
 
-        {/* Presentation Mode Toggle */}
-        <div className="hidden sm:block shrink-0">
+        {/* Presentation Mode Toggle (2xl+ since Dashboard has primary Present button) */}
+        <div className="hidden 2xl:block shrink-0">
           <Tooltip
             side="bottom"
             title={isPresentationMode ? 'Exit Presentation View' : 'Full-Screen Presentation'}
@@ -497,7 +510,7 @@ export const Navbar: React.FC = () => {
         </Tooltip>
 
         {/* Export Center CTA */}
-        <div className="hidden md:block shrink-0">
+        <div className="hidden 2xl:block shrink-0">
           <Tooltip
             side="bottom"
             title="Production Export Center"

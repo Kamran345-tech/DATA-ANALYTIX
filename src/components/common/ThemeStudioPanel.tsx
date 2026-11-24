@@ -318,30 +318,36 @@ export const ThemeStudioPanel: React.FC<ThemeStudioPanelProps> = ({
         )}
       </div>
 
-      {/* 3. Glass Intensity, Radius & Density */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      {/* 3. Glass Intensity, Radius & Density (stacked in popover so labels never truncate) */}
+      <div className={compact ? 'grid grid-cols-1 gap-3' : 'grid grid-cols-1 lg:grid-cols-3 gap-4'}>
         {/* Glass Intensity */}
         <div className="space-y-1.5">
           <label className="block text-xs font-semibold text-secondary">
             3. Glass Intensity
           </label>
-          <div className="grid grid-cols-3 gap-1">
-            {(['low', 'medium', 'high'] as GlassIntensity[]).map((g) => {
-              const isSelected = config.glassIntensity === g;
+          <div className="grid grid-cols-3 gap-1.5">
+            {(
+              [
+                { id: 'low', label: 'Low' },
+                { id: 'medium', label: 'Medium' },
+                { id: 'high', label: 'High' },
+              ] as { id: GlassIntensity; label: string }[]
+            ).map((g) => {
+              const isSelected = config.glassIntensity === g.id;
               return (
                 <button
-                  key={g}
+                  key={g.id}
                   type="button"
-                  data-testid={`theme-glass-${g}`}
+                  data-testid={`theme-glass-${g.id}`}
                   aria-pressed={isSelected}
-                  onClick={() => applyAndSave({ ...config, glassIntensity: g })}
-                  className={`py-1.5 px-2 rounded-lg border text-xs font-semibold capitalize cursor-pointer ${
+                  onClick={() => applyAndSave({ ...config, glassIntensity: g.id })}
+                  className={`min-h-[36px] py-1.5 px-3 rounded-xl border text-xs font-semibold whitespace-nowrap cursor-pointer transition-colors ${
                     isSelected
-                      ? 'bg-accent text-on-accent border-subtle font-bold'
-                      : 'bg-input hover:bg-elevated text-secondary border-subtle'
+                      ? 'bg-accent text-on-accent border-subtle font-bold shadow-xs'
+                      : 'bg-input hover:bg-elevated text-secondary hover:text-primary border-subtle'
                   }`}
                 >
-                  {g}
+                  {g.label}
                 </button>
               );
             })}
@@ -353,23 +359,29 @@ export const ThemeStudioPanel: React.FC<ThemeStudioPanelProps> = ({
           <label className="block text-xs font-semibold text-secondary">
             4. Corner Radius
           </label>
-          <div className="grid grid-cols-3 gap-1">
-            {(['sharp', 'rounded', 'pill'] as RadiusPreset[]).map((r) => {
-              const isSelected = config.radius === r;
+          <div className="grid grid-cols-3 gap-1.5">
+            {(
+              [
+                { id: 'sharp', label: 'Sharp' },
+                { id: 'rounded', label: 'Rounded' },
+                { id: 'pill', label: 'Pill' },
+              ] as { id: RadiusPreset; label: string }[]
+            ).map((r) => {
+              const isSelected = config.radius === r.id;
               return (
                 <button
-                  key={r}
+                  key={r.id}
                   type="button"
-                  data-testid={`theme-radius-${r}`}
+                  data-testid={`theme-radius-${r.id}`}
                   aria-pressed={isSelected}
-                  onClick={() => applyAndSave({ ...config, radius: r })}
-                  className={`py-1.5 px-2 rounded-lg border text-xs font-semibold capitalize cursor-pointer ${
+                  onClick={() => applyAndSave({ ...config, radius: r.id })}
+                  className={`min-h-[36px] py-1.5 px-3 rounded-xl border text-xs font-semibold whitespace-nowrap cursor-pointer transition-colors ${
                     isSelected
-                      ? 'bg-accent text-on-accent border-subtle font-bold'
-                      : 'bg-input hover:bg-elevated text-secondary border-subtle'
+                      ? 'bg-accent text-on-accent border-subtle font-bold shadow-xs'
+                      : 'bg-input hover:bg-elevated text-secondary hover:text-primary border-subtle'
                   }`}
                 >
-                  {r}
+                  {r.label}
                 </button>
               );
             })}
@@ -381,23 +393,28 @@ export const ThemeStudioPanel: React.FC<ThemeStudioPanelProps> = ({
           <label className="block text-xs font-semibold text-secondary">
             5. Layout Density
           </label>
-          <div className="grid grid-cols-2 gap-1">
-            {(['comfortable', 'compact'] as DensityPreset[]).map((d) => {
-              const isSelected = config.density === d;
+          <div className="grid grid-cols-2 gap-1.5">
+            {(
+              [
+                { id: 'comfortable', label: 'Comfortable' },
+                { id: 'compact', label: 'Compact' },
+              ] as { id: DensityPreset; label: string }[]
+            ).map((d) => {
+              const isSelected = config.density === d.id;
               return (
                 <button
-                  key={d}
+                  key={d.id}
                   type="button"
-                  data-testid={`theme-density-${d}`}
+                  data-testid={`theme-density-${d.id}`}
                   aria-pressed={isSelected}
-                  onClick={() => applyAndSave({ ...config, density: d })}
-                  className={`py-1.5 px-2 rounded-lg border text-xs font-semibold capitalize cursor-pointer ${
+                  onClick={() => applyAndSave({ ...config, density: d.id })}
+                  className={`min-h-[36px] py-1.5 px-3 rounded-xl border text-xs font-semibold whitespace-nowrap cursor-pointer transition-colors ${
                     isSelected
-                      ? 'bg-accent text-on-accent border-subtle font-bold'
-                      : 'bg-input hover:bg-elevated text-secondary border-subtle'
+                      ? 'bg-accent text-on-accent border-subtle font-bold shadow-xs'
+                      : 'bg-input hover:bg-elevated text-secondary hover:text-primary border-subtle'
                   }`}
                 >
-                  {d}
+                  {d.label}
                 </button>
               );
             })}

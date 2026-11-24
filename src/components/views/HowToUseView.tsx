@@ -679,7 +679,7 @@ export const HowToUseView: React.FC = () => {
             </h1>
 
             <p className="text-sm sm:text-base leading-relaxed text-secondary">
-              {guideSpec.tagline}. Download the finished 2-page PDF marketing handout or 6-slide PPTX executive guide below, or browse the interactive module playbook.
+              {guideSpec.tagline}. Download the finished 6-page PDF marketing handout (with real sample-data workflow screenshots and print-friendly white mode) or 7-slide PPTX executive guide below.
             </p>
           </div>
 
@@ -727,15 +727,15 @@ export const HowToUseView: React.FC = () => {
                   className="absolute right-0 top-full mt-2 w-72 rounded-2xl bg-elevated border border-strong shadow-xl p-3 z-30 space-y-2"
                 >
                   <div className="text-xs font-bold text-primary">
-                    Download Finished User Guide
+                    Download 6-Page User Guide Handout
                   </div>
                   <p className="text-[11px] text-secondary leading-snug">
-                    Includes cover, 5 value pillars, 4-step workflow, all 14 Analytics Packs, key features, and 3-minute quick-start checklist.
+                    Includes cover, 5 value pillars, 4-step workflow with real sample-data screenshots, all 14 Analytics Packs with KPI counts, key features, and 3-minute checklist.
                   </p>
                   <label className="flex items-center justify-between gap-2 p-2 rounded-xl bg-card border border-subtle text-xs cursor-pointer">
                     <span className="inline-flex items-center gap-1.5 text-primary font-medium">
                       <Printer className="w-3.5 h-3.5 text-accent" />
-                      <span>Print-friendly light variant</span>
+                      <span>White print-friendly variant</span>
                     </span>
                     <input
                       type="checkbox"
@@ -752,7 +752,7 @@ export const HowToUseView: React.FC = () => {
                       className="px-2.5 py-2 rounded-xl bg-accent text-on-accent text-xs font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer"
                     >
                       <FileText className="w-3.5 h-3.5" />
-                      <span>PDF Handout</span>
+                      <span>6-Page PDF</span>
                     </button>
                     <button
                       type="button"
@@ -760,7 +760,7 @@ export const HowToUseView: React.FC = () => {
                       className="px-2.5 py-2 rounded-xl bg-card hover:bg-input text-primary border border-subtle text-xs font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer"
                     >
                       <Presentation className="w-3.5 h-3.5 text-accent" />
-                      <span>PPTX Slides</span>
+                      <span>7-Slide PPTX</span>
                     </button>
                   </div>
                 </div>
@@ -803,66 +803,175 @@ export const HowToUseView: React.FC = () => {
         </div>
 
         {/* ===================================================================== */}
-        {/* USER GUIDE HANDOUT PREVIEW STRIP (COVER, 4-STEP, 14 PACKS, 3-MIN)     */}
+        {/* USER GUIDE MARKETING HANDOUT PAGES (COVER, 4-STEP SCREENSHOTS, PACKS) */}
         {/* ===================================================================== */}
         <div
           data-testid="user-guide-handout-preview"
-          className="mt-6 pt-6 border-t border-subtle grid grid-cols-1 md:grid-cols-3 gap-4"
+          className="mt-6 pt-6 border-t border-subtle space-y-6"
         >
-          <div className="p-4 rounded-xl bg-elevated border border-subtle space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-mono font-bold uppercase text-accent">
-                What DATA-ANALYTIX Is
+          {/* Guide Page 1 & 2-3 Preview: 5 Capabilities + 4-Step Workflow with Real App Screenshots */}
+          <div
+            data-testid="guide-preview-page-workflow"
+            className="p-5 rounded-2xl bg-elevated border border-subtle space-y-4"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-subtle">
+              <div>
+                <span className="text-[11px] font-mono font-bold uppercase text-accent">
+                  Handout Pages 1–3 · Executive Overview &amp; 4-Step Guided Workflow
+                </span>
+                <h2 className="text-base sm:text-lg font-bold text-primary">
+                  What Data Analytix Does &amp; Step-by-Step App Screenshots (Sample Data)
+                </h2>
+              </div>
+              <span className="px-2.5 py-1 rounded-lg bg-card border border-subtle text-xs font-mono text-secondary">
+                Pages 1–3 of 6 · {guideSpec.version}
               </span>
-              <span className="text-[11px] font-mono text-muted">{guideSpec.version}</span>
             </div>
-            <ul className="space-y-1.5 text-xs text-secondary">
-              {guideSpec.whatPlatformDoesBullets.map((b, i) => (
-                <li key={i} className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-accent mt-1.5 shrink-0" />
-                  <span className="line-clamp-2">{b}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
 
-          <div className="p-4 rounded-xl bg-elevated border border-subtle space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-mono font-bold uppercase text-accent">
-                4-Step Workflow
-              </span>
-              <span className="text-[11px] font-mono text-muted">14 Domain Packs</span>
-            </div>
-            <div className="space-y-1.5 text-xs">
-              {guideSpec.workflowSteps.map((w) => (
-                <div key={w.step} className="flex items-start gap-2">
-                  <span className="px-1.5 py-0.5 rounded bg-accent text-on-accent font-mono font-bold text-[10px] shrink-0">
-                    {w.step}
+            {/* 5 Core Capabilities */}
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-2.5">
+              {guideSpec.whatPlatformDoesBullets.map((b, i) => (
+                <div
+                  key={i}
+                  className="p-3 rounded-xl bg-card border border-subtle flex flex-col justify-between gap-1.5"
+                >
+                  <span className="text-[11px] font-mono font-bold text-accent">
+                    0{i + 1} · CAPABILITY
                   </span>
-                  <div className="min-w-0">
-                    <span className="font-semibold text-primary">{w.title}: </span>
-                    <span className="text-secondary">{w.summary}</span>
+                  <p className="text-xs text-primary leading-snug">{b}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* 4-Step Workflow Cards, each with a real screenshot of the app (sample data only) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+              {guideSpec.workflowSteps.map((w) => (
+                <div
+                  key={w.step}
+                  data-testid={`guide-workflow-card-${w.key}`}
+                  className="rounded-xl bg-card border border-subtle overflow-hidden flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="p-2.5 border-b border-subtle flex items-center justify-between gap-1.5">
+                      <span className="px-2 py-0.5 rounded-md bg-accent text-on-accent font-mono font-bold text-[10px] whitespace-nowrap shrink-0">
+                        {w.step}
+                      </span>
+                      <span className="text-[10px] font-mono text-secondary text-right leading-tight">
+                        {w.key === 'upload'
+                          ? '140 rows · 27 cols'
+                          : w.key === 'clean'
+                          ? '85% → 98% Quality'
+                          : w.key === 'analyze'
+                          ? '14 Packs · 129+ KPIs'
+                          : '13 slides · 7 charts'}
+                      </span>
+                    </div>
+                    <div className="aspect-[16/10] w-full bg-input overflow-hidden border-b border-subtle">
+                      <img
+                        src={w.screenshotDataUrl}
+                        alt={`${w.step} — ${w.title} (Sample Data)`}
+                        className="w-full h-full object-cover object-top"
+                      />
+                    </div>
+                    <div className="p-3 space-y-1">
+                      <h3 className="text-xs font-bold text-primary">{w.title}</h3>
+                      <p className="text-[11px] text-secondary leading-relaxed">{w.summary}</p>
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="p-4 rounded-xl bg-elevated border border-subtle space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-mono font-bold uppercase text-accent">
-                Get Started in 3 Minutes
+          {/* Guide Page 4–6 Preview: 14 Analytics Packs Directory, Key Features, 3-Minute Checklist & Contact */}
+          <div
+            data-testid="guide-preview-page-packs"
+            className="p-5 rounded-2xl bg-elevated border border-subtle space-y-4"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-subtle">
+              <div>
+                <span className="text-[11px] font-mono font-bold uppercase text-accent">
+                  Handout Pages 4–6 · 14 Domain Analytics Packs, Governance Pillars &amp; 3-Minute Onboarding
+                </span>
+                <h2 className="text-base sm:text-lg font-bold text-primary">
+                  The 14 Analytics Packs (129+ Audited KPIs) &amp; Quick-Start Playbook
+                </h2>
+              </div>
+              <span className="px-2.5 py-1 rounded-lg bg-card border border-subtle text-xs font-mono text-secondary">
+                Pages 4–6 of 6 · Print-Friendly Available
               </span>
-              <span className="text-[11px] font-mono text-muted">Quick-Start</span>
             </div>
-            <ol className="space-y-1.5 text-xs text-secondary">
-              {guideSpec.getStartedSteps.map((item, idx) => (
-                <li key={idx} className="flex items-start gap-2">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-accent shrink-0 mt-0.5" />
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ol>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+              {/* Left 7 cols: 14 Analytics Packs Table with KPI & Chart counts */}
+              <div className="lg:col-span-7 rounded-xl bg-card border border-subtle p-3.5">
+                <div className="flex items-center justify-between mb-2.5">
+                  <span className="text-xs font-bold text-primary">
+                    14 Domain Analytics Packs Directory
+                  </span>
+                  <span className="text-[11px] font-mono text-accent">
+                    129+ Audited KPIs · 84 Charts
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                  {guideSpec.packsList.map((p, idx) => (
+                    <div
+                      key={p.id}
+                      className="px-2.5 py-1.5 rounded-lg bg-elevated/70 border border-subtle flex items-center justify-between gap-1.5 text-[11px]"
+                    >
+                      <span className="font-medium text-primary leading-snug">
+                        <strong className="font-mono text-accent mr-1">
+                          {String(idx + 1).padStart(2, '0')}
+                        </strong>
+                        {p.name}
+                      </span>
+                      <span className="font-mono text-[10px] text-secondary shrink-0 whitespace-nowrap">
+                        {p.kpiCount} KPIs · {p.chartCount} Charts
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Right 5 cols: Key Features + Get Started in 3 Minutes + Contact */}
+              <div className="lg:col-span-5 flex flex-col justify-between gap-3">
+                <div className="rounded-xl bg-card border border-subtle p-3.5 space-y-2">
+                  <div className="text-xs font-bold text-primary">
+                    Key Platform &amp; Governance Pillars
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {guideSpec.keyFeatures.map((kf) => (
+                      <div key={kf.title} className="p-2 rounded-lg bg-elevated/70 border border-subtle">
+                        <div className="text-[11px] font-bold text-accent">{kf.title}</div>
+                        <div className="text-[11px] text-secondary leading-snug mt-0.5">
+                          {kf.summary}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="rounded-xl bg-card border border-subtle p-3.5 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-primary">
+                      Get Started in 3 Minutes
+                    </span>
+                    <span className="text-[10px] font-mono text-accent">Quick-Start Checklist</span>
+                  </div>
+                  <ol className="space-y-1.5 text-xs text-secondary">
+                    {guideSpec.getStartedSteps.map((item, idx) => (
+                      <li key={idx} className="flex items-start gap-2">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-accent shrink-0 mt-0.5" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ol>
+                  <div className="pt-2 border-t border-subtle text-[11px] font-mono text-muted">
+                    {guideSpec.footerContact}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 

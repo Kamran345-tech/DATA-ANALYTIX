@@ -481,8 +481,12 @@ test.describe('Analytics Packs E2E Verification Suite', () => {
 
     // Navigate to Executive Dashboard via PagePurposeBar related link
     await page.getByTestId('purpose-related-link-executive_dashboard').click();
-    await expect(page.getByTestId('page-purpose-bar-executive_dashboard')).toBeVisible();
     await expect(page.getByTestId('exec-kpi-value-otif_rate')).toHaveText('95.4%');
+
+    // Open collapsed "More options" panel on Executive Dashboard to access Filters & Slicers and shortcut chips
+    await page.getByTestId('exec-more-options-toggle').click();
+    await expect(page.getByTestId('exec-more-options-panel')).toBeVisible();
+    await expect(page.getByTestId('page-purpose-bar-executive_dashboard')).toBeVisible();
 
     // Apply a shared filter on Executive Dashboard and verify it persists on Analytics Packs, Dashboard Builder, and Executive Reports
     const sharedSearchInput = page.getByTestId('shared-filter-search-input').first();

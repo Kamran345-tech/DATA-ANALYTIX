@@ -841,10 +841,10 @@ export const Sidebar: React.FC = () => {
           {/* SECTION 3.6: FOOTER (Dataset Health Card + User Row)              */}
           {/* ================================================================= */}
           <div className="mt-auto p-3 border-t border-subtle bg-elevated/60 space-y-2.5 shrink-0">
-            {/* Dataset Health Card */}
+            {/* Dataset Health Card (no truncation on "Dataset Health") */}
             <div
               data-testid="sidebar-dataset-health-card"
-              className="p-2.5 rounded-2xl border border-subtle bg-card flex items-center justify-between gap-2.5"
+              className="p-2.5 rounded-2xl border border-subtle bg-card space-y-2"
             >
               <div className="flex items-center gap-2.5 min-w-0">
                 <div className="relative w-9 h-9 flex items-center justify-center shrink-0">
@@ -875,11 +875,14 @@ export const Sidebar: React.FC = () => {
                   </span>
                 </div>
 
-                <div className="min-w-0">
-                  <div className="text-[11px] font-bold text-primary truncate">
+                <div className="min-w-0 flex-1">
+                  <div
+                    data-testid="sidebar-dataset-health-title"
+                    className="text-xs font-bold text-primary whitespace-nowrap"
+                  >
                     Dataset Health
                   </div>
-                  <div className="text-[10px] font-mono text-secondary truncate">
+                  <div className="text-[11px] font-mono text-secondary whitespace-nowrap">
                     {rowCount.toLocaleString()} rows · {issueCount} finding{issueCount === 1 ? '' : 's'}
                   </div>
                 </div>
@@ -889,7 +892,7 @@ export const Sidebar: React.FC = () => {
                 type="button"
                 data-testid="sidebar-fix-issues-btn"
                 onClick={() => handleSelectTab('quality')}
-                className="px-2.5 py-1.5 rounded-xl bg-accent text-on-accent text-[11px] font-bold shrink-0 cursor-pointer hover:opacity-95"
+                className="w-full py-1.5 px-3 rounded-xl bg-accent text-on-accent text-xs font-bold cursor-pointer hover:opacity-95 text-center"
               >
                 Fix issues
               </button>

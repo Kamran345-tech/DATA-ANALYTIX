@@ -43,7 +43,8 @@ import {
   Tv,
   Network,
   Check,
-  Plus
+  Plus,
+  ChevronDown
 } from 'lucide-react';
 import { KPI, VisualConfig } from '../../types';
 import { usePlatform } from '../../store/usePlatformStore';
@@ -789,162 +790,49 @@ export const ExecutiveDashboard: React.FC = () => {
             onChange={handleLogoUpload}
           />
 
-          {/* Top Row: Compact Logo + Title + Merged Purpose Subtitle on Left; Telemetry Pill + Single Action Bar on Right */}
-          <div className="flex flex-wrap items-start justify-between gap-2 sm:gap-3">
-            <div className="flex items-start gap-2 sm:gap-3 min-w-0 flex-1 basis-[260px] sm:basis-[420px]">
-              {/* Compact Company Logo Display / Uploader */}
-              <div className="relative group shrink-0 hidden sm:block">
-                {brand.logoUrl ? (
-                  <div className="relative">
-                    <img
-                      src={brand.logoUrl}
-                      alt={brand.companyName}
-                      className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl object-contain glass-card p-1 shadow-xs"
-                    />
-                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 rounded-xl transition-opacity flex items-center justify-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="p-1 rounded bg-elevated text-primary hover:text-accent"
-                        title="Change Company Logo"
-                      >
-                        <Pencil className="w-3 h-3" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={removeCompanyLogo}
-                        className="p-1 rounded bg-elevated text-rose-400 hover:text-rose-300"
-                        title="Remove Logo"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl border border-dashed border-subtle hover:border-strong bg-input hover:bg-elevated text-accent flex flex-col items-center justify-center gap-0.5 cursor-pointer"
-                    title="Upload Company Logo"
-                  >
-                    <UploadCloud className="w-4 h-4" />
-                    <span className="text-[10px] font-mono font-bold leading-none">
-                      Logo
-                    </span>
-                  </button>
-                )}
+          {/* Top Row (First Screen): Title + One-Line Summary on Left; Primary Action Bar on Right */}
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-col gap-0.5 min-w-0 flex-1 basis-[240px] sm:basis-[400px]">
+              {/* Sentence-case Title (clickable via clamped-dashboard-title; explicit Rename button in More options) */}
+              <div className="flex items-center gap-2 flex-wrap min-w-0 max-w-full">
+                <h1 className="font-heading text-primary tracking-tight font-bold flex items-center gap-2 flex-wrap min-w-0 max-w-full">
+                  <EditableDashboardTitle
+                    className="text-sm sm:text-xl lg:text-2xl font-bold tracking-tight max-w-full"
+                    showLabelPrefix={false}
+                    showEditButton={false}
+                    singleLine={true}
+                  />
+                </h1>
               </div>
 
-              <div className="flex flex-col gap-0.5 sm:gap-1 min-w-0 flex-1">
-                <div className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-secondary font-mono flex-wrap">
-                  <span className="text-accent font-bold">{brand.companyName}</span>
-                  <span className="hidden sm:inline">/</span>
-                  <span className="hidden sm:inline">{brand.department}</span>
-                  <span aria-hidden="true" className="hidden md:inline">·</span>
-                  <span className="hidden md:inline-flex items-baseline gap-1 min-w-0 max-w-full normal-case font-sans">
-                    <span className="text-secondary">Scope:</span>
-                    <Tooltip
-                      side="bottom"
-                      title="Dataset Scope"
-                      className="w-auto min-w-0 max-w-full"
-                      content={<span className="font-mono [overflow-wrap:anywhere]">{project.name}</span>}
-                    >
-                      <strong
-                        tabIndex={0}
-                        className="text-primary font-semibold truncate max-w-[200px] focus-visible:outline-2 focus-visible:outline-accent rounded px-0.5"
-                        title={project.name}
-                        aria-label={project.name}
-                      >
-                        {project.name}
-                      </strong>
-                    </Tooltip>
-                  </span>
-                  <span aria-hidden="true" className="hidden lg:inline">·</span>
-                  <span className="hidden lg:inline-flex normal-case font-sans items-center gap-1">
-                    By <EditableAnalystName />
-                  </span>
-                  <span aria-hidden="true">·</span>
-                  <span className="text-accent font-semibold tabular-nums">
-                    {filteredRows.length.toLocaleString()} rows
-                  </span>
-                  <span aria-hidden="true" className="sm:hidden">·</span>
-                  <span className="sm:hidden text-accent font-semibold tabular-nums">
-                    Q {qualityReport.overallScore}%
-                  </span>
-                </div>
-
-                {/* Sentence-case Title & Rename Control (no ALL-CAPS monospace page title) */}
-                <div className="flex items-center gap-2 flex-wrap min-w-0 max-w-full">
-                  <h1 className="font-heading text-primary tracking-tight font-bold flex items-center gap-2 flex-wrap min-w-0 max-w-full">
-                    <EditableDashboardTitle
-                      className="text-base sm:text-xl lg:text-2xl font-bold tracking-tight max-w-full"
-                      showLabelPrefix={false}
-                      singleLine={true}
-                    />
-                  </h1>
-                </div>
-
-                {/* Section 2.5 & 2.7: Plain-language summary line + Take a 30-second tour link */}
-                <div className="hidden sm:flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-secondary">
-                  <p data-testid="exec-plain-summary-line" className="font-medium text-secondary">
-                    {filteredRows.length.toLocaleString()} rows analysed. Data quality{' '}
-                    <strong className="text-primary font-semibold">{qualityReport.overallScore}%</strong>.{' '}
-                    {displayKpis[0]
-                      ? `${displayKpis[0].name} is ${(displayKpis[0].status || 'on track').toLowerCase()}.`
-                      : 'Revenue is on track.'}
-                  </p>
-                  <button
-                    type="button"
-                    data-testid="exec-take-tour-link"
-                    onClick={() =>
-                      window.dispatchEvent(new CustomEvent('dataanalytix:start-coach-tour'))
-                    }
-                    className="text-accent hover:underline font-semibold inline-flex items-center gap-1 cursor-pointer shrink-0"
-                  >
-                    <span>Take a 30-second tour</span>
-                    <ArrowUpRight className="w-3 h-3" />
-                  </button>
-                </div>
+              {/* Section 2.5 & 2.7: Plain-language summary line + Take a 30-second tour link (visible on 1440 and 375) */}
+              <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[11px] sm:text-xs text-secondary">
+                <p data-testid="exec-plain-summary-line" className="font-medium text-secondary">
+                  {filteredRows.length.toLocaleString()} rows analysed. Data quality{' '}
+                  <strong className="text-primary font-semibold">{qualityReport.overallScore}%</strong>.{' '}
+                  {displayKpis[0]
+                    ? `${displayKpis[0].name} is ${(displayKpis[0].status || 'on track').toLowerCase()}.`
+                    : 'Revenue is on track.'}
+                </p>
+                <button
+                  type="button"
+                  data-testid="exec-take-tour-link"
+                  onClick={() =>
+                    window.dispatchEvent(new CustomEvent('dataanalytix:start-coach-tour'))
+                  }
+                  className="text-accent hover:underline font-semibold inline-flex items-center gap-1 cursor-pointer shrink-0"
+                >
+                  <span>Take a 30-second tour</span>
+                  <ArrowUpRight className="w-3 h-3" />
+                </button>
               </div>
             </div>
 
-            {/* Right Column: Telemetry Pill + Single Action Bar (Download, Present, View options, More) */}
-            <div className="flex flex-wrap sm:flex-col sm:items-end items-center justify-between w-full sm:w-auto gap-1.5 sm:gap-2 shrink-0 sm:ml-auto">
-              {/* Telemetry Health Summary (non-overlapping with H1; inline in breadcrumb on mobile <640px) */}
-              <div className="hidden sm:flex flex-wrap items-center gap-2 bg-input border border-subtle px-2.5 py-1 rounded-xl shadow-2xs shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setCurrentTab('quality')}
-                  className="flex items-center gap-1 cursor-pointer hover:opacity-80 text-left"
-                  title="Click to view Data Quality Audit"
-                >
-                  <span className="font-mono text-secondary font-bold text-xs whitespace-nowrap">
-                    DATA QUALITY
-                  </span>
-                  <span className="text-accent font-mono text-xs font-bold tabular-nums whitespace-nowrap">
-                    {qualityReport.overallScore}%
-                  </span>
-                </button>
-                <div className="w-px h-3.5 bg-[var(--border-subtle)]" />
-                <div className="flex items-center gap-1">
-                  <span className="font-mono text-secondary font-bold text-xs whitespace-nowrap">
-                    BUSINESS HEALTH
-                  </span>
-                  <span className="text-accent font-mono text-xs font-bold flex items-center gap-1 tabular-nums whitespace-nowrap">
-                    <Award className="w-3 h-3 shrink-0" />
-                    <span>
-                      {analytics.businessHealthScore
-                        ? `${analytics.businessHealthScore.score}/100`
-                        : '80/100'}
-                    </span>
-                  </span>
-                </div>
-              </div>
-
-              {/* Single Action Bar: Download, Present, View options popover, More menu */}
+            {/* Right Column: Single Action Bar (Download, Present, View options, More options) */}
+            <div className="flex items-center justify-end w-full sm:w-auto gap-1.5 shrink-0 sm:ml-auto">
               <div
                 data-testid="exec-single-action-bar"
-                className="flex flex-nowrap sm:flex-wrap items-center gap-1 sm:gap-2 w-full sm:w-auto"
+                className="flex flex-nowrap sm:flex-wrap items-center gap-1 sm:gap-1.5 w-full sm:w-auto"
               >
                 <DownloadMenu context="executive_dashboard" label="Download" />
 
@@ -1178,88 +1066,160 @@ export const ExecutiveDashboard: React.FC = () => {
                   )}
                 </div>
 
-                {/* More Actions Overflow Menu */}
-                <div className="relative">
-                  <button
-                    type="button"
-                    data-testid="exec-more-actions-trigger"
-                    aria-expanded={isMoreActionsOpen}
-                    onClick={() => {
-                      setIsMoreActionsOpen((prev) => !prev);
-                      setIsViewOptionsOpen(false);
-                    }}
-                    className="min-h-[36px] px-2.5 py-1.5 rounded-xl bg-input hover:bg-elevated border border-subtle text-xs font-semibold text-primary inline-flex items-center gap-1 cursor-pointer"
-                    title="More dashboard actions"
-                  >
-                    <span>More</span>
-                  </button>
-
-                  {isMoreActionsOpen && (
-                    <div
-                      data-testid="exec-more-actions-menu"
-                      role="menu"
-                      className="absolute right-0 mt-2 w-52 rounded-xl border border-strong bg-card text-primary py-1.5 shadow-2xl z-50"
-                    >
-                      <button
-                        type="button"
-                        role="menuitem"
-                        onClick={() => {
-                          setIsMoreActionsOpen(false);
-                          fileInputRef.current?.click();
-                        }}
-                        className="w-full px-3 py-2 text-left text-xs text-primary hover:bg-elevated flex items-center gap-2 cursor-pointer"
-                      >
-                        <UploadCloud className="w-3.5 h-3.5 text-accent" />
-                        <span>Upload / Change Logo</span>
-                      </button>
-                      <button
-                        type="button"
-                        role="menuitem"
-                        onClick={() => {
-                          setIsMoreActionsOpen(false);
-                          resetKpisToDefault();
-                        }}
-                        className="w-full px-3 py-2 text-left text-xs text-primary hover:bg-elevated flex items-center gap-2 cursor-pointer"
-                      >
-                        <RotateCcw className="w-3.5 h-3.5 text-accent" />
-                        <span>Reset Auto KPI Metrics</span>
-                      </button>
-                      <button
-                        type="button"
-                        role="menuitem"
-                        onClick={() => {
-                          setIsMoreActionsOpen(false);
-                          setCurrentTab('how_to_use');
-                        }}
-                        className="w-full px-3 py-2 text-left text-xs text-primary hover:bg-elevated flex items-center gap-2 cursor-pointer"
-                      >
-                        <HelpCircle className="w-3.5 h-3.5 text-accent" />
-                        <span>How to Use Guide</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
+                {/* More options collapse toggle (reveals Logo, Scope, By, Rename, Filters & Slicers, shortcut chips, Business Health & sub-view tabs) */}
+                <button
+                  type="button"
+                  data-testid="exec-more-options-toggle"
+                  aria-expanded={isMoreActionsOpen}
+                  onClick={() => {
+                    setIsMoreActionsOpen((prev) => !prev);
+                    setIsViewOptionsOpen(false);
+                  }}
+                  className={`min-h-[32px] sm:min-h-[36px] px-2.5 py-1 sm:py-1.5 rounded-xl border text-xs font-semibold inline-flex items-center gap-1 cursor-pointer whitespace-nowrap ${
+                    isMoreActionsOpen
+                      ? 'bg-accent text-on-accent border-subtle font-bold'
+                      : 'bg-input hover:bg-elevated border-subtle text-primary'
+                  }`}
+                  title="Show Logo, Scope, By, Rename, Filters & Slicers, shortcut chips, Business Health, and Executive Overview sub-tabs"
+                >
+                  <span>
+                    More<span className="hidden sm:inline"> options</span>
+                  </span>
+                  <ChevronDown
+                    className={`w-3.5 h-3.5 transition-transform ${
+                      isMoreActionsOpen ? 'rotate-180' : ''
+                    }`}
+                  />
+                </button>
               </div>
             </div>
           </div>
 
-          {/* Full-width Merged Purpose Subtitle + Related Quick Links under the title row */}
-          <div className="w-full pt-1 border-t border-subtle">
-            <PagePurposeBar page="executive_dashboard" inline />
-          </div>
-
-          {/* Interactive Slicers Ribbon */}
-          <InteractiveSlicersBar className="w-full" />
-
-          {/* Navigation View Switcher (Tabs for Data Analysts & Executives) */}
-          <div className="flex gap-1.5 pt-1 border-t border-subtle text-xs overflow-x-auto no-scrollbar">
-            <Tooltip
-              side="bottom"
-              title="Executive Overview"
-              tag="C-Suite Summary"
-              className="w-auto shrink-0"
-              content="Top-level view combining 4 main business KPIs, trend telemetry, ranking breakdown, and recommended actions."
+          {/* Collapsed "More options" Drawer: Logo, Scope, By, Rename, Business Health, Shortcut Chips, Filters & Slicers, and Executive Overview Sub-Tabs */}
+          {isMoreActionsOpen && (
+            <div
+              data-testid="exec-more-options-panel"
+              className="pt-2.5 mt-1 border-t border-subtle space-y-2.5 animate-fadeIn"
             >
+              {/* Metadata & Secondary Actions Row: Logo, Scope, By, Business Health, Rename */}
+              <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                <div className="flex flex-wrap items-center gap-2 min-w-0">
+                  {brand.logoUrl ? (
+                    <div className="inline-flex items-center gap-1">
+                      <img
+                        src={brand.logoUrl}
+                        alt={brand.companyName}
+                        className="w-7 h-7 rounded-lg object-contain glass-card p-0.5"
+                      />
+                      <button
+                        type="button"
+                        onClick={removeCompanyLogo}
+                        className="p-1 rounded bg-input text-secondary hover:text-danger cursor-pointer"
+                        title="Remove Logo"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      data-testid="exec-more-options-logo-btn"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="px-2 py-1 rounded-lg border border-dashed border-subtle hover:border-strong bg-input hover:bg-elevated text-accent inline-flex items-center gap-1 cursor-pointer"
+                      title="Upload Company Logo"
+                    >
+                      <UploadCloud className="w-3.5 h-3.5" />
+                      <span className="font-mono font-bold text-[11px]">Logo</span>
+                    </button>
+                  )}
+
+                  <span className="text-secondary font-mono">
+                    <strong className="text-accent">{brand.companyName}</strong> / {brand.department}
+                  </span>
+                  <span aria-hidden="true" className="text-muted">·</span>
+                  <span className="inline-flex items-center gap-1 text-secondary">
+                    <span>Scope:</span>
+                    <strong className="text-primary font-semibold truncate max-w-[220px]" title={project.name}>
+                      {project.name}
+                    </strong>
+                  </span>
+                  <span aria-hidden="true" className="text-muted">·</span>
+                  <span className="inline-flex items-center gap-1 text-secondary">
+                    By <EditableAnalystName />
+                  </span>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  {/* Business Health & Data Quality Pill */}
+                  <div className="flex items-center gap-2 bg-input border border-subtle px-2.5 py-1 rounded-xl">
+                    <button
+                      type="button"
+                      onClick={() => setCurrentTab('quality')}
+                      className="flex items-center gap-1 cursor-pointer hover:opacity-80"
+                    >
+                      <span className="font-mono text-secondary font-bold text-[11px]">DATA QUALITY</span>
+                      <span className="text-accent font-mono text-xs font-bold tabular-nums">
+                        {qualityReport.overallScore}%
+                      </span>
+                    </button>
+                    <div className="w-px h-3.5 bg-[var(--border-subtle)]" />
+                    <div className="flex items-center gap-1">
+                      <span className="font-mono text-secondary font-bold text-[11px]">BUSINESS HEALTH</span>
+                      <span className="text-accent font-mono text-xs font-bold flex items-center gap-1 tabular-nums">
+                        <Award className="w-3 h-3 shrink-0" />
+                        <span>
+                          {analytics.businessHealthScore
+                            ? `${analytics.businessHealthScore.score}/100`
+                            : '80/100'}
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Explicit Rename Button inside More options */}
+                  <button
+                    type="button"
+                    data-testid="exec-more-options-rename-btn"
+                    onClick={() => {
+                      const el = document.querySelector<HTMLElement>(
+                        'main [data-testid="clamped-dashboard-title"]'
+                      );
+                      el?.click();
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-input hover:bg-elevated border border-subtle text-xs font-semibold text-primary inline-flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Pencil className="w-3.5 h-3.5 text-accent" />
+                    <span>Rename</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={resetKpisToDefault}
+                    className="px-2.5 py-1 rounded-lg bg-input hover:bg-elevated border border-subtle text-xs font-semibold text-secondary hover:text-primary inline-flex items-center gap-1 cursor-pointer"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5 text-accent" />
+                    <span>Reset Metrics</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Purpose Bar & Shortcut Chips */}
+              <div className="w-full pt-1.5 border-t border-subtle">
+                <PagePurposeBar page="executive_dashboard" inline />
+              </div>
+
+              {/* Interactive Slicers Ribbon (Filters & Slicers) */}
+              <InteractiveSlicersBar className="w-full" />
+
+              {/* Navigation View Switcher (Executive Overview & Advanced Analyst Sub-Tabs) */}
+              <div className="flex gap-1.5 pt-1 border-t border-subtle text-xs overflow-x-auto no-scrollbar">
+                <Tooltip
+                  side="bottom"
+                  title="Executive Overview"
+                  tag="C-Suite Summary"
+                  className="w-auto shrink-0"
+                  content="Top-level view combining 4 main business KPIs, trend telemetry, ranking breakdown, and recommended actions."
+                >
               <button
                 onClick={() => setActiveTab('overview')}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-semibold transition-all shrink-0 text-xs cursor-pointer ${
@@ -1423,12 +1383,14 @@ export const ExecutiveDashboard: React.FC = () => {
                 <Network className="w-3.5 h-3.5 text-accent" /> Data Engineering Suite
               </button>
             </Tooltip>
-          </div>
+              </div>
+            </div>
+          )}
         </div>
       </section>
 
       {/* 2. SECTION 2.4 & 2.7: 4 EXECUTIVE KPI CARDS ("Key numbers") */}
-      <section className="space-y-1.5 sm:space-y-2">
+      <section className="space-y-1">
         <div className="hidden sm:flex items-center justify-between px-1 gap-2">
           <div className="flex items-center gap-2 min-w-0">
             <span
@@ -1453,7 +1415,7 @@ export const ExecutiveDashboard: React.FC = () => {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-5">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
           {displayKpis.map((kpi, kIdx) => {
             const statusTheme =
               kpi.status === 'Above Target'
@@ -1568,7 +1530,7 @@ export const ExecutiveDashboard: React.FC = () => {
                     </div>
                     <span
                       title={`Status: ${kpi.status}`}
-                      className="w-7 h-7 rounded-xl bg-accent-soft border border-subtle text-accent flex items-center justify-center shrink-0 relative"
+                      className="hidden sm:flex w-7 h-7 rounded-xl bg-accent-soft border border-subtle text-accent items-center justify-center shrink-0 relative"
                     >
                       <Activity className="w-3.5 h-3.5" />
                       <span className={`w-1.5 h-1.5 rounded-full ${statusTheme.dot} absolute -top-0.5 -right-0.5`} />
@@ -1580,7 +1542,7 @@ export const ExecutiveDashboard: React.FC = () => {
                       <div className="flex items-baseline gap-2 flex-wrap">
                         <span
                           data-testid={`exec-kpi-value-${kpi.id}`}
-                          className="font-metric-display text-metric-display font-extrabold tracking-tight leading-none truncate tabular-nums text-primary"
+                          className="font-metric-display text-lg sm:text-metric-display font-extrabold tracking-tight leading-none truncate tabular-nums text-primary"
                           title={filteredKpi.formatted}
                         >
                           {filteredKpi.formatted}
@@ -1602,7 +1564,7 @@ export const ExecutiveDashboard: React.FC = () => {
                         data-favorable={
                           isNeutralDelta ? 'neutral' : isFavorableDelta ? 'true' : 'false'
                         }
-                        className="flex items-center gap-1.5 mt-1.5 text-xs font-mono flex-wrap"
+                        className="flex items-center gap-1.5 mt-1 sm:mt-1.5 text-[11px] sm:text-xs font-mono flex-wrap"
                       >
                         {rawDelta !== null ? (
                           <span
@@ -1616,17 +1578,17 @@ export const ExecutiveDashboard: React.FC = () => {
                           >
                             {deltaDirection === 'up' ? (
                               <ArrowUp
-                                className="w-3.5 h-3.5 stroke-[2.5] shrink-0"
+                                className="w-3 h-3 sm:w-3.5 sm:h-3.5 stroke-[2.5] shrink-0"
                                 aria-hidden="true"
                               />
                             ) : deltaDirection === 'down' ? (
                               <ArrowDown
-                                className="w-3.5 h-3.5 stroke-[2.5] shrink-0"
+                                className="w-3 h-3 sm:w-3.5 sm:h-3.5 stroke-[2.5] shrink-0"
                                 aria-hidden="true"
                               />
                             ) : (
                               <Minus
-                                className="w-3.5 h-3.5 stroke-[2.5] shrink-0"
+                                className="w-3 h-3 sm:w-3.5 sm:h-3.5 stroke-[2.5] shrink-0"
                                 aria-hidden="true"
                               />
                             )}
@@ -1641,7 +1603,7 @@ export const ExecutiveDashboard: React.FC = () => {
                     </div>
 
                     {/* Micro inline Sparkline SVG reading active theme tokens */}
-                    <div className="w-20 sm:w-24 h-8 sm:h-10 shrink-0">
+                    <div className="hidden sm:block w-24 h-10 shrink-0">
                       <svg
                         className="w-full h-full fill-none stroke-2 overflow-visible"
                         viewBox="0 0 100 40"
@@ -1679,7 +1641,7 @@ export const ExecutiveDashboard: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="pt-1.5 sm:pt-2 border-t border-subtle flex items-center justify-between gap-2 text-xs font-mono text-secondary">
+                  <div className="pt-1 sm:pt-2 border-t border-subtle flex items-center justify-between gap-1.5 text-[11px] sm:text-xs font-mono text-secondary">
                     <span
                       data-testid={`exec-kpi-source-${kpi.id}`}
                       className="min-w-0 leading-snug"
@@ -1691,7 +1653,7 @@ export const ExecutiveDashboard: React.FC = () => {
                       className={`${statusTheme.text} hover:underline flex items-center gap-1 font-semibold shrink-0 cursor-pointer`}
                       title={`Drill down — Scope: ${kpi.period || 'Audited Scope'}`}
                     >
-                      <span>See details</span>
+                      <span className="hidden sm:inline">See details</span>
                       <ExternalLink className="w-3 h-3 shrink-0" />
                     </span>
                   </div>
@@ -1705,13 +1667,13 @@ export const ExecutiveDashboard: React.FC = () => {
 
       {/* 3. TAB CONTENT RENDERING */}
       {activeTab === 'overview' && (
-        <div className="space-y-6">
-          {/* 2.2 HERO CHART & 2.3 RANKING CARD (First screen below 4 KPI cards) */}
-          <section className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-            {/* LEFT: Hero Smooth Area Chart (7 cols) */}
+        <div className="space-y-4">
+          {/* 2.2 HERO CHART (2/3 width = 8 cols) & 2.3 DARK "TOP 5" RANKING CARD (1/3 width = 4 cols) right under the KPI row */}
+          <section className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+            {/* LEFT: Hero Smooth Area Chart (8 cols = 2/3 width) */}
             <div
               data-testid="exec-hero-area-chart"
-              className="lg:col-span-7 glass-card depth-card rounded-[24px] p-5 sm:p-6 border border-subtle bg-card shadow-sm flex flex-col justify-between"
+              className="lg:col-span-8 glass-card depth-card rounded-[24px] p-3.5 sm:p-5 border border-subtle bg-card shadow-sm flex flex-col justify-between"
             >
               <div>
                 {/* Header: Title, Metric Selector, Granularity & View Controls */}
@@ -2024,7 +1986,7 @@ export const ExecutiveDashboard: React.FC = () => {
                       </div>
 
                       {/* Main Telemetry SVG Chart with cubic-Bezier curve in var(--accent) */}
-                      <div className="w-full h-64 relative rounded-2xl p-3 flex flex-col justify-between border border-subtle bg-elevated/60 overflow-hidden">
+                      <div className="w-full h-44 sm:h-52 relative rounded-2xl p-2.5 flex flex-col justify-between border border-subtle bg-elevated/60 overflow-hidden">
                         <div className="w-full flex-1 relative overflow-hidden">
                           <svg
                             className="w-full h-full overflow-hidden select-none cursor-crosshair"
@@ -2266,49 +2228,99 @@ export const ExecutiveDashboard: React.FC = () => {
               </div>
             </div>
 
-            {/* RIGHT: 2.3 Ranking Card beside the Hero Chart (5 cols) */}
-            <div
-              data-testid="exec-ranking-card"
-              className="lg:col-span-5 glass-card depth-card rounded-[24px] p-5 sm:p-6 border border-subtle bg-card shadow-sm flex flex-col justify-between"
-            >
-              <div>
-                <div className="flex items-center justify-between gap-2 pb-3 border-b border-subtle">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-9 h-9 rounded-xl bg-accent-soft text-accent border border-accent/30 flex items-center justify-center shrink-0">
-                      <BarChart3 className="w-4 h-4 text-accent" />
-                    </div>
-                    <div className="min-w-0">
-                      <h3 className="font-headline-sm text-headline-sm text-primary font-bold tracking-tight truncate">
-                        Top {selectedDimension || stringCols[0]?.name || 'Segments'}
-                      </h3>
-                      <p className="text-[11px] font-mono text-secondary truncate">
-                        Ranked by {selectedTrendMetric || numericCols[0]?.name || 'Volume'}
-                      </p>
-                    </div>
-                  </div>
+            {/* RIGHT: 2.3 Dark "Top 5" Ranking Card beside the Hero Chart (4 cols = 1/3 width) */}
+            {(() => {
+              const rawDim = selectedDimension || stringCols[0]?.name || 'Segment';
+              const rawMet = selectedTrendMetric || numericCols[0]?.name || 'Volume';
+              const humanizeDimensionPlural = (col: string): string => {
+                const c = col.trim();
+                if (/^customer(name|id|_name|_id)?$/i.test(c) || /^client/i.test(c)) return 'customers';
+                if (/^product(name|id|_name|_id)?$/i.test(c) || /^item/i.test(c)) return 'products';
+                if (/^(product)?category$/i.test(c)) return 'categories';
+                if (/^(sales)?rep(name)?$/i.test(c) || /^accountexecutive$/i.test(c)) return 'sales reps';
+                if (/^region|territory|country|city|state$/i.test(c)) return 'regions';
+                if (/^channel|leadsource|source$/i.test(c)) return 'channels';
+                if (/^department|team|division$/i.test(c)) return 'departments';
+                if (/^segment|customersegment$/i.test(c)) return 'segments';
+                const spaced = c
+                  .replace(/([a-z])([A-Z])/g, '$1 $2')
+                  .replace(/[_-]+/g, ' ')
+                  .replace(/\b(name|id|code)\b/gi, '')
+                  .replace(/\s+/g, ' ')
+                  .trim()
+                  .toLowerCase();
+                if (!spaced) return 'segments';
+                return spaced.endsWith('s') ? spaced : `${spaced}s`;
+              };
+              const humanizeMetricLabel = (col: string): string => {
+                const spaced = col
+                  .replace(/([a-z])([A-Z])/g, '$1 $2')
+                  .replace(/[_-]+/g, ' ')
+                  .replace(/\s+/g, ' ')
+                  .trim();
+                return spaced || 'Volume';
+              };
+              const humanDimPlural = humanizeDimensionPlural(rawDim);
+              const humanMetric = humanizeMetricLabel(rawMet);
+              const humanRankingTitle = `Top ${humanDimPlural} by ${humanMetric}`;
 
-                  <div className="flex items-center gap-2 shrink-0">
-                    <select
-                      value={selectedDimension}
-                      onChange={(e) => setSelectedDimension(e.target.value)}
-                      aria-label="Ranking dimension"
-                      className="glass-input h-7 px-2 text-xs font-mono rounded-lg border border-subtle bg-elevated text-primary focus:outline-none cursor-pointer max-w-[120px]"
-                    >
-                      {stringCols.map(c => (
-                        <option key={c.name} value={c.name}>{c.name}</option>
-                      ))}
-                    </select>
-                    <button
-                      type="button"
-                      data-testid="exec-ranking-view-all"
-                      onClick={() => setActiveTab('pareto')}
-                      className="text-xs font-semibold text-accent hover:underline inline-flex items-center gap-1 cursor-pointer shrink-0"
-                    >
-                      <span>View all</span>
-                      <ArrowUpRight className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
+              return (
+                <div
+                  data-testid="exec-ranking-card"
+                  className="lg:col-span-4 glass-card depth-card rounded-[24px] p-3.5 sm:p-5 border border-subtle bg-elevated/90 shadow-sm flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-start justify-between gap-2 pb-2.5 border-b border-subtle">
+                      <Tooltip
+                        side="top"
+                        title="Top 5 Ranked Breakdown"
+                        tag={`${rawDim} × ${rawMet}`}
+                        content={`Raw dimension column: "${rawDim}" · Ranked by metric column: "${rawMet}"`}
+                      >
+                        <div className="flex items-start gap-2 min-w-0 cursor-help">
+                          <div className="w-8 h-8 rounded-xl bg-accent-soft text-accent border border-subtle flex items-center justify-center shrink-0">
+                            <BarChart3 className="w-4 h-4 text-accent" />
+                          </div>
+                          <div className="min-w-0">
+                            <h3
+                              data-testid="exec-ranking-title"
+                              title={`Raw columns: ${rawDim} ranked by ${rawMet}`}
+                              className="text-xs sm:text-sm text-primary font-bold tracking-tight leading-snug"
+                            >
+                              {humanRankingTitle}
+                            </h3>
+                            <p className="text-[11px] font-mono text-secondary">
+                              Top 5 ranked breakdown
+                            </p>
+                          </div>
+                        </div>
+                      </Tooltip>
+
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <select
+                          value={selectedDimension}
+                          onChange={(e) => setSelectedDimension(e.target.value)}
+                          aria-label="Ranking dimension"
+                          title={`Dimension column: ${rawDim}`}
+                          className="glass-input h-7 px-1.5 text-[11px] font-mono rounded-lg border border-subtle bg-card text-primary focus:outline-none cursor-pointer max-w-[96px]"
+                        >
+                          {stringCols.map((c) => (
+                            <option key={c.name} value={c.name} title={c.name}>
+                              {humanizeMetricLabel(c.name)}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          data-testid="exec-ranking-view-all"
+                          onClick={() => setActiveTab('pareto')}
+                          className="text-xs font-semibold text-accent hover:underline inline-flex items-center gap-0.5 cursor-pointer shrink-0 whitespace-nowrap"
+                        >
+                          <span>View all</span>
+                          <ArrowUpRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
 
                 {/* Top 5 Horizontal Progress Bars (var(--accent) fill, value on right) */}
                 <div className="space-y-3.5 my-4">
@@ -2382,7 +2394,9 @@ export const ExecutiveDashboard: React.FC = () => {
                   <ExternalLink className="w-3 h-3" />
                 </button>
               </div>
-            </div>
+                </div>
+              );
+            })()}
           </section>
 
           {/* 2.6 "WHAT TO DO NEXT" STRIP (3 Big Cards below Hero & Ranking) */}

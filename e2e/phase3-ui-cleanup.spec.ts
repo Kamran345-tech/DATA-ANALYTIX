@@ -118,16 +118,26 @@ test.describe('Phase 1 & 3: Workflow Sidebar, Shrunk Page Header Stack, Mobile 3
     await page.getByTestId('coach-tour-skip').click();
     await expect(tour).toHaveCount(0);
 
-    // 3. Verify Shrunk Executive Dashboard Header Stack & Fixes 1, 2, 3, 5:
-    // - Fix 3: Full-width purpose line under the title (width > 800px at 1440x900)
+    // 3. Verify CRM First-Screen Executive Dashboard & collapsed "More options" panel:
+    // By default, "More options" panel (Logo, Scope, By, Rename, Filters & Slicers, shortcut chips, Business Health, Executive Overview chips) is collapsed
+    await expect(page.getByTestId('exec-more-options-panel')).toHaveCount(0);
+
+    // Expand "More options" to verify full-width purpose line & rename button inside it, then collapse back
+    const moreOptionsToggle = page.getByTestId('exec-more-options-toggle');
+    await expect(moreOptionsToggle).toBeVisible();
+    await moreOptionsToggle.click();
+    await expect(page.getByTestId('exec-more-options-panel')).toBeVisible();
+    await expect(page.getByTestId('exec-more-options-rename-btn')).toBeVisible();
     const purposeBar = page.getByTestId('page-purpose-bar-executive_dashboard');
     await expect(purposeBar).toBeVisible();
     const purposeBox = await purposeBar.boundingBox();
     expect(purposeBox).not.toBeNull();
     expect(
       purposeBox!.width,
-      'Desktop purpose line must span full width under the title'
+      'Desktop purpose line inside More options must span full width'
     ).toBeGreaterThan(800);
+    await moreOptionsToggle.click();
+    await expect(page.getByTestId('exec-more-options-panel')).toHaveCount(0);
 
     // - Fix 5a: Sidebar search input placeholder is shortened to "Search pages"
     const searchInput = page.getByTestId('sidebar-search-input').first();
@@ -143,7 +153,9 @@ test.describe('Phase 1 & 3: Workflow Sidebar, Shrunk Page Header Stack, Mobile 3
     await page.getByTestId('view-option-theme-wall_street').click();
     await viewOptionsBtn.click();
 
-    // Verify all 4 KPI card values are visible within the 1440x900 viewport without scrolling
+    // Verify CRM First Screen at 1440x900: title, one-line summary, all 4 KPI cards AND hero area chart are visible in the first screenful
+    await expect(page.locator('main [data-testid="clamped-dashboard-title"]').first()).toBeVisible();
+    await expect(page.getByTestId('exec-plain-summary-line')).toBeVisible();
     const firstKpiValue = page.locator('[data-testid^="exec-kpi-value-"]').first();
     await expect(firstKpiValue).toBeVisible();
     const kpiBox = await firstKpiValue.boundingBox();
@@ -152,6 +164,23 @@ test.describe('Phase 1 & 3: Workflow Sidebar, Shrunk Page Header Stack, Mobile 3
       (kpiBox?.y ?? 999) + (kpiBox?.height ?? 0),
       'Real KPI numbers must be visible in first 1440x900 screenful without scrolling'
     ).toBeLessThan(880);
+
+    const heroChart = page.getByTestId('exec-hero-area-chart');
+    await expect(heroChart).toBeVisible();
+    const heroBox = await heroChart.boundingBox();
+    expect(heroBox).not.toBeNull();
+    expect(
+      heroBox!.y,
+      'Hero area chart must start on the first 1440x900 screen right under the KPI row'
+    ).toBeLessThan(650);
+
+    const rankingCard = page.getByTestId('exec-ranking-card');
+    await expect(rankingCard).toBeVisible();
+    const rankingBox = await rankingCard.boundingBox();
+    expect(rankingBox).not.toBeNull();
+    // Verify Hero Area Chart (2/3 width) and Top 5 Ranking Card (1/3 width) sit side-by-side at 1440x900
+    expect(Math.abs(heroBox!.y - rankingBox!.y)).toBeLessThan(20);
+    expect(heroBox!.width).toBeGreaterThan(rankingBox!.width * 1.5);
 
     // - Fix 1: KPI card labels & source lines never truncate mid-word with single-line ellipsis
     const kpiTruncationCheck = await page.evaluate(() => {
@@ -240,7 +269,6 @@ test.describe('Phase 1 & 3: Workflow Sidebar, Shrunk Page Header Stack, Mobile 3
     await page.getByTestId('command-palette-input').fill('Settings & Branding');
     await page.getByTestId('command-palette-item-page-settings').click();
     await expect(page.getByTestId('settings-active-version')).toHaveText('v2.4.0');
-    await expect(page.getByTestId('navbar-app-version')).toContainText('v2.4.0');
     await expect(page.getByTestId('settings-project-identifier')).toContainText(
       'sales-margin-telemetry'
     );
@@ -331,22 +359,31 @@ test.describe('Phase 1 & 3: Workflow Sidebar, Shrunk Page Header Stack, Mobile 3
             .innerText();
           expect(viewBtnText.trim()).toBe('View');
 
-          // - Purpose/Related links collapsed behind "i" button on mobile
-          const infoBtn = page.getByTestId('purpose-info-toggle');
-          await expect(infoBtn).toBeVisible();
-          await expect(page.getByTestId('page-purpose-related')).toBeHidden();
-
-          // - First KPI value is visible in the first 375x812 screenful without scrolling
-          const mobileKpiRect = await page.evaluate(() => {
-            const el = document.querySelector('[data-testid^="exec-kpi-value-"]');
-            if (!el) return null;
-            const r = el.getBoundingClientRect();
-            return { top: r.top, bottom: r.bottom };
+          // - Verify CRM First Screen at 375x812: title, one-line summary, 4 KPI cards AND hero area chart visible on the first screen
+          await expect(page.locator('main [data-testid="clamped-dashboard-title"]').first()).toBeVisible();
+          await expect(page.getByTestId('exec-plain-summary-line')).toBeVisible();
+          const mobileFirstScreenCheck = await page.evaluate(() => {
+            const kpis = Array.from(document.querySelectorAll('[data-testid^="exec-kpi-value-"]'));
+            const hero = document.querySelector('[data-testid="exec-hero-area-chart"]');
+            if (kpis.length < 4 || !hero) return null;
+            const lastKpiRect = kpis[3].getBoundingClientRect();
+            const heroRect = hero.getBoundingClientRect();
+            return {
+              kpiCount: kpis.length,
+              lastKpiBottom: lastKpiRect.bottom,
+              heroTop: heroRect.top,
+              heroBottom: heroRect.bottom,
+            };
           });
-          expect(mobileKpiRect).not.toBeNull();
+          expect(mobileFirstScreenCheck).not.toBeNull();
+          expect(mobileFirstScreenCheck!.kpiCount).toBe(4);
           expect(
-            mobileKpiRect?.bottom ?? 999,
-            'First KPI value must be visible in first 375x812 mobile screen without scrolling'
+            mobileFirstScreenCheck!.lastKpiBottom,
+            'All 4 KPI values must be visible in first 375x812 mobile screen without scrolling'
+          ).toBeLessThan(700);
+          expect(
+            mobileFirstScreenCheck!.heroTop,
+            'Hero area chart must appear on the first 375x812 mobile screen right under the 4 KPI cards'
           ).toBeLessThan(790);
         }
 
@@ -414,13 +451,37 @@ test.describe('Phase 1 & 3: Workflow Sidebar, Shrunk Page Header Stack, Mobile 3
     await page.setViewportSize({ width: 1440, height: 900 });
     await bootstrapWorkspace(page, { theme: 'dark', skipTour: true });
 
-    // 1. Verify Section 2 Dashboard Look elements on Executive Dashboard
-    await expect(page.getByTestId('topbar-pill-nav')).toBeVisible();
+    // 1. Verify Top Bar pill tabs (Overview, Quality, Packs, Reports, Builder) are all visible & non-overlapping with the search box at 1280px and 1440px
+    for (const width of [1280, 1440] as const) {
+      await page.setViewportSize({ width, height: 900 });
+      await expect(page.getByTestId('topbar-pill-nav')).toBeVisible();
+      for (const tabId of ['overview', 'quality', 'packs', 'reports', 'builder']) {
+        const pill = page.getByTestId(`topbar-tab-${tabId}`);
+        await expect(pill).toBeVisible();
+        const box = await pill.boundingBox();
+        expect(box, `Topbar pill tab ${tabId} must have positive width at ${width}px`).not.toBeNull();
+        expect(box!.width).toBeGreaterThan(45);
+      }
+      const builderBox = await page.getByTestId('topbar-tab-builder').boundingBox();
+      const searchBox = await page.getByTestId('navbar-search-box').boundingBox();
+      expect(builderBox).not.toBeNull();
+      expect(searchBox).not.toBeNull();
+      expect(
+        builderBox!.x + builderBox!.width,
+        `At ${width}px, Builder pill tab right edge must be strictly left of Search box left edge`
+      ).toBeLessThanOrEqual(searchBox!.x);
+    }
+
+    // Verify Section 2 Dashboard Look elements on Executive Dashboard + Top 5 human label
     await expect(page.getByTestId('exec-plain-summary-line')).toBeVisible();
-    await expect(page.getByTestId('exec-key-numbers-heading')).toHaveText('Key numbers');
     await expect(page.getByTestId('exec-hero-area-chart')).toBeVisible();
     await expect(page.getByTestId('exec-hero-summary-metrics')).toBeVisible();
     await expect(page.getByTestId('exec-ranking-card')).toBeVisible();
+    await expect(page.getByTestId('exec-ranking-title')).toHaveText('Top customers by Units Sold');
+    await expect(page.getByTestId('exec-ranking-title')).toHaveAttribute(
+      'title',
+      /CustomerName.*UnitsSold/
+    );
     await expect(page.getByTestId('exec-ranking-view-all')).toBeVisible();
     await expect(page.getByTestId('exec-what-to-do-next')).toBeVisible();
     await expect(page.getByTestId('next-step-fix-data')).toBeVisible();
@@ -430,9 +491,39 @@ test.describe('Phase 1 & 3: Workflow Sidebar, Shrunk Page Header Stack, Mobile 3
       'What to do about it'
     );
 
-    // 2. Verify Section 1 Theme Studio live recolouring & low-contrast custom accent auto-adjustment
+    // 2. Verify Section 1 Theme Studio live recolouring, zero button truncation, & low-contrast custom accent auto-adjustment
     await page.getByTestId('navbar-theme-studio-btn').click();
     await expect(page.getByTestId('theme-studio-panel')).toBeVisible();
+
+    // Verify none of the segmented buttons (Low/Medium/High, Sharp/Rounded/Pill, Comfortable/Compact) are truncated
+    const themeButtonCheck = await page.evaluate(() => {
+      const ids = [
+        'theme-glass-low',
+        'theme-glass-medium',
+        'theme-glass-high',
+        'theme-radius-sharp',
+        'theme-radius-rounded',
+        'theme-radius-pill',
+        'theme-density-comfortable',
+        'theme-density-compact',
+      ];
+      return ids.map((id) => {
+        const el = document.querySelector(`[data-testid="${id}"]`) as HTMLElement | null;
+        if (!el) return { id, text: '', truncated: true };
+        return {
+          id,
+          text: (el.textContent || '').trim(),
+          truncated: el.scrollWidth > el.clientWidth + 1,
+        };
+      });
+    });
+    for (const btn of themeButtonCheck) {
+      expect(btn.truncated, `Theme Studio button ${btn.id} (${btn.text}) must not truncate`).toBe(
+        false
+      );
+    }
+
+    await saveDualScreenshot(page, 'theme-studio-panel-1440-dark.png');
 
     await page.getByTestId('theme-preset-violet').click();
     const violetAccent = await page.evaluate(() =>
@@ -452,11 +543,15 @@ test.describe('Phase 1 & 3: Workflow Sidebar, Shrunk Page Header Stack, Mobile 3
     await page.getByTestId('theme-studio-reset-btn').click();
     await page.getByTestId('theme-studio-close-btn').click();
 
-    // 3. Verify Section 3 Glass Sidebar: Favorites 6-item limit toast, empty state, and slim rail collapse
+    // 3. Verify Section 3 Glass Sidebar: Dataset Health title not truncated, Favorites 6-item limit toast, empty state, and slim rail collapse
     const sidebar = page.locator('aside#app-sidebar-drawer');
     await expect(sidebar.getByTestId('sidebar-favorites-section')).toBeVisible();
     await expect(sidebar.getByTestId('sidebar-favorites-count')).toContainText('4 of 6');
     await expect(sidebar.getByTestId('sidebar-dataset-health-card')).toBeVisible();
+    const healthTitleTruncated = await sidebar
+      .getByTestId('sidebar-dataset-health-title')
+      .evaluate((el) => el.scrollWidth > el.clientWidth + 1);
+    expect(healthTitleTruncated, 'Sidebar "Dataset Health" title must not truncate').toBe(false);
     await expect(sidebar.getByTestId('sidebar-user-row')).toBeVisible();
 
     // Expand group 'analyze' so we can star 3 more items (5th, 6th, and 7th to trigger limit toast)
@@ -489,7 +584,7 @@ test.describe('Phase 1 & 3: Workflow Sidebar, Shrunk Page Header Stack, Mobile 3
     await page.getByTestId('sidebar-collapse-toggle').click();
     await expect(sidebar).toHaveAttribute('data-collapsed', 'false');
 
-    // 4. Verify Section 5 How to Use: Downloadable Guide (PDF %PDF and PPTX PK)
+    // 4. Verify Section 5 How to Use: Downloadable Guide (PDF %PDF and PPTX PK) & capture 2 guide page screenshots
     const helpToggle = sidebar.getByTestId('sidebar-group-toggle-help_settings');
     if ((await helpToggle.getAttribute('aria-expanded')) === 'false') {
       await helpToggle.click();
@@ -501,6 +596,17 @@ test.describe('Phase 1 & 3: Workflow Sidebar, Shrunk Page Header Stack, Mobile 3
     await expect(page.getByTestId('download-guide-bottom-pdf-btn')).toBeVisible();
     await expect(page.getByTestId('download-guide-bottom-pptx-btn')).toBeVisible();
 
+    // Capture screenshots of the 2 guide pages (Page 1: Workflow Steps with real screenshots, Page 2: 14 Analytics Packs & Features)
+    const guidePage1 = page.getByTestId('guide-preview-page-workflow');
+    await guidePage1.scrollIntoViewIfNeeded();
+    await page.waitForTimeout(150);
+    await saveDualScreenshot(page, 'guide-page-1-workflow-1440-dark.png');
+
+    const guidePage2 = page.getByTestId('guide-preview-page-packs');
+    await guidePage2.scrollIntoViewIfNeeded();
+    await page.waitForTimeout(150);
+    await saveDualScreenshot(page, 'guide-page-2-packs-1440-dark.png');
+
     // Download PDF and verify %PDF magic bytes
     const [pdfDownload] = await Promise.all([
       page.waitForEvent('download'),
@@ -511,7 +617,7 @@ test.describe('Phase 1 & 3: Workflow Sidebar, Shrunk Page Header Stack, Mobile 3
     expect(pdfPath).not.toBeNull();
     const pdfBuf = fs.readFileSync(pdfPath!);
     expect(pdfBuf.subarray(0, 4).toString('utf8')).toBe('%PDF');
-    expect(pdfBuf.byteLength).toBeGreaterThan(5000);
+    expect(pdfBuf.byteLength).toBeGreaterThan(20000);
 
     // Download PPTX and verify PK zip magic bytes
     const [pptxDownload] = await Promise.all([
@@ -523,7 +629,7 @@ test.describe('Phase 1 & 3: Workflow Sidebar, Shrunk Page Header Stack, Mobile 3
     expect(pptxPath).not.toBeNull();
     const pptxBuf = fs.readFileSync(pptxPath!);
     expect(pptxBuf.subarray(0, 2).toString('utf8')).toBe('PK');
-    expect(pptxBuf.byteLength).toBeGreaterThan(15000);
+    expect(pptxBuf.byteLength).toBeGreaterThan(50000);
   });
 });
 
