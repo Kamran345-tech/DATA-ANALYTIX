@@ -191,7 +191,7 @@ export const Navbar: React.FC = () => {
         )}
       </div>
 
-      {/* Center Search: collapses to an icon button below 1280px (< xl), full input at >= 1280px */}
+      {/* Center Search: collapses to an icon button below 1400px, full input at >= 1400px */}
       <div className="flex items-center shrink-0">
         <button
           type="button"
@@ -201,14 +201,14 @@ export const Navbar: React.FC = () => {
           }
           title="Search pages & data (Ctrl+K)"
           aria-label="Search pages and data"
-          className="hidden md:inline-flex xl:hidden items-center justify-center p-2 rounded-xl glass-btn-secondary cursor-pointer shrink-0"
+          className="hidden md:inline-flex min-[1400px]:hidden items-center justify-center p-2 rounded-xl glass-btn-secondary cursor-pointer shrink-0"
         >
           <Search className="w-4 h-4 text-secondary" />
         </button>
 
         <div
           data-testid="navbar-search-box"
-          className="hidden xl:flex items-center relative w-28 2xl:w-52 shrink-0"
+          className="hidden min-[1400px]:flex items-center relative w-44 2xl:w-52 shrink-0"
         >
           <Search className="w-3.5 h-3.5 absolute left-2.5 pointer-events-none z-10 text-secondary" />
           <input

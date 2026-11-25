@@ -189,7 +189,7 @@ export const UploadIngestionView: React.FC = () => {
       )}
 
       {/* 3-Step Workflow Stepper & Ingestion Mode Switcher */}
-      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+      <div className="flex flex-col min-[1400px]:flex-row items-stretch min-[1400px]:items-center justify-between gap-3">
         <ol className="grid grid-cols-3 gap-2 sm:gap-3 p-2 rounded-2xl border bg-card border-subtle shadow-xs flex-1">
           {[
             { step: 1, title: 'Select Source', sub: 'CSV, XLSX or Demo' },
@@ -227,8 +227,8 @@ export const UploadIngestionView: React.FC = () => {
                   {isCompleted ? '✓' : item.step}
                 </span>
                 <div className="min-w-0">
-                  <div className="text-xs font-bold truncate">{item.title}</div>
-                  <div className="text-xs font-mono opacity-80 truncate hidden sm:block">{item.sub}</div>
+                  <div className="text-xs font-bold truncate" title={item.title}>{item.title}</div>
+                  <div className="text-xs font-mono opacity-80 truncate hidden sm:block" title={item.sub}>{item.sub}</div>
                 </div>
               </li>
             );
@@ -236,7 +236,7 @@ export const UploadIngestionView: React.FC = () => {
         </ol>
 
         {/* Ingestion Mode Switcher */}
-        <div className="inline-flex p-1 rounded-2xl border gap-1 shadow-xs bg-elevated border-subtle self-center md:self-auto shrink-0">
+        <div className="inline-flex p-1 rounded-2xl border gap-1 shadow-xs bg-elevated border-subtle self-start min-[1400px]:self-auto shrink-0">
           <button
             type="button"
             className="min-h-[40px] px-4 py-2 rounded-xl text-xs font-bold transition-all bg-accent text-on-accent shadow-xs flex items-center gap-2"

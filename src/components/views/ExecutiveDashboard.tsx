@@ -1646,19 +1646,19 @@ export const ExecutiveDashboard: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="pt-1 sm:pt-2 border-t border-subtle flex items-center justify-between gap-1.5 text-[11px] sm:text-xs font-mono text-secondary min-w-0">
+                  <div className="pt-1 sm:pt-2 border-t border-subtle flex flex-row sm:flex-col items-center sm:items-start justify-between sm:justify-start gap-1 text-[11px] sm:text-xs font-mono text-secondary min-w-0">
                     <span
                       data-testid={`exec-kpi-source-${kpi.id}`}
-                      className="min-w-0 leading-snug"
+                      className="min-w-0 max-w-full truncate leading-snug"
                       title={`Source: ${kpi.traceableSource} · ${kpi.calculation || kpi.definition}`}
                     >
                       Col: {cleanSourceLabel}
                     </span>
                     <span
-                      className={`${statusTheme.text} hover:underline flex items-center gap-1 font-semibold shrink-0 cursor-pointer`}
+                      className={`${statusTheme.text} hover:underline inline-flex items-center gap-1 font-semibold shrink-0 cursor-pointer`}
                       title={`Drill down — Scope: ${kpi.period || 'Audited Scope'}`}
                     >
-                      <span className="hidden xl:inline">See details</span>
+                      <span className="hidden sm:inline">See details</span>
                       <ExternalLink className="w-3 h-3 shrink-0" />
                     </span>
                   </div>
@@ -1673,12 +1673,12 @@ export const ExecutiveDashboard: React.FC = () => {
       {/* 3. TAB CONTENT RENDERING */}
       {activeTab === 'overview' && (
         <div className="space-y-4">
-          {/* 2.2 HERO CHART (2/3 width = 8 cols) & 2.3 DARK "TOP 5" RANKING CARD (1/3 width = 4 cols) right under the KPI row */}
-          <section className="grid grid-cols-1 lg:grid-cols-12 gap-4 min-w-0">
-            {/* LEFT: Hero Smooth Area Chart (8 cols = 2/3 width) */}
+          {/* 2.2 HERO CHART (2/3 width = 8 cols at >=1100px, full width below 1100px) & 2.3 DARK "TOP 5" RANKING CARD (1/3 width = 4 cols at >=1100px, full width below 1100px) */}
+          <section className="grid grid-cols-1 min-[1100px]:grid-cols-12 gap-4 min-w-0">
+            {/* LEFT: Hero Smooth Area Chart (8 cols = 2/3 width at >=1100px) */}
             <div
               data-testid="exec-hero-area-chart"
-              className="lg:col-span-8 min-w-0 glass-card depth-card rounded-[24px] p-3.5 sm:p-5 border border-subtle bg-card shadow-sm flex flex-col justify-between"
+              className="min-[1100px]:col-span-8 min-w-0 glass-card depth-card rounded-[24px] p-3.5 sm:p-5 border border-subtle bg-card shadow-sm flex flex-col justify-between"
             >
               <div>
                 {/* Header: Title, Metric Selector, Granularity & View Controls */}
@@ -2272,7 +2272,7 @@ export const ExecutiveDashboard: React.FC = () => {
               return (
                 <div
                   data-testid="exec-ranking-card"
-                  className="lg:col-span-4 min-w-0 glass-card depth-card rounded-[24px] p-3.5 sm:p-5 border border-subtle bg-elevated/90 shadow-sm flex flex-col justify-between"
+                  className="min-[1100px]:col-span-4 min-w-0 glass-card depth-card rounded-[24px] p-3.5 sm:p-5 border border-subtle bg-elevated/90 shadow-sm flex flex-col justify-between"
                 >
                   <div>
                     <div className="flex flex-col gap-2 pb-2.5 border-b border-subtle min-w-0">
@@ -2323,7 +2323,7 @@ export const ExecutiveDashboard: React.FC = () => {
                           onChange={(e) => setSelectedDimension(e.target.value)}
                           aria-label="Ranking dimension"
                           title={`Dimension column: ${rawDim}`}
-                          className="glass-input h-7 px-2 text-[11px] font-mono rounded-lg border border-subtle bg-card text-primary focus:outline-none cursor-pointer min-w-0 flex-1 max-w-[140px] xl:max-w-[165px] truncate"
+                          className="glass-input h-7 px-2 text-[11px] font-mono rounded-lg border border-subtle bg-card text-primary focus:outline-none cursor-pointer min-w-0 flex-1 max-w-[220px] min-[1100px]:max-w-[175px]"
                         >
                           {stringCols.map((c) => (
                             <option key={c.name} value={c.name} title={c.name}>

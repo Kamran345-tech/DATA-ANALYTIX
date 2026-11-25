@@ -346,7 +346,11 @@ test.describe('Phase 1 & 3: Workflow Sidebar, Shrunk Page Header Stack, Mobile 3
         expect(execOverflow).toBe(false);
 
         if (vp.width === 1280 || vp.width === 1024) {
-          // Verify at 1280 and 1024: each KPI value text is fully visible (scrollWidth <= clientWidth) and no card extends past the viewport
+          // Below 1400px (1280 and 1024), top-bar search collapses to an icon button (never clipped "Sear Ctrl+K")
+          await expect(page.getByTestId('navbar-search-icon-btn')).toBeVisible();
+          await expect(page.getByTestId('navbar-search-box')).toBeHidden();
+
+          // Verify at 1280 and 1024: each KPI value text is fully visible, Col line never overlaps See details, and no card extends past the viewport
           const kpiAndCardCheck = await page.evaluate(() => {
             const values = Array.from(document.querySelectorAll('[data-testid^="exec-kpi-value-"]'));
             const truncatedValues = values
@@ -356,6 +360,27 @@ test.describe('Phase 1 & 3: Workflow Sidebar, Shrunk Page Header Stack, Mobile 3
                 scrollWidth: el.scrollWidth,
                 clientWidth: el.clientWidth,
               }));
+            const sources = Array.from(document.querySelectorAll('[data-testid^="exec-kpi-source-"]'));
+            const collidingFooters = sources
+              .map((srcEl) => {
+                const footer = srcEl.parentElement;
+                const detailsEl = footer?.querySelector('span:last-child');
+                if (!detailsEl || detailsEl === srcEl) return null;
+                const sr = srcEl.getBoundingClientRect();
+                const dr = detailsEl.getBoundingClientRect();
+                const overlaps =
+                  sr.left < dr.right - 1 &&
+                  sr.right > dr.left + 1 &&
+                  sr.top < dr.bottom - 1 &&
+                  sr.bottom > dr.top + 1;
+                return {
+                  text: (srcEl.textContent || '').trim(),
+                  overlaps,
+                  srcBottom: Math.round(sr.bottom),
+                  detailsTop: Math.round(dr.top),
+                };
+              })
+              .filter((x) => x && x.overlaps);
             const cards = Array.from(
               document.querySelectorAll(
                 '[data-testid^="exec-kpi-card-"], [data-testid="exec-hero-area-chart"], [data-testid="exec-ranking-card"], [data-testid="exec-ranking-view-all"]'
@@ -375,6 +400,7 @@ test.describe('Phase 1 & 3: Workflow Sidebar, Shrunk Page Header Stack, Mobile 3
             return {
               valueCount: values.length,
               truncatedValues,
+              collidingFooters,
               overflowingCards,
             };
           });
@@ -384,8 +410,65 @@ test.describe('Phase 1 & 3: Workflow Sidebar, Shrunk Page Header Stack, Mobile 3
             `At ${vp.width}px (${theme}), KPI values must never be truncated`
           ).toEqual([]);
           expect(
+            kpiAndCardCheck.collidingFooters,
+            `At ${vp.width}px (${theme}), KPI "Col: ..." must never collide with "See details"`
+          ).toEqual([]);
+          expect(
             kpiAndCardCheck.overflowingCards,
             `At ${vp.width}px (${theme}), no dashboard card or View all link may extend past the viewport`
+          ).toEqual([]);
+        }
+
+        if (vp.width === 1024) {
+          // Verify at 1024px (< 1100px): chart and Top 5 card stack in one full-width column and NO text in Top card is ellipsized
+          const topCard1024Check = await page.evaluate(() => {
+            const chart = document.querySelector('[data-testid="exec-hero-area-chart"]') as HTMLElement | null;
+            const rankCard = document.querySelector('[data-testid="exec-ranking-card"]') as HTMLElement | null;
+            if (!chart || !rankCard) return null;
+            const cr = chart.getBoundingClientRect();
+            const rr = rankCard.getBoundingClientRect();
+            const isStackedSingleColumn =
+              rr.top >= cr.bottom - 2 && Math.abs(rr.width - cr.width) <= 4;
+
+            const textEls = Array.from(
+              rankCard.querySelectorAll('h3, p, span, button, select')
+            ) as HTMLElement[];
+            const ellipsizedEls = textEls
+              .filter((el) => {
+                const style = window.getComputedStyle(el);
+                if (style.display === 'none' || style.visibility === 'hidden') return false;
+                const txt = (el.textContent || '').trim();
+                if (!txt) return false;
+                return (
+                  el.scrollWidth > el.clientWidth + 1 ||
+                  txt.endsWith('...') ||
+                  txt.endsWith('…')
+                );
+              })
+              .map((el) => ({
+                tag: el.tagName,
+                text: (el.textContent || '').trim(),
+                scrollWidth: el.scrollWidth,
+                clientWidth: el.clientWidth,
+              }));
+
+            return {
+              isStackedSingleColumn,
+              chartWidth: Math.round(cr.width),
+              rankWidth: Math.round(rr.width),
+              chartBottom: Math.round(cr.bottom),
+              rankTop: Math.round(rr.top),
+              ellipsizedEls,
+            };
+          });
+          expect(topCard1024Check).not.toBeNull();
+          expect(
+            topCard1024Check!.isStackedSingleColumn,
+            `At 1024px (${theme}), Hero chart and Top 5 card must stack in one full-width column`
+          ).toBe(true);
+          expect(
+            topCard1024Check!.ellipsizedEls,
+            `At 1024px (${theme}), no text in the Top customers card may be ellipsized`
           ).toEqual([]);
         }
 
@@ -530,10 +613,17 @@ test.describe('Phase 1 & 3: Workflow Sidebar, Shrunk Page Header Stack, Mobile 3
         expect(box, `Topbar pill tab ${tabId} must have positive width at ${width}px`).not.toBeNull();
         expect(box!.width).toBeGreaterThan(45);
       }
-      if (width >= 1280) {
-        const builderBox = await page.getByTestId('topbar-tab-builder').boundingBox();
+      const builderBox = await page.getByTestId('topbar-tab-builder').boundingBox();
+      expect(builderBox).not.toBeNull();
+      if (width < 1400) {
+        const searchIconBox = await page.getByTestId('navbar-search-icon-btn').boundingBox();
+        expect(searchIconBox).not.toBeNull();
+        expect(
+          builderBox!.x + builderBox!.width,
+          `At ${width}px, Builder pill tab right edge must be strictly left of Search icon button`
+        ).toBeLessThanOrEqual(searchIconBox!.x);
+      } else {
         const searchBox = await page.getByTestId('navbar-search-box').boundingBox();
-        expect(builderBox).not.toBeNull();
         expect(searchBox).not.toBeNull();
         expect(
           builderBox!.x + builderBox!.width,
