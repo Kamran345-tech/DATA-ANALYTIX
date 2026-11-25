@@ -118,8 +118,9 @@ describe('How to Use: Downloadable User Guide (PDF & PPTX)', () => {
     expect(lightResult.doc.output().startsWith('%PDF')).toBe(true);
   });
 
-  it('generates non-empty >= 6-slide PPTX deck starting with PK zip header, 0 slide overflows, and no ellipsis cut text', async () => {
-    const { base64, slideCount, overflowCount, spec } = await generateUserGuidePptxBase64('theme');
+  it('generates non-empty >= 6-slide PPTX deck starting with PK zip header in active theme and white print-friendly variants, 0 slide overflows, no ellipsis cut text, and no double-numbered bullets', async () => {
+    const { base64, slideCount, overflowCount, spec, formattedBulletItems } =
+      await generateUserGuidePptxBase64('theme');
     expect(slideCount).toBeGreaterThanOrEqual(6);
     expect(overflowCount).toBe(0);
     for (const slide of spec.slides) {
@@ -129,8 +130,32 @@ describe('How to Use: Downloadable User Guide (PDF & PPTX)', () => {
         expect(bullet).not.toMatch(/\.{3}|…/);
       }
     }
+
+    // Verify no double numbering in PPTX bullets (e.g. "1.  1 Upload", "3.  3 Analyze", "1.  Minute 1:")
+    expect(formattedBulletItems.length).toBeGreaterThan(0);
+    for (const item of formattedBulletItems) {
+      expect(item).not.toMatch(/^\d+\.\s+\d+\s/);
+      expect(item).not.toMatch(/^\d+\.\s+(Step|Stage|Minute)\s+\d+/i);
+    }
+
     const rawBuffer = Buffer.from(base64, 'base64');
     expect(rawBuffer.subarray(0, 2).toString('utf8')).toBe('PK');
     expect(rawBuffer.byteLength).toBeGreaterThan(25000);
+
+    // Also verify white print-friendly PPTX variant ("print-white")
+    const whitePptx = await generateUserGuidePptxBase64('print-white');
+    expect(whitePptx.slideCount).toBeGreaterThanOrEqual(6);
+    expect(whitePptx.overflowCount).toBe(0);
+    expect(whitePptx.spec.variant).toBe('print-white');
+    expect(whitePptx.spec.bgHex).toBe('#FFFFFF');
+    expect(whitePptx.spec.cardHex).toBe('#F8FAFC');
+    expect(whitePptx.spec.textPrimaryHex).toBe('#0F172A');
+    const whiteBuffer = Buffer.from(whitePptx.base64, 'base64');
+    expect(whiteBuffer.subarray(0, 2).toString('utf8')).toBe('PK');
+    expect(whiteBuffer.byteLength).toBeGreaterThan(25000);
+    for (const item of whitePptx.formattedBulletItems) {
+      expect(item).not.toMatch(/^\d+\.\s+\d+\s/);
+      expect(item).not.toMatch(/^\d+\.\s+(Step|Stage|Minute)\s+\d+/i);
+    }
   });
 });

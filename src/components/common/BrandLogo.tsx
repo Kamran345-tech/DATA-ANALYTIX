@@ -17,7 +17,7 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
 
   // Dimension scaling
   const dimensions = {
-    sm: { icon: 24, text: 'text-xs sm:text-base', sub: 'text-[9px]' },
+    sm: { icon: 22, text: 'text-[11px] sm:text-base', sub: 'text-[9px]' },
     md: { icon: 34, text: 'text-xl', sub: 'text-[10px]' },
     lg: { icon: 44, text: 'text-2xl', sub: 'text-xs' },
     xl: { icon: 56, text: 'text-4xl', sub: 'text-sm' }
@@ -25,7 +25,7 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
 
   if (brand?.logoUrl) {
     return (
-      <div className={`flex items-center gap-1.5 sm:gap-2.5 select-none ${className}`}>
+      <div className={`flex items-center gap-1 sm:gap-2.5 select-none ${className}`}>
         <img 
           src={brand.logoUrl} 
           alt={brand.companyName || 'Company Logo'} 
@@ -33,7 +33,7 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
           style={{ width: dimensions.icon, height: dimensions.icon }}
         />
         <div className="flex flex-col leading-none">
-          <div className={`font-heading font-black tracking-tight ${dimensions.text} flex items-center truncate max-w-[120px] sm:max-w-[180px]`}>
+          <div className={`font-heading font-black tracking-tight ${dimensions.text} flex items-center truncate max-w-[100px] sm:max-w-[180px]`}>
             <span className="text-primary">
               {brand.companyName || 'ENTERPRISE'}
             </span>
@@ -49,7 +49,7 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
   }
 
   return (
-    <div className={`flex items-center gap-1.5 sm:gap-2.5 select-none ${className}`}>
+    <div className={`flex items-center gap-1 sm:gap-2.5 select-none ${className}`}>
       {/* Precision Geometric Data-Prism SVG Mark */}
       <div className="relative shrink-0 flex items-center justify-center">
         <svg 

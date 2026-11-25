@@ -124,9 +124,9 @@ export const Navbar: React.FC = () => {
     : 'GD';
 
   return (
-    <header className="sticky top-0 z-40 shrink-0 px-2 sm:px-4 py-1.5 sm:py-2 flex items-center justify-between gap-1.5 sm:gap-2 glass-nav transition-colors duration-200 max-w-full overflow-x-clip">
+    <header className="sticky top-0 z-40 shrink-0 px-1.5 sm:px-4 py-1.5 sm:py-2 flex items-center justify-between gap-1 sm:gap-2 glass-nav transition-colors duration-200 max-w-full overflow-x-clip">
       {/* Left branding & drawer trigger — shrink-0 so the 5 pill tabs always keep their own dedicated space */}
-      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+      <div className="flex items-center gap-1 sm:gap-2 shrink-0">
         <button
           type="button"
           data-testid="mobile-menu-toggle"
@@ -165,7 +165,7 @@ export const Navbar: React.FC = () => {
           <nav
             data-testid="topbar-pill-nav"
             aria-label="Main view navigation"
-            className="hidden lg:flex items-center gap-1 p-1 rounded-2xl bg-input/90 border border-subtle ml-1.5 shrink-0"
+            className="hidden lg:flex items-center gap-1 p-1 rounded-2xl bg-input/90 border border-subtle ml-1 shrink-0"
           >
             {TOPBAR_PILL_TABS.map((tab) => {
               if (tab.id === 'analytics_packs' && !flags.analyticsPacks) return null;
@@ -208,7 +208,7 @@ export const Navbar: React.FC = () => {
 
         <div
           data-testid="navbar-search-box"
-          className="hidden xl:flex items-center relative w-32 2xl:w-52 shrink-0"
+          className="hidden xl:flex items-center relative w-28 2xl:w-52 shrink-0"
         >
           <Search className="w-3.5 h-3.5 absolute left-2.5 pointer-events-none z-10 text-secondary" />
           <input
@@ -244,7 +244,7 @@ export const Navbar: React.FC = () => {
       </div>
 
       {/* Right controls */}
-      <div className="flex items-center gap-1 xl:gap-1.5 shrink-0">
+      <div className="flex items-center gap-0.5 sm:gap-1 xl:gap-1.5 shrink-0">
         {/* Mobile single-button theme switcher (<640px) with >=44px touch target */}
         <button
           type="button"
@@ -312,14 +312,14 @@ export const Navbar: React.FC = () => {
               aria-expanded={isThemeStudioOpen}
               aria-label="Open Theme Studio"
               title="Theme Studio — Customize accent, glass, radius & density"
-              className={`min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition-colors ${
+              className={`min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition-colors ${
                 isThemeStudioOpen
                   ? 'bg-accent text-on-accent font-bold'
                   : 'glass-btn-secondary'
               }`}
             >
               <Palette className="w-3.5 h-3.5 text-current shrink-0" />
-              <span className="hidden xl:inline">Theme</span>
+              <span className="hidden 2xl:inline">Theme</span>
             </button>
 
             {isThemeStudioOpen && (
@@ -501,7 +501,7 @@ export const Navbar: React.FC = () => {
           <button
             type="button"
             onClick={() => setCurrentTab('upload')}
-            className="glass-btn-primary min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg font-semibold text-xs cursor-pointer shadow-xs whitespace-nowrap shrink-0"
+            className="glass-btn-primary min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg font-semibold text-xs cursor-pointer shadow-xs whitespace-nowrap shrink-0"
             aria-label="Upload Data"
           >
             <UploadCloud className="w-4 h-4 shrink-0" />
@@ -574,7 +574,7 @@ export const Navbar: React.FC = () => {
                 {userInitials}
               </span>
             )}
-            <span className="hidden sm:inline max-w-[76px] truncate whitespace-nowrap">
+            <span className="hidden xl:inline max-w-[76px] truncate whitespace-nowrap">
               {currentUser
                 ? currentUser.displayName?.split(' ')[0] || 'My Account'
                 : isGuestMode

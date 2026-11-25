@@ -762,6 +762,7 @@ export async function generateUserGuidePptxBase64(
   slideCount: number;
   spec: UserGuideSpec;
   overflowCount: number;
+  formattedBulletItems: string[];
 }> {
   const spec = buildUserGuideSpec(variant);
   const pptxMod = await import('pptxgenjs');
@@ -790,6 +791,8 @@ export async function generateUserGuidePptxBase64(
     'guide-slide-6': USER_GUIDE_STEP_SCREENSHOTS.clean,
     'guide-slide-7': USER_GUIDE_STEP_SCREENSHOTS.present,
   };
+
+  const formattedBulletItems: string[] = [];
 
   spec.slides.forEach((s) => {
     const slide = pptx.addSlide();
@@ -906,15 +909,23 @@ export async function generateUserGuidePptxBase64(
         line: { color: accentHex, width: 1 },
       });
 
-      const bulletItems = s.bullets.slice(0, 5).map((b, idx) => ({
-        text: `${idx + 1}.  ${b}`,
-        options: {
-          fontSize: 15.5,
-          color: textPrimaryHex,
-          breakLine: true,
-          paraSpaceAfter: 12,
-        },
-      }));
+      const bulletItems = s.bullets.slice(0, 5).map((b, idx) => {
+        const trimmed = b.trim();
+        const alreadyNumberedOrLabeled =
+          /^\d+[\s.)]/.test(trimmed) ||
+          /^(Step|Stage|Minute|Sample:)\s/i.test(trimmed);
+        const text = alreadyNumberedOrLabeled ? trimmed : `${idx + 1}.  ${trimmed}`;
+        formattedBulletItems.push(text);
+        return {
+          text,
+          options: {
+            fontSize: 15.5,
+            color: textPrimaryHex,
+            breakLine: true,
+            paraSpaceAfter: 12,
+          },
+        };
+      });
 
       slide.addText(bulletItems, {
         x: 0.85,
@@ -1010,6 +1021,7 @@ export async function generateUserGuidePptxBase64(
     slideCount: spec.slides.length,
     spec,
     overflowCount,
+    formattedBulletItems,
   };
 }
 

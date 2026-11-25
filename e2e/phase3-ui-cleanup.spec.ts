@@ -326,6 +326,7 @@ test.describe('Phase 1 & 3: Workflow Sidebar, Shrunk Page Header Stack, Mobile 3
 
     const viewports = [
       { width: 1440, height: 900, label: '1440' },
+      { width: 1280, height: 900, label: '1280' },
       { width: 1024, height: 768, label: '1024' },
       { width: 375, height: 812, label: '375' },
     ] as const;
@@ -344,6 +345,50 @@ test.describe('Phase 1 & 3: Workflow Sidebar, Shrunk Page Header Stack, Mobile 3
         });
         expect(execOverflow).toBe(false);
 
+        if (vp.width === 1280 || vp.width === 1024) {
+          // Verify at 1280 and 1024: each KPI value text is fully visible (scrollWidth <= clientWidth) and no card extends past the viewport
+          const kpiAndCardCheck = await page.evaluate(() => {
+            const values = Array.from(document.querySelectorAll('[data-testid^="exec-kpi-value-"]'));
+            const truncatedValues = values
+              .filter((el) => el.scrollWidth > el.clientWidth + 1)
+              .map((el) => ({
+                text: (el.textContent || '').trim(),
+                scrollWidth: el.scrollWidth,
+                clientWidth: el.clientWidth,
+              }));
+            const cards = Array.from(
+              document.querySelectorAll(
+                '[data-testid^="exec-kpi-card-"], [data-testid="exec-hero-area-chart"], [data-testid="exec-ranking-card"], [data-testid="exec-ranking-view-all"]'
+              )
+            );
+            const overflowingCards = cards
+              .map((el) => {
+                const r = el.getBoundingClientRect();
+                return {
+                  testId: el.getAttribute('data-testid') || el.tagName,
+                  left: Math.round(r.left),
+                  right: Math.round(r.right),
+                  viewport: window.innerWidth,
+                };
+              })
+              .filter((c) => c.right > c.viewport + 1 || c.left < -1);
+            return {
+              valueCount: values.length,
+              truncatedValues,
+              overflowingCards,
+            };
+          });
+          expect(kpiAndCardCheck.valueCount).toBe(4);
+          expect(
+            kpiAndCardCheck.truncatedValues,
+            `At ${vp.width}px (${theme}), KPI values must never be truncated`
+          ).toEqual([]);
+          expect(
+            kpiAndCardCheck.overflowingCards,
+            `At ${vp.width}px (${theme}), no dashboard card or View all link may extend past the viewport`
+          ).toEqual([]);
+        }
+
         if (vp.width === 375) {
           // Verify Phase 1.3 & Fix 5b mobile requirements:
           // - Stepper shows "4/4" counter and "4 Present" is scrolled into view
@@ -359,24 +404,47 @@ test.describe('Phase 1 & 3: Workflow Sidebar, Shrunk Page Header Stack, Mobile 3
             .innerText();
           expect(viewBtnText.trim()).toBe('View');
 
-          // - Verify CRM First Screen at 375x812: title, one-line summary, 4 KPI cards AND hero area chart visible on the first screen
+          // - Verify CRM First Screen at 375x812: title wraps up to 2 lines, pencil icon sits inline right of label, 4 KPI cards AND hero area chart visible on the first screen
           await expect(page.locator('main [data-testid="clamped-dashboard-title"]').first()).toBeVisible();
           await expect(page.getByTestId('exec-plain-summary-line')).toBeVisible();
           const mobileFirstScreenCheck = await page.evaluate(() => {
             const kpis = Array.from(document.querySelectorAll('[data-testid^="exec-kpi-value-"]'));
+            const labels = Array.from(document.querySelectorAll('[data-testid^="exec-kpi-label-"]'));
+            const edits = Array.from(document.querySelectorAll('[data-testid^="exec-kpi-edit-"]'));
             const hero = document.querySelector('[data-testid="exec-hero-area-chart"]');
             if (kpis.length < 4 || !hero) return null;
             const lastKpiRect = kpis[3].getBoundingClientRect();
             const heroRect = hero.getBoundingClientRect();
+            const droppedPencils = labels
+              .map((lbl, idx) => {
+                const edit = edits[idx];
+                if (!edit) return null;
+                const lr = lbl.getBoundingClientRect();
+                const er = edit.getBoundingClientRect();
+                return {
+                  label: (lbl.textContent || '').trim(),
+                  labelRight: Math.round(lr.right),
+                  editLeft: Math.round(er.left),
+                  labelTop: Math.round(lr.top),
+                  editTop: Math.round(er.top),
+                  isInlineRight: er.left >= lr.right - 4 && er.top < lr.bottom,
+                };
+              })
+              .filter((p) => p && !p.isInlineRight);
             return {
               kpiCount: kpis.length,
               lastKpiBottom: lastKpiRect.bottom,
               heroTop: heroRect.top,
               heroBottom: heroRect.bottom,
+              droppedPencils,
             };
           });
           expect(mobileFirstScreenCheck).not.toBeNull();
           expect(mobileFirstScreenCheck!.kpiCount).toBe(4);
+          expect(
+            mobileFirstScreenCheck!.droppedPencils,
+            'At 375px mobile, KPI pencil edit icons must stay inline right of the KPI labels'
+          ).toEqual([]);
           expect(
             mobileFirstScreenCheck!.lastKpiBottom,
             'All 4 KPI values must be visible in first 375x812 mobile screen without scrolling'
@@ -451,8 +519,8 @@ test.describe('Phase 1 & 3: Workflow Sidebar, Shrunk Page Header Stack, Mobile 3
     await page.setViewportSize({ width: 1440, height: 900 });
     await bootstrapWorkspace(page, { theme: 'dark', skipTour: true });
 
-    // 1. Verify Top Bar pill tabs (Overview, Quality, Packs, Reports, Builder) are all visible & non-overlapping with the search box at 1280px and 1440px
-    for (const width of [1280, 1440] as const) {
+    // 1. Verify Top Bar pill tabs (Overview, Quality, Packs, Reports, Builder) are all visible & non-overlapping with the search box at 1280px and 1440px, and KPI values never truncate
+    for (const width of [1024, 1280, 1440] as const) {
       await page.setViewportSize({ width, height: 900 });
       await expect(page.getByTestId('topbar-pill-nav')).toBeVisible();
       for (const tabId of ['overview', 'quality', 'packs', 'reports', 'builder']) {
@@ -462,17 +530,19 @@ test.describe('Phase 1 & 3: Workflow Sidebar, Shrunk Page Header Stack, Mobile 3
         expect(box, `Topbar pill tab ${tabId} must have positive width at ${width}px`).not.toBeNull();
         expect(box!.width).toBeGreaterThan(45);
       }
-      const builderBox = await page.getByTestId('topbar-tab-builder').boundingBox();
-      const searchBox = await page.getByTestId('navbar-search-box').boundingBox();
-      expect(builderBox).not.toBeNull();
-      expect(searchBox).not.toBeNull();
-      expect(
-        builderBox!.x + builderBox!.width,
-        `At ${width}px, Builder pill tab right edge must be strictly left of Search box left edge`
-      ).toBeLessThanOrEqual(searchBox!.x);
+      if (width >= 1280) {
+        const builderBox = await page.getByTestId('topbar-tab-builder').boundingBox();
+        const searchBox = await page.getByTestId('navbar-search-box').boundingBox();
+        expect(builderBox).not.toBeNull();
+        expect(searchBox).not.toBeNull();
+        expect(
+          builderBox!.x + builderBox!.width,
+          `At ${width}px, Builder pill tab right edge must be strictly left of Search box left edge`
+        ).toBeLessThanOrEqual(searchBox!.x);
+      }
     }
 
-    // Verify Section 2 Dashboard Look elements on Executive Dashboard + Top 5 human label
+    // Verify Section 2 Dashboard Look elements on Executive Dashboard + Top 5 human label fits in 1-2 lines at 1440px
     await expect(page.getByTestId('exec-plain-summary-line')).toBeVisible();
     await expect(page.getByTestId('exec-hero-area-chart')).toBeVisible();
     await expect(page.getByTestId('exec-hero-summary-metrics')).toBeVisible();
@@ -482,6 +552,13 @@ test.describe('Phase 1 & 3: Workflow Sidebar, Shrunk Page Header Stack, Mobile 3
       'title',
       /CustomerName.*UnitsSold/
     );
+    const rankingTitleHeight = await page
+      .getByTestId('exec-ranking-title')
+      .evaluate((el) => el.getBoundingClientRect().height);
+    expect(
+      rankingTitleHeight,
+      'At 1440px, "Top customers by Units Sold" title must use 1-2 lines (<= 44px height)'
+    ).toBeLessThanOrEqual(44);
     await expect(page.getByTestId('exec-ranking-view-all')).toBeVisible();
     await expect(page.getByTestId('exec-what-to-do-next')).toBeVisible();
     await expect(page.getByTestId('next-step-fix-data')).toBeVisible();

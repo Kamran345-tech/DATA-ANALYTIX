@@ -793,14 +793,14 @@ export const ExecutiveDashboard: React.FC = () => {
           {/* Top Row (First Screen): Title + One-Line Summary on Left; Primary Action Bar on Right */}
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex flex-col gap-0.5 min-w-0 flex-1 basis-[240px] sm:basis-[400px]">
-              {/* Sentence-case Title (clickable via clamped-dashboard-title; explicit Rename button in More options) */}
+              {/* Sentence-case Title (clickable via clamped-dashboard-title; wraps up to 2 lines on mobile and desktop) */}
               <div className="flex items-center gap-2 flex-wrap min-w-0 max-w-full">
                 <h1 className="font-heading text-primary tracking-tight font-bold flex items-center gap-2 flex-wrap min-w-0 max-w-full">
                   <EditableDashboardTitle
                     className="text-sm sm:text-xl lg:text-2xl font-bold tracking-tight max-w-full"
                     showLabelPrefix={false}
                     showEditButton={false}
-                    singleLine={true}
+                    singleLine={false}
                   />
                 </h1>
               </div>
@@ -1396,11 +1396,11 @@ export const ExecutiveDashboard: React.FC = () => {
             <span
               data-testid="exec-key-numbers-heading"
               title="Executive Performance Telemetry"
-              className="font-heading tracking-wide text-secondary font-bold text-xs truncate cursor-help"
+              className="font-heading tracking-wide text-secondary font-bold text-xs shrink-0 cursor-help"
             >
               Key numbers
             </span>
-            <span className="text-xs text-accent hidden md:inline font-mono">
+            <span className="text-xs text-accent hidden xl:inline font-mono truncate">
               (Click pencil on any card to change heading &amp; calculation)
             </span>
           </div>
@@ -1505,44 +1505,46 @@ export const ExecutiveDashboard: React.FC = () => {
                       sourceContext: 'kpi_card',
                     });
                   }}
-                  className="depth-card glass-card rounded-[24px] p-2.5 sm:p-5 flex flex-col justify-between relative group cursor-pointer select-none card-3d h-full transition-all duration-200 hover:-translate-y-1 hover:border-strong"
+                  className="depth-card glass-card rounded-[24px] p-2 sm:p-4 xl:p-5 flex flex-col justify-between relative group cursor-pointer select-none card-3d h-full min-w-0 transition-all duration-200 hover:-translate-y-1 hover:border-strong"
                 >
-                  <div className="flex items-start justify-between gap-2 min-w-0">
-                    <div className="flex items-start gap-1.5 min-w-0 flex-1">
+                  <div className="flex flex-nowrap items-start justify-between gap-1.5 min-w-0">
+                    <div className="flex flex-nowrap items-start justify-between gap-1 min-w-0 flex-1">
                       <span
                         data-testid={`exec-kpi-label-${kpi.id}`}
-                        className="font-sans text-xs font-bold leading-snug line-clamp-2 [word-break:normal] [overflow-wrap:normal] text-secondary group-hover:text-primary transition-colors"
+                        className="font-sans text-[11px] sm:text-xs font-bold leading-tight line-clamp-2 [word-break:normal] [overflow-wrap:normal] text-secondary group-hover:text-primary transition-colors min-w-0 flex-1"
                         title={kpi.name}
                       >
                         {kpi.name}
                       </span>
                       <button
                         type="button"
+                        data-testid={`exec-kpi-edit-${kpi.id}`}
                         onClick={(e) => {
                           e.stopPropagation();
                           setEditingKpi(kpi);
                         }}
-                        className="p-0.5 -mt-0.5 rounded transition-colors shrink-0 group-hover:opacity-100 opacity-60 hover:bg-input text-secondary hover:text-accent"
+                        className="!min-w-[22px] !min-h-[22px] w-5 h-5 sm:w-6 sm:h-6 p-0.5 rounded inline-flex items-center justify-center transition-colors shrink-0 group-hover:opacity-100 opacity-75 hover:bg-input text-secondary hover:text-accent"
                         title="Customize heading, column & calculation formula"
                       >
-                        <Pencil className="w-3.5 h-3.5" />
+                        <Pencil className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
                       </button>
                     </div>
                     <span
                       title={`Status: ${kpi.status}`}
-                      className="hidden sm:flex w-7 h-7 rounded-xl bg-accent-soft border border-subtle text-accent items-center justify-center shrink-0 relative"
+                      className="hidden xl:flex w-6 h-6 rounded-lg bg-accent-soft border border-subtle text-accent items-center justify-center shrink-0 relative"
                     >
-                      <Activity className="w-3.5 h-3.5" />
+                      <Activity className="w-3 h-3" />
                       <span className={`w-1.5 h-1.5 rounded-full ${statusTheme.dot} absolute -top-0.5 -right-0.5`} />
                     </span>
                   </div>
 
-                  <div className="my-1 sm:my-3 flex items-end justify-between gap-2">
-                    <div className="flex flex-col min-w-0">
-                      <div className="flex items-baseline gap-2 flex-wrap">
+                  {/* Full-width KPI Value + Delta + Stacked Sparkline so the value is never truncated at 1024-1440px */}
+                  <div className="my-1 sm:my-2.5 flex flex-col gap-1.5 min-w-0 w-full">
+                    <div className="flex flex-col min-w-0 w-full">
+                      <div className="flex items-baseline gap-1.5 flex-wrap w-full min-w-0">
                         <span
                           data-testid={`exec-kpi-value-${kpi.id}`}
-                          className="font-metric-display text-lg sm:text-metric-display font-extrabold tracking-tight leading-none truncate tabular-nums text-primary"
+                          className="font-metric-display text-lg sm:text-xl xl:text-2xl 2xl:text-metric-display font-extrabold tracking-tight leading-none whitespace-nowrap tabular-nums text-primary"
                           title={filteredKpi.formatted}
                         >
                           {filteredKpi.formatted}
@@ -1558,17 +1560,20 @@ export const ExecutiveDashboard: React.FC = () => {
                           of {kpi.formattedValue} total
                         </div>
                       )}
+                    </div>
+
+                    <div className="flex items-center justify-between gap-2 w-full min-w-0">
                       <div
                         data-testid={`exec-kpi-delta-${kpi.id}`}
                         data-direction={deltaDirection}
                         data-favorable={
                           isNeutralDelta ? 'neutral' : isFavorableDelta ? 'true' : 'false'
                         }
-                        className="flex items-center gap-1.5 mt-1 sm:mt-1.5 text-[11px] sm:text-xs font-mono flex-wrap"
+                        className="flex items-center gap-1 text-[11px] sm:text-xs font-mono shrink-0"
                       >
                         {rawDelta !== null ? (
                           <span
-                            className={`inline-flex items-center gap-1 font-bold tabular-nums px-1.5 py-0.5 rounded-md border border-subtle bg-elevated ${
+                            className={`inline-flex items-center gap-1 font-bold tabular-nums px-1.5 py-0.5 rounded-md border border-subtle bg-elevated whitespace-nowrap ${
                               isNeutralDelta
                                 ? 'text-secondary'
                                 : isFavorableDelta
@@ -1600,48 +1605,48 @@ export const ExecutiveDashboard: React.FC = () => {
                           </span>
                         )}
                       </div>
-                    </div>
 
-                    {/* Micro inline Sparkline SVG reading active theme tokens */}
-                    <div className="hidden sm:block w-24 h-10 shrink-0">
-                      <svg
-                        className="w-full h-full fill-none stroke-2 overflow-visible"
-                        viewBox="0 0 100 40"
-                      >
-                        <defs>
-                          <filter
-                            id={`spark-shadow-${kpi.id}`}
-                            x="-20%"
-                            y="-20%"
-                            width="140%"
-                            height="150%"
-                          >
-                            <feDropShadow
-                              dx="0"
-                              dy="2"
-                              stdDeviation="1.5"
-                              floodColor="var(--bg-app)"
-                              floodOpacity="0.45"
-                            />
-                          </filter>
-                        </defs>
-                        <path
-                          d={sparkPath}
-                          stroke={statusTheme.stroke}
-                          strokeWidth="2.2"
-                          strokeLinecap="round"
-                          filter={`url(#spark-shadow-${kpi.id})`}
-                        />
-                        <path
-                          className="fill-current stroke-none opacity-20"
-                          d={`${sparkPath} L 100 40 L 0 40 Z`}
-                          style={{ color: statusTheme.stroke }}
-                        />
-                      </svg>
+                      {/* Micro Sparkline SVG stacked beside delta below the full-width value (xl+ where card width fits both) */}
+                      <div className="hidden xl:block w-16 2xl:w-20 h-6 2xl:h-7 shrink-0">
+                        <svg
+                          className="w-full h-full fill-none stroke-2 overflow-visible"
+                          viewBox="0 0 100 40"
+                        >
+                          <defs>
+                            <filter
+                              id={`spark-shadow-${kpi.id}`}
+                              x="-20%"
+                              y="-20%"
+                              width="140%"
+                              height="150%"
+                            >
+                              <feDropShadow
+                                dx="0"
+                                dy="2"
+                                stdDeviation="1.5"
+                                floodColor="var(--bg-app)"
+                                floodOpacity="0.45"
+                              />
+                            </filter>
+                          </defs>
+                          <path
+                            d={sparkPath}
+                            stroke={statusTheme.stroke}
+                            strokeWidth="2.2"
+                            strokeLinecap="round"
+                            filter={`url(#spark-shadow-${kpi.id})`}
+                          />
+                          <path
+                            className="fill-current stroke-none opacity-20"
+                            d={`${sparkPath} L 100 40 L 0 40 Z`}
+                            style={{ color: statusTheme.stroke }}
+                          />
+                        </svg>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="pt-1 sm:pt-2 border-t border-subtle flex items-center justify-between gap-1.5 text-[11px] sm:text-xs font-mono text-secondary">
+                  <div className="pt-1 sm:pt-2 border-t border-subtle flex items-center justify-between gap-1.5 text-[11px] sm:text-xs font-mono text-secondary min-w-0">
                     <span
                       data-testid={`exec-kpi-source-${kpi.id}`}
                       className="min-w-0 leading-snug"
@@ -1653,7 +1658,7 @@ export const ExecutiveDashboard: React.FC = () => {
                       className={`${statusTheme.text} hover:underline flex items-center gap-1 font-semibold shrink-0 cursor-pointer`}
                       title={`Drill down — Scope: ${kpi.period || 'Audited Scope'}`}
                     >
-                      <span className="hidden sm:inline">See details</span>
+                      <span className="hidden xl:inline">See details</span>
                       <ExternalLink className="w-3 h-3 shrink-0" />
                     </span>
                   </div>
@@ -1669,11 +1674,11 @@ export const ExecutiveDashboard: React.FC = () => {
       {activeTab === 'overview' && (
         <div className="space-y-4">
           {/* 2.2 HERO CHART (2/3 width = 8 cols) & 2.3 DARK "TOP 5" RANKING CARD (1/3 width = 4 cols) right under the KPI row */}
-          <section className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+          <section className="grid grid-cols-1 lg:grid-cols-12 gap-4 min-w-0">
             {/* LEFT: Hero Smooth Area Chart (8 cols = 2/3 width) */}
             <div
               data-testid="exec-hero-area-chart"
-              className="lg:col-span-8 glass-card depth-card rounded-[24px] p-3.5 sm:p-5 border border-subtle bg-card shadow-sm flex flex-col justify-between"
+              className="lg:col-span-8 min-w-0 glass-card depth-card rounded-[24px] p-3.5 sm:p-5 border border-subtle bg-card shadow-sm flex flex-col justify-between"
             >
               <div>
                 {/* Header: Title, Metric Selector, Granularity & View Controls */}
@@ -2267,42 +2272,58 @@ export const ExecutiveDashboard: React.FC = () => {
               return (
                 <div
                   data-testid="exec-ranking-card"
-                  className="lg:col-span-4 glass-card depth-card rounded-[24px] p-3.5 sm:p-5 border border-subtle bg-elevated/90 shadow-sm flex flex-col justify-between"
+                  className="lg:col-span-4 min-w-0 glass-card depth-card rounded-[24px] p-3.5 sm:p-5 border border-subtle bg-elevated/90 shadow-sm flex flex-col justify-between"
                 >
                   <div>
-                    <div className="flex items-start justify-between gap-2 pb-2.5 border-b border-subtle">
-                      <Tooltip
-                        side="top"
-                        title="Top 5 Ranked Breakdown"
-                        tag={`${rawDim} × ${rawMet}`}
-                        content={`Raw dimension column: "${rawDim}" · Ranked by metric column: "${rawMet}"`}
-                      >
-                        <div className="flex items-start gap-2 min-w-0 cursor-help">
-                          <div className="w-8 h-8 rounded-xl bg-accent-soft text-accent border border-subtle flex items-center justify-center shrink-0">
-                            <BarChart3 className="w-4 h-4 text-accent" />
+                    <div className="flex flex-col gap-2 pb-2.5 border-b border-subtle min-w-0">
+                      <div className="flex items-start justify-between gap-2 min-w-0">
+                        <Tooltip
+                          side="top"
+                          title="Top 5 Ranked Breakdown"
+                          tag={`${rawDim} × ${rawMet}`}
+                          className="min-w-0 flex-1"
+                          content={`Raw dimension column: "${rawDim}" · Ranked by metric column: "${rawMet}"`}
+                        >
+                          <div className="flex items-start gap-2 min-w-0 cursor-help">
+                            <div className="hidden xl:flex w-8 h-8 rounded-xl bg-accent-soft text-accent border border-subtle items-center justify-center shrink-0">
+                              <BarChart3 className="w-4 h-4 text-accent" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <h3
+                                data-testid="exec-ranking-title"
+                                title={`Raw columns: ${rawDim} ranked by ${rawMet}`}
+                                className="!text-sm sm:!text-[15px] !leading-tight text-primary font-bold tracking-tight line-clamp-2"
+                              >
+                                {humanRankingTitle}
+                              </h3>
+                              <p className="text-[11px] font-mono text-secondary">
+                                Top 5 ranked breakdown
+                              </p>
+                            </div>
                           </div>
-                          <div className="min-w-0">
-                            <h3
-                              data-testid="exec-ranking-title"
-                              title={`Raw columns: ${rawDim} ranked by ${rawMet}`}
-                              className="text-xs sm:text-sm text-primary font-bold tracking-tight leading-snug"
-                            >
-                              {humanRankingTitle}
-                            </h3>
-                            <p className="text-[11px] font-mono text-secondary">
-                              Top 5 ranked breakdown
-                            </p>
-                          </div>
-                        </div>
-                      </Tooltip>
+                        </Tooltip>
 
-                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          type="button"
+                          data-testid="exec-ranking-view-all"
+                          onClick={() => setActiveTab('pareto')}
+                          className="text-xs font-semibold text-accent hover:underline inline-flex items-center gap-0.5 cursor-pointer shrink-0 whitespace-nowrap pt-0.5"
+                        >
+                          <span>View all</span>
+                          <ArrowUpRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-2 min-w-0 w-full">
+                        <span className="text-[10px] font-mono uppercase tracking-wider text-muted font-semibold shrink-0">
+                          Dimension
+                        </span>
                         <select
                           value={selectedDimension}
                           onChange={(e) => setSelectedDimension(e.target.value)}
                           aria-label="Ranking dimension"
                           title={`Dimension column: ${rawDim}`}
-                          className="glass-input h-7 px-1.5 text-[11px] font-mono rounded-lg border border-subtle bg-card text-primary focus:outline-none cursor-pointer max-w-[96px]"
+                          className="glass-input h-7 px-2 text-[11px] font-mono rounded-lg border border-subtle bg-card text-primary focus:outline-none cursor-pointer min-w-0 flex-1 max-w-[140px] xl:max-w-[165px] truncate"
                         >
                           {stringCols.map((c) => (
                             <option key={c.name} value={c.name} title={c.name}>
@@ -2310,15 +2331,6 @@ export const ExecutiveDashboard: React.FC = () => {
                             </option>
                           ))}
                         </select>
-                        <button
-                          type="button"
-                          data-testid="exec-ranking-view-all"
-                          onClick={() => setActiveTab('pareto')}
-                          className="text-xs font-semibold text-accent hover:underline inline-flex items-center gap-0.5 cursor-pointer shrink-0 whitespace-nowrap"
-                        >
-                          <span>View all</span>
-                          <ArrowUpRight className="w-3.5 h-3.5" />
-                        </button>
                       </div>
                     </div>
 
