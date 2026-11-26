@@ -20,13 +20,17 @@ export async function parseFile(file: File): Promise<ParseResult> {
 
   if (extension === 'csv' || extension === 'txt') {
     const { default: Papa } = await import('papaparse');
+    const csvSource: any = typeof file.text === 'function' ? await file.text() : file;
     return new Promise((resolve, reject) => {
-      Papa.parse(file, {
+      Papa.parse(csvSource, {
         header: true,
         dynamicTyping: false,
-        skipEmptyLines: true,
-        complete: (results) => {
-          const rawRows = results.data as Record<string, any>[];
+        skipEmptyLines: 'greedy',
+        complete: (results: any) => {
+          const parsedData = (results.data as Record<string, any>[]) || [];
+          const rawRows = parsedData.filter(r =>
+            r && Object.values(r).some(v => v !== null && v !== undefined && String(v).trim() !== '')
+          );
           if (!rawRows || rawRows.length === 0) {
             return reject(new Error('Parsed file contains no rows.'));
           }

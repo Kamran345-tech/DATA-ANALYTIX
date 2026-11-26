@@ -42,6 +42,7 @@ export interface FeatureFlags {
   dataEngineerFeatures: boolean;
   southAsiaLocale: boolean;
   productQuality: boolean;
+  chartStudio: boolean;
 }
 
 export const CLASSIC_FEATURE_FLAGS: FeatureFlags = {
@@ -70,6 +71,7 @@ export const CLASSIC_FEATURE_FLAGS: FeatureFlags = {
   dataEngineerFeatures: false,
   southAsiaLocale: false,
   productQuality: false,
+  chartStudio: false,
 };
 
 export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
@@ -98,6 +100,7 @@ export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
   dataEngineerFeatures: true,
   southAsiaLocale: true,
   productQuality: true,
+  chartStudio: true,
 };
 
 export const FEATURE_METADATA: FeatureFlagMeta[] = [
@@ -300,6 +303,14 @@ export const FEATURE_METADATA: FeatureFlagMeta[] = [
     description: 'Adds real completion-tracked onboarding checklist, contextual "?" page guides, opt-in privacy-safe telemetry, Report a Problem modal, and offline PWA support.',
     classicBehavior: 'Static help documentation tab only.',
     newBehavior: 'Live onboarding progress tracker, per-page "?" guides, problem diagnostics, and installable PWA shell.'
+  },
+  {
+    key: 'chartStudio',
+    label: 'Chart Studio, Offline Geo Maps & VIP Boardroom Dashboards',
+    category: 'engine',
+    description: 'Enables the unified Chart Studio visual library (Compare, Trend, Part-to-Whole, Distribution, Gantt, Tables/Matrix, Cards/Gauges/Scorecard, Offline Choropleth/Bubble/Shape Maps, Key Influencers, Smart Narrative, Analytics Pane, Visual Calculations, Small Multiples, Power BI Theme JSON) and 14 Pack VIP Boardroom Dashboards.',
+    classicBehavior: 'Standard Recharts visual set and classic dashboard builder.',
+    newBehavior: 'Full Chart Studio visual suite, offline D3 Geo maps (World, US States, Pakistan), Analytics Pane, Key Influencers, and VIP Boardroom templates.'
   }
 ];
 

@@ -240,8 +240,9 @@ export function fitSlideBullets(
 }
 
 /**
- * Strips raw mathematical formulas from recommendation bullets (Part A2)
- * and formats each bullet as: Action Verb + Metric + Owner + Expected Impact (<= 110 chars).
+ * Strips raw mathematical formulas from recommendation bullets (Part A2 & A4)
+ * and formats each bullet as: Action Verb + Metric + Owner + Expected Impact
+ * without ever truncating or ending lines with "..." / "…".
  */
 export function formatActionableRecommendationBullet(
   rawText: string,
@@ -249,25 +250,37 @@ export function formatActionableRecommendationBullet(
   ownerRole: string,
   expectedImpact: string
 ): string {
-  // Remove inline formula strings like (SUM(A) / SUM(B)), = ..., etc.
   const withoutFormulas = String(rawText || '')
     .replace(/\b(?:SUM|AVG|COUNT|MIN|MAX)\s*\([^)]*\)/gi, '')
     .replace(/\([^)]*[=/*+][^)]*\)/g, '')
     .replace(/\s+/g, ' ')
     .trim()
-    .replace(/[.;]+$/, '');
+    .replace(/[.;…]+$/, '');
 
   const hasVerb =
-    /^(Optimize|Scale|Accelerate|Reduce|Automate|Prioritize|Rebalance|Enforce|Expand|Tighten|Audit|Resolve|Target|Shift|Strengthen|Cap|Standardize)\b/i.test(
+    /^(Optimize|Scale|Accelerate|Reduce|Automate|Prioritize|Rebalance|Enforce|Expand|Tighten|Audit|Resolve|Target|Shift|Strengthen|Cap|Standardize|Use|Guardrail|Simulates)\b/i.test(
       withoutFormulas
     );
-  const actionClause = hasVerb
+  const rawClause = hasVerb
     ? withoutFormulas
     : `Optimize ${fallbackMetric}: ${withoutFormulas}`;
 
-  const shortAction = fitTextToLimit(actionClause, 52).replace(/…$/, '');
-  const full = `${shortAction} — Owner: ${ownerRole} — Impact: ${expectedImpact}`;
-  return fitTextToLimit(full, MAX_BULLET_CHARS);
+  const suffix = ` — Owner: ${ownerRole} — Impact: ${expectedImpact}`;
+  const maxActionLen = Math.max(28, MAX_BULLET_CHARS - suffix.length);
+
+  let cleanAction = rawClause;
+  if (cleanAction.length > maxActionLen) {
+    const sliced = cleanAction.slice(0, maxActionLen);
+    const lastSpace = sliced.lastIndexOf(' ');
+    cleanAction = (lastSpace > 18 ? sliced.slice(0, lastSpace) : sliced)
+      .replace(/[,;:\-–—.…]+$/, '')
+      .trim();
+    // Remove dangling prepositions/conjunctions at clause end
+    cleanAction = cleanAction
+      .replace(/\s+\b(to|for|with|and|or|by|in|on|at|of|from|across|toward|via|into|the|a|an)$/i, '')
+      .trim();
+  }
+  return `${cleanAction}${suffix}`;
 }
 
 /**
@@ -1492,47 +1505,45 @@ export function buildPresentationSlides(
   if (activeSet.has('recommendations') && hasData) {
     const defaultOwners = [
       `${resolvedPack.name.split(' ')[0]} Lead`,
-      'RevOps & BI Manager',
+      'RevOps Lead',
       'Department VP',
-      'Data Engineering Lead',
-      'Operations Director',
+      'Data Eng Lead',
+      'Ops Director',
     ];
     const defaultImpacts = [
-      '+5% to +12% efficiency lift',
+      '+5–12% efficiency lift',
       '-15% cycle variance',
-      '+3% to +8% margin protection',
-      '100% KPI telemetry coverage',
-      'Faster anomaly remediation',
+      '+3–8% margin gain',
+      '100% KPI coverage',
+      '2x faster anomaly fix',
     ];
 
     const rawPrescriptive = [
       ...(resolvedPack.lenses.prescriptive || []).slice(0, 2),
       primaryChartBars[0]
-        ? `Scale top-performing "${primaryChartBars[0].category}" playbook on ${fallbackValCol}`
-        : `Prioritize resource allocation toward high-performing ${resolvedPack.name} segments`,
+        ? `Scale top "${primaryChartBars[0].category}" playbook on ${fallbackValCol}`
+        : `Prioritize high-performing ${resolvedPack.name} segments`,
       topKpi
         ? `Enforce weekly threshold alerts on ${topKpi.label} (${topKpi.formattedValue})`
         : `Automate weekly KPI governance reviews across leadership`,
       unavailableKpis.length > 0
-        ? `Expand pipeline with [${unavailableKpis
+        ? `Map [${unavailableKpis
             .slice(0, 2)
             .map((u) => u.missingColumn || u.id)
             .join(', ')}] to unlock ${unavailableKpis.length} KPIs`
         : `Automate daily data ingestion to preserve 100% KPI coverage`,
     ];
 
-    const prescriptiveList = fitSlideBullets(
-      rawPrescriptive.map((raw, idx) =>
+    const prescriptiveList = rawPrescriptive
+      .slice(0, 5)
+      .map((raw, idx) =>
         formatActionableRecommendationBullet(
           raw,
           availableKpis[idx]?.label || fallbackValCol,
           defaultOwners[idx % defaultOwners.length],
           defaultImpacts[idx % defaultImpacts.length]
         )
-      ),
-      5,
-      MAX_BULLET_CHARS
-    );
+      );
 
     if (prescriptiveList.length >= 3) {
       const recActionTitle = fitTextToLimit(

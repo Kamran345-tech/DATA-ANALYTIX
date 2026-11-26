@@ -22,6 +22,7 @@ import { retailPack } from './retail';
 import { manufacturingPack } from './manufacturing';
 import { bankingInsurancePack } from './banking-insurance';
 import { educationPack } from './education';
+import { getKpiAssumptionDetails } from '../kpiFormulaAudit';
 
 export const DEFAULT_PACK_THEMES: Record<PackId, Required<PackThemeConfig>> = {
   financial: {
@@ -235,8 +236,17 @@ function enrichPackConfig(raw: AnalyticsPackConfig): EnrichedAnalyticsPackConfig
     chartPalette: raw.theme?.chartPalette || fallbackTheme.chartPalette,
   };
 
+  const enrichedKpis = raw.kpis.map((kpi) => {
+    const details = getKpiAssumptionDetails(raw, kpi);
+    return {
+      ...kpi,
+      assumption: details.fullNote,
+    };
+  });
+
   return {
     ...raw,
+    kpis: enrichedKpis,
     category: raw.category || 'Finance & Risk',
     theme: resolvedTheme,
     roles,

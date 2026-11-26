@@ -10,7 +10,10 @@ import {
   Eye,
   Sliders,
   X,
+  Download,
+  Upload,
 } from 'lucide-react';
+import { parsePowerBiThemeJson } from '../../engine/chartStudioEngine';
 import {
   ACCENT_PRESETS,
   AccentPresetId,
@@ -467,6 +470,87 @@ export const ThemeStudioPanel: React.FC<ThemeStudioPanelProps> = ({
           </div>
         </div>
       </div>
+
+      {/* 6. Power BI Theme JSON Import & Export (Part D6) */}
+      <div
+        data-testid="powerbi-theme-json-section"
+        className="p-3.5 rounded-2xl border border-subtle bg-input space-y-2"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="text-xs font-semibold text-primary">
+            6. Power BI Theme JSON (Import / Export)
+          </span>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              data-testid="powerbi-theme-export-btn"
+              onClick={() => {
+                const pbiJson = {
+                  name: `DATA-ANALYTIX ${config.accentPreset.toUpperCase()} (${tokens.resolvedMode})`,
+                  dataColors: tokens.chartPalette,
+                  background: tokens.bgApp,
+                  foreground: tokens.textPrimary,
+                  tableAccent: tokens.accent,
+                };
+                const blob = new Blob([JSON.stringify(pbiJson, null, 2)], {
+                  type: 'application/json',
+                });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `data-analytix-powerbi-theme-${config.accentPreset}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+              }}
+              className="px-2.5 py-1 rounded-lg bg-card hover:bg-elevated border border-subtle text-xs font-semibold text-primary inline-flex items-center gap-1 cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5 text-accent" />
+              <span>Export JSON</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            data-testid="powerbi-theme-import-input"
+            aria-label="Paste Power BI Theme JSON"
+            placeholder='Paste Power BI JSON: {"name":"Corp","dataColors":[...],"tableAccent":"..."}'
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                const raw = (e.currentTarget.value || '').trim();
+                const parsed = parsePowerBiThemeJson(raw);
+                if (parsed.valid && parsed.accentHex) {
+                  setCustomHexDraft(parsed.accentHex);
+                  applyAndSave({
+                    ...config,
+                    mode: parsed.mode || config.mode,
+                    accentPreset: 'custom',
+                    customAccentHex: parsed.accentHex,
+                  });
+                }
+              }
+            }}
+            onChange={(e) => {
+              const raw = (e.target.value || '').trim();
+              if (raw.startsWith('{') && raw.endsWith('}')) {
+                const parsed = parsePowerBiThemeJson(raw);
+                if (parsed.valid && parsed.accentHex) {
+                  setCustomHexDraft(parsed.accentHex);
+                  applyAndSave({
+                    ...config,
+                    mode: parsed.mode || config.mode,
+                    accentPreset: 'custom',
+                    customAccentHex: parsed.accentHex,
+                  });
+                }
+              }
+            }}
+            className="flex-1 min-w-0 px-2.5 py-1.5 rounded-lg bg-card border border-subtle text-xs font-mono text-primary"
+          />
+        </div>
+      </div>
     </div>
   );
 };
+

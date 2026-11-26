@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, Suspense } from 'react';
 import { 
   SlidersHorizontal, 
   Plus, 
@@ -37,6 +37,8 @@ import {
 } from 'lucide-react';
 import { usePlatform } from '../../store/usePlatformStore';
 import { VisualConfig } from '../../types';
+
+const LazyChartStudioBuilderSection = React.lazy(() => import('../charts/ChartStudioBuilderSection'));
 import { EditableDashboardTitle } from '../common/EditableDashboardTitle';
 import { GlobalFilterBar } from '../common/GlobalFilterBar';
 import { InteractiveSlicersBar } from '../common/InteractiveSlicersBar';
@@ -1197,6 +1199,19 @@ export const DashboardBuilderView: React.FC = () => {
       {/* Global Filters & Interactive Slicers for Cross-Filtering */}
       {!flags.unifiedTheme && !flags.depthUI && <GlobalFilterBar />}
       <InteractiveSlicersBar />
+
+      {/* Chart Studio + 6 VIP Boardroom Layouts (Feature Flag: chartStudio) */}
+      {flags.chartStudio && (
+        <Suspense
+          fallback={
+            <div className="p-4 rounded-2xl border border-subtle bg-card text-xs text-secondary">
+              Loading Chart Studio &amp; VIP Templates...
+            </div>
+          }
+        >
+          <LazyChartStudioBuilderSection rows={activeRows} />
+        </Suspense>
+      )}
 
       {/* 2. Natural Language Visual Composer */}
       <div className="bg-card border-subtle text-primary shadow-sm border rounded-2xl p-4 sm:p-5 space-y-2.5">

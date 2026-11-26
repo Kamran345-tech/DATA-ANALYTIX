@@ -37,7 +37,7 @@ export function parseRealNumber(raw: unknown): number | null {
 
   // Strip currency codes/symbols and units (Rs., Rs, PKR, INR, USD, EUR, GBP, AED, SAR, $, €, £, ¥, ₹, ₨, %)
   s = s
-    .replace(/\b(rs\.?|pkr|inr|usd|eur|gbp|aed|sar|cad|aud)\b/gi, '')
+    .replace(/\b(rs|pkr|inr|usd|eur|gbp|aed|sar|cad|aud)\b\.?/gi, '')
     .replace(/[$€£¥₹₨%]/g, '')
     .trim();
 

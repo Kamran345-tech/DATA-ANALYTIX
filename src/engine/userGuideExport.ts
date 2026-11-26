@@ -245,7 +245,7 @@ export function buildUserGuideSpec(
       headlineMetrics: [
         { label: 'Sample Revenue', value: '$4.75M', delta: 'Closed-Won Bookings', isFavorable: true },
         { label: 'Data Hygiene', value: '85% -> 98%', delta: '1-Click Auto-Clean', isFavorable: true },
-        { label: '100k-Row Speed', value: '< 0.5 sec', delta: 'In-browser engine', isFavorable: true },
+        { label: 'Privacy Architecture', value: '100% Local', delta: 'In-browser engine', isFavorable: true },
       ],
       footerText: footerContact,
       speakerNotes: 'Five core capabilities of Data Analytix.',
@@ -440,7 +440,7 @@ export function generateUserGuidePdfDoc(
   const coverMetrics = [
     { label: 'DOMAIN INTELLIGENCE', value: '14 Analytics Packs', sub: '129+ Formula-Audited KPIs' },
     { label: 'GUIDED LIFECYCLE', value: '4 Workflow Stages', sub: 'Upload -> Clean -> Analyze -> Present' },
-    { label: 'IN-BROWSER ENGINE', value: '< 0.5s for 100k Rows', sub: 'Privacy-First · Zero Row Leakage' },
+    { label: 'IN-BROWSER ENGINE', value: '100% Client-Side', sub: 'Privacy-First · Zero Row Leakage' },
   ];
   coverMetrics.forEach((m, idx) => {
     const mx = 14 + idx * 62;

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, Suspense } from 'react';
 import {
   Landmark,
   Briefcase,
@@ -33,10 +33,13 @@ import {
   Activity,
   LineChart,
   Lightbulb,
+  Crown,
 } from 'lucide-react';
 import { usePlatform } from '../../store/usePlatformStore';
 import { useToast } from '../../store/useToast';
 import { loadFeatureFlags, FeatureFlags } from '../../config/features';
+
+const LazyVipBoardroomDashboard = React.lazy(() => import('./VipBoardroomDashboard'));
 import { EditableDashboardTitle } from '../common/EditableDashboardTitle';
 import { ModernKpiCard } from '../modern/ModernKpiCard';
 import { ColumnMappingModal } from '../common/ColumnMappingModal';
@@ -755,22 +758,16 @@ export const AnalyticsPacksView: React.FC = () => {
   }, [cleanRows, primaryCategoryCol]);
 
   const packCssVars = useMemo(() => {
-    const palette = activePack.theme.chartPalette;
     return {
       '--pack-from': activePack.theme.gradientFrom,
       '--pack-to': activePack.theme.gradientTo,
-      '--chart-1': palette[0] || activePack.theme.gradientFrom,
-      '--chart-2': palette[1] || activePack.theme.gradientTo,
-      '--chart-3': palette[2] || 'var(--info)',
-      '--chart-4': palette[3] || 'var(--warning)',
-      '--chart-5': palette[4] || 'var(--accent)',
-      '--chart-6': palette[5] || 'var(--accent-2)',
     } as React.CSSProperties;
   }, [activePack]);
 
   const topMatch = detectedMatches[0];
   const isTopMatchUncertain = Boolean(topMatch && (topMatch.isUncertain || topMatch.confidence < 60));
   const [isDescExpanded, setIsDescExpanded] = useState(false);
+  const [showVipBoardroom, setShowVipBoardroom] = useState(false);
   const hasActiveFilters = Boolean(
     filters.searchQuery || filters.selectedDimensionValue || dateWindowFilter !== 'all'
   );
@@ -1430,7 +1427,7 @@ export const AnalyticsPacksView: React.FC = () => {
             </button>
           </div>
 
-          {/* Row 2: Segmented Pill Lens Control in Header + Tidy 1-Row Filter Bar */}
+          {/* Row 2: Segmented Pill Lens Control in Header + VIP Boardroom Toggle + Tidy 1-Row Filter Bar */}
           <div className="pt-3 border-t border-subtle flex flex-col lg:flex-row lg:items-center justify-between gap-3">
             {/* Segmented Pill Lens Control with Active Pill Indicator */}
             <div
@@ -1440,7 +1437,7 @@ export const AnalyticsPacksView: React.FC = () => {
               aria-label="Analytical Lenses"
             >
               {(['descriptive', 'diagnostic', 'predictive', 'prescriptive'] as PackLensKey[]).map(lens => {
-                const isActive = activeLens === lens;
+                const isActive = !showVipBoardroom && activeLens === lens;
                 return (
                   <button
                     key={lens}
@@ -1448,7 +1445,10 @@ export const AnalyticsPacksView: React.FC = () => {
                     role="tab"
                     aria-selected={isActive}
                     data-testid={`pack-lens-tab-${lens}`}
-                    onClick={() => setActiveLens(lens)}
+                    onClick={() => {
+                      setShowVipBoardroom(false);
+                      setActiveLens(lens);
+                    }}
                     className={`h-8 px-3.5 rounded-lg text-xs font-bold capitalize transition-all cursor-pointer pack-btn-press ${
                       isActive
                         ? 'bg-accent text-on-accent shadow-xs'
@@ -1459,6 +1459,24 @@ export const AnalyticsPacksView: React.FC = () => {
                   </button>
                 );
               })}
+
+              {flags.chartStudio && (
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={showVipBoardroom}
+                  data-testid="pack-vip-boardroom-tab"
+                  onClick={() => setShowVipBoardroom(prev => !prev)}
+                  className={`h-8 px-3.5 rounded-lg text-xs font-bold inline-flex items-center gap-1.5 transition-all cursor-pointer pack-btn-press ${
+                    showVipBoardroom
+                      ? 'bg-accent text-on-accent shadow-xs'
+                      : 'text-accent hover:bg-card'
+                  }`}
+                >
+                  <Crown className="w-3.5 h-3.5" />
+                  <span>VIP Boardroom</span>
+                </button>
+              )}
             </div>
 
             {/* Tidy 1-Row Filter Bar (Search + Category Filter + Date Range + Clear-all chip) */}
@@ -1536,6 +1554,23 @@ export const AnalyticsPacksView: React.FC = () => {
               )}
             </div>
           </div>
+
+          {/* PART E1: VIP BOARDROOM MODE FOR ALL 14 PACKS */}
+          {flags.chartStudio && showVipBoardroom && (
+            <Suspense
+              fallback={
+                <div className="p-6 rounded-2xl border border-subtle bg-elevated text-xs text-secondary">
+                  Loading VIP Boardroom Dashboard...
+                </div>
+              }
+            >
+              <LazyVipBoardroomDashboard
+                packId={activePack.id}
+                rows={activeRows}
+                onPackChange={nextId => handleSwitchPack(nextId)}
+              />
+            </Suspense>
+          )}
 
           {/* SECTION 6: FRIENDLY ILLUSTRATED EMPTY / PARTIAL DATA STATE BANNER */}
           {(cleanRows.length === 0 || missingReqRoles.length > 0) && (
