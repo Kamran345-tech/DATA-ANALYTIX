@@ -396,7 +396,17 @@ export const AnalyticsPacksView: React.FC = () => {
 
   const isLight = themeMode === 'light';
   const [flags, setFlags] = useState<FeatureFlags>(() => loadFeatureFlags());
-  const [showCatalogGrid, setShowCatalogGrid] = useState<boolean>(true);
+  const [showCatalogGrid, setShowCatalogGrid] = useState<boolean>(() => {
+    const initFlags = loadFeatureFlags();
+    const startEmpty =
+      typeof window !== 'undefined' &&
+      sessionStorage.getItem('dataanalytix_start_empty') === 'true';
+    if (initFlags.premiumUX && cleanRows.length > 0 && !startEmpty) {
+      return false;
+    }
+    return true;
+  });
+  const [showExploreSection, setShowExploreSection] = useState<boolean>(false);
   const [packSearchQuery, setPackSearchQuery] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [activeLens, setActiveLens] = useState<PackLensKey>('descriptive');
@@ -645,7 +655,7 @@ export const AnalyticsPacksView: React.FC = () => {
 
   const handleOpenPack = (pack: EnrichedAnalyticsPackConfig) => {
     setActivePackId(pack.id);
-    if (!hasCustomUserDataset && cleanRows.length > 0) {
+    if (!hasCustomUserDataset && (cleanRows.length > 0 || flags.premiumUX)) {
       const sampleRows = pack.sampleDataset();
       ingestDatasetFromRows(`${pack.name} Sample Dataset`, sampleRows, {
         connectionType: 'PACK_SAMPLE',
@@ -778,11 +788,31 @@ export const AnalyticsPacksView: React.FC = () => {
       className="w-full min-w-0 max-w-[1280px] mx-auto space-y-6 pb-24 animate-fadeIn overflow-x-hidden"
       data-testid="analytics-packs-view"
     >
-      <PagePurposeBar page="analytics_packs" />
-      <InteractiveSlicersBar />
+      {!flags.premiumUX && <PagePurposeBar page="analytics_packs" />}
+      {!flags.premiumUX && <InteractiveSlicersBar />}
 
-      {/* SLIM STICKY "SWITCH PACK" BAR WHEN CATALOG IS COLLAPSED (Part A Bug #4) */}
-      {!showCatalogGrid && (
+      {/* PREMIUM UX: BOARD VIEW AS DEFAULT & FIRST VIEW (Full width, recognition banner at top) */}
+      {flags.premiumUX && !showCatalogGrid && (
+        <Suspense
+          fallback={
+            <div className="p-6 rounded-2xl border border-subtle bg-elevated text-xs text-secondary pack-skeleton-shimmer">
+              Loading Board View...
+            </div>
+          }
+        >
+          <LazyVipBoardroomDashboard
+            packId={activePack.id}
+            rows={activeRows}
+            detectedConfidence={topMatch?.confidence ?? 100}
+            showRecognitionBanner={true}
+            onChangePackRequest={() => setShowCatalogGrid(true)}
+            onPackChange={nextId => handleSwitchPack(nextId)}
+          />
+        </Suspense>
+      )}
+
+      {/* SLIM STICKY "SWITCH PACK" BAR WHEN CATALOG IS COLLAPSED (Classic mode) */}
+      {!flags.premiumUX && !showCatalogGrid && (
         <div
           data-testid="pack-sticky-switch-bar"
           className="sticky top-0 z-30 backdrop-blur-md bg-card border border-subtle rounded-2xl p-2.5 shadow-card flex flex-wrap sm:flex-nowrap items-center justify-between gap-2.5"
@@ -841,26 +871,32 @@ export const AnalyticsPacksView: React.FC = () => {
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             <div className="space-y-3 min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-secondary">
-                <span className="font-bold uppercase tracking-wider" style={{ color: activePack.theme.gradientFrom }}>
-                  Domain Intelligence Studio
+                <span
+                  className="font-bold uppercase tracking-wider"
+                  style={{ color: activePack.theme.gradientFrom }}
+                  title="Domain Intelligence Studio"
+                >
+                  {flags.premiumUX ? 'Industry templates' : 'Domain Intelligence Studio'}
                 </span>
                 <span aria-hidden="true">·</span>
                 <span>{ANALYTICS_PACKS.length} Specialized Domains</span>
                 <span aria-hidden="true">·</span>
                 <span>{totalCatalogKpis}+ Audited KPIs</span>
                 <span aria-hidden="true">·</span>
-                <span>4 Analytical Lenses</span>
+                <span title="4 Analytical Lenses">
+                  {flags.premiumUX ? '4 Explore Views' : '4 Analytical Lenses'}
+                </span>
               </div>
 
               <h1 className="font-heading text-2xl sm:text-4xl font-bold text-primary tracking-tight leading-tight">
-                Analytics Packs &amp;{' '}
+                {flags.premiumUX ? 'Industry Templates & ' : 'Analytics Packs & '}
                 <span className={flags.depthUI ? 'pack-hero-gradient-text' : 'text-accent'}>
                   {activePack.name}
                 </span>
               </h1>
 
               <p className="text-xs sm:text-sm text-secondary max-w-2xl leading-relaxed">
-                Every analytics domain gets its own tailored visual identity, auto-built KPI scorecard, 4-lens diagnostics, and boardroom report from a single declarative configuration.
+                Every analytics domain gets its own tailored visual identity, auto-built key numbers, explore views, and boardroom deck from a single configuration.
               </p>
 
               {/* 3 Hero Stat Metrics + Quick Controls */}
@@ -868,17 +904,21 @@ export const AnalyticsPacksView: React.FC = () => {
                 <div className="flex items-center gap-4 px-3.5 py-2 rounded-xl bg-elevated border border-subtle text-xs font-mono tabular-nums">
                   <div>
                     <span className="font-bold text-primary">14</span>{' '}
-                    <span className="text-secondary">Domains</span>
+                    <span className="text-secondary">{flags.premiumUX ? 'Templates' : 'Domains'}</span>
                   </div>
                   <span className="text-muted" aria-hidden="true">·</span>
                   <div>
                     <span className="font-bold text-primary">{totalCatalogKpis}+</span>{' '}
-                    <span className="text-secondary">KPIs</span>
+                    <span className="text-secondary" title="Key Performance Indicators">
+                      {flags.premiumUX ? 'Key numbers' : 'KPIs'}
+                    </span>
                   </div>
                   <span className="text-muted" aria-hidden="true">·</span>
                   <div>
                     <span className="font-bold text-primary">4</span>{' '}
-                    <span className="text-secondary">Lenses</span>
+                    <span className="text-secondary" title="Analytical Lenses">
+                      {flags.premiumUX ? 'Views' : 'Lenses'}
+                    </span>
                   </div>
                 </div>
 
@@ -1250,8 +1290,11 @@ export const AnalyticsPacksView: React.FC = () => {
 
                     {/* 3 Hero KPI Names */}
                     <div className="space-y-1 pt-0.5">
-                      <div className="text-[10px] font-mono uppercase tracking-wider text-muted">
-                        Hero Scorecard Metrics
+                      <div
+                        className="text-[10px] font-mono uppercase tracking-wider text-muted"
+                        title="Hero Scorecard Metrics"
+                      >
+                        {flags.premiumUX ? 'Key numbers' : 'Hero Scorecard Metrics'}
                       </div>
                       <div className="text-xs text-secondary leading-snug line-clamp-2">
                         {heroKpiNames.join(' · ')}
@@ -1259,41 +1302,64 @@ export const AnalyticsPacksView: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Part A Bug #2: ONE Primary CTA ("Open with sample data") + subtle text link ("Use my data") */}
-                  <div className="pt-3 border-t border-subtle flex flex-col gap-2">
-                    <button
-                      type="button"
-                      data-testid={`pack-sample-btn-${pack.id}`}
-                      onClick={() => handleTrySampleData(pack)}
-                      className="w-full min-h-[42px] px-3.5 py-2 rounded-xl bg-accent text-on-accent text-xs font-bold hover:opacity-90 transition-opacity cursor-pointer flex items-center justify-center gap-1.5 pack-btn-press"
-                    >
-                      <span>Open with sample data</span>
-                      <ArrowRight className="w-3.5 h-3.5 shrink-0" />
-                    </button>
-
-                    <div className="flex items-center justify-center">
+                  {/* Card Actions: Premium UX collapses "Try sample data" into a secondary/hover link */}
+                  {flags.premiumUX ? (
+                    <div className="pt-3 border-t border-subtle flex items-center justify-between gap-2 group">
                       <button
                         type="button"
                         data-testid={`pack-open-btn-${pack.id}`}
-                        disabled={!hasCustomUserDataset}
                         onClick={() => handleOpenPack(pack)}
-                        title={
-                          hasCustomUserDataset
-                            ? `Open ${pack.name} using your uploaded dataset (${project?.name})`
-                            : 'Upload a CSV or Excel dataset first to analyze your own data'
-                        }
-                        className={`text-[11px] font-medium py-1 px-2 rounded-lg transition-colors ${
-                          hasCustomUserDataset
-                            ? 'text-secondary hover:text-primary underline underline-offset-4 cursor-pointer'
-                            : 'text-muted opacity-75 cursor-not-allowed'
-                        }`}
+                        className="px-3.5 py-2 rounded-xl bg-elevated hover:bg-card-hover border border-subtle text-xs font-semibold text-primary transition-colors cursor-pointer inline-flex items-center gap-1.5"
                       >
-                        {hasCustomUserDataset
-                          ? 'Use my data →'
-                          : 'Use my data (upload file first)'}
+                        <span>{isSelected ? 'Current template' : 'Select template'}</span>
+                        <ArrowRight className="w-3.5 h-3.5 shrink-0 text-accent" />
+                      </button>
+
+                      <button
+                        type="button"
+                        data-testid={`pack-sample-btn-${pack.id}`}
+                        onClick={() => handleTrySampleData(pack)}
+                        className="text-[11px] font-medium text-secondary hover:text-accent underline underline-offset-4 opacity-80 hover:opacity-100 transition-opacity cursor-pointer"
+                      >
+                        Try sample data
                       </button>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="pt-3 border-t border-subtle flex flex-col gap-2">
+                      <button
+                        type="button"
+                        data-testid={`pack-sample-btn-${pack.id}`}
+                        onClick={() => handleTrySampleData(pack)}
+                        className="w-full min-h-[42px] px-3.5 py-2 rounded-xl bg-accent text-on-accent text-xs font-bold hover:opacity-90 transition-opacity cursor-pointer flex items-center justify-center gap-1.5 pack-btn-press"
+                      >
+                        <span>Open with sample data</span>
+                        <ArrowRight className="w-3.5 h-3.5 shrink-0" />
+                      </button>
+
+                      <div className="flex items-center justify-center">
+                        <button
+                          type="button"
+                          data-testid={`pack-open-btn-${pack.id}`}
+                          disabled={!hasCustomUserDataset}
+                          onClick={() => handleOpenPack(pack)}
+                          title={
+                            hasCustomUserDataset
+                              ? `Open ${pack.name} using your uploaded dataset (${project?.name})`
+                              : 'Upload a CSV or Excel dataset first to analyze your own data'
+                          }
+                          className={`text-[11px] font-medium py-1 px-2 rounded-lg transition-colors ${
+                            hasCustomUserDataset
+                              ? 'text-secondary hover:text-primary underline underline-offset-4 cursor-pointer'
+                              : 'text-muted opacity-75 cursor-not-allowed'
+                          }`}
+                        >
+                          {hasCustomUserDataset
+                            ? 'Use my data →'
+                            : 'Use my data (upload file first)'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -1301,7 +1367,37 @@ export const AnalyticsPacksView: React.FC = () => {
         </section>
       )}
 
-      {/* SECTION 5 (PART B): ACTIVE PACK DASHBOARD VIEW (Hierarchy: Header + Filters -> Key Insight -> Hero KPIs -> Charts -> Lens & Report Details) */}
+      {/* PREMIUM UX: "EXPLORE" SECTION TOGGLE BELOW BOARD VIEW (Descriptive, Diagnostic, Predictive, Prescriptive) */}
+      {flags.premiumUX && !showCatalogGrid && (
+        <div
+          data-testid="vip-explore-section"
+          className="rounded-xl border border-subtle bg-card p-4 flex flex-wrap items-center justify-between gap-3"
+        >
+          <div className="space-y-0.5">
+            <h3
+              title="4-Lens Analytical Diagnostics (Descriptive, Diagnostic, Predictive, Prescriptive)"
+              className="text-sm font-bold text-primary"
+            >
+              Explore views (Descriptive, Diagnostic, Predictive, Prescriptive)
+            </h3>
+            <p className="text-xs text-secondary">
+              Dive deeper into detailed key numbers, variance diagnostics, 3-period forecasts, and what-if simulations.
+            </p>
+          </div>
+          <button
+            type="button"
+            data-testid="vip-explore-views-toggle"
+            aria-expanded={showExploreSection}
+            onClick={() => setShowExploreSection(prev => !prev)}
+            className="px-3.5 py-2 rounded-lg border border-subtle bg-elevated hover:border-[var(--accent)] text-xs font-semibold text-primary cursor-pointer"
+          >
+            {showExploreSection ? 'Hide explore views' : 'Open explore views'}
+          </button>
+        </div>
+      )}
+
+      {/* SECTION 5 (PART B): ACTIVE PACK DASHBOARD VIEW / EXPLORE SECTION */}
+      {(!flags.premiumUX || showCatalogGrid || showExploreSection) && (
       <section
         ref={dashboardSectionRef}
         aria-label={`${activePack.name} Dashboard`}
@@ -1460,7 +1556,7 @@ export const AnalyticsPacksView: React.FC = () => {
                 );
               })}
 
-              {flags.chartStudio && (
+              {flags.chartStudio && !flags.premiumUX && (
                 <button
                   type="button"
                   role="tab"
@@ -1911,8 +2007,11 @@ export const AnalyticsPacksView: React.FC = () => {
                     backgroundImage: `linear-gradient(90deg, ${activePack.theme.gradientFrom}, ${activePack.theme.gradientTo})`,
                   }}
                 />
-                <h2 className="font-heading text-base font-bold text-primary uppercase tracking-wide">
-                  4-Lens Analytical Diagnostics
+                <h2
+                  title="4-Lens Analytical Diagnostics"
+                  className="font-heading text-base font-bold text-primary uppercase tracking-wide"
+                >
+                  {flags.premiumUX ? 'Explore views' : '4-Lens Analytical Diagnostics'}
                 </h2>
               </div>
               <p className="text-xs text-secondary">
@@ -1922,10 +2021,11 @@ export const AnalyticsPacksView: React.FC = () => {
 
             <div className="flex items-center gap-2 text-xs font-mono">
               <span
+                title={`Active Lens: ${LENS_META[activeLens].label}`}
                 className="px-2.5 py-1 rounded-lg bg-elevated border border-subtle font-bold uppercase"
                 style={{ color: activePack.theme.gradientFrom }}
               >
-                Active Lens: {LENS_META[activeLens].label}
+                {flags.premiumUX ? 'Active View' : 'Active Lens'}: {LENS_META[activeLens].label}
               </span>
             </div>
           </div>
@@ -1941,8 +2041,11 @@ export const AnalyticsPacksView: React.FC = () => {
                       {React.createElement(LENS_META[activeLens].Icon, { className: 'w-4 h-4' })}
                     </div>
                     <div>
-                      <h3 className="font-heading text-sm font-bold text-primary capitalize">
-                        {activePack.name} — {activeLens} Lens
+                      <h3
+                        title={`${activePack.name} — ${activeLens} Lens`}
+                        className="font-heading text-sm font-bold text-primary capitalize"
+                      >
+                        {activePack.name} — {activeLens} {flags.premiumUX ? 'View' : 'Lens'}
                       </h3>
                       <div className="text-[11px] text-secondary">
                         {LENS_META[activeLens].question}
@@ -2185,6 +2288,7 @@ export const AnalyticsPacksView: React.FC = () => {
           </div>
         </div>
       </section>
+      )}
 
       {/* Column Mapping Modal */}
       <ColumnMappingModal

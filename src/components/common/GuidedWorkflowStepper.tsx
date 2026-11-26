@@ -76,6 +76,20 @@ export const GuidedWorkflowStepper: React.FC<GuidedWorkflowStepperProps> = ({
 
   if (!flags.designSystemV3) return null;
 
+  if (flags.premiumUX) {
+    const isUploadOrCleanFlow = [
+      'upload',
+      'live_connector',
+      'preview',
+      'quality',
+      'cleaning',
+      'data_dictionary',
+    ].includes(currentTab);
+    if (!isUploadOrCleanFlow) {
+      return null;
+    }
+  }
+
   const hasData = cleanRows.length > 0 && columns.length > 0;
   const isCleanComplete =
     hasData && (qualityReport.overallScore >= 95 || transformations.length > 0);
@@ -215,7 +229,7 @@ export const GuidedWorkflowStepper: React.FC<GuidedWorkflowStepperProps> = ({
             <span className="hidden lg:inline">? Guide</span>
           </button>
 
-          {onOpenCommandPalette && (
+          {onOpenCommandPalette && !flags.premiumUX && (
             <button
               type="button"
               data-testid="stepper-command-palette-trigger"

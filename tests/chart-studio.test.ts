@@ -162,19 +162,60 @@ describe('Chart Studio, Offline Geo Maps, Visual Calculations & Messy Parser Tes
       expect(stats.forecastPoints[0].upperBound).toBeGreaterThan(stats.forecastPoints[0].lowerBound);
     });
 
-    it('ranks Key Influencers driving a target metric up or down with plain-language explanations', () => {
-      const rows = [
+    it('enforces minimum sample size (>=30 rows, >=3 groups of >=5 rows) and deduplicates identical lifts in Key Influencers', () => {
+      // 1. Small sample (< 30 rows) must refuse to report unreliable drivers
+      const tinyRows = [
         { tier: 'Enterprise', region: 'North', deal_size: 120000 },
         { tier: 'Enterprise', region: 'South', deal_size: 110000 },
         { tier: 'SMB', region: 'North', deal_size: 18000 },
         { tier: 'SMB', region: 'South', deal_size: 15000 },
         { tier: 'Mid-Market', region: 'West', deal_size: 48000 },
+        { tier: 'Mid-Market', region: 'East', deal_size: 52000 },
       ];
-      const ki = computeKeyInfluencers(rows, 'deal_size');
+      const tinyKi = computeKeyInfluencers(tinyRows, 'deal_size');
+      expect(tinyKi.insufficientSample).toBe(true);
+      expect(tinyKi.insufficientReason).toBe('Not enough data to find reliable drivers (6 rows)');
+      expect(tinyKi.topIncreasers).toHaveLength(0);
+
+      // 2. Adequate sample (>= 30 rows, >= 3 groups with >= 5 rows each) plus a duplicate/aliased column
+      const validRows: Record<string, any>[] = [];
+      for (let i = 0; i < 12; i++) {
+        validRows.push({
+          tier: 'Enterprise',
+          tier_copy: 'Enterprise_Alias',
+          region: 'North',
+          deal_size: 120000 + i * 500,
+        });
+      }
+      for (let i = 0; i < 10; i++) {
+        validRows.push({
+          tier: 'Mid-Market',
+          tier_copy: 'Mid_Alias',
+          region: 'West',
+          deal_size: 50000 + i * 300,
+        });
+      }
+      for (let i = 0; i < 10; i++) {
+        validRows.push({
+          tier: 'SMB',
+          tier_copy: 'SMB_Alias',
+          region: 'South',
+          deal_size: 15000 + i * 200,
+        });
+      }
+
+      const ki = computeKeyInfluencers(validRows, 'deal_size');
+      expect(ki.insufficientSample).toBe(false);
       expect(ki.topIncreasers.length).toBeGreaterThan(0);
       expect(ki.topIncreasers[0].segmentValue).toBe('Enterprise');
       expect(ki.topIncreasers[0].plainLanguage).toContain('Enterprise');
       expect(ki.topDecreasers[0].segmentValue).toBe('SMB');
+
+      // Verify identical lift from tier_copy was deduplicated
+      const enterpriseDrivers = ki.topIncreasers.filter(
+        (d) => d.impactScore === ki.topIncreasers[0].impactScore && d.sampleCount === 12
+      );
+      expect(enterpriseDrivers).toHaveLength(1);
     });
 
     it('generates a 5-line executive summary in Smart Narrative linked to real numbers', () => {

@@ -46,8 +46,22 @@ export const LoginPage: React.FC = () => {
     setAuthError 
   } = useFirebaseAuth();
 
-  const { themeMode, setThemeMode } = usePlatform();
+  const { themeMode, setThemeMode, setCurrentTab } = usePlatform();
   const isLight = themeMode === 'light';
+
+  const handleEnterSampleBoardView = () => {
+    enterAsGuest();
+    try {
+      const raw = localStorage.getItem('dataanalytix_features');
+      const parsed = raw ? JSON.parse(raw) : null;
+      const isPremium = parsed ? ('premiumUX' in parsed ? Boolean(parsed.premiumUX) : false) : true;
+      if (isPremium) {
+        setCurrentTab('analytics_packs');
+      }
+    } catch {
+      setCurrentTab('analytics_packs');
+    }
+  };
 
   const [mode, setMode] = useState<'signin' | 'register' | 'forgot_password'>('signin');
   const [email, setEmail] = useState('');
@@ -382,7 +396,8 @@ export const LoginPage: React.FC = () => {
               <div className="flex items-center justify-between gap-3">
                 <button
                   type="button"
-                  onClick={enterAsGuest}
+                  data-testid="login-try-sample-data-btn"
+                  onClick={handleEnterSampleBoardView}
                   className="text-xs font-semibold text-accent hover:underline underline-offset-4 flex items-center gap-1.5 cursor-pointer"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
@@ -391,7 +406,7 @@ export const LoginPage: React.FC = () => {
 
                 <button
                   type="button"
-                  onClick={enterAsGuest}
+                  onClick={handleEnterSampleBoardView}
                   className="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 flex items-center gap-1.5 cursor-pointer glass-btn-secondary"
                 >
                   <span>Launch Demo</span>

@@ -134,6 +134,9 @@ export const UploadIngestionView: React.FC = () => {
   const executeAnalysis = () => {
     if (selectedFile) {
       ingestFile(selectedFile);
+      if (flags.premiumUX) {
+        setCurrentTab('analytics_packs');
+      }
     }
   };
 
@@ -702,9 +705,10 @@ export const UploadIngestionView: React.FC = () => {
               <div className="pt-2 flex items-center justify-between">
                 <span className={`text-xs font-mono ${isLight ? 'text-muted' : 'text-muted'}`}>{demo.rowsCount} records</span>
                 <button
+                  data-testid={`upload-load-benchmark-${demo.id}`}
                   onClick={() => {
                     loadDemoDataset(demo.id);
-                    setCurrentTab('executive_dashboard');
+                    setCurrentTab(flags.premiumUX ? 'analytics_packs' : 'executive_dashboard');
                   }}
                   className={`px-4 py-1.5 rounded-lg text-xs font-medium border transition-colors flex items-center gap-1.5 cursor-pointer ${
                     isLight 

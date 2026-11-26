@@ -140,9 +140,10 @@ export const LandingPage: React.FC = () => {
                 </button>
 
                 <button
+                  data-testid="landing-try-sample-data-btn"
                   onClick={() => {
                     loadDemoDataset('global-retail-sales');
-                    setCurrentTab('executive_dashboard');
+                    setCurrentTab(flags.premiumUX ? 'analytics_packs' : 'executive_dashboard');
                   }}
                   className="glass-btn-secondary px-6 py-3 rounded-xl font-heading text-sm font-semibold flex items-center gap-2 cursor-pointer"
                 >

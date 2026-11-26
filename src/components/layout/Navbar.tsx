@@ -191,56 +191,77 @@ export const Navbar: React.FC = () => {
         )}
       </div>
 
-      {/* Center Search: collapses to an icon button below 1400px, full input at >= 1400px */}
+      {/* Center Search: under premiumUX shows ONE unified global search button (Ctrl+K) */}
       <div className="flex items-center shrink-0">
-        <button
-          type="button"
-          data-testid="navbar-search-icon-btn"
-          onClick={() =>
-            window.dispatchEvent(new CustomEvent('dataanalytix:open-command-palette'))
-          }
-          title="Search pages & data (Ctrl+K)"
-          aria-label="Search pages and data"
-          className="hidden md:inline-flex min-[1400px]:hidden items-center justify-center p-2 rounded-xl glass-btn-secondary cursor-pointer shrink-0"
-        >
-          <Search className="w-4 h-4 text-secondary" />
-        </button>
-
-        <div
-          data-testid="navbar-search-box"
-          className="hidden min-[1400px]:flex items-center relative w-44 2xl:w-52 shrink-0"
-        >
-          <Search className="w-3.5 h-3.5 absolute left-2.5 pointer-events-none z-10 text-secondary" />
-          <input
-            type="text"
-            placeholder="Search..."
-            value={filters.searchQuery}
-            onChange={(e) => setFilters((prev) => ({ ...prev, searchQuery: e.target.value }))}
-            className="glass-input w-full text-xs pl-7 pr-11 py-1.5 rounded-xl transition-colors focus:outline-none"
-          />
-          {filters.searchQuery ? (
+        {flags.premiumUX ? (
+          <button
+            type="button"
+            data-testid="navbar-search-icon-btn"
+            onClick={() =>
+              window.dispatchEvent(new CustomEvent('dataanalytix:open-command-palette'))
+            }
+            title="Search pages, templates, and commands (Ctrl+K)"
+            aria-label="Search pages and data (Ctrl+K)"
+            className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl glass-btn-secondary cursor-pointer shrink-0 text-xs"
+          >
+            <Search className="w-3.5 h-3.5 text-secondary shrink-0" />
+            <span className="hidden min-[1400px]:inline text-secondary font-medium">Search</span>
+            <kbd className="hidden min-[1400px]:inline px-1.5 py-0.5 rounded bg-card border border-subtle font-mono text-[10px] text-muted">
+              Ctrl+K
+            </kbd>
+          </button>
+        ) : (
+          <>
             <button
               type="button"
-              onClick={() => setFilters((prev) => ({ ...prev, searchQuery: '' }))}
-              className="absolute right-2 text-xs p-0.5 rounded transition-colors z-10 text-muted hover:text-primary"
-              aria-label="Clear search"
-            >
-              ×
-            </button>
-          ) : (
-            <button
-              type="button"
+              data-testid="navbar-search-icon-btn"
               onClick={() =>
                 window.dispatchEvent(new CustomEvent('dataanalytix:open-command-palette'))
               }
-              title="Open Command Palette (Ctrl+K)"
-              aria-label="Open Command Palette"
-              className="absolute right-1.5 px-1.5 py-0.5 rounded bg-card border border-subtle font-mono text-[10px] text-muted hover:text-primary cursor-pointer"
+              title="Search pages & data (Ctrl+K)"
+              aria-label="Search pages and data"
+              className="hidden md:inline-flex min-[1400px]:hidden items-center justify-center p-2 rounded-xl glass-btn-secondary cursor-pointer shrink-0"
             >
-              Ctrl+K
+              <Search className="w-4 h-4 text-secondary" />
             </button>
-          )}
-        </div>
+
+            <div
+              data-testid="navbar-search-box"
+              className="hidden min-[1400px]:flex items-center relative w-44 2xl:w-52 shrink-0"
+            >
+              <Search className="w-3.5 h-3.5 absolute left-2.5 pointer-events-none z-10 text-secondary" />
+              <input
+                type="text"
+                placeholder="Search..."
+                value={filters.searchQuery}
+                onChange={(e) => setFilters((prev) => ({ ...prev, searchQuery: e.target.value }))}
+                className="glass-input w-full text-xs pl-7 pr-11 py-1.5 rounded-xl transition-colors focus:outline-none"
+              />
+              {filters.searchQuery ? (
+                <button
+                  type="button"
+                  onClick={() => setFilters((prev) => ({ ...prev, searchQuery: '' }))}
+                  className="absolute right-2 text-xs p-0.5 rounded transition-colors z-10 text-muted hover:text-primary"
+                  aria-label="Clear search"
+                >
+                  ×
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() =>
+                    window.dispatchEvent(new CustomEvent('dataanalytix:open-command-palette'))
+                  }
+                  title="Open Command Palette (Ctrl+K)"
+                  aria-label="Open Command Palette"
+                  className="absolute right-1.5 px-1.5 py-0.5 rounded bg-card border border-subtle font-mono text-[10px] text-muted hover:text-primary cursor-pointer"
+                >
+                  Ctrl+K
+                </button>
+              )}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Right controls */}

@@ -320,6 +320,8 @@ export interface KeyInfluencersResult {
   topIncreasers: KeyInfluencerDriver[];
   topDecreasers: KeyInfluencerDriver[];
   allDrivers: KeyInfluencerDriver[];
+  insufficientSample?: boolean;
+  insufficientReason?: string;
 }
 
 export function computeKeyInfluencers(
@@ -334,6 +336,8 @@ export function computeKeyInfluencers(
       topIncreasers: [],
       topDecreasers: [],
       allDrivers: [],
+      insufficientSample: true,
+      insufficientReason: `Not enough data to find reliable drivers (${rows.length} rows)`,
     };
   }
 
@@ -354,11 +358,25 @@ export function computeKeyInfluencers(
   const baselineMean =
     targetValues.reduce((a, b) => a + b, 0) / Math.max(1, targetValues.length);
 
+  if (rows.length < 30) {
+    return {
+      targetColumn,
+      baselineMean: Number(baselineMean.toFixed(2)),
+      topIncreasers: [],
+      topDecreasers: [],
+      allDrivers: [],
+      insufficientSample: true,
+      insufficientReason: `Not enough data to find reliable drivers (${rows.length} rows)`,
+    };
+  }
+
   const cols = Object.keys(rows[0]).filter(
     (c) => c !== targetColumn && !/^(id|uuid|row_id)$/i.test(c) && !/id$/i.test(c)
   );
 
   const drivers: KeyInfluencerDriver[] = [];
+  const seenLiftSignatures = new Set<string>();
+  let maxValidGroupsInAnyCol = 0;
 
   for (const col of cols) {
     // Check if column is categorical or numeric
@@ -371,7 +389,7 @@ export function computeKeyInfluencers(
     const isNumericCol = numericCount > rows.length * 0.75;
 
     if (isNumericCol) {
-      // Bucket numeric explanatory column into High (Top Tercentile) vs Low (Bottom Tercentile)
+      // Bucket numeric explanatory column into 3 tertiles (Low, Mid, High)
       const numPairs = rows
         .map((r, idx) => ({
           x: Number(String(r[col] ?? '0').replace(/[^0-9.-]/g, '')),
@@ -379,15 +397,23 @@ export function computeKeyInfluencers(
         }))
         .filter((p) => Number.isFinite(p.x));
 
-      if (numPairs.length >= 4) {
+      if (numPairs.length >= 15) {
         const sortedX = [...numPairs].sort((a, b) => a.x - b.x);
+        const cutoffLow = sortedX[Math.floor(sortedX.length * 0.33)].x;
         const cutoffHigh = sortedX[Math.floor(sortedX.length * 0.66)].x;
+        const lowGroup = numPairs.filter((p) => p.x <= cutoffLow);
+        const midGroup = numPairs.filter((p) => p.x > cutoffLow && p.x < cutoffHigh);
         const highGroup = numPairs.filter((p) => p.x >= cutoffHigh);
-        if (highGroup.length >= 2) {
+        const validBuckets = [lowGroup, midGroup, highGroup].filter((g) => g.length >= 5).length;
+        maxValidGroupsInAnyCol = Math.max(maxValidGroupsInAnyCol, validBuckets);
+
+        if (highGroup.length >= 5) {
           const segMean = highGroup.reduce((a, b) => a + b.y, 0) / highGroup.length;
           const lift = baselineMean !== 0 ? segMean / baselineMean : 1;
           const diffPct = baselineMean !== 0 ? ((segMean - baselineMean) / Math.abs(baselineMean)) * 100 : 0;
-          if (Math.abs(diffPct) >= 3) {
+          const sig = `${Number(Math.abs(lift).toFixed(4))}:${Number(segMean.toFixed(2))}:${highGroup.length}`;
+          if (Math.abs(diffPct) >= 3 && !seenLiftSignatures.has(sig)) {
+            seenLiftSignatures.add(sig);
             const dir: 'increases' | 'decreases' = segMean >= baselineMean ? 'increases' : 'decreases';
             drivers.push({
               column: col,
@@ -405,7 +431,7 @@ export function computeKeyInfluencers(
         }
       }
     } else {
-      // Categorical column: evaluate each segment
+      // Categorical column: evaluate each segment with >= 5 rows
       const groups = new Map<string, number[]>();
       rows.forEach((r, idx) => {
         const key = String(r[col] ?? '').trim();
@@ -415,12 +441,18 @@ export function computeKeyInfluencers(
         groups.set(key, arr);
       });
 
-      for (const [segVal, segTargets] of groups.entries()) {
-        if (segTargets.length < 1 || groups.size <= 1) continue;
+      const validGroups = Array.from(groups.entries()).filter(([, arr]) => arr.length >= 5);
+      maxValidGroupsInAnyCol = Math.max(maxValidGroupsInAnyCol, validGroups.length);
+
+      if (validGroups.length < 3) continue;
+
+      for (const [segVal, segTargets] of validGroups) {
         const segMean = segTargets.reduce((a, b) => a + b, 0) / segTargets.length;
         const lift = baselineMean !== 0 ? segMean / baselineMean : 1;
         const diffPct = baselineMean !== 0 ? ((segMean - baselineMean) / Math.abs(baselineMean)) * 100 : 0;
-        if (Math.abs(diffPct) >= 2) {
+        const sig = `${Number(Math.abs(lift).toFixed(4))}:${Number(segMean.toFixed(2))}:${segTargets.length}`;
+        if (Math.abs(diffPct) >= 2 && !seenLiftSignatures.has(sig)) {
+          seenLiftSignatures.add(sig);
           const dir: 'increases' | 'decreases' = segMean >= baselineMean ? 'increases' : 'decreases';
           drivers.push({
             column: col,
@@ -440,6 +472,18 @@ export function computeKeyInfluencers(
         }
       }
     }
+  }
+
+  if (maxValidGroupsInAnyCol < 3 || drivers.length === 0) {
+    return {
+      targetColumn,
+      baselineMean: Number(baselineMean.toFixed(2)),
+      topIncreasers: [],
+      topDecreasers: [],
+      allDrivers: [],
+      insufficientSample: true,
+      insufficientReason: `Not enough data to find reliable drivers (${rows.length} rows)`,
+    };
   }
 
   const topIncreasers = drivers
@@ -467,6 +511,7 @@ export function computeKeyInfluencers(
     topIncreasers,
     topDecreasers,
     allDrivers,
+    insufficientSample: false,
   };
 }
 

@@ -394,14 +394,17 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
     const influencers = computeKeyInfluencers(rows, metricCol);
     return (
       <div
-        className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4 space-y-3"
+        className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4 flex flex-col justify-between gap-3 h-full"
         data-testid="visual-key-influencers"
       >
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-[var(--accent)]" />
-              <h3 className="text-sm font-semibold text-[var(--text-primary)]">
+              <Sparkles className="w-4 h-4 text-[var(--accent)] shrink-0" />
+              <h3
+                className="text-sm font-semibold text-[var(--text-primary)] truncate"
+                title={title || `Key Influencers Driving ${metricCol}`}
+              >
                 {title || `Key Influencers Driving ${metricCol}`}
               </h3>
             </div>
@@ -415,71 +418,101 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {/* Top Positive Drivers */}
-          <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/50 p-3 space-y-2">
-            <div className="text-xs font-semibold text-[var(--success)] flex items-center gap-1.5">
-              <TrendingUp className="w-3.5 h-3.5" />
-              <span>What makes {metricCol} INCREASE</span>
+        {influencers.insufficientSample ? (
+          <div
+            className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/60 p-4 text-xs space-y-1.5 flex-1 flex flex-col justify-center"
+            data-testid="key-influencers-insufficient"
+          >
+            <div className="font-semibold text-[var(--text-primary)] flex items-center gap-1.5">
+              <AlertTriangle className="w-4 h-4 text-[var(--warning)] shrink-0" />
+              <span>
+                {influencers.insufficientReason ||
+                  `Not enough data to find reliable drivers (${rows.length} rows)`}
+              </span>
             </div>
-            {influencers.topIncreasers.length === 0 ? (
-              <p className="text-xs text-[var(--text-secondary)]">
-                No segments significantly above baseline.
-              </p>
-            ) : (
-              influencers.topIncreasers.slice(0, 4).map((d, idx) => (
-                <div
-                  key={`${d.column}-${d.segmentValue}-${idx}`}
-                  className="rounded-lg bg-[var(--bg-card)] border border-[var(--border-subtle)] p-2.5 text-xs space-y-1"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-semibold text-[var(--text-primary)] truncate">
-                      {d.column} = {d.segmentValue}
-                    </span>
-                    <span className="px-2 py-0.5 rounded font-mono font-semibold bg-[var(--bg-elevated)] text-[var(--success)] shrink-0">
-                      {d.impactScore.toFixed(2)}x lift
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed">
-                    {d.plainLanguage}
-                  </p>
-                </div>
-              ))
-            )}
+            <p className="text-[var(--text-secondary)] leading-relaxed">
+              Finding statistically reliable drivers requires at least 30 rows and 3 or more segments with at least 5 rows each. Load a larger dataset to unlock driver lift analysis.
+            </p>
           </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 flex-1">
+            {/* Top Positive Drivers */}
+            <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/50 p-3 space-y-2">
+              <div className="text-xs font-semibold text-[var(--success)] flex items-center gap-1.5">
+                <TrendingUp className="w-3.5 h-3.5" />
+                <span>What makes {metricCol} INCREASE</span>
+              </div>
+              {influencers.topIncreasers.length === 0 ? (
+                <p className="text-xs text-[var(--text-secondary)]">
+                  No segments significantly above baseline.
+                </p>
+              ) : (
+                influencers.topIncreasers.slice(0, 4).map((d, idx) => (
+                  <div
+                    key={`${d.column}-${d.segmentValue}-${idx}`}
+                    className="rounded-lg bg-[var(--bg-card)] border border-[var(--border-subtle)] p-2.5 text-xs space-y-1"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span
+                        className="font-semibold text-[var(--text-primary)] break-words"
+                        title={`${d.column} = ${d.segmentValue}`}
+                      >
+                        {d.column} = {d.segmentValue}
+                      </span>
+                      <span
+                        className="px-2 py-0.5 rounded font-mono font-semibold bg-[var(--bg-elevated)] text-[var(--success)] shrink-0"
+                        title={`${d.impactScore.toFixed(2)}x lift (${d.sampleCount} rows)`}
+                      >
+                        {d.impactScore.toFixed(2)}x lift
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed">
+                      {d.plainLanguage}
+                    </p>
+                  </div>
+                ))
+              )}
+            </div>
 
-          {/* Top Negative Drivers */}
-          <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/50 p-3 space-y-2">
-            <div className="text-xs font-semibold text-[var(--danger)] flex items-center gap-1.5">
-              <TrendingDown className="w-3.5 h-3.5" />
-              <span>What makes {metricCol} DECREASE</span>
-            </div>
-            {influencers.topDecreasers.length === 0 ? (
-              <p className="text-xs text-[var(--text-secondary)]">
-                No segments significantly below baseline.
-              </p>
-            ) : (
-              influencers.topDecreasers.slice(0, 4).map((d, idx) => (
-                <div
-                  key={`${d.column}-${d.segmentValue}-${idx}`}
-                  className="rounded-lg bg-[var(--bg-card)] border border-[var(--border-subtle)] p-2.5 text-xs space-y-1"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-semibold text-[var(--text-primary)] truncate">
-                      {d.column} = {d.segmentValue}
-                    </span>
-                    <span className="px-2 py-0.5 rounded font-mono font-semibold bg-[var(--bg-elevated)] text-[var(--danger)] shrink-0">
-                      {d.impactScore.toFixed(2)}x
-                    </span>
+            {/* Top Negative Drivers */}
+            <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/50 p-3 space-y-2">
+              <div className="text-xs font-semibold text-[var(--danger)] flex items-center gap-1.5">
+                <TrendingDown className="w-3.5 h-3.5" />
+                <span>What makes {metricCol} DECREASE</span>
+              </div>
+              {influencers.topDecreasers.length === 0 ? (
+                <p className="text-xs text-[var(--text-secondary)]">
+                  No segments significantly below baseline.
+                </p>
+              ) : (
+                influencers.topDecreasers.slice(0, 4).map((d, idx) => (
+                  <div
+                    key={`${d.column}-${d.segmentValue}-${idx}`}
+                    className="rounded-lg bg-[var(--bg-card)] border border-[var(--border-subtle)] p-2.5 text-xs space-y-1"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span
+                        className="font-semibold text-[var(--text-primary)] break-words"
+                        title={`${d.column} = ${d.segmentValue}`}
+                      >
+                        {d.column} = {d.segmentValue}
+                      </span>
+                      <span
+                        className="px-2 py-0.5 rounded font-mono font-semibold bg-[var(--bg-elevated)] text-[var(--danger)] shrink-0"
+                        title={`${d.impactScore.toFixed(2)}x (${d.sampleCount} rows)`}
+                      >
+                        {d.impactScore.toFixed(2)}x
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed">
+                      {d.plainLanguage}
+                    </p>
                   </div>
-                  <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed">
-                    {d.plainLanguage}
-                  </p>
-                </div>
-              ))
-            )}
+                ))
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     );
   }
@@ -727,22 +760,26 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
       ...steps.map((s) => Math.max(Math.abs(s.runningTotal), Math.abs(s.delta))),
       1
     );
+    const waterfallTitle = title || `Waterfall Bridge: ${metricCol} by ${categoryCol}`;
 
     return (
       <div
-        className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4 space-y-3"
+        className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4 flex flex-col justify-between gap-3 h-full"
         data-testid="visual-waterfall"
       >
         <div>
-          <h3 className="text-sm font-semibold text-[var(--text-primary)]">
-            {title || `Waterfall Bridge: ${metricCol} by ${categoryCol}`}
+          <h3
+            className="text-sm font-semibold text-[var(--text-primary)]"
+            title={waterfallTitle}
+          >
+            {waterfallTitle}
           </h3>
           <p className="text-xs text-[var(--text-secondary)]">
             Sequential +/- variance steps bridging to final running total ({fmtCompact(running)})
           </p>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2.5 flex-1 flex flex-col justify-around py-1">
           {steps.map((s, idx) => {
             const widthPct = Math.min(100, Math.max(6, (Math.abs(s.delta) / maxAbs) * 100));
             return (
@@ -786,7 +823,7 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
             );
           })}
           <div className="grid grid-cols-12 items-center gap-2 text-xs pt-2 border-t border-[var(--border-subtle)] font-semibold">
-            <div className="col-span-3 text-[var(--text-primary)]">Net Total</div>
+            <div className="col-span-3 text-[var(--text-primary)]" title="Net Total">Net Total</div>
             <div className="col-span-6 h-5 rounded bg-[var(--bg-elevated)] overflow-hidden flex items-center px-1.5">
               <div
                 className="h-3.5 rounded bg-[var(--accent)]"
@@ -808,22 +845,23 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
   if (visualType === 'funnel') {
     const stages = [...chartData].sort((a, b) => b.displayValue - a.displayValue).slice(0, 7);
     const topVal = stages[0]?.displayValue || 1;
+    const funnelTitle = title || `Stage Conversion Funnel: ${metricCol}`;
 
     return (
       <div
-        className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4 space-y-3"
+        className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4 flex flex-col justify-between gap-3 h-full"
         data-testid="visual-funnel"
       >
         <div>
-          <h3 className="text-sm font-semibold text-[var(--text-primary)]">
-            {title || `Stage Conversion Funnel: ${metricCol}`}
+          <h3 className="text-sm font-semibold text-[var(--text-primary)]" title={funnelTitle}>
+            {funnelTitle}
           </h3>
           <p className="text-xs text-[var(--text-secondary)]">
             Stage-to-stage conversion rate and cumulative retention from top stage
           </p>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2 flex-1 flex flex-col justify-around">
           {stages.map((st, idx) => {
             const widthPct = Math.max(14, Math.min(100, (st.displayValue / topVal) * 100));
             const prevVal = idx > 0 ? stages[idx - 1].displayValue : st.displayValue;
@@ -831,7 +869,10 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
             return (
               <div key={st.category} className="space-y-1">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="font-medium text-[var(--text-primary)] truncate">
+                  <span
+                    className="font-medium text-[var(--text-primary)] truncate"
+                    title={`${idx + 1}. ${st.category}`}
+                  >
                     {idx + 1}. {st.category}
                   </span>
                   <span className="font-mono text-[var(--text-secondary)]">
@@ -863,11 +904,19 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
     const items = [...chartData].sort((a, b) => b.displayValue - a.displayValue).slice(0, 10);
     return (
       <div
-        className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4 space-y-3"
+        className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4 space-y-3 h-full"
         data-testid={`visual-${visualType}`}
       >
         <div>
-          <h3 className="text-sm font-semibold text-[var(--text-primary)]">
+          <h3
+            className="text-sm font-semibold text-[var(--text-primary)]"
+            title={
+              title ||
+              (visualType === 'sankey'
+                ? `Sankey Flow: ${categoryCol} → ${groupCol || metricCol}`
+                : `Treemap Composition: ${metricCol} by ${categoryCol}`)
+            }
+          >
             {title ||
               (visualType === 'sankey'
                 ? `Sankey Flow: ${categoryCol} → ${groupCol || metricCol}`
@@ -892,7 +941,10 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
                   gridColumn: idx === 0 ? 'span 2 / span 2' : undefined,
                 }}
               >
-                <div className="text-xs font-bold text-[var(--bg-surface)] truncate">
+                <div
+                  className="text-xs font-bold text-[var(--bg-surface)] truncate"
+                  title={item.category}
+                >
                   {item.category}
                 </div>
                 <div className="text-sm font-mono font-extrabold text-[var(--bg-surface)] mt-1">
@@ -913,11 +965,14 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
   if (visualType === 'box_plot' || visualType === 'dot_plot' || visualType === 'heatmap') {
     return (
       <div
-        className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4 space-y-3"
+        className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4 space-y-3 h-full"
         data-testid={`visual-${visualType}`}
       >
         <div>
-          <h3 className="text-sm font-semibold text-[var(--text-primary)]">
+          <h3
+            className="text-sm font-semibold text-[var(--text-primary)]"
+            title={title || `${visualType.replace('_', ' ').toUpperCase()}: ${metricCol} by ${categoryCol}`}
+          >
             {title || `${visualType.replace('_', ' ').toUpperCase()}: ${metricCol} by ${categoryCol}`}
           </h3>
           <p className="text-xs text-[var(--text-secondary)]">
@@ -932,7 +987,10 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
             );
             return (
               <div key={d.category} className="grid grid-cols-12 items-center gap-2 text-xs">
-                <div className="col-span-4 truncate font-medium text-[var(--text-primary)]">
+                <div
+                  className="col-span-4 truncate font-medium text-[var(--text-primary)]"
+                  title={d.category}
+                >
                   {d.category}
                 </div>
                 <div className="col-span-6 h-4 rounded-full bg-[var(--bg-elevated)] relative">
@@ -982,21 +1040,25 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
         : attainmentPct >= 75
         ? 'var(--warning)'
         : 'var(--danger)';
+    const gaugeTitle = title || `${metricCol} Target Attainment`;
 
     return (
       <div
-        className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4 flex flex-col justify-between gap-3"
+        className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4 flex flex-col justify-between gap-3 h-full"
         data-testid={`visual-${visualType}`}
       >
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0">
-            <Target className="w-4 h-4 text-[var(--accent)] shrink-0" />
-            <h3 className="text-sm font-semibold text-[var(--text-primary)] truncate">
-              {title || `${metricCol} Target Attainment`}
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex items-start gap-2 min-w-0">
+            <Target className="w-4 h-4 text-[var(--accent)] shrink-0 mt-0.5" />
+            <h3
+              className="text-sm font-semibold text-[var(--text-primary)] leading-snug break-words"
+              title={gaugeTitle}
+            >
+              {gaugeTitle}
             </h3>
           </div>
           <span
-            className="text-xs font-semibold px-2 py-0.5 rounded bg-[var(--bg-elevated)]"
+            className="text-xs font-semibold px-2 py-0.5 rounded bg-[var(--bg-elevated)] shrink-0"
             style={{ color: statusColor }}
           >
             {attainmentPct.toFixed(1)}% of target
@@ -1102,18 +1164,20 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
   // B6 & D2: ENHANCED TABLE & STEPPED MATRIX WITH CONDITIONAL FORMATTING DATA BARS
   if (visualType === 'table_enhanced' || visualType === 'matrix') {
     const maxRowVal = Math.max(...chartData.map((d) => d.displayValue), 1);
+    const tableTitle =
+      title ||
+      (visualType === 'matrix'
+        ? `Stepped Hierarchy Matrix: ${categoryCol}`
+        : `Conditional Formatting Table: ${categoryCol}`);
     return (
       <div
-        className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4 space-y-3"
+        className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4 space-y-3 h-full"
         data-testid={`visual-${visualType}`}
       >
         <div className="flex items-center justify-between gap-2">
           <div>
-            <h3 className="text-sm font-semibold text-[var(--text-primary)]">
-              {title ||
-                (visualType === 'matrix'
-                  ? `Stepped Hierarchy Matrix: ${categoryCol}`
-                  : `Conditional Formatting Table: ${categoryCol}`)}
+            <h3 className="text-sm font-semibold text-[var(--text-primary)]" title={tableTitle}>
+              {tableTitle}
             </h3>
             <p className="text-xs text-[var(--text-secondary)]">
               Includes inline data bars, status icons, % share, and grand total row
@@ -1160,7 +1224,9 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
                           ) : (
                             <ChevronRight className="w-3.5 h-3.5 text-[var(--text-secondary)]" />
                           ))}
-                        <span className="truncate max-w-[180px]">{d.category}</span>
+                        <span className="truncate max-w-[180px]" title={d.category}>
+                          {d.category}
+                        </span>
                       </td>
                       <td className="py-2 px-3 text-right font-mono text-[var(--text-primary)]">
                         {fmtCompact(d.displayValue)}
@@ -1226,7 +1292,7 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
     const isTrendQ = /trend|over time|line|forecast/i.test(qaQuery);
     return (
       <div
-        className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4 space-y-3"
+        className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4 space-y-3 h-full"
         data-testid="visual-qa"
       >
         <div className="flex flex-wrap items-center gap-2">
@@ -1261,30 +1327,47 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
 
   const svgW = 660;
   const svgH = 260;
-  const padL = useHorizontalBar ? 115 : 54;
+  const padL = useHorizontalBar ? 132 : 54;
   const padR = 24;
   const padT = 18;
-  const padB = 38;
+  const padB = 42;
   const plotW = svgW - padL - padR;
   const plotH = svgH - padT - padB;
+  const chartTitleText = title || `${calcResult.label} by ${categoryCol}`;
+
+  const formatAxisLabel = (raw: string, maxChars = 22): string => {
+    const trimmed = String(raw ?? '').trim();
+    // Clean YYYY-MM-DD dates to concise YYYY-MM or MMM DD
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+      return trimmed.slice(0, 7);
+    }
+    if (trimmed.length <= maxChars) return trimmed;
+    return `${trimmed.slice(0, maxChars - 1)}…`;
+  };
 
   return (
     <div
-      className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4 flex flex-col gap-3 relative"
+      className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4 flex flex-col justify-between gap-3 relative h-full"
       data-testid={`chart-studio-visual-${visualType}`}
     >
       {/* Header & Optional Visual Calc / Analytics Pane Controls */}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="min-w-0">
-          <h3 className="text-sm font-semibold text-[var(--text-primary)] truncate">
-            {title || `${calcResult.label} by ${categoryCol}`}
+          <h3
+            className="text-sm font-semibold text-[var(--text-primary)] break-words"
+            title={chartTitleText}
+          >
+            {chartTitleText}
           </h3>
           {subtitle ? (
-            <p className="text-xs text-[var(--text-secondary)] truncate">{subtitle}</p>
+            <p className="text-xs text-[var(--text-secondary)] break-words" title={subtitle}>
+              {subtitle}
+            </p>
           ) : activeCalc !== 'none' ? (
             <p
-              className="text-[11px] font-mono text-[var(--accent)] truncate"
+              className="text-[11px] font-mono text-[var(--accent)] break-words"
               data-testid="visual-calc-formula"
+              title={`fx: ${calcResult.formulaText}`}
             >
               fx: {calcResult.formulaText}
             </p>
@@ -1296,16 +1379,16 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
             <select
               value={activeCalc}
               onChange={(e) => setLocalCalc(e.target.value as VisualCalculationType)}
-              aria-label="Visual Calculation"
+              aria-label="Show as calculation"
               data-testid="visual-calc-select"
               className="px-2 py-1 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)] text-[var(--text-primary)] text-xs"
             >
-              <option value="none">Calc: Raw Value</option>
-              <option value="running_total">Running Total</option>
-              <option value="moving_average">3-Period Moving Avg</option>
-              <option value="percent_of_total">% of Total</option>
-              <option value="rank">Dense Rank</option>
-              <option value="diff_from_prev">Δ vs Previous</option>
+              <option value="none">Show as: Standard Value</option>
+              <option value="running_total">Show as: Running Total</option>
+              <option value="moving_average">Show as: 3-Period Moving Avg</option>
+              <option value="percent_of_total">Show as: % of Total</option>
+              <option value="rank">Show as: Dense Rank</option>
+              <option value="diff_from_prev">Show as: Δ vs Previous</option>
             </select>
 
             <button
@@ -1348,9 +1431,13 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
           <div
             className="rounded-lg border border-[var(--warning)]/50 bg-[var(--bg-elevated)] px-3 py-1.5 text-xs flex items-center gap-2"
             data-testid="chart-anomaly-callout"
+            title={`Anomaly detected: ${analyticsStats.anomalies[0].reason}`}
           >
             <AlertTriangle className="w-3.5 h-3.5 text-[var(--warning)] shrink-0" />
-            <span className="text-[var(--text-primary)] truncate">
+            <span
+              className="text-[var(--text-primary)] truncate"
+              title={`Anomaly detected: ${analyticsStats.anomalies[0].reason}`}
+            >
               <strong>Anomaly detected:</strong> {analyticsStats.anomalies[0].reason}
             </span>
           </div>
@@ -1363,7 +1450,7 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
           data-testid="report-page-tooltip"
         >
           <div className="font-semibold text-[var(--text-primary)] border-b border-[var(--border-subtle)] pb-1 mb-1.5 flex items-center justify-between gap-2">
-            <span className="truncate">{hoveredItem.category}</span>
+            <span className="truncate" title={hoveredItem.category}>{hoveredItem.category}</span>
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--bg-elevated)] text-[var(--text-secondary)]">
               {((hoveredItem.primaryVal / totalSum) * 100).toFixed(1)}% share
             </span>
@@ -1394,12 +1481,12 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
       )}
 
       {/* Pure Responsive SVG Canvas */}
-      <div className="w-full overflow-hidden" style={{ height: `${height}px` }}>
+      <div className="w-full overflow-hidden flex-1" style={{ minHeight: `${height}px` }}>
         <svg
           viewBox={`0 0 ${svgW} ${svgH}`}
           className="w-full h-full select-none"
           role="img"
-          aria-label={title || `${calcResult.label} by ${categoryCol}`}
+          aria-label={chartTitleText}
         >
           {/* PIE / DONUT CHART */}
           {visualType === 'pie' || visualType === 'donut' ? (
@@ -1447,7 +1534,9 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
                       }
                       onMouseLeave={() => setHoveredItem(null)}
                       className="cursor-pointer transition-opacity"
-                    />
+                    >
+                      <title>{`${pt.category}: ${fmtCompact(pt.displayValue)}`}</title>
+                    </path>
                   );
                 });
               })()}
@@ -1524,7 +1613,9 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
                     }
                     onMouseLeave={() => setHoveredItem(null)}
                     className="cursor-pointer"
-                  />
+                  >
+                    <title>{`${pt.category}: ${fmtCompact(pt.displayValue)}`}</title>
+                  </circle>
                 );
               })}
             </g>
@@ -1555,6 +1646,7 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
                     onMouseLeave={() => setHoveredItem(null)}
                     className="cursor-pointer"
                   >
+                    <title>{`${pt.category}: ${fmtCompact(pt.displayValue)}`}</title>
                     <text
                       x={padL - 8}
                       y={y + barH / 2 + 3.5}
@@ -1562,7 +1654,8 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
                       fill="var(--text-secondary)"
                       fontSize={10.5}
                     >
-                      {pt.category.slice(0, 14)}
+                      <title>{pt.category}</title>
+                      {formatAxisLabel(pt.category, 20)}
                     </text>
                     <rect
                       x={padL}
@@ -1681,6 +1774,7 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
                       onMouseLeave={() => setHoveredItem(null)}
                       className="cursor-pointer"
                     >
+                      <title>{`${pt.category}: ${fmtCompact(pt.displayValue)}`}</title>
                       <rect
                         x={x}
                         y={y1}
@@ -1720,7 +1814,11 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
                         fill="var(--text-secondary)"
                         fontSize={10}
                       >
-                        {pt.category.slice(0, 10)}
+                        <title>{pt.category}</title>
+                        {formatAxisLabel(
+                          pt.category,
+                          plottedPoints.length <= 5 ? 24 : plottedPoints.length <= 7 ? 16 : 12
+                        )}
                       </text>
                     </g>
                   );
@@ -1796,7 +1894,9 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
                             }
                             onMouseLeave={() => setHoveredItem(null)}
                             className="cursor-pointer"
-                          />
+                          >
+                            <title>{`${c.pt.category}: ${fmtCompact(c.val)}`}</title>
+                          </circle>
                           {visualType !== 'combo' && (
                             <text
                               x={c.x}
@@ -1805,7 +1905,11 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
                               fill="var(--text-secondary)"
                               fontSize={10}
                             >
-                              {c.pt.category.slice(0, 9)}
+                              <title>{c.pt.category}</title>
+                              {formatAxisLabel(
+                                c.pt.category,
+                                plottedPoints.length <= 5 ? 24 : plottedPoints.length <= 7 ? 16 : 12
+                              )}
                             </text>
                           )}
                         </g>

@@ -43,6 +43,7 @@ export interface FeatureFlags {
   southAsiaLocale: boolean;
   productQuality: boolean;
   chartStudio: boolean;
+  premiumUX: boolean;
 }
 
 export const CLASSIC_FEATURE_FLAGS: FeatureFlags = {
@@ -72,6 +73,7 @@ export const CLASSIC_FEATURE_FLAGS: FeatureFlags = {
   southAsiaLocale: false,
   productQuality: false,
   chartStudio: false,
+  premiumUX: false,
 };
 
 export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
@@ -101,6 +103,7 @@ export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
   southAsiaLocale: true,
   productQuality: true,
   chartStudio: true,
+  premiumUX: true,
 };
 
 export const FEATURE_METADATA: FeatureFlagMeta[] = [
@@ -311,6 +314,14 @@ export const FEATURE_METADATA: FeatureFlagMeta[] = [
     description: 'Enables the unified Chart Studio visual library (Compare, Trend, Part-to-Whole, Distribution, Gantt, Tables/Matrix, Cards/Gauges/Scorecard, Offline Choropleth/Bubble/Shape Maps, Key Influencers, Smart Narrative, Analytics Pane, Visual Calculations, Small Multiples, Power BI Theme JSON) and 14 Pack VIP Boardroom Dashboards.',
     classicBehavior: 'Standard Recharts visual set and classic dashboard builder.',
     newBehavior: 'Full Chart Studio visual suite, offline D3 Geo maps (World, US States, Pakistan), Analytics Pane, Key Influencers, and VIP Boardroom templates.'
+  },
+  {
+    key: 'premiumUX',
+    label: 'Premium VIP Boardroom Experience & Progressive Disclosure',
+    category: 'ui',
+    description: 'Opens directly on Board View after data loads, simplifies navigation to one global Ctrl+K search, limits VIP header to 4 controls with plain-language labels, and enforces minimum sample guardrails on Key Influencers.',
+    classicBehavior: 'Full multi-tab analytical lens layout with catalog grid and all advanced controls visible.',
+    newBehavior: 'Streamlined Board View first path, progressive disclosure, plain words, and 3-step board tour.'
   }
 ];
 
@@ -352,6 +363,9 @@ export function loadFeatureFlags(): FeatureFlags {
       if (stored) {
         const parsed = JSON.parse(stored);
         if (parsed && typeof parsed === 'object') {
+          if (!('premiumUX' in parsed)) {
+            flags.premiumUX = false;
+          }
           Object.keys(DEFAULT_FEATURE_FLAGS).forEach(key => {
             if (typeof parsed[key] === 'boolean') {
               (flags as any)[key] = parsed[key];

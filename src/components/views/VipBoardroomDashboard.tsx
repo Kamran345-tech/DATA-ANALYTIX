@@ -1,18 +1,20 @@
 /**
- * VIP BOARDROOM DASHBOARD & 6 VIP LAYOUT TEMPLATES (Parts E1, E2, E3, E4, C4, D8)
+ * VIP BOARDROOM DASHBOARD & 6 VIP LAYOUT TEMPLATES (Parts E1, E2, E3, E4, C4, D8 + Premium UX Pass)
  * Pack-aware 12-column glass boardroom experience across all 14 analytics packs and 6 VIP layouts:
- * - Hero KPI band (4 cards with goodDirection delta colouring)
+ * - Recognition Banner ("We recognised your data as <Pack> (<Confidence>%). Here is your board view.")
+ *   with two actions only: "Download deck" and "Change pack"
+ * - Progressive disclosure header: at most 4 controls (Template switcher, Download menu, Present, More)
+ * - Hero Key Numbers band (4 cards with arrow + colour delta and formula in tooltip)
  * - Headline Chart + Trend with 3-Period Forecast & Anomaly Callouts
  * - Plain-language Story Line (Smart Narrative) + Auto-generated 5-Line Executive Summary
- * - Target Radial Gauges & Bullet Scorecards
- * - Top 5 Ranking Card + Key Influencers Driver Panel
- * - Offline Geography Map (World, US States, Pakistan Provinces/Districts) for packs with location roles
+ * - Target Radial Gauges & Top 5 Ranking Card
+ * - Offline Geography Map (World Natural-Earth polygons, US States, Pakistan) + Key Influencers
  * - "What to do next" Prescriptive Leadership Action Strip
- * - Full-Screen Presentation Mode (hides surrounding chrome) + Print-friendly styling
- * - Real Downloads: PPTX (0 slide overflow), PDF, and PNG reading current Theme Studio tokens
+ * - Full-Screen Presentation Mode (Arrow keys navigate sections, Esc exits, works at 1920x1080)
+ * - Post-download success toast with "Open file" and conditional "Share" (only if navigator.share exists)
  */
 
-import React, { useMemo, useState, useRef } from 'react';
+import React, { useMemo, useState, useRef, useEffect } from 'react';
 import {
   Crown,
   Maximize2,
@@ -23,15 +25,18 @@ import {
   Image as ImageIcon,
   Sparkles,
   AlertTriangle,
-  Target,
-  Globe,
   TrendingUp,
   CheckCircle2,
-  Layers,
-  Filter,
-  HelpCircle,
   Compass,
-  Sliders,
+  MoreHorizontal,
+  ChevronDown,
+  ExternalLink,
+  Share2,
+  HelpCircle,
+  X,
+  ArrowLeft,
+  ArrowRight,
+  RefreshCw,
 } from 'lucide-react';
 import {
   ANALYTICS_PACKS,
@@ -52,6 +57,7 @@ import { ChartStudioVisual } from '../charts/ChartStudioVisual';
 import { detectGeographicColumns } from '../charts/geo/geoMatcher';
 import { GeoScopeId } from '../charts/geo/geoDataLazy';
 import { generatePresentationPptxBlob } from '../../engine/pptxGenerator';
+import { loadFeatureFlags, FeatureFlags } from '../../config/features';
 import { jsPDF } from 'jspdf';
 
 export type VipLayoutTemplateId =
@@ -78,7 +84,7 @@ export const VIP_LAYOUT_TEMPLATES: VipLayoutTemplate[] = [
   {
     id: 'executive-summary',
     name: 'Executive Summary',
-    tagline: 'Boardroom overview with Hero KPIs, combo trajectory, radial target gauge & smart narrative',
+    tagline: 'Boardroom overview with key numbers, combo trajectory, target gauge & smart narrative',
     defaultPackId: 'financial',
     headlineVisual: 'combo',
     secondaryVisual: 'waterfall',
@@ -122,7 +128,7 @@ export const VIP_LAYOUT_TEMPLATES: VipLayoutTemplate[] = [
   {
     id: 'customer-360',
     name: 'Customer 360',
-    tagline: 'Cohort retention trajectory, churn key influencers, treemap share & NPS bullet targets',
+    tagline: 'Cohort retention trajectory, churn key influencers, treemap share & NPS targets',
     defaultPackId: 'customer',
     headlineVisual: 'area_stacked',
     secondaryVisual: 'key_influencers',
@@ -182,11 +188,29 @@ function ensureGeoEnrichedRows(
   return { rows: enriched, locationCol: 'region_territory' };
 }
 
+const BOARD_TOUR_STEPS = [
+  {
+    title: '1/3 · Key numbers at a glance',
+    body: 'Four headline metrics with colour-coded direction arrows. Hover any metric or Formula badge to see the exact calculation.',
+  },
+  {
+    title: '2/3 · Interactive charts & geography',
+    body: 'Click any bar, region on the map, or Top 5 leader to cross-filter the entire board view.',
+  },
+  {
+    title: '3/3 · Download or Present',
+    body: 'Use Download for a ready-to-share PowerPoint deck, or click Present for full-screen keyboard navigation.',
+  },
+];
+
 export interface VipBoardroomDashboardProps {
   packId?: PackId;
   rows?: Record<string, any>[];
   initialLayoutId?: VipLayoutTemplateId;
   onPackChange?: (packId: PackId) => void;
+  detectedConfidence?: number;
+  onChangePackRequest?: () => void;
+  showRecognitionBanner?: boolean;
 }
 
 export const VipBoardroomDashboard: React.FC<VipBoardroomDashboardProps> = ({
@@ -194,7 +218,18 @@ export const VipBoardroomDashboard: React.FC<VipBoardroomDashboardProps> = ({
   rows: propRows,
   initialLayoutId = 'executive-summary',
   onPackChange,
+  detectedConfidence = 100,
+  onChangePackRequest,
+  showRecognitionBanner = false,
 }) => {
+  const [flags, setFlags] = useState<FeatureFlags>(() => loadFeatureFlags());
+
+  useEffect(() => {
+    const onFlags = (e: any) => setFlags(e.detail || loadFeatureFlags());
+    window.addEventListener('dataanalytix:features-updated', onFlags);
+    return () => window.removeEventListener('dataanalytix:features-updated', onFlags);
+  }, []);
+
   const [selectedLayoutId, setSelectedLayoutId] = useState<VipLayoutTemplateId>(initialLayoutId);
   const activeLayout = useMemo(
     () => VIP_LAYOUT_TEMPLATES.find((l) => l.id === selectedLayoutId) || VIP_LAYOUT_TEMPLATES[0],
@@ -204,6 +239,12 @@ export const VipBoardroomDashboard: React.FC<VipBoardroomDashboardProps> = ({
   const [selectedPackId, setSelectedPackId] = useState<PackId>(
     propPackId || activeLayout.defaultPackId
   );
+
+  useEffect(() => {
+    if (propPackId) {
+      setSelectedPackId(propPackId);
+    }
+  }, [propPackId]);
 
   const activePack: EnrichedAnalyticsPackConfig = useMemo(
     () =>
@@ -227,15 +268,56 @@ export const VipBoardroomDashboard: React.FC<VipBoardroomDashboardProps> = ({
   }, [propRows, activePack]);
 
   const [isPresentationMode, setIsPresentationMode] = useState(false);
+  const [presentationSection, setPresentationSection] = useState(0);
   const [crossFilterCategory, setCrossFilterCategory] = useState<string | null>(null);
   const [visualCalc, setVisualCalc] = useState<VisualCalculationType>('none');
   const [geoScope, setGeoScope] = useState<GeoScopeId>(activeLayout.defaultGeoScope);
   const [exportStatus, setExportStatus] = useState<string | null>(null);
+  const [lastDownload, setLastDownload] = useState<{
+    filename: string;
+    url: string;
+    format: 'PPTX' | 'PDF' | 'PNG';
+  } | null>(null);
+  const [showDownloadMenu, setShowDownloadMenu] = useState(false);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [showVisualRecommender, setShowVisualRecommender] = useState(false);
   const [recGoal, setRecGoal] = useState<'compare' | 'trend' | 'relationship' | 'progress' | 'composition'>('compare');
   const [recDataType, setRecDataType] = useState<'categorical' | 'numeric' | 'time' | 'geographic'>('categorical');
+  const [boardTourStep, setBoardTourStep] = useState<number | null>(null);
 
   const boardRef = useRef<HTMLDivElement>(null);
+  const sectionRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  const canWebShare =
+    typeof navigator !== 'undefined' && typeof navigator.share === 'function';
+
+  // Keyboard navigation in Presentation Mode (ArrowRight/Down, ArrowLeft/Up, Escape)
+  useEffect(() => {
+    if (!isPresentationMode) return;
+    const totalSections = 5;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setIsPresentationMode(false);
+      } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        setPresentationSection((prev) => {
+          const next = (prev + 1) % totalSections;
+          sectionRefs.current[next]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return next;
+        });
+      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        setPresentationSection((prev) => {
+          const next = (prev - 1 + totalSections) % totalSections;
+          sectionRefs.current[next]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return next;
+        });
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isPresentationMode]);
 
   const roleMap = useMemo(() => mapRoles(activeRows, activePack), [activeRows, activePack]);
   const computedKpis = useMemo(
@@ -378,6 +460,12 @@ export const VipBoardroomDashboard: React.FC<VipBoardroomDashboardProps> = ({
     [recDataType, recGoal, top5Rankings.length]
   );
 
+  const recordDownloadFeedback = (filename: string, url: string, format: 'PPTX' | 'PDF' | 'PNG', statusMsg: string) => {
+    setLastDownload({ filename, url, format });
+    setExportStatus(statusMsg);
+    setShowDownloadMenu(false);
+  };
+
   const handleExportVipPptx = async () => {
     setExportStatus('Generating VIP PPTX...');
     try {
@@ -388,13 +476,18 @@ export const VipBoardroomDashboard: React.FC<VipBoardroomDashboardProps> = ({
         rows: activeRows,
         columns: [],
       });
+      const filename = `VIP-Boardroom-${activePack.id}-${selectedLayoutId}.pptx`;
       const url = URL.createObjectURL(result.blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `VIP-Boardroom-${activePack.id}-${selectedLayoutId}.pptx`;
+      a.download = filename;
       a.click();
-      URL.revokeObjectURL(url);
-      setExportStatus(`VIP PPTX downloaded (${result.slideCount} slides, 0 overflows)`);
+      recordDownloadFeedback(
+        filename,
+        url,
+        'PPTX',
+        `VIP PPTX downloaded (${result.slideCount} slides, 0 overflows)`
+      );
     } catch (err: any) {
       setExportStatus(`PPTX error: ${err?.message || 'Failed'}`);
     }
@@ -445,8 +538,11 @@ export const VipBoardroomDashboard: React.FC<VipBoardroomDashboardProps> = ({
         doc.text(`${act.priority}: ${act.title} — ${act.detail}`.slice(0, 120), 40, 390 + idx * 22);
       });
 
-      doc.save(`VIP-Boardroom-${activePack.id}-${selectedLayoutId}.pdf`);
-      setExportStatus('VIP PDF downloaded');
+      const filename = `VIP-Boardroom-${activePack.id}-${selectedLayoutId}.pdf`;
+      const pdfBlob = doc.output('blob');
+      const url = URL.createObjectURL(pdfBlob);
+      doc.save(filename);
+      recordDownloadFeedback(filename, url, 'PDF', 'VIP PDF downloaded');
     } catch (err: any) {
       setExportStatus(`PDF error: ${err?.message || 'Failed'}`);
     }
@@ -481,11 +577,12 @@ export const VipBoardroomDashboard: React.FC<VipBoardroomDashboardProps> = ({
         });
       }
       const dataUrl = canvas.toDataURL('image/png');
+      const filename = `VIP-Boardroom-${activePack.id}-${selectedLayoutId}.png`;
       const a = document.createElement('a');
       a.href = dataUrl;
-      a.download = `VIP-Boardroom-${activePack.id}-${selectedLayoutId}.png`;
+      a.download = filename;
       a.click();
-      setExportStatus('VIP PNG downloaded');
+      recordDownloadFeedback(filename, dataUrl, 'PNG', 'VIP PNG downloaded');
     } catch (err: any) {
       setExportStatus(`PNG error: ${err?.message || 'Failed'}`);
     }
@@ -495,187 +592,539 @@ export const VipBoardroomDashboard: React.FC<VipBoardroomDashboardProps> = ({
     <div
       ref={boardRef}
       data-testid="vip-boardroom-dashboard"
-      className={`space-y-4 ${
+      className={`space-y-4 transition-all duration-200 ${
         isPresentationMode
-          ? 'fixed inset-0 z-50 overflow-y-auto bg-[var(--bg-surface)] p-6'
+          ? 'fixed inset-0 z-[100] overflow-y-auto bg-[var(--bg-app)] p-6 sm:p-8'
           : ''
       }`}
     >
-      {/* Top VIP Control Bar: Layout Selector, Pack Selector, Presentation Mode & Exports */}
-      <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4 flex flex-col gap-3 print:hidden">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+      {/* Full-Screen Presentation Mode Floating Control Bar */}
+      {isPresentationMode && (
+        <div
+          data-testid="vip-presentation-toolbar"
+          className="sticky top-2 z-50 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)]/95 backdrop-blur-md px-4 py-2.5 shadow-lg"
+        >
+          <div className="flex items-center gap-2 text-xs">
+            <Crown className="w-4 h-4 text-[var(--accent)]" />
+            <span className="font-bold text-[var(--text-primary)]" title={`${activePack.name} — ${activeLayout.name}`}>
+              {activePack.name} · {activeLayout.name}
+            </span>
+            <span className="text-[var(--text-secondary)]">
+              (Section {presentationSection + 1} of 5 · Use ← → arrow keys or Esc)
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              data-testid="vip-presentation-prev-btn"
+              onClick={() => {
+                const next = (presentationSection + 4) % 5;
+                setPresentationSection(next);
+                sectionRefs.current[next]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }}
+              className="px-2.5 py-1 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)] text-xs font-medium text-[var(--text-primary)] hover:border-[var(--accent)] inline-flex items-center gap-1 cursor-pointer"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Prev</span>
+            </button>
+            <button
+              type="button"
+              data-testid="vip-presentation-next-btn"
+              onClick={() => {
+                const next = (presentationSection + 1) % 5;
+                setPresentationSection(next);
+                sectionRefs.current[next]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }}
+              className="px-2.5 py-1 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)] text-xs font-medium text-[var(--text-primary)] hover:border-[var(--accent)] inline-flex items-center gap-1 cursor-pointer"
+            >
+              <span>Next</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              data-testid="vip-presentation-exit-btn"
+              onClick={() => setIsPresentationMode(false)}
+              className="px-3 py-1 rounded-lg bg-[var(--accent)] text-[var(--text-on-accent)] text-xs font-semibold inline-flex items-center gap-1 cursor-pointer"
+            >
+              <Minimize2 className="w-3.5 h-3.5" />
+              <span>Exit (Esc)</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 1. ONE CLEAR FIRST PATH: Recognition Banner with 2 buttons only ("Download deck" & "Change pack") */}
+      {flags.premiumUX && showRecognitionBanner && !isPresentationMode && (
+        <div
+          data-testid="vip-recognition-banner"
+          className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+        >
           <div className="flex items-center gap-2.5 min-w-0">
+            <CheckCircle2 className="w-4 h-4 text-[var(--accent)] shrink-0" />
+            <p
+              data-testid="vip-recognition-message"
+              title={`We recognised your data as ${activePack.name} (${detectedConfidence}%). Here is your board view.`}
+              className="text-xs sm:text-sm font-medium text-[var(--text-primary)] break-words"
+            >
+              We recognised your data as{' '}
+              <strong className="font-bold">{activePack.name}</strong> ({detectedConfidence}%). Here is your board view.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              data-testid="vip-banner-download-deck"
+              onClick={handleExportVipPptx}
+              className="px-3.5 py-1.5 rounded-lg bg-[var(--accent)] text-[var(--text-on-accent)] text-xs font-semibold hover:opacity-90 transition-opacity inline-flex items-center gap-1.5 cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Download deck</span>
+            </button>
+            <button
+              type="button"
+              data-testid="vip-banner-change-pack"
+              onClick={() => {
+                if (onChangePackRequest) {
+                  onChangePackRequest();
+                } else {
+                  setShowMoreMenu((v) => !v);
+                }
+              }}
+              className="px-3.5 py-1.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)] text-[var(--text-primary)] hover:border-[var(--accent)] text-xs font-medium transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+            >
+              <RefreshCw className="w-3.5 h-3.5 text-[var(--text-secondary)]" />
+              <span>Change pack</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Top VIP Control Bar: At most 4 controls when premiumUX is ON (Template Switcher, Download, Present, More) */}
+      {!isPresentationMode && (
+      <div
+        data-testid="vip-control-bar"
+        className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4 flex flex-col gap-3 print:hidden"
+      >
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3">
+          <div className="flex items-start sm:items-center gap-2.5 min-w-0">
             <div className="w-9 h-9 rounded-xl bg-[var(--accent)]/15 border border-[var(--accent)]/40 flex items-center justify-center shrink-0">
               <Crown className="w-5 h-5 text-[var(--accent)]" />
             </div>
             <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <h2 className="text-base font-bold text-[var(--text-primary)] truncate">
-                  {activePack.name} — VIP Boardroom
+              <div className="flex flex-wrap items-center gap-2">
+                <h2
+                  title={`${activePack.name} — Board View (VIP Boardroom)`}
+                  className="text-sm sm:text-base font-bold text-[var(--text-primary)] break-words"
+                >
+                  {activePack.name} — {flags.premiumUX ? 'Board View' : 'VIP Boardroom'}
                 </h2>
-                <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-[var(--accent)] text-[var(--text-on-accent)]">
+                <span
+                  title={`Active template: ${activeLayout.name}`}
+                  className="text-[11px] font-semibold px-2 py-0.5 rounded bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-[var(--text-primary)]"
+                >
                   {activeLayout.name}
                 </span>
               </div>
-              <p className="text-xs text-[var(--text-secondary)] truncate">
+              <p
+                title={activeLayout.tagline}
+                className="text-xs text-[var(--text-secondary)] break-words"
+              >
                 {activeLayout.tagline}
               </p>
             </div>
           </div>
 
-          {/* Action Toolbar: Visual Calc, Recommender, Downloads, Presentation Mode */}
-          <div className="flex flex-wrap items-center gap-1.5">
-            {/* Pack Picker (All 14 Packs) */}
-            <select
-              value={activePack.id}
-              onChange={(e) => {
-                const next = e.target.value as PackId;
-                setSelectedPackId(next);
-                setCrossFilterCategory(null);
-                onPackChange?.(next);
-              }}
-              aria-label="Select VIP Pack"
-              data-testid="vip-pack-selector"
-              className="text-xs px-2.5 py-1.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)] text-[var(--text-primary)] font-medium"
+          {flags.premiumUX ? (
+            /* PROGRESSIVE DISCLOSURE: 4 CONTROLS MAXIMUM (1. Template Switcher, 2. Download, 3. Present, 4. More) */
+            <div
+              data-testid="vip-header-four-controls"
+              className="flex flex-wrap items-center gap-2"
             >
-              {ANALYTICS_PACKS.map((p) => (
-                <option key={p.id} value={p.id}>
-                  Pack: {p.name}
-                </option>
-              ))}
-            </select>
+              {/* Control 1: Template Switcher (Segmented Control) */}
+              <div
+                role="group"
+                aria-label="Board layout templates"
+                data-testid="vip-template-switcher"
+                className="inline-flex flex-wrap items-center gap-1 p-1 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-subtle)]"
+              >
+                {VIP_LAYOUT_TEMPLATES.map((tpl) => (
+                  <button
+                    key={tpl.id}
+                    type="button"
+                    title={`${tpl.name}: ${tpl.tagline}`}
+                    onClick={() => {
+                      setSelectedLayoutId(tpl.id);
+                      setGeoScope(tpl.defaultGeoScope);
+                      if (!propPackId) {
+                        setSelectedPackId(tpl.defaultPackId);
+                      }
+                    }}
+                    data-testid={`vip-template-${tpl.id}`}
+                    className={`px-2 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                      selectedLayoutId === tpl.id
+                        ? 'bg-[var(--accent)] text-[var(--text-on-accent)] font-semibold'
+                        : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                    }`}
+                  >
+                    {tpl.name}
+                  </button>
+                ))}
+              </div>
 
-            {/* D4 Visual Calculation Picker */}
-            <select
-              value={visualCalc}
-              onChange={(e) => setVisualCalc(e.target.value as VisualCalculationType)}
-              aria-label="VIP Visual Calculation"
-              data-testid="vip-visual-calc-selector"
-              className="text-xs px-2.5 py-1.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)] text-[var(--text-primary)]"
-            >
-              <option value="none">fx: Standard Value</option>
-              <option value="running_total">fx: Running Total</option>
-              <option value="moving_average">fx: 3-Period Moving Avg</option>
-              <option value="percent_of_total">fx: % of Total</option>
-              <option value="rank">fx: Dense Rank</option>
-              <option value="diff_from_prev">fx: Δ vs Previous</option>
-            </select>
+              {/* Control 2: Download (one menu with PPTX, PDF, PNG) */}
+              <div className="relative">
+                <button
+                  type="button"
+                  data-testid="vip-download-menu-btn"
+                  aria-expanded={showDownloadMenu}
+                  onClick={() => {
+                    setShowDownloadMenu((v) => !v);
+                    setShowMoreMenu(false);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)] text-xs font-medium text-[var(--text-primary)] hover:border-[var(--accent)] cursor-pointer"
+                >
+                  <Download className="w-3.5 h-3.5 text-[var(--accent)]" />
+                  <span>Download</span>
+                  <ChevronDown className="w-3.5 h-3.5 text-[var(--text-secondary)]" />
+                </button>
 
-            {/* B12 "Choosing the right visual" Helper Toggle */}
-            <button
-              type="button"
-              onClick={() => setShowVisualRecommender((v) => !v)}
-              data-testid="vip-visual-recommender-btn"
-              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)] text-xs font-medium text-[var(--text-primary)] hover:border-[var(--accent)]"
-            >
-              <Compass className="w-3.5 h-3.5 text-[var(--accent)]" />
-              <span>Visual Advisor</span>
-            </button>
+                {showDownloadMenu && (
+                  <div
+                    data-testid="vip-download-dropdown"
+                    className="absolute right-0 mt-1.5 w-48 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-1.5 shadow-xl z-40 space-y-1"
+                  >
+                    <button
+                      type="button"
+                      onClick={handleExportVipPptx}
+                      data-testid="vip-download-pptx"
+                      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] cursor-pointer text-left"
+                    >
+                      <FileSpreadsheet className="w-3.5 h-3.5 text-[var(--accent)]" />
+                      <span>PowerPoint Deck (PPTX)</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleExportVipPdf}
+                      data-testid="vip-download-pdf"
+                      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] cursor-pointer text-left"
+                    >
+                      <FileText className="w-3.5 h-3.5 text-[var(--accent)]" />
+                      <span>Executive Summary (PDF)</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleExportVipPng}
+                      data-testid="vip-download-png"
+                      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] cursor-pointer text-left"
+                    >
+                      <ImageIcon className="w-3.5 h-3.5 text-[var(--accent)]" />
+                      <span>Snapshot Image (PNG)</span>
+                    </button>
+                  </div>
+                )}
+              </div>
 
-            {/* E3 Downloads: PPTX, PDF, PNG */}
-            <button
-              type="button"
-              onClick={handleExportVipPptx}
-              data-testid="vip-download-pptx"
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)] text-xs font-medium text-[var(--text-primary)] hover:border-[var(--accent)]"
-              title="Download VIP Boardroom PPTX Deck"
-            >
-              <FileSpreadsheet className="w-3.5 h-3.5 text-[var(--accent)]" />
-              <span>PPTX</span>
-            </button>
-            <button
-              type="button"
-              onClick={handleExportVipPdf}
-              data-testid="vip-download-pdf"
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)] text-xs font-medium text-[var(--text-primary)] hover:border-[var(--accent)]"
-              title="Download VIP Boardroom PDF"
-            >
-              <FileText className="w-3.5 h-3.5 text-[var(--accent)]" />
-              <span>PDF</span>
-            </button>
-            <button
-              type="button"
-              onClick={handleExportVipPng}
-              data-testid="vip-download-png"
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)] text-xs font-medium text-[var(--text-primary)] hover:border-[var(--accent)]"
-              title="Download VIP Boardroom PNG"
-            >
-              <ImageIcon className="w-3.5 h-3.5 text-[var(--accent)]" />
-              <span>PNG</span>
-            </button>
+              {/* Control 3: Present (Full-screen Presentation Mode) */}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsPresentationMode((v) => !v);
+                  setPresentationSection(0);
+                }}
+                data-testid="vip-presentation-mode-btn"
+                title="Full-Screen Presentation Mode (Arrow keys navigate, Esc exits)"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)] hover:border-[var(--accent)] text-[var(--text-primary)] text-xs font-semibold cursor-pointer"
+              >
+                {isPresentationMode ? (
+                  <>
+                    <Minimize2 className="w-3.5 h-3.5 text-[var(--accent)]" />
+                    <span>Exit</span>
+                  </>
+                ) : (
+                  <>
+                    <Maximize2 className="w-3.5 h-3.5 text-[var(--accent)]" />
+                    <span>Present</span>
+                  </>
+                )}
+              </button>
 
-            {/* Full-Screen Presentation Mode */}
-            <button
-              type="button"
-              onClick={() => setIsPresentationMode((v) => !v)}
-              data-testid="vip-presentation-mode-btn"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--accent)] text-[var(--text-on-accent)] text-xs font-semibold"
-            >
-              {isPresentationMode ? (
-                <>
-                  <Minimize2 className="w-3.5 h-3.5" />
-                  <span>Exit Presentation</span>
-                </>
-              ) : (
-                <>
-                  <Maximize2 className="w-3.5 h-3.5" />
-                  <span>Presentation Mode</span>
-                </>
-              )}
-            </button>
-          </div>
-        </div>
+              {/* Control 4: More (Show as calculation selector, Suggest a chart, Tour of your board) */}
+              <div className="relative">
+                <button
+                  type="button"
+                  data-testid="vip-more-controls-btn"
+                  aria-expanded={showMoreMenu}
+                  onClick={() => {
+                    setShowMoreMenu((v) => !v);
+                    setShowDownloadMenu(false);
+                  }}
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)] text-xs font-medium text-[var(--text-primary)] hover:border-[var(--accent)] cursor-pointer"
+                  title="More board options (Show as, Suggest a chart, Board tour)"
+                >
+                  <MoreHorizontal className="w-3.5 h-3.5" />
+                  <span>More</span>
+                </button>
 
-        {/* E2: 6 Selectable VIP Layout Templates Strip */}
-        <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-[var(--border-subtle)]">
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-secondary)] mr-1">
-            VIP Templates:
-          </span>
-          {VIP_LAYOUT_TEMPLATES.map((tpl) => (
-            <button
-              key={tpl.id}
-              type="button"
-              onClick={() => {
-                setSelectedLayoutId(tpl.id);
-                setGeoScope(tpl.defaultGeoScope);
-                if (!propPackId) {
-                  setSelectedPackId(tpl.defaultPackId);
-                }
-              }}
-              data-testid={`vip-template-${tpl.id}`}
-              className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
-                selectedLayoutId === tpl.id
-                  ? 'bg-[var(--accent)] text-[var(--text-on-accent)] font-semibold'
-                  : 'bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)]'
-              }`}
-            >
-              {tpl.name}
-            </button>
-          ))}
+                {showMoreMenu && (
+                  <div
+                    data-testid="vip-more-popover"
+                    className="absolute right-0 mt-1.5 w-64 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-3 shadow-xl z-40 space-y-2.5 text-xs"
+                  >
+                    <div className="space-y-1">
+                      <label
+                        htmlFor="vip-show-as-select"
+                        title="fx: Visual Calculation"
+                        className="block text-[11px] font-semibold text-[var(--text-secondary)]"
+                      >
+                        Show as
+                      </label>
+                      <select
+                        id="vip-show-as-select"
+                        value={visualCalc}
+                        onChange={(e) => setVisualCalc(e.target.value as VisualCalculationType)}
+                        aria-label="Show as calculation"
+                        title="fx: Visual Calculation"
+                        data-testid="vip-visual-calc-selector"
+                        className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)] text-[var(--text-primary)]"
+                      >
+                        <option value="none">Show as: Standard Value</option>
+                        <option value="running_total">Show as: Running Total</option>
+                        <option value="moving_average">Show as: 3-Period Moving Avg</option>
+                        <option value="percent_of_total">Show as: % of Total</option>
+                        <option value="rank">Show as: Dense Rank</option>
+                        <option value="diff_from_prev">Show as: Change vs Previous</option>
+                      </select>
+                    </div>
 
-          {crossFilterCategory && (
-            <button
-              type="button"
-              onClick={() => setCrossFilterCategory(null)}
-              className="ml-auto px-2.5 py-1 rounded-lg text-xs font-semibold bg-[var(--warning)]/20 text-[var(--text-primary)] border border-[var(--warning)]"
-            >
-              Filtered: {crossFilterCategory} ×
-            </button>
+                    <button
+                      type="button"
+                      title="Visual Advisor"
+                      onClick={() => {
+                        setShowVisualRecommender((v) => !v);
+                        setShowMoreMenu(false);
+                      }}
+                      data-testid="vip-visual-recommender-btn"
+                      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)] text-xs font-medium text-[var(--text-primary)] hover:border-[var(--accent)] cursor-pointer"
+                    >
+                      <Compass className="w-3.5 h-3.5 text-[var(--accent)]" />
+                      <span>Suggest a chart</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setBoardTourStep(0);
+                        setShowMoreMenu(false);
+                      }}
+                      data-testid="vip-start-board-tour-btn"
+                      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)] text-xs font-medium text-[var(--text-primary)] hover:border-[var(--accent)] cursor-pointer"
+                    >
+                      <HelpCircle className="w-3.5 h-3.5 text-[var(--accent)]" />
+                      <span>Tour of your board</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            /* Classic Toolbar */
+            <div className="flex flex-wrap items-center gap-1.5">
+              <select
+                value={activePack.id}
+                onChange={(e) => {
+                  const next = e.target.value as PackId;
+                  setSelectedPackId(next);
+                  setCrossFilterCategory(null);
+                  onPackChange?.(next);
+                }}
+                aria-label="Select VIP Pack"
+                data-testid="vip-pack-selector"
+                className="text-xs px-2.5 py-1.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)] text-[var(--text-primary)] font-medium"
+              >
+                {ANALYTICS_PACKS.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    Pack: {p.name}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={visualCalc}
+                onChange={(e) => setVisualCalc(e.target.value as VisualCalculationType)}
+                aria-label="VIP Visual Calculation"
+                data-testid="vip-visual-calc-selector"
+                className="text-xs px-2.5 py-1.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)] text-[var(--text-primary)]"
+              >
+                <option value="none">fx: Standard Value</option>
+                <option value="running_total">fx: Running Total</option>
+                <option value="moving_average">fx: 3-Period Moving Avg</option>
+                <option value="percent_of_total">fx: % of Total</option>
+                <option value="rank">fx: Dense Rank</option>
+                <option value="diff_from_prev">fx: Δ vs Previous</option>
+              </select>
+
+              <button
+                type="button"
+                onClick={() => setShowVisualRecommender((v) => !v)}
+                data-testid="vip-visual-recommender-btn"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)] text-xs font-medium text-[var(--text-primary)] hover:border-[var(--accent)]"
+              >
+                <Compass className="w-3.5 h-3.5 text-[var(--accent)]" />
+                <span>Visual Advisor</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleExportVipPptx}
+                data-testid="vip-download-pptx"
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)] text-xs font-medium text-[var(--text-primary)] hover:border-[var(--accent)]"
+                title="Download VIP Boardroom PPTX Deck"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5 text-[var(--accent)]" />
+                <span>PPTX</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleExportVipPdf}
+                data-testid="vip-download-pdf"
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)] text-xs font-medium text-[var(--text-primary)] hover:border-[var(--accent)]"
+                title="Download VIP Boardroom PDF"
+              >
+                <FileText className="w-3.5 h-3.5 text-[var(--accent)]" />
+                <span>PDF</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleExportVipPng}
+                data-testid="vip-download-png"
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)] text-xs font-medium text-[var(--text-primary)] hover:border-[var(--accent)]"
+                title="Download VIP Boardroom PNG"
+              >
+                <ImageIcon className="w-3.5 h-3.5 text-[var(--accent)]" />
+                <span>PNG</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsPresentationMode((v) => !v)}
+                data-testid="vip-presentation-mode-btn"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--accent)] text-[var(--text-on-accent)] text-xs font-semibold"
+              >
+                {isPresentationMode ? (
+                  <>
+                    <Minimize2 className="w-3.5 h-3.5" />
+                    <span>Exit Presentation</span>
+                  </>
+                ) : (
+                  <>
+                    <Maximize2 className="w-3.5 h-3.5" />
+                    <span>Presentation Mode</span>
+                  </>
+                )}
+              </button>
+            </div>
           )}
         </div>
 
+        {/* Classic separate template strip when premiumUX is OFF */}
+        {!flags.premiumUX && (
+          <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-[var(--border-subtle)]">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-secondary)] mr-1">
+              VIP Templates:
+            </span>
+            {VIP_LAYOUT_TEMPLATES.map((tpl) => (
+              <button
+                key={tpl.id}
+                type="button"
+                onClick={() => {
+                  setSelectedLayoutId(tpl.id);
+                  setGeoScope(tpl.defaultGeoScope);
+                  if (!propPackId) {
+                    setSelectedPackId(tpl.defaultPackId);
+                  }
+                }}
+                data-testid={`vip-template-${tpl.id}`}
+                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
+                  selectedLayoutId === tpl.id
+                    ? 'bg-[var(--accent)] text-[var(--text-on-accent)] font-semibold'
+                    : 'bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)]'
+                }`}
+              >
+                {tpl.name}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {crossFilterCategory && (
+          <div className="flex items-center justify-between pt-2 border-t border-[var(--border-subtle)] text-xs">
+            <span className="text-[var(--text-secondary)]">
+              Filtered by: <strong className="text-[var(--text-primary)]">{crossFilterCategory}</strong>
+            </span>
+            <button
+              type="button"
+              onClick={() => setCrossFilterCategory(null)}
+              className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-[var(--warning)]/20 text-[var(--text-primary)] border border-[var(--warning)] cursor-pointer"
+            >
+              Clear filter ×
+            </button>
+          </div>
+        )}
+
+        {/* Post-Download Success Feedback Toast with "Open file" and conditional "Share" */}
         {exportStatus && (
           <div
-            className="text-xs text-[var(--accent)] font-medium flex items-center gap-1.5"
-            data-testid="vip-export-status"
+            className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-3 py-2 text-xs flex flex-wrap items-center justify-between gap-2"
+            data-testid="vip-download-toast"
           >
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>{exportStatus}</span>
+            <div
+              className="text-[var(--accent)] font-medium flex items-center gap-1.5"
+              data-testid="vip-export-status"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+              <span>{exportStatus}</span>
+            </div>
+
+            {lastDownload && (
+              <div className="flex items-center gap-2">
+                <a
+                  href={lastDownload.url}
+                  download={lastDownload.filename}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-testid="vip-download-open-file"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-[var(--bg-card)] border border-[var(--border-subtle)] text-[var(--text-primary)] hover:border-[var(--accent)] font-semibold"
+                >
+                  <ExternalLink className="w-3 h-3 text-[var(--accent)]" />
+                  <span>Open file</span>
+                </a>
+                {canWebShare && (
+                  <button
+                    type="button"
+                    data-testid="vip-download-share"
+                    onClick={() => {
+                      navigator
+                        .share({
+                          title: `${activePack.name} Board Deck`,
+                          text: narrative.headline,
+                        })
+                        .catch(() => {});
+                    }}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-[var(--bg-card)] border border-[var(--border-subtle)] text-[var(--text-primary)] hover:border-[var(--accent)] font-semibold cursor-pointer"
+                  >
+                    <Share2 className="w-3 h-3 text-[var(--accent)]" />
+                    <span>Share</span>
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
+      )}
 
-      {/* B12: "Choosing the right visual" Interactive Advisor Panel */}
+      {/* B12: "Suggest a chart" (Visual Advisor) Panel */}
       {showVisualRecommender && (
         <div
           className="rounded-xl border border-[var(--accent)]/50 bg-[var(--bg-card)] p-4 space-y-3"
@@ -684,8 +1133,11 @@ export const VipBoardroomDashboard: React.FC<VipBoardroomDashboardProps> = ({
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <Compass className="w-4 h-4 text-[var(--accent)]" />
-              <h3 className="text-sm font-semibold text-[var(--text-primary)]">
-                Choosing the Right Visual Advisor
+              <h3
+                className="text-sm font-semibold text-[var(--text-primary)]"
+                title="Visual Advisor — Choosing the Right Visual"
+              >
+                Suggest a chart
               </h3>
             </div>
             <div className="flex flex-wrap items-center gap-2 text-xs">
@@ -738,44 +1190,85 @@ export const VipBoardroomDashboard: React.FC<VipBoardroomDashboardProps> = ({
         </div>
       )}
 
-      {/* E1: HERO KPI BAND (4 Cards, 12-Column Grid) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3" data-testid="vip-hero-kpi-band">
+      {/* SECTION 0: KEY NUMBERS BAND (4 Hero Cards, 12-Column Grid) */}
+      <div
+        ref={(el) => {
+          sectionRefs.current[0] = el;
+        }}
+        className={`grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 rounded-xl transition-all duration-200 ${
+          isPresentationMode && presentationSection === 0
+            ? 'ring-2 ring-[var(--accent)] p-2'
+            : ''
+        }`}
+        data-testid="vip-hero-kpi-band"
+        aria-label="Key numbers"
+        title="Hero Scorecard Metrics"
+      >
         {computedKpis.slice(0, 4).map((kpi) => {
           const def = activePack.kpis.find((d) => d.id === kpi.id);
           const goodDir = def?.favorableDirection || 'up';
           const deltaEv = evaluateKpiDelta(kpi.deltaPct, goodDir);
+          const formulaTooltip = `Formula: ${def?.formula || def?.source || 'Verified metric'} · ${
+            goodDir === 'down' ? 'Lower is better' : 'Higher is better'
+          }`;
 
           return (
             <div
               key={kpi.id}
+              title={`${kpi.label}: ${kpi.formattedValue} (${deltaEv.textLabel}) · ${formulaTooltip}`}
               className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4 flex flex-col justify-between gap-2"
             >
               <div className="flex items-start justify-between gap-2">
                 <span
-                  className="text-xs font-semibold uppercase tracking-wide text-[var(--text-secondary)] line-clamp-2"
+                  className="text-xs font-semibold uppercase tracking-wide text-[var(--text-secondary)] break-words"
                   title={kpi.label}
                 >
                   {kpi.label}
                 </span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--bg-elevated)] text-[var(--text-secondary)] shrink-0">
-                  {goodDir === 'down' ? 'Lower is better' : 'Higher is better'}
-                </span>
+                {flags.premiumUX ? (
+                  <span
+                    className="font-semibold text-xs flex items-center gap-0.5 shrink-0"
+                    style={{ color: deltaEv.colorToken }}
+                    title={`${goodDir === 'down' ? 'Lower is better' : 'Higher is better'} (${deltaEv.textLabel})`}
+                    data-testid={`vip-kpi-dir-arrow-${kpi.id}`}
+                  >
+                    <span>{deltaEv.arrow}</span>
+                  </span>
+                ) : (
+                  <span
+                    title={goodDir === 'down' ? 'Lower is better' : 'Higher is better'}
+                    className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--bg-elevated)] text-[var(--text-secondary)] shrink-0"
+                  >
+                    {goodDir === 'down' ? 'Lower is better' : 'Higher is better'}
+                  </span>
+                )}
               </div>
 
-              <div className="text-2xl font-bold font-mono text-[var(--text-primary)]">
+              <div
+                title={String(kpi.formattedValue)}
+                className="text-2xl font-bold font-mono text-[var(--text-primary)] break-words"
+              >
                 {kpi.formattedValue}
               </div>
 
-              <div className="flex items-center justify-between text-xs pt-1 border-t border-[var(--border-subtle)]/60">
+              <div className="flex items-center justify-between text-xs pt-1 border-t border-[var(--border-subtle)]/60 gap-2">
                 <span
                   className="font-semibold flex items-center gap-1"
                   style={{ color: deltaEv.colorToken }}
+                  title={`${deltaEv.arrow} ${deltaEv.textLabel} (${
+                    goodDir === 'down' ? 'Lower is better' : 'Higher is better'
+                  })`}
                 >
                   <span>{deltaEv.arrow}</span>
                   <span>{deltaEv.textLabel}</span>
                 </span>
-                <span className="text-[11px] text-[var(--text-secondary)] truncate max-w-[130px]">
-                  {def?.source || 'Verified metric'}
+                <span
+                  className="text-[11px] text-[var(--text-secondary)] inline-flex items-center gap-1 cursor-help shrink-0"
+                  title={formulaTooltip}
+                  data-testid={`vip-kpi-formula-tooltip-${kpi.id}`}
+                >
+                  <HelpCircle className="w-3 h-3 text-[var(--text-secondary)]" />
+                  <span>Formula</span>
                 </span>
               </div>
             </div>
@@ -783,32 +1276,49 @@ export const VipBoardroomDashboard: React.FC<VipBoardroomDashboardProps> = ({
         })}
       </div>
 
-      {/* E1: PLAIN-LANGUAGE STORY LINE + AUTO-GENERATED 5-LINE SUMMARY (E3) */}
+      {/* SECTION 1: PLAIN-LANGUAGE STORY LINE + AUTO-GENERATED 5-LINE SUMMARY */}
       <div
-        className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4 space-y-2.5"
+        ref={(el) => {
+          sectionRefs.current[1] = el;
+        }}
+        className={`rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4 space-y-2.5 transition-all duration-200 ${
+          isPresentationMode && presentationSection === 1
+            ? 'ring-2 ring-[var(--accent)]'
+            : ''
+        }`}
         data-testid="vip-five-line-summary"
       >
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-[var(--accent)]" />
-            <h3 className="text-sm font-semibold text-[var(--text-primary)]">
-              Boardroom Story Line & 5-Line Executive Summary
+            <h3
+              title="Boardroom Story Line & 5-Line Executive Summary"
+              className="text-sm font-semibold text-[var(--text-primary)]"
+            >
+              Boardroom Story Line &amp; 5-Line Executive Summary
             </h3>
           </div>
-          <span className="text-[11px] text-[var(--text-secondary)]">
+          <span
+            title={`Live synthesis from ${filteredRows.length} records`}
+            className="text-[11px] text-[var(--text-secondary)]"
+          >
             Live synthesis from {filteredRows.length} records
           </span>
         </div>
 
-        <p className="text-xs font-semibold text-[var(--text-primary)] bg-[var(--bg-elevated)] rounded-lg px-3 py-2 border border-[var(--border-subtle)]">
+        <p
+          title={narrative.headline}
+          className="text-xs font-semibold text-[var(--text-primary)] bg-[var(--bg-elevated)] rounded-lg px-3 py-2 border border-[var(--border-subtle)] break-words"
+        >
           {narrative.headline}
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-2 text-xs">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-2 text-xs items-stretch">
           {narrative.fiveLineSummary.map((line, idx) => (
             <div
               key={idx}
-              className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/40 p-2.5 text-[var(--text-secondary)] leading-relaxed"
+              title={line}
+              className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/40 p-2.5 text-[var(--text-secondary)] leading-relaxed break-words flex flex-col justify-between"
             >
               {line}
             </div>
@@ -816,9 +1326,18 @@ export const VipBoardroomDashboard: React.FC<VipBoardroomDashboardProps> = ({
         </div>
       </div>
 
-      {/* E1: 12-COLUMN GLASS GRID — HEADLINE CHART (8 cols) + TOP 5 RANKING & TARGET GAUGE (4 cols) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        <div className="lg:col-span-8">
+      {/* SECTION 2: 12-COLUMN GLASS GRID — HEADLINE CHART (8 cols) + TARGET GAUGE & TOP 5 RANKING (4 cols) */}
+      <div
+        ref={(el) => {
+          sectionRefs.current[2] = el;
+        }}
+        className={`grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch rounded-xl transition-all duration-200 ${
+          isPresentationMode && presentationSection === 2
+            ? 'ring-2 ring-[var(--accent)] p-2'
+            : ''
+        }`}
+      >
+        <div className="lg:col-span-8 flex flex-col">
           <ChartStudioVisual
             visualType={activeLayout.headlineVisual}
             rows={filteredRows}
@@ -826,59 +1345,74 @@ export const VipBoardroomDashboard: React.FC<VipBoardroomDashboardProps> = ({
             metricCol={primaryMetricCol}
             secondaryMetricCol={secondaryMetricCol}
             title={`${activePack.name}: ${primaryMetricCol} by ${categoryCol}`}
-            height={320}
+            height={360}
             visualCalc={visualCalc}
             selectedCategory={crossFilterCategory}
             onCategorySelect={(cat) =>
               setCrossFilterCategory((prev) => (prev === cat ? null : cat))
             }
-            showControls
+            showControls={!flags.premiumUX}
           />
         </div>
 
-        <div className="lg:col-span-4 flex flex-col gap-4">
+        <div className="lg:col-span-4 flex flex-col justify-between gap-4">
           {/* Target Radial Gauge */}
           <ChartStudioVisual
             visualType="gauge"
             rows={filteredRows}
             categoryCol={categoryCol}
             metricCol={primaryMetricCol}
-            title={`${primaryMetricCol} Board Quota Gauge`}
+            title={`${primaryMetricCol} Target Gauge`}
             height={160}
           />
 
           {/* Top 5 Ranking Card */}
           <div
-            className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4 space-y-2.5 flex-1"
+            className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4 space-y-2.5 flex-1 flex flex-col justify-between"
             data-testid="vip-top5-ranking-card"
           >
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-[var(--text-primary)]">
+            <div className="flex items-center justify-between gap-2">
+              <h3
+                title={`Top 5 ${categoryCol} Leaders`}
+                className="text-sm font-semibold text-[var(--text-primary)] break-words"
+              >
                 Top 5 {categoryCol} Leaders
               </h3>
-              <span className="text-[11px] text-[var(--text-secondary)]">Click to filter</span>
+              <span
+                title="Click any row to filter the board"
+                className="text-[11px] text-[var(--text-secondary)] shrink-0"
+              >
+                Click to filter
+              </span>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2" role="list">
               {top5Rankings.map((item) => (
-                <button
+                <div
                   key={item.label}
-                  type="button"
+                  role="listitem"
+                  title={`#${item.rank} ${item.label}: ${item.value.toLocaleString()} (${item.sharePct.toFixed(1)}%)`}
                   onClick={() =>
                     setCrossFilterCategory((prev) =>
                       prev === item.label ? null : item.label
                     )
                   }
-                  className={`w-full text-left rounded-lg p-2 border transition-colors text-xs ${
+                  className={`w-full text-left rounded-lg p-2 border transition-colors text-xs cursor-pointer ${
                     crossFilterCategory === item.label
                       ? 'border-[var(--accent)] bg-[var(--accent)]/10'
                       : 'border-[var(--border-subtle)] bg-[var(--bg-elevated)]/50 hover:border-[var(--accent)]'
                   }`}
                 >
                   <div className="flex items-center justify-between gap-2 mb-1">
-                    <span className="font-medium text-[var(--text-primary)] truncate">
+                    <span
+                      title={`#${item.rank} ${item.label}`}
+                      className="font-medium text-[var(--text-primary)] break-words"
+                    >
                       #{item.rank} {item.label}
                     </span>
-                    <span className="font-mono text-[var(--text-primary)] shrink-0">
+                    <span
+                      title={`${item.value.toLocaleString()} (${item.sharePct.toFixed(1)}%)`}
+                      className="font-mono text-[var(--text-primary)] shrink-0"
+                    >
                       {item.value.toLocaleString()} ({item.sharePct.toFixed(1)}%)
                     </span>
                   </div>
@@ -888,16 +1422,25 @@ export const VipBoardroomDashboard: React.FC<VipBoardroomDashboardProps> = ({
                       style={{ width: `${Math.min(100, item.sharePct)}%` }}
                     />
                   </div>
-                </button>
+                </div>
               ))}
             </div>
           </div>
         </div>
       </div>
 
-      {/* E1: SECOND ROW (12-COLUMN GRID) — TREND WITH FORECAST & ANOMALIES (6 cols) + SECONDARY SPECIALIST VISUAL (6 cols) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        <div className="lg:col-span-6">
+      {/* SECTION 3: SECOND ROW (12-COLUMN GRID, EQUAL HEIGHTS) — TREND WITH FORECAST (6 cols) + SECONDARY SPECIALIST VISUAL (6 cols) */}
+      <div
+        ref={(el) => {
+          sectionRefs.current[3] = el;
+        }}
+        className={`grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch rounded-xl transition-all duration-200 ${
+          isPresentationMode && presentationSection === 3
+            ? 'ring-2 ring-[var(--accent)] p-2'
+            : ''
+        }`}
+      >
+        <div className="lg:col-span-6 flex flex-col">
           <ChartStudioVisual
             visualType="line"
             rows={filteredRows}
@@ -911,11 +1454,11 @@ export const VipBoardroomDashboard: React.FC<VipBoardroomDashboardProps> = ({
               showForecast: true,
               showAnomalies: true,
             }}
-            showControls
+            showControls={!flags.premiumUX}
           />
         </div>
 
-        <div className="lg:col-span-6">
+        <div className="lg:col-span-6 flex flex-col">
           <ChartStudioVisual
             visualType={activeLayout.secondaryVisual}
             rows={filteredRows}
@@ -932,69 +1475,150 @@ export const VipBoardroomDashboard: React.FC<VipBoardroomDashboardProps> = ({
         </div>
       </div>
 
-      {/* E1 & C4: GEOGRAPHY SECTION (Offline Vector Map) + KEY INFLUENCERS / TERTIARY VISUAL */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        {shouldShowGeo && (
-          <div className="lg:col-span-7">
+      {/* SECTION 4: GEOGRAPHY SECTION (Offline Vector Map) + KEY INFLUENCERS & WHAT TO DO NEXT */}
+      <div
+        ref={(el) => {
+          sectionRefs.current[4] = el;
+        }}
+        className={`space-y-4 rounded-xl transition-all duration-200 ${
+          isPresentationMode && presentationSection === 4
+            ? 'ring-2 ring-[var(--accent)] p-2'
+            : ''
+        }`}
+      >
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
+          {shouldShowGeo && (
+            <div className="lg:col-span-7 flex flex-col">
+              <ChartStudioVisual
+                visualType="map_choropleth"
+                rows={geoData.rows}
+                categoryCol={geoData.locationCol}
+                metricCol={primaryMetricCol}
+                geoScope={geoScope}
+                title={`${activePack.name} Geography Breakdown (${primaryMetricCol})`}
+                height={320}
+                selectedCategory={crossFilterCategory}
+                onCategorySelect={(regionName) =>
+                  setCrossFilterCategory((prev) => (prev === regionName ? null : regionName))
+                }
+              />
+            </div>
+          )}
+
+          <div className={`${shouldShowGeo ? 'lg:col-span-5' : 'lg:col-span-12'} flex flex-col`}>
             <ChartStudioVisual
-              visualType="map_choropleth"
-              rows={geoData.rows}
-              categoryCol={geoData.locationCol}
+              visualType="key_influencers"
+              rows={filteredRows}
+              categoryCol={categoryCol}
               metricCol={primaryMetricCol}
-              geoScope={geoScope}
-              title={`${activePack.name} Geography Breakdown (${primaryMetricCol})`}
+              title={`Key Influencers Driving ${primaryMetricCol}`}
               height={320}
-              selectedCategory={crossFilterCategory}
-              onCategorySelect={(regionName) =>
-                setCrossFilterCategory((prev) => (prev === regionName ? null : regionName))
-              }
             />
           </div>
-        )}
-
-        <div className={shouldShowGeo ? 'lg:col-span-5' : 'lg:col-span-12'}>
-          <ChartStudioVisual
-            visualType="key_influencers"
-            rows={filteredRows}
-            categoryCol={categoryCol}
-            metricCol={primaryMetricCol}
-            title={`Key Influencers Driving ${primaryMetricCol}`}
-            height={320}
-          />
-        </div>
-      </div>
-
-      {/* E1: "WHAT TO DO NEXT" PRESCRIPTIVE LEADERSHIP STRIP */}
-      <div
-        className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4 space-y-3"
-        data-testid="vip-what-to-do-next-strip"
-      >
-        <div className="flex items-center gap-2">
-          <TrendingUp className="w-4 h-4 text-[var(--accent)]" />
-          <h3 className="text-sm font-semibold text-[var(--text-primary)]">
-            What To Do Next — Recommended Leadership Actions
-          </h3>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          {prescriptiveActions.map((act, idx) => (
-            <div
-              key={idx}
-              className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/50 p-3 space-y-1"
+        {/* "WHAT TO DO NEXT" PRESCRIPTIVE LEADERSHIP STRIP */}
+        <div
+          className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4 space-y-3"
+          data-testid="vip-what-to-do-next-strip"
+        >
+          <div className="flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 text-[var(--accent)]" />
+            <h3
+              title="What To Do Next — Recommended Leadership Actions"
+              className="text-sm font-semibold text-[var(--text-primary)]"
             >
-              <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--accent)]">
-                {act.priority}
+              What To Do Next — Recommended Leadership Actions
+            </h3>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-stretch">
+            {prescriptiveActions.map((act, idx) => (
+              <div
+                key={idx}
+                title={`${act.priority}: ${act.title} — ${act.detail}`}
+                className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/50 p-3 space-y-1 flex flex-col justify-between"
+              >
+                <div className="space-y-1">
+                  <div
+                    title={act.priority}
+                    className="text-[11px] font-bold uppercase tracking-wider text-[var(--accent)]"
+                  >
+                    {act.priority}
+                  </div>
+                  <div
+                    title={act.title}
+                    className="text-xs font-semibold text-[var(--text-primary)] break-words"
+                  >
+                    {act.title}
+                  </div>
+                </div>
+                <p
+                  title={act.detail}
+                  className="text-xs text-[var(--text-secondary)] leading-relaxed break-words"
+                >
+                  {act.detail}
+                </p>
               </div>
-              <div className="text-xs font-semibold text-[var(--text-primary)]">
-                {act.title}
-              </div>
-              <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-                {act.detail}
-              </p>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
+
+      {/* One-Time 3-Step "Tour of your board" Docked Card (Does not cover KPI or chart content) */}
+      {boardTourStep !== null && (
+        <div
+          data-testid="vip-board-tour"
+          className="fixed bottom-4 right-4 z-50 w-80 rounded-xl border border-[var(--accent)] bg-[var(--bg-card)] p-4 shadow-2xl space-y-2.5"
+        >
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs font-bold text-[var(--accent)]">
+              {BOARD_TOUR_STEPS[boardTourStep].title}
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                setBoardTourStep(null);
+                localStorage.setItem('dataanalytix_vip_board_tour_seen', 'true');
+              }}
+              className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] cursor-pointer"
+              aria-label="Close board tour"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+          <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+            {BOARD_TOUR_STEPS[boardTourStep].body}
+          </p>
+          <div className="flex items-center justify-between pt-1">
+            <button
+              type="button"
+              onClick={() => {
+                setBoardTourStep(null);
+                localStorage.setItem('dataanalytix_vip_board_tour_seen', 'true');
+              }}
+              className="text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] cursor-pointer"
+            >
+              Skip
+            </button>
+            <button
+              type="button"
+              data-testid="vip-board-tour-next-btn"
+              onClick={() => {
+                if (boardTourStep < BOARD_TOUR_STEPS.length - 1) {
+                  setBoardTourStep(boardTourStep + 1);
+                } else {
+                  setBoardTourStep(null);
+                  localStorage.setItem('dataanalytix_vip_board_tour_seen', 'true');
+                }
+              }}
+              className="px-3 py-1 rounded-lg bg-[var(--accent)] text-[var(--text-on-accent)] text-xs font-semibold cursor-pointer"
+            >
+              {boardTourStep < BOARD_TOUR_STEPS.length - 1 ? 'Next' : 'Done'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

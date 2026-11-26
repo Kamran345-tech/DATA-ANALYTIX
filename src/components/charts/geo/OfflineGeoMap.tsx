@@ -242,17 +242,28 @@ export const OfflineGeoMap: React.FC<OfflineGeoMapProps> = ({
       {/* Header + Scope & Mode Switchers */}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="min-w-0">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Globe className="w-4 h-4 text-[var(--accent)] shrink-0" />
-            <h3 className="text-sm font-semibold text-[var(--text-primary)] truncate">
+            <h3
+              title={title}
+              className="text-sm font-semibold text-[var(--text-primary)] break-words"
+            >
               {title}
             </h3>
-            <span className="text-[11px] font-medium px-2 py-0.5 rounded bg-[var(--bg-elevated)] text-[var(--text-secondary)] border border-[var(--border-subtle)]">
+            <span
+              title={`Offline GeoJSON • ${matchResult.matched.length} regions`}
+              className="text-[11px] font-medium px-2 py-0.5 rounded bg-[var(--bg-elevated)] text-[var(--text-secondary)] border border-[var(--border-subtle)]"
+            >
               Offline GeoJSON • {matchResult.matched.length} regions
             </span>
           </div>
           {subtitle ? (
-            <p className="text-xs text-[var(--text-secondary)] mt-0.5 truncate">{subtitle}</p>
+            <p
+              title={subtitle}
+              className="text-xs text-[var(--text-secondary)] mt-0.5 break-words"
+            >
+              {subtitle}
+            </p>
           ) : (
             <p className="text-xs text-[var(--text-secondary)] mt-0.5">
               Location: <span className="font-medium text-[var(--text-primary)]">{activeLocCol || 'Auto'}</span>
@@ -500,94 +511,120 @@ export const OfflineGeoMap: React.FC<OfflineGeoMapProps> = ({
 
             {/* Region Polygons */}
             <g>
-              {allScopeRegions.map((feature: GeoRegionFeature) => {
-                const matched = matchedById.get(feature.id);
-                const val = matched?.value ?? 0;
-                const count = matched?.count ?? 0;
-                const sharePct = totalValue > 0 ? (val / totalValue) * 100 : 0;
-                const isSelected =
-                  Boolean(selectedRegionName) &&
-                  (selectedRegionName === feature.name ||
-                    matched?.rawLabels.includes(selectedRegionName!));
+              {(() => {
+                const top5Ids = new Set(
+                  matchResult.matched.slice(0, 5).map((m) => m.feature.id)
+                );
+                return allScopeRegions.map((feature: GeoRegionFeature) => {
+                  const matched = matchedById.get(feature.id);
+                  const val = matched?.value ?? 0;
+                  const count = matched?.count ?? 0;
+                  const sharePct = totalValue > 0 ? (val / totalValue) * 100 : 0;
+                  const isTop5 = top5Ids.has(feature.id);
+                  const isSelected =
+                    Boolean(selectedRegionName) &&
+                    (selectedRegionName === feature.name ||
+                      matched?.rawLabels.includes(selectedRegionName!));
 
-                const geoJsonPolygon: GeoJSON.Feature<GeoJSON.Polygon> = {
-                  type: 'Feature',
-                  properties: { name: feature.name },
-                  geometry: {
-                    type: 'Polygon',
-                    coordinates: feature.coordinates,
-                  },
-                };
+                  const geoJsonPolygon: GeoJSON.Feature<GeoJSON.Polygon> = {
+                    type: 'Feature',
+                    properties: { name: feature.name },
+                    geometry: {
+                      type: 'Polygon',
+                      coordinates: feature.coordinates,
+                    },
+                  };
 
-                const pathD = pathGenerator(geoJsonPolygon) || '';
-                const projectedCentroid = projection(feature.centroid) || [0, 0];
+                  const pathD = pathGenerator(geoJsonPolygon) || '';
+                  const projectedCentroid = projection(feature.centroid) || [0, 0];
 
-                const fillColor =
-                  mode === 'bubble'
-                    ? 'var(--bg-elevated)'
-                    : getRegionFillColor(matched ? val : undefined, Boolean(isSelected));
+                  const fillColor =
+                    mode === 'bubble'
+                      ? 'var(--bg-elevated)'
+                      : getRegionFillColor(matched ? val : undefined, Boolean(isSelected));
 
-                return (
-                  <g
-                    key={feature.id}
-                    tabIndex={0}
-                    role="button"
-                    aria-label={`${feature.name}: ${formatMapMetric(val)}`}
-                    onClick={() =>
-                      onRegionClick?.(
-                        feature.name,
-                        matched?.rawLabels || [feature.name]
-                      )
-                    }
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
+                  return (
+                    <g
+                      key={feature.id}
+                      tabIndex={0}
+                      role="button"
+                      aria-label={`${feature.name}: ${formatMapMetric(val)}`}
+                      onClick={() =>
                         onRegionClick?.(
                           feature.name,
                           matched?.rawLabels || [feature.name]
-                        );
+                        )
                       }
-                    }}
-                    onMouseEnter={() =>
-                      setHoveredFeature({
-                        name: feature.name,
-                        isoCode: feature.isoCode,
-                        value: val,
-                        count,
-                        sharePct,
-                      })
-                    }
-                    onMouseLeave={() => setHoveredFeature(null)}
-                    className="cursor-pointer focus:outline-none"
-                  >
-                    <path
-                      d={pathD}
-                      fill={fillColor}
-                      fillOpacity={matched ? (mode === 'shape' ? 0.92 : 0.82) : 0.35}
-                      stroke={isSelected ? 'var(--text-primary)' : 'var(--border-subtle)'}
-                      strokeWidth={isSelected ? 2 : 1}
-                      className="transition-opacity duration-150 hover:opacity-100"
-                    />
-                    {/* Region Label */}
-                    {(scope !== 'world' || matched) &&
-                      Number.isFinite(projectedCentroid[0]) &&
-                      Number.isFinite(projectedCentroid[1]) && (
-                        <text
-                          x={projectedCentroid[0]}
-                          y={projectedCentroid[1]}
-                          textAnchor="middle"
-                          dominantBaseline="central"
-                          fill="var(--text-primary)"
-                          fontSize={scope === 'us-states' ? 8.5 : 9.5}
-                          fontWeight={matched ? 600 : 400}
-                          className="pointer-events-none"
-                        >
-                          {feature.isoCode}
-                        </text>
-                      )}
-                  </g>
-                );
-              })}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          onRegionClick?.(
+                            feature.name,
+                            matched?.rawLabels || [feature.name]
+                          );
+                        }
+                      }}
+                      onMouseEnter={() =>
+                        setHoveredFeature({
+                          name: feature.name,
+                          isoCode: feature.isoCode,
+                          value: val,
+                          count,
+                          sharePct,
+                        })
+                      }
+                      onMouseLeave={() => setHoveredFeature(null)}
+                      className="cursor-pointer focus:outline-none"
+                    >
+                      <title>{`${feature.name} (${feature.isoCode}): ${formatMapMetric(val)}`}</title>
+                      <path
+                        d={pathD}
+                        fill={fillColor}
+                        fillOpacity={matched ? (mode === 'shape' ? 0.92 : 0.85) : 0.35}
+                        stroke={isSelected ? 'var(--text-primary)' : 'var(--border-subtle)'}
+                        strokeWidth={isSelected ? 2 : 0.9}
+                        className="transition-opacity duration-150 hover:opacity-100"
+                      />
+                      {/* Persistent Top 5 Value Badge or Region Code */}
+                      {Number.isFinite(projectedCentroid[0]) &&
+                        Number.isFinite(projectedCentroid[1]) &&
+                        (isTop5 ? (
+                          <g className="pointer-events-none" data-testid={`geo-top5-label-${feature.id}`}>
+                            <text
+                              x={projectedCentroid[0]}
+                              y={projectedCentroid[1]}
+                              textAnchor="middle"
+                              dominantBaseline="central"
+                              fill="var(--text-primary)"
+                              stroke="var(--bg-card)"
+                              strokeWidth={2.5}
+                              paintOrder="stroke"
+                              fontSize={9}
+                              fontWeight={700}
+                            >
+                              {`${feature.isoCode} · ${formatMapMetric(val)}`}
+                            </text>
+                          </g>
+                        ) : (
+                          (scope !== 'world' || matched) && (
+                            <text
+                              x={projectedCentroid[0]}
+                              y={projectedCentroid[1]}
+                              textAnchor="middle"
+                              dominantBaseline="central"
+                              fill="var(--text-primary)"
+                              fontSize={scope === 'us-states' ? 8.5 : 9}
+                              fontWeight={matched ? 600 : 400}
+                              className="pointer-events-none"
+                            >
+                              {feature.isoCode}
+                            </text>
+                          )
+                        ))}
+                    </g>
+                  );
+                });
+              })()}
             </g>
 
             {/* Bubble Layer (active in 'bubble' mode or when matched cities have pointCoords) */}
@@ -668,7 +705,10 @@ export const OfflineGeoMap: React.FC<OfflineGeoMapProps> = ({
             </div>
 
             {matchResult.matched.length > 0 && (
-              <div className="text-[var(--text-secondary)] truncate">
+              <div
+                title={`Top: ${matchResult.matched[0].feature.name} (${formatMapMetric(matchResult.matched[0].value)})`}
+                className="text-[var(--text-secondary)] truncate"
+              >
                 Top:{' '}
                 <strong className="text-[var(--text-primary)]">
                   {matchResult.matched[0].feature.name}

@@ -21,6 +21,7 @@ import { loadFeatureFlags, FeatureFlags, getBrandText } from '../../config/featu
 import {
   WORKFLOW_SIDEBAR_GROUPS,
   ALL_WORKFLOW_NAV_ITEMS,
+  DEFAULT_PINNED_TABS,
   MAX_PINNED_TABS,
   useSidebarNavState,
 } from '../../config/navigationConfig';
@@ -307,7 +308,7 @@ export const Sidebar: React.FC = () => {
         {/* =================================================================== */}
         <div
           data-testid="sidebar-slim-rail"
-          className="hidden lg:flex flex-col items-center justify-between py-3 px-1.5 w-12 shrink-0 border-r border-subtle bg-elevated/60"
+          className="hidden lg:flex flex-col items-center justify-between py-3 px-1 w-14 shrink-0 border-r border-subtle bg-elevated/60"
         >
           <div className="flex flex-col items-center gap-2">
             {/* Collapse / Expand Rail Button */}
@@ -318,16 +319,19 @@ export const Sidebar: React.FC = () => {
               title={isSidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar to Slim Rail'}
               aria-label={isSidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
               aria-expanded={!isSidebarCollapsed}
-              className="w-9 h-9 rounded-xl flex items-center justify-center text-secondary hover:text-primary hover:bg-card border border-transparent hover:border-subtle transition-colors cursor-pointer"
+              className="w-11 py-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-secondary hover:text-primary hover:bg-card border border-transparent hover:border-subtle transition-colors cursor-pointer"
             >
               {isSidebarCollapsed ? (
                 <PanelLeftOpen className="w-4 h-4 text-accent" />
               ) : (
                 <PanelLeftClose className="w-4 h-4" />
               )}
+              <span className="text-[9px] font-medium leading-none">
+                {isSidebarCollapsed ? 'Menu' : 'Hide'}
+              </span>
             </button>
 
-            <div className="w-5 h-px bg-subtle my-0.5" />
+            <div className="w-6 h-px bg-subtle my-0.5" />
 
             {/* Quick Action 1: Upload */}
             <button
@@ -336,13 +340,14 @@ export const Sidebar: React.FC = () => {
               onClick={() => handleSelectTab('upload')}
               title="Quick Action: Upload Data"
               aria-label="Upload Data"
-              className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
+              className={`w-11 py-1 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer ${
                 currentTab === 'upload'
                   ? 'bg-accent text-on-accent font-bold shadow-xs'
                   : 'text-secondary hover:text-primary hover:bg-card'
               }`}
             >
               <UploadCloud className="w-4 h-4" />
+              <span className="text-[9px] font-medium leading-none">Upload</span>
             </button>
 
             {/* Quick Action 2: Re-run Quality */}
@@ -352,13 +357,14 @@ export const Sidebar: React.FC = () => {
               onClick={() => handleSelectTab('quality')}
               title={`Quick Action: Re-run quality (${qualityScore}%)`}
               aria-label="Re-run quality"
-              className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
+              className={`w-11 py-1 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer ${
                 currentTab === 'quality'
                   ? 'bg-accent text-on-accent font-bold shadow-xs'
                   : 'text-secondary hover:text-primary hover:bg-card'
               }`}
             >
               <ShieldCheck className="w-4 h-4" />
+              <span className="text-[9px] font-medium leading-none">Quality</span>
             </button>
 
             {/* Quick Action 3: Download */}
@@ -368,13 +374,14 @@ export const Sidebar: React.FC = () => {
               onClick={() => handleSelectTab('export_center')}
               title="Quick Action: Download & Export Center"
               aria-label="Download"
-              className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
+              className={`w-11 py-1 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer ${
                 currentTab === 'export_center'
                   ? 'bg-accent text-on-accent font-bold shadow-xs'
                   : 'text-secondary hover:text-primary hover:bg-card'
               }`}
             >
               <DownloadCloud className="w-4 h-4" />
+              <span className="text-[9px] font-medium leading-none">Export</span>
             </button>
 
             {/* Quick Action 4: Present */}
@@ -384,9 +391,10 @@ export const Sidebar: React.FC = () => {
               onClick={() => setIsPresentationMode(true)}
               title="Quick Action: Present Fullscreen Deck"
               aria-label="Present"
-              className="w-9 h-9 rounded-xl flex items-center justify-center text-secondary hover:text-primary hover:bg-card transition-all cursor-pointer"
+              className="w-11 py-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-secondary hover:text-primary hover:bg-card transition-all cursor-pointer"
             >
               <Presentation className="w-4 h-4" />
+              <span className="text-[9px] font-medium leading-none">Present</span>
             </button>
           </div>
 
@@ -396,13 +404,14 @@ export const Sidebar: React.FC = () => {
               onClick={() => handleSelectTab('settings')}
               title="Settings & Theme Studio"
               aria-label="Settings"
-              className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
+              className={`w-11 py-1 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer ${
                 currentTab === 'settings'
                   ? 'bg-accent text-on-accent font-bold'
                   : 'text-muted hover:text-primary hover:bg-card'
               }`}
             >
               <Settings className="w-4 h-4" />
+              <span className="text-[9px] font-medium leading-none">Theme</span>
             </button>
           </div>
         </div>
@@ -447,185 +456,191 @@ export const Sidebar: React.FC = () => {
 
           {/* Scrollable Body */}
           <div className="flex-1 overflow-y-auto p-3 space-y-3">
-            {/* 1. Sidebar Search Input (Enter opens first match, Escape clears) */}
-            <div className="relative flex items-center">
-              <Search className="w-3.5 h-3.5 text-accent absolute left-2.5 pointer-events-none" />
-              <input
-                type="text"
-                data-testid="sidebar-search-input"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={handleSearchKeyDown}
-                placeholder="Search pages"
-                aria-label="Search sidebar pages"
-                className="w-full min-h-[44px] lg:min-h-[36px] pl-8 pr-14 py-1.5 rounded-2xl bg-input border border-subtle text-xs text-primary placeholder:text-muted focus:outline-2 focus:outline-accent"
-              />
-              {searchQuery ? (
-                <button
-                  type="button"
-                  data-testid="sidebar-search-clear"
-                  onClick={() => setSearchQuery('')}
-                  aria-label="Clear sidebar search"
-                  className="absolute right-2 p-1 rounded text-muted hover:text-primary cursor-pointer"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() =>
-                    window.dispatchEvent(new CustomEvent('dataanalytix:open-command-palette'))
-                  }
-                  title="Open Quick Jump Command Palette (Ctrl+K)"
-                  aria-label="Open Command Palette"
-                  className="absolute right-1.5 px-1.5 py-0.5 rounded-lg bg-card border border-subtle font-mono text-[10px] text-muted hover:text-primary cursor-pointer"
-                >
-                  Ctrl+K
-                </button>
-              )}
-            </div>
-
-            {/* 2. Section 3.4: Favorites Section (renamed from Pinned, max 6, with empty state) */}
-            {!normalizedQuery && (
-              <div
-                data-testid="sidebar-pinned-section"
-                className="space-y-1.5 pb-2.5 border-b border-subtle"
-              >
-                <div
-                  data-testid="sidebar-favorites-section"
-                  className="px-1.5 flex items-center justify-between text-[11px]"
-                >
-                  <span className="inline-flex items-center gap-1.5 font-bold text-primary">
-                    <Star className="w-3.5 h-3.5 text-accent fill-current" />
-                    <span>Favorites</span>
-                  </span>
-                  <div className="inline-flex items-center gap-1.5">
-                    {pinnedTabs.length > 0 && (
-                      <button
-                        type="button"
-                        data-testid="sidebar-favorites-clear-btn"
-                        onClick={() => {
-                          setFavoritesLimitNotice(false);
-                          clearFavorites();
-                        }}
-                        title="Clear all Favorites"
-                        className="text-[10px] text-muted hover:text-primary cursor-pointer"
-                      >
-                        Clear
-                      </button>
-                    )}
-                    <span
-                      data-testid="sidebar-favorites-count"
-                      className="px-1.5 py-0.5 rounded-md bg-input border border-subtle font-mono text-[10px] text-secondary"
-                    >
-                      {pinnedTabs.length} of {MAX_PINNED_TABS}
-                    </span>
-                  </div>
-                </div>
-
-                <p className="px-1.5 text-[10px] text-muted leading-snug">
-                  Tap the star on any page to keep it here.
-                </p>
-
-                {favoritesLimitNotice && (
-                  <div
-                    data-testid="sidebar-favorites-limit-toast"
-                    role="status"
-                    className="mx-1.5 px-2.5 py-1.5 rounded-xl bg-accent-soft border border-subtle text-[11px] font-medium text-primary"
+            {/* 1. Sidebar Search Input (hidden under premiumUX so there is ONE global Ctrl+K search) */}
+            {!flags.premiumUX && (
+              <div className="relative flex items-center">
+                <Search className="w-3.5 h-3.5 text-accent absolute left-2.5 pointer-events-none" />
+                <input
+                  type="text"
+                  data-testid="sidebar-search-input"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={handleSearchKeyDown}
+                  placeholder="Search pages"
+                  aria-label="Search sidebar pages"
+                  className="w-full min-h-[44px] lg:min-h-[36px] pl-8 pr-14 py-1.5 rounded-2xl bg-input border border-subtle text-xs text-primary placeholder:text-muted focus:outline-2 focus:outline-accent"
+                />
+                {searchQuery ? (
+                  <button
+                    type="button"
+                    data-testid="sidebar-search-clear"
+                    onClick={() => setSearchQuery('')}
+                    aria-label="Clear sidebar search"
+                    className="absolute right-2 p-1 rounded text-muted hover:text-primary cursor-pointer"
                   >
-                    Favorites are full. Remove one to add another.
-                  </div>
-                )}
-
-                {pinnedTabs.length === 0 ? (
-                  <div
-                    data-testid="sidebar-favorites-empty"
-                    className="p-2.5 rounded-2xl bg-input/70 border border-subtle space-y-2 text-xs"
-                  >
-                    <div className="flex items-center gap-2 text-secondary">
-                      <Star className="w-3.5 h-3.5 text-accent shrink-0" />
-                      <span className="text-[11px] leading-snug">
-                        No favorites yet. Quick-add a page below:
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap gap-1">
-                      <button
-                        type="button"
-                        data-testid="favorite-suggest-executive_dashboard"
-                        onClick={() => handleToggleFavorite('executive_dashboard')}
-                        className="px-2 py-1 rounded-xl bg-card hover:bg-elevated border border-subtle text-[11px] font-semibold text-primary inline-flex items-center gap-1 cursor-pointer"
-                      >
-                        <Star className="w-2.5 h-2.5 text-accent" />
-                        <span>+ Executive Dashboard</span>
-                      </button>
-                      <button
-                        type="button"
-                        data-testid="favorite-suggest-analytics_packs"
-                        onClick={() => handleToggleFavorite('analytics_packs')}
-                        className="px-2 py-1 rounded-xl bg-card hover:bg-elevated border border-subtle text-[11px] font-semibold text-primary inline-flex items-center gap-1 cursor-pointer"
-                      >
-                        <Star className="w-2.5 h-2.5 text-accent" />
-                        <span>+ Analytics Packs</span>
-                      </button>
-                    </div>
-                  </div>
+                    <X className="w-3.5 h-3.5" />
+                  </button>
                 ) : (
-                  <div className="grid grid-cols-1 gap-0.5">
-                    {pinnedTabs.map((tabId) => {
-                      const found = ALL_WORKFLOW_NAV_ITEMS.find((i) => i.id === tabId);
-                      if (!found || (found.id === 'analytics_packs' && !flags.analyticsPacks)) {
-                        return null;
-                      }
-                      const isActive = currentTab === tabId;
-                      return (
-                        <div
-                          key={`pin-${tabId}`}
-                          data-testid={`sidebar-pinned-item-${tabId}`}
-                          className={`flex items-center justify-between gap-1 rounded-2xl px-2.5 py-1 text-xs transition-all ${
-                            isActive
-                              ? 'bg-accent text-on-accent font-bold shadow-xs'
-                              : 'text-secondary hover:text-primary hover:bg-elevated'
-                          }`}
-                        >
-                          <button
-                            type="button"
-                            role="link"
-                            onClick={() => handleSelectTab(tabId)}
-                            title={found.label}
-                            aria-label={`Favorite: ${found.label}`}
-                            className="min-h-[44px] lg:min-h-[30px] flex items-center gap-2 min-w-0 flex-1 text-left cursor-pointer"
-                          >
-                            <span
-                              className={`w-2 h-2 rounded-full shrink-0 ${
-                                isActive ? 'bg-card' : 'bg-accent'
-                              }`}
-                            />
-                            <span className="leading-tight truncate">{found.label}</span>
-                          </button>
-                          <button
-                            type="button"
-                            data-testid={`sidebar-unpin-btn-${tabId}`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleToggleFavorite(tabId);
-                            }}
-                            title="Remove from Favorites"
-                            aria-label="Remove from Favorites"
-                            className={`min-w-[44px] min-h-[44px] lg:min-w-[24px] lg:min-h-[24px] p-1 rounded flex items-center justify-center cursor-pointer ${
-                              isActive
-                                ? 'text-on-accent hover:opacity-80'
-                                : 'text-accent hover:text-primary'
-                            }`}
-                          >
-                            <Star className="w-3 h-3 fill-current" />
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      window.dispatchEvent(new CustomEvent('dataanalytix:open-command-palette'))
+                    }
+                    title="Open Quick Jump Command Palette (Ctrl+K)"
+                    aria-label="Open Command Palette"
+                    className="absolute right-1.5 px-1.5 py-0.5 rounded-lg bg-card border border-subtle font-mono text-[10px] text-muted hover:text-primary cursor-pointer"
+                  >
+                    Ctrl+K
+                  </button>
                 )}
               </div>
             )}
+
+            {/* 2. Section 3.4: Favorites Section (under premiumUX shown only if user starred non-default pages so it never duplicates pages right below) */}
+            {!normalizedQuery &&
+              (!flags.premiumUX ||
+                (pinnedTabs.length > 0 &&
+                  (pinnedTabs.length !== DEFAULT_PINNED_TABS.length ||
+                    pinnedTabs.some((t) => !DEFAULT_PINNED_TABS.includes(t))))) && (
+                <div
+                  data-testid="sidebar-pinned-section"
+                  className="space-y-1.5 pb-2.5 border-b border-subtle"
+                >
+                  <div
+                    data-testid="sidebar-favorites-section"
+                    className="px-1.5 flex items-center justify-between text-[11px]"
+                  >
+                    <span className="inline-flex items-center gap-1.5 font-bold text-primary">
+                      <Star className="w-3.5 h-3.5 text-accent fill-current" />
+                      <span>Favorites</span>
+                    </span>
+                    <div className="inline-flex items-center gap-1.5">
+                      {pinnedTabs.length > 0 && (
+                        <button
+                          type="button"
+                          data-testid="sidebar-favorites-clear-btn"
+                          onClick={() => {
+                            setFavoritesLimitNotice(false);
+                            clearFavorites();
+                          }}
+                          title="Clear all Favorites"
+                          className="text-[10px] text-muted hover:text-primary cursor-pointer"
+                        >
+                          Clear
+                        </button>
+                      )}
+                      <span
+                        data-testid="sidebar-favorites-count"
+                        className="px-1.5 py-0.5 rounded-md bg-input border border-subtle font-mono text-[10px] text-secondary"
+                      >
+                        {pinnedTabs.length} of {MAX_PINNED_TABS}
+                      </span>
+                    </div>
+                  </div>
+
+                  <p className="px-1.5 text-[10px] text-muted leading-snug">
+                    Tap the star on any page to keep it here.
+                  </p>
+
+                  {favoritesLimitNotice && (
+                    <div
+                      data-testid="sidebar-favorites-limit-toast"
+                      role="status"
+                      className="mx-1.5 px-2.5 py-1.5 rounded-xl bg-accent-soft border border-subtle text-[11px] font-medium text-primary"
+                    >
+                      Favorites are full. Remove one to add another.
+                    </div>
+                  )}
+
+                  {pinnedTabs.length === 0 ? (
+                    <div
+                      data-testid="sidebar-favorites-empty"
+                      className="p-2.5 rounded-2xl bg-input/70 border border-subtle space-y-2 text-xs"
+                    >
+                      <div className="flex items-center gap-2 text-secondary">
+                        <Star className="w-3.5 h-3.5 text-accent shrink-0" />
+                        <span className="text-[11px] leading-snug">
+                          No favorites yet. Quick-add a page below:
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        <button
+                          type="button"
+                          data-testid="favorite-suggest-executive_dashboard"
+                          onClick={() => handleToggleFavorite('executive_dashboard')}
+                          className="px-2 py-1 rounded-xl bg-card hover:bg-elevated border border-subtle text-[11px] font-semibold text-primary inline-flex items-center gap-1 cursor-pointer"
+                        >
+                          <Star className="w-2.5 h-2.5 text-accent" />
+                          <span>+ Executive Dashboard</span>
+                        </button>
+                        <button
+                          type="button"
+                          data-testid="favorite-suggest-analytics_packs"
+                          onClick={() => handleToggleFavorite('analytics_packs')}
+                          className="px-2 py-1 rounded-xl bg-card hover:bg-elevated border border-subtle text-[11px] font-semibold text-primary inline-flex items-center gap-1 cursor-pointer"
+                        >
+                          <Star className="w-2.5 h-2.5 text-accent" />
+                          <span>+ Analytics Packs</span>
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-0.5">
+                      {pinnedTabs.map((tabId) => {
+                        const found = ALL_WORKFLOW_NAV_ITEMS.find((i) => i.id === tabId);
+                        if (!found || (found.id === 'analytics_packs' && !flags.analyticsPacks)) {
+                          return null;
+                        }
+                        const isActive = currentTab === tabId;
+                        return (
+                          <div
+                            key={`pin-${tabId}`}
+                            data-testid={`sidebar-pinned-item-${tabId}`}
+                            className={`flex items-center justify-between gap-1 rounded-2xl px-2.5 py-1 text-xs transition-all ${
+                              isActive
+                                ? 'bg-accent text-on-accent font-bold shadow-xs'
+                                : 'text-secondary hover:text-primary hover:bg-elevated'
+                            }`}
+                          >
+                            <button
+                              type="button"
+                              role="link"
+                              onClick={() => handleSelectTab(tabId)}
+                              title={found.label}
+                              aria-label={`Favorite: ${found.label}`}
+                              className="min-h-[44px] lg:min-h-[30px] flex items-center gap-2 min-w-0 flex-1 text-left cursor-pointer"
+                            >
+                              <span
+                                className={`w-2 h-2 rounded-full shrink-0 ${
+                                  isActive ? 'bg-card' : 'bg-accent'
+                                }`}
+                              />
+                              <span className="leading-tight truncate">{found.label}</span>
+                            </button>
+                            <button
+                              type="button"
+                              data-testid={`sidebar-unpin-btn-${tabId}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleToggleFavorite(tabId);
+                              }}
+                              title="Remove from Favorites"
+                              aria-label="Remove from Favorites"
+                              className={`min-w-[44px] min-h-[44px] lg:min-w-[24px] lg:min-h-[24px] p-1 rounded flex items-center justify-center cursor-pointer ${
+                                isActive
+                                  ? 'text-on-accent hover:opacity-80'
+                                  : 'text-accent hover:text-primary'
+                              }`}
+                            >
+                              <Star className="w-3 h-3 fill-current" />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
 
             {/* 3. Recent Pages Row (last 3) */}
             {!normalizedQuery && recentTabs.length > 0 && (

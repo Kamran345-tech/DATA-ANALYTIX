@@ -127,7 +127,7 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({ onOpenCommandPalet
           </button>
         </div>
 
-        {!isRailCollapsed && (
+        {!isRailCollapsed && !flags.premiumUX && (
           <div className="relative flex items-center">
             <Search className="w-3.5 h-3.5 text-accent absolute left-2.5 pointer-events-none" />
             <input
@@ -168,7 +168,12 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({ onOpenCommandPalet
       {/* Nav Items Container */}
       <div className="flex-1 overflow-y-auto p-2.5 space-y-3">
         {/* Pinned Pages Section */}
-        {!isRailCollapsed && !normalizedQuery && pinnedTabs.length > 0 && (
+        {!isRailCollapsed &&
+          !normalizedQuery &&
+          pinnedTabs.length > 0 &&
+          (!flags.premiumUX ||
+            pinnedTabs.length !== DEFAULT_PINNED_TABS.length ||
+            pinnedTabs.some((t) => !DEFAULT_PINNED_TABS.includes(t))) && (
           <div
             data-testid="sidebar-pinned-section"
             className="space-y-1 pb-2 border-b border-subtle"

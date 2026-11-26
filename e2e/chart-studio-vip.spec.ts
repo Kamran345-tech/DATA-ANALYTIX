@@ -183,6 +183,10 @@ test.describe('Chart Studio, Offline Geo Maps, VIP Boardroom Dashboards & 100k-R
     });
 
     // Test VIP PPTX and PDF exports and verify file headers
+    const downloadMenuBtn = page.getByTestId('vip-download-menu-btn');
+    if (await downloadMenuBtn.isVisible().catch(() => false)) {
+      await downloadMenuBtn.click();
+    }
     const [pptxDownload] = await Promise.all([
       page.waitForEvent('download'),
       page.getByTestId('vip-download-pptx').click(),
@@ -192,6 +196,9 @@ test.describe('Chart Studio, Offline Geo Maps, VIP Boardroom Dashboards & 100k-R
     const pptxBytes = fs.readFileSync(pptxPath!);
     expect(pptxBytes.subarray(0, 2).toString('utf8')).toBe('PK');
 
+    if (await downloadMenuBtn.isVisible().catch(() => false)) {
+      await downloadMenuBtn.click();
+    }
     const [pdfDownload] = await Promise.all([
       page.waitForEvent('download'),
       page.getByTestId('vip-download-pdf').click(),
