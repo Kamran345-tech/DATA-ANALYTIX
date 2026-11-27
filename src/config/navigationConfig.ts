@@ -431,6 +431,32 @@ function readStoredSidebarCollapsed(): boolean {
  *   with the group containing `currentTab` auto-expanded)
  * - Manages collapsed slim-rail state (`isSidebarCollapsed`)
  */
+import { loadFeatureFlags } from './features';
+
+function buildEffectiveCollapsedGroups(
+  currentTab: NavigationTab | undefined,
+  storedUserChoices: Record<string, boolean>
+): Record<string, boolean> {
+  const flags = loadFeatureFlags();
+  if (!flags.premiumUX) {
+    return storedUserChoices;
+  }
+  const activeGroup = findWorkflowGroupForTab(currentTab || 'upload');
+  const result: Record<string, boolean> = {};
+  for (const g of WORKFLOW_SIDEBAR_GROUPS) {
+    if (Object.prototype.hasOwnProperty.call(storedUserChoices, g.id)) {
+      result[g.id] = Boolean(storedUserChoices[g.id]);
+    } else {
+      result[g.id] = g.id !== activeGroup.id;
+    }
+  }
+  // Always ensure the current stage group is expanded unless the user explicitly collapsed it
+  if (!Object.prototype.hasOwnProperty.call(storedUserChoices, activeGroup.id)) {
+    result[activeGroup.id] = false;
+  }
+  return result;
+}
+
 export function useSidebarNavState(currentTab?: NavigationTab) {
   useEffect(() => {
     migrateLegacyNavMode();
@@ -438,8 +464,8 @@ export function useSidebarNavState(currentTab?: NavigationTab) {
 
   const [pinnedTabs, setPinnedTabs] = useState<NavigationTab[]>(readStoredPinnedTabs);
   const [recentTabs, setRecentTabs] = useState<NavigationTab[]>(readStoredRecentTabs);
-  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>(
-    readStoredAccordionState
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>(() =>
+    buildEffectiveCollapsedGroups(currentTab, readStoredAccordionState())
   );
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(
     readStoredSidebarCollapsed
@@ -457,7 +483,9 @@ export function useSidebarNavState(currentTab?: NavigationTab) {
     };
     const handleAccordion = (e: Event) => {
       const detail = (e as CustomEvent).detail;
-      if (detail && typeof detail === 'object') setCollapsedGroups(detail);
+      if (detail && typeof detail === 'object') {
+        setCollapsedGroups(buildEffectiveCollapsedGroups(currentTab, detail));
+      }
     };
     const handleCollapsed = (e: Event) => {
       const detail = Boolean((e as CustomEvent).detail);
@@ -473,7 +501,7 @@ export function useSidebarNavState(currentTab?: NavigationTab) {
       } catch {
         // ignore
       }
-      setCollapsedGroups(next);
+      setCollapsedGroups(buildEffectiveCollapsedGroups(currentTab, next));
     };
 
     window.addEventListener('dataanalytix:recent-tabs-updated', handleRecent);
@@ -488,22 +516,25 @@ export function useSidebarNavState(currentTab?: NavigationTab) {
       window.removeEventListener('dataanalytix:sidebar-collapsed-updated', handleCollapsed);
       window.removeEventListener('dataanalytix:focus-sidebar-group', handleFocusGroup);
     };
-  }, []);
+  }, [currentTab]);
 
   // Auto-expand the group containing the active page whenever currentTab changes
   useEffect(() => {
     if (!currentTab) return;
+    const stored = readStoredAccordionState();
     const activeGroup = findWorkflowGroupForTab(currentTab);
-    if (activeGroup && collapsedGroups[activeGroup.id]) {
-      const next = { ...collapsedGroups, [activeGroup.id]: false };
+    if (activeGroup && stored[activeGroup.id] === true) {
+      const next = { ...stored, [activeGroup.id]: false };
       try {
         window.localStorage.setItem(ACCORDION_STATE_KEY, JSON.stringify(next));
       } catch {
         // ignore
       }
-      setCollapsedGroups(next);
+      setCollapsedGroups(buildEffectiveCollapsedGroups(currentTab, next));
+      return;
     }
-  }, [currentTab, collapsedGroups]);
+    setCollapsedGroups(buildEffectiveCollapsedGroups(currentTab, stored));
+  }, [currentTab]);
 
   const togglePinTab = useCallback((tabId: NavigationTab): { limitReached: boolean; pinned: boolean } => {
     const prev = readStoredPinnedTabs();
@@ -578,42 +609,48 @@ export function useSidebarNavState(currentTab?: NavigationTab) {
     [pinnedTabs]
   );
 
-  const toggleGroup = useCallback((groupId: string) => {
-    const prev = readStoredAccordionState();
-    const next = { ...prev, [groupId]: !prev[groupId] };
-    if (typeof window !== 'undefined' && window.localStorage) {
-      try {
-        window.localStorage.setItem(ACCORDION_STATE_KEY, JSON.stringify(next));
-      } catch {
-        // ignore
+  const toggleGroup = useCallback(
+    (groupId: string) => {
+      const prev = readStoredAccordionState();
+      const currentEffective = buildEffectiveCollapsedGroups(currentTab, prev);
+      const next = { ...prev, [groupId]: !currentEffective[groupId] };
+      if (typeof window !== 'undefined' && window.localStorage) {
+        try {
+          window.localStorage.setItem(ACCORDION_STATE_KEY, JSON.stringify(next));
+        } catch {
+          // ignore
+        }
       }
-    }
-    setCollapsedGroups(next);
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(
-        new CustomEvent('dataanalytix:accordion-updated', { detail: next })
-      );
-    }
-  }, []);
+      setCollapsedGroups(buildEffectiveCollapsedGroups(currentTab, next));
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('dataanalytix:accordion-updated', { detail: next })
+        );
+      }
+    },
+    [currentTab]
+  );
 
-  const expandGroup = useCallback((groupId: string) => {
-    const prev = readStoredAccordionState();
-    if (!prev[groupId]) return;
-    const next = { ...prev, [groupId]: false };
-    if (typeof window !== 'undefined' && window.localStorage) {
-      try {
-        window.localStorage.setItem(ACCORDION_STATE_KEY, JSON.stringify(next));
-      } catch {
-        // ignore
+  const expandGroup = useCallback(
+    (groupId: string) => {
+      const prev = readStoredAccordionState();
+      const next = { ...prev, [groupId]: false };
+      if (typeof window !== 'undefined' && window.localStorage) {
+        try {
+          window.localStorage.setItem(ACCORDION_STATE_KEY, JSON.stringify(next));
+        } catch {
+          // ignore
+        }
       }
-    }
-    setCollapsedGroups(next);
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(
-        new CustomEvent('dataanalytix:accordion-updated', { detail: next })
-      );
-    }
-  }, []);
+      setCollapsedGroups(buildEffectiveCollapsedGroups(currentTab, next));
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('dataanalytix:accordion-updated', { detail: next })
+        );
+      }
+    },
+    [currentTab]
+  );
 
   return {
     pinnedTabs,

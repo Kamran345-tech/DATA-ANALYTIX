@@ -505,6 +505,15 @@ test.describe('Comprehensive Browser Verification: Default Flags, 120-Char Title
 
           const label = SIDEBAR_ITEM_LABELS[viewId];
           const navBtn = drawer.getByRole('button', { name: label, exact: true });
+          if (!(await navBtn.isVisible().catch(() => false))) {
+            const collapsedToggles = drawer.locator(
+              '[data-testid^="sidebar-group-toggle-"][aria-expanded="false"]'
+            );
+            const collapsedCount = await collapsedToggles.count();
+            for (let i = 0; i < collapsedCount; i++) {
+              await collapsedToggles.first().click();
+            }
+          }
           await navBtn.scrollIntoViewIfNeeded();
 
           // Check mobile touch target >= 44px on the drawer button

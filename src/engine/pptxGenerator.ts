@@ -1547,7 +1547,7 @@ export function buildPresentationSlides(
 
     if (prescriptiveList.length >= 3) {
       const recActionTitle = fitTextToLimit(
-        `${prescriptiveList.length} Recommended Leadership Actions for ${resolvedPack.name}`,
+        `Next Steps: ${prescriptiveList.length} Recommended Leadership Actions for ${resolvedPack.name}`,
         MAX_TITLE_CHARS
       );
       const recSoWhat = fitTextToLimit(
@@ -1561,7 +1561,7 @@ export function buildPresentationSlides(
         kind: 'recommendations',
         title: recActionTitle,
         soWhat: recSoWhat,
-        subtitle: `Prescriptive Lens • Action Verb + Metric + Owner + Expected Impact`,
+        subtitle: `Next Steps & Prescriptive Plan • Action Verb + Metric + Owner + Expected Impact`,
         sourceFootnote,
         altText: `Prescriptive recommendations slide listing ${prescriptiveList.length} concrete actions with owner and impact`,
         speakerNotes: `Recommendations Slide: ${recActionTitle}. ${recSoWhat}`,

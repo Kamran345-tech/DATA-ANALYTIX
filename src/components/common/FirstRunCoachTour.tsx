@@ -148,74 +148,95 @@ export const FirstRunCoachTour: React.FC = () => {
     if (mobile) return;
 
     // Desktop placement calculation:
-    // Measure forbidden content zones: page header panel & KPI cards row
+    // Measure forbidden content zones: page header panel, KPI cards row, and sidebar workflow items
     const CARD_W = 244;
     const CARD_H = 192;
     const targetRect = visibleTarget?.getBoundingClientRect();
 
     const forbiddenRects: { left: number; top: number; right: number; bottom: number }[] = [];
-    const execHeader = document.querySelector(
-      '#main-content section.glass-panel-luminous, [data-testid^="page-header-"]'
-    );
-    if (execHeader) {
-      const r = execHeader.getBoundingClientRect();
-      if (r.width > 0 && r.height > 0) {
-        forbiddenRects.push({ left: r.left, top: r.top, right: r.right, bottom: r.bottom });
-      }
-    }
     document
-      .querySelectorAll('[data-testid^="exec-kpi-label-"], [data-testid^="exec-kpi-value-"], [data-testid^="pack-kpi-card-"]')
+      .querySelectorAll(
+        '#main-content section.glass-panel-luminous, [data-testid^="page-header-"], [data-testid="vip-recognition-banner"], [data-testid="vip-control-bar"]'
+      )
       .forEach((el) => {
-        const card = el.closest('.depth-card, .glass-card, [data-testid^="pack-kpi-card-"]') || el;
+        const r = el.getBoundingClientRect();
+        if (r.width > 0 && r.height > 0) {
+          forbiddenRects.push({ left: r.left, top: r.top, right: r.right, bottom: r.bottom });
+        }
+      });
+    document
+      .querySelectorAll(
+        '[data-testid^="exec-kpi-label-"], [data-testid^="exec-kpi-value-"], [data-testid^="exec-kpi-card-"], [data-testid^="pack-kpi-card-"], [data-testid^="vip-kpi-card-"], [data-testid="vip-hero-kpi-band"]'
+      )
+      .forEach((el) => {
+        const card =
+          el.closest('.depth-card, .glass-card, [data-testid^="pack-kpi-card-"], [data-testid^="vip-kpi-card-"]') || el;
         const r = card.getBoundingClientRect();
         if (r.width > 0 && r.height > 0) {
           forbiddenRects.push({ left: r.left, top: r.top, right: r.right, bottom: r.bottom });
         }
       });
 
-    // Candidate 1: Directly beside target (right of sidebar or below target), clamped to viewport
-    if (targetRect && targetRect.width > 0) {
-      const candidateLeft =
-        targetRect.left < 260
-          ? Math.round(targetRect.right + 12)
-          : Math.max(268, Math.min(vw - CARD_W - 16, Math.round(targetRect.right - CARD_W)));
-      const candidateTop =
-        targetRect.left < 260
-          ? Math.max(64, Math.min(vh - CARD_H - 16, Math.round(targetRect.top)))
-          : Math.max(64, Math.min(vh - CARD_H - 16, Math.round(targetRect.bottom + 10)));
+    const minSafeTopBelowKpis =
+      forbiddenRects.length > 0
+        ? Math.max(...forbiddenRects.map((f) => Math.round(f.bottom + 12)))
+        : 64;
 
-      const candidateBox = {
+    // Candidate 1: Directly beside target (right of sidebar), vertically aligned or below KPI row if needed
+    if (targetRect && targetRect.width > 0) {
+      const isSidebarTarget = targetRect.left < 260;
+      const candidateLeft = isSidebarTarget
+        ? Math.max(268, Math.round(targetRect.right + 12))
+        : Math.max(268, Math.min(vw - CARD_W - 16, Math.round(targetRect.right - CARD_W)));
+
+      // Try aligning directly to targetRect.top first
+      let candidateTop = isSidebarTarget
+        ? Math.max(64, Math.min(vh - CARD_H - 16, Math.round(targetRect.top)))
+        : Math.max(64, Math.min(vh - CARD_H - 16, Math.round(targetRect.bottom + 10)));
+
+      let candidateBox = {
         left: candidateLeft,
         top: candidateTop,
         right: candidateLeft + CARD_W,
         bottom: candidateTop + CARD_H,
       };
 
-      const hitsForbidden =
-        forbiddenRects.length === 0 ||
-        forbiddenRects.some((f) => rectsIntersect(candidateBox, f, 4));
-      const hitsTarget = rectsIntersect(candidateBox, targetRect, 2);
+      let hitsForbidden = forbiddenRects.some((f) => rectsIntersect(candidateBox, f, 4));
+      let hitsTarget = rectsIntersect(candidateBox, targetRect, 2);
+
+      // If direct vertical alignment intersects header or KPI cards, shift down right below the KPI row
+      // while staying strictly beside the sidebar (never covering the sidebar items!)
+      if ((hitsForbidden || hitsTarget) && minSafeTopBelowKpis + CARD_H <= vh - 8) {
+        candidateTop = Math.max(64, Math.min(vh - CARD_H - 12, minSafeTopBelowKpis));
+        candidateBox = {
+          left: candidateLeft,
+          top: candidateTop,
+          right: candidateLeft + CARD_W,
+          bottom: candidateTop + CARD_H,
+        };
+        hitsForbidden = forbiddenRects.some((f) => rectsIntersect(candidateBox, f, 4));
+        hitsTarget = rectsIntersect(candidateBox, targetRect, 2);
+      }
 
       if (!hitsForbidden && !hitsTarget) {
         setDesktopPos({
           left: candidateLeft,
           top: candidateTop,
           dockedInSidebarFooter: false,
-          pointerSide: targetRect.left < 260 ? 'left' : 'top',
+          pointerSide: isSidebarTarget ? 'left' : 'top',
         });
         return;
       }
     }
 
-    // Fallback (guaranteed zero overlap with page header, title, scope line, or KPI cards):
-    // Dock bottom-left over the sidebar footer (x = 6..250, y = vh - CARD_H - 12), clamped inside viewport.
-    const dockedLeft = 6;
-    const dockedTop = Math.max(64, vh - CARD_H - 12);
+    // Fallback: place beside sidebar at bottom-left of main canvas (x = 268), never over sidebar items or KPI cards
+    const safeLeft = 268;
+    const safeTop = Math.max(64, vh - CARD_H - 12);
     setDesktopPos({
-      left: dockedLeft,
-      top: dockedTop,
-      dockedInSidebarFooter: true,
-      pointerSide: 'top',
+      left: safeLeft,
+      top: safeTop,
+      dockedInSidebarFooter: false,
+      pointerSide: 'left',
     });
   }, [currentStep.targetSelector, isOpen]);
 

@@ -930,7 +930,15 @@ export const AnalyticsPacksView: React.FC = () => {
                     className="min-h-[42px] px-3.5 py-2 rounded-xl border border-subtle bg-elevated hover:bg-card-hover text-xs font-semibold text-primary flex items-center gap-2 cursor-pointer transition-colors pack-btn-press"
                   >
                     <LayoutGrid className="w-3.5 h-3.5" style={{ color: activePack.theme.gradientFrom }} />
-                    <span>{showCatalogGrid ? 'Jump to Active Dashboard' : 'Browse All 14 Packs'}</span>
+                    <span>
+                      {showCatalogGrid
+                        ? flags.premiumUX
+                          ? 'Open board view'
+                          : 'Jump to Active Dashboard'
+                        : flags.premiumUX
+                        ? 'Change template'
+                        : 'Browse All 14 Packs'}
+                    </span>
                   </button>
 
                   <DownloadMenu context="analytics_pack" packId={activePack.id} label="Export Pack" />
@@ -1150,11 +1158,14 @@ export const AnalyticsPacksView: React.FC = () => {
       {showCatalogGrid && (
         <section aria-label="Analytics Packs Catalog" className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="font-heading text-sm sm:text-base font-bold uppercase tracking-wider text-primary">
-              Select an Analytics Pack ({filteredCatalogPacks.length}/{ANALYTICS_PACKS.length} Domains)
+            <h2 className="font-heading text-sm sm:text-base font-bold tracking-tight text-primary">
+              {flags.premiumUX
+                ? 'Choose an industry template'
+                : `Select an Analytics Pack (${filteredCatalogPacks.length}/${ANALYTICS_PACKS.length} Domains)`}
             </h2>
             <span className="text-xs font-mono text-secondary">
-              Active Domain: <strong className="text-primary">{activePack.name}</strong>
+              {flags.premiumUX ? 'Current template:' : 'Active Domain:'}{' '}
+              <strong className="text-primary">{activePack.name}</strong>
             </span>
           </div>
 

@@ -94,6 +94,13 @@ export const OfflineGeoMap: React.FC<OfflineGeoMapProps> = ({
   const [scope, setScope] = useState<GeoScopeId>(
     initialScope || detected.recommendedScope || 'world'
   );
+  React.useEffect(() => {
+    if (initialScope) {
+      setScope(initialScope);
+    } else if (detected.recommendedScope) {
+      setScope(detected.recommendedScope);
+    }
+  }, [initialScope, detected.recommendedScope]);
   const [mode, setMode] = useState<GeoMapMode>(initialMode);
   const [zoom, setZoom] = useState<number>(1);
   const [pan, setPan] = useState<[number, number]>([0, 0]);
@@ -512,118 +519,191 @@ export const OfflineGeoMap: React.FC<OfflineGeoMapProps> = ({
             {/* Region Polygons */}
             <g>
               {(() => {
-                const top5Ids = new Set(
-                  matchResult.matched.slice(0, 5).map((m) => m.feature.id)
+                const top5Matched = matchResult.matched.slice(0, 5);
+                const top5Ids = new Set(top5Matched.map((m) => m.feature.id));
+
+                // Compute collision-free label positions for Top 5 regions
+                const top5LabelCoords = new Map<
+                  string,
+                  { cx: number; cy: number; lx: number; ly: number; text: string }
+                >();
+                const placedBoxes: Array<{ x: number; y: number; w: number; h: number }> = [];
+
+                for (const m of top5Matched) {
+                  const rawProj = projection(m.feature.centroid) || [0, 0];
+                  const cx = rawProj[0];
+                  const cy = rawProj[1];
+                  const text = `${m.feature.isoCode} · ${formatMapMetric(m.value)}`;
+                  const boxW = Math.max(46, text.length * 5.2 + 8);
+                  const boxH = 15;
+
+                  const candidateOffsets: Array<[number, number]> = [
+                    [0, 0],
+                    [0, -18],
+                    [0, 18],
+                    [36, -12],
+                    [-36, -12],
+                    [38, 14],
+                    [-38, 14],
+                    [0, -32],
+                    [0, 32],
+                  ];
+
+                  let chosenX = cx;
+                  let chosenY = cy;
+                  for (const [dx, dy] of candidateOffsets) {
+                    const testX = Math.max(
+                      boxW / 2 + 4,
+                      Math.min(svgWidth - boxW / 2 - 4, cx + dx)
+                    );
+                    const testY = Math.max(
+                      boxH / 2 + 6,
+                      Math.min(svgHeight - 36, cy + dy)
+                    );
+                    const collides = placedBoxes.some(
+                      (b) =>
+                        Math.abs(testX - b.x) < (boxW + b.w) / 2 + 4 &&
+                        Math.abs(testY - b.y) < (boxH + b.h) / 2 + 3
+                    );
+                    if (!collides) {
+                      chosenX = testX;
+                      chosenY = testY;
+                      break;
+                    }
+                  }
+
+                  placedBoxes.push({ x: chosenX, y: chosenY, w: boxW, h: boxH });
+                  top5LabelCoords.set(m.feature.id, {
+                    cx,
+                    cy,
+                    lx: chosenX,
+                    ly: chosenY,
+                    text,
+                  });
+                }
+
+                return (
+                  <>
+                    {allScopeRegions.map((feature: GeoRegionFeature) => {
+                      const matched = matchedById.get(feature.id);
+                      const val = matched?.value ?? 0;
+                      const count = matched?.count ?? 0;
+                      const sharePct = totalValue > 0 ? (val / totalValue) * 100 : 0;
+                      const isSelected =
+                        Boolean(selectedRegionName) &&
+                        (selectedRegionName === feature.name ||
+                          matched?.rawLabels.includes(selectedRegionName!));
+
+                      const geoJsonPolygon: GeoJSON.Feature<GeoJSON.Polygon> = {
+                        type: 'Feature',
+                        properties: { name: feature.name },
+                        geometry: {
+                          type: 'Polygon',
+                          coordinates: feature.coordinates,
+                        },
+                      };
+
+                      const pathD = pathGenerator(geoJsonPolygon) || '';
+
+                      const fillColor =
+                        mode === 'bubble'
+                          ? 'var(--bg-elevated)'
+                          : getRegionFillColor(matched ? val : undefined, Boolean(isSelected));
+
+                      return (
+                        <g
+                          key={feature.id}
+                          tabIndex={0}
+                          role="button"
+                          aria-label={`${feature.name}: ${formatMapMetric(val)}`}
+                          onClick={() =>
+                            onRegionClick?.(
+                              feature.name,
+                              matched?.rawLabels || [feature.name]
+                            )
+                          }
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              onRegionClick?.(
+                                feature.name,
+                                matched?.rawLabels || [feature.name]
+                              );
+                            }
+                          }}
+                          onMouseEnter={() =>
+                            setHoveredFeature({
+                              name: feature.name,
+                              isoCode: feature.isoCode,
+                              value: val,
+                              count,
+                              sharePct,
+                            })
+                          }
+                          onMouseLeave={() => setHoveredFeature(null)}
+                          className="cursor-pointer focus:outline-none"
+                        >
+                          <title>{`${feature.name} (${feature.isoCode}): ${formatMapMetric(val)}`}</title>
+                          <path
+                            d={pathD}
+                            fill={fillColor}
+                            fillOpacity={matched ? (mode === 'shape' ? 0.92 : 0.86) : 0.42}
+                            stroke={isSelected ? 'var(--text-primary)' : 'var(--border-subtle)'}
+                            strokeWidth={isSelected ? 2 : 0.75}
+                            className="transition-opacity duration-150 hover:opacity-100"
+                          />
+                        </g>
+                      );
+                    })}
+
+                    {/* Persistent Top 5 Smart Collision-Avoiding Labels (rest shown on hover) */}
+                    {Array.from(top5LabelCoords.entries()).map(([featureId, pos]) => {
+                      if (!Number.isFinite(pos.lx) || !Number.isFinite(pos.ly)) return null;
+                      const isOffset =
+                        Math.hypot(pos.lx - pos.cx, pos.ly - pos.cy) > 4;
+                      return (
+                        <g
+                          key={`top5-lbl-${featureId}`}
+                          className="pointer-events-none"
+                          data-testid={`geo-top5-label-${featureId}`}
+                        >
+                          {isOffset && (
+                            <line
+                              x1={pos.cx}
+                              y1={pos.cy}
+                              x2={pos.lx}
+                              y2={pos.ly}
+                              stroke="var(--text-primary)"
+                              strokeWidth={0.9}
+                              strokeDasharray="2 1"
+                              opacity={0.7}
+                            />
+                          )}
+                          <circle
+                            cx={pos.cx}
+                            cy={pos.cy}
+                            r={2}
+                            fill="var(--text-primary)"
+                          />
+                          <text
+                            x={pos.lx}
+                            y={pos.ly}
+                            textAnchor="middle"
+                            dominantBaseline="central"
+                            fill="var(--text-primary)"
+                            stroke="var(--bg-card)"
+                            strokeWidth={3}
+                            paintOrder="stroke"
+                            fontSize={9}
+                            fontWeight={700}
+                          >
+                            {pos.text}
+                          </text>
+                        </g>
+                      );
+                    })}
+                  </>
                 );
-                return allScopeRegions.map((feature: GeoRegionFeature) => {
-                  const matched = matchedById.get(feature.id);
-                  const val = matched?.value ?? 0;
-                  const count = matched?.count ?? 0;
-                  const sharePct = totalValue > 0 ? (val / totalValue) * 100 : 0;
-                  const isTop5 = top5Ids.has(feature.id);
-                  const isSelected =
-                    Boolean(selectedRegionName) &&
-                    (selectedRegionName === feature.name ||
-                      matched?.rawLabels.includes(selectedRegionName!));
-
-                  const geoJsonPolygon: GeoJSON.Feature<GeoJSON.Polygon> = {
-                    type: 'Feature',
-                    properties: { name: feature.name },
-                    geometry: {
-                      type: 'Polygon',
-                      coordinates: feature.coordinates,
-                    },
-                  };
-
-                  const pathD = pathGenerator(geoJsonPolygon) || '';
-                  const projectedCentroid = projection(feature.centroid) || [0, 0];
-
-                  const fillColor =
-                    mode === 'bubble'
-                      ? 'var(--bg-elevated)'
-                      : getRegionFillColor(matched ? val : undefined, Boolean(isSelected));
-
-                  return (
-                    <g
-                      key={feature.id}
-                      tabIndex={0}
-                      role="button"
-                      aria-label={`${feature.name}: ${formatMapMetric(val)}`}
-                      onClick={() =>
-                        onRegionClick?.(
-                          feature.name,
-                          matched?.rawLabels || [feature.name]
-                        )
-                      }
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          onRegionClick?.(
-                            feature.name,
-                            matched?.rawLabels || [feature.name]
-                          );
-                        }
-                      }}
-                      onMouseEnter={() =>
-                        setHoveredFeature({
-                          name: feature.name,
-                          isoCode: feature.isoCode,
-                          value: val,
-                          count,
-                          sharePct,
-                        })
-                      }
-                      onMouseLeave={() => setHoveredFeature(null)}
-                      className="cursor-pointer focus:outline-none"
-                    >
-                      <title>{`${feature.name} (${feature.isoCode}): ${formatMapMetric(val)}`}</title>
-                      <path
-                        d={pathD}
-                        fill={fillColor}
-                        fillOpacity={matched ? (mode === 'shape' ? 0.92 : 0.85) : 0.35}
-                        stroke={isSelected ? 'var(--text-primary)' : 'var(--border-subtle)'}
-                        strokeWidth={isSelected ? 2 : 0.9}
-                        className="transition-opacity duration-150 hover:opacity-100"
-                      />
-                      {/* Persistent Top 5 Value Badge or Region Code */}
-                      {Number.isFinite(projectedCentroid[0]) &&
-                        Number.isFinite(projectedCentroid[1]) &&
-                        (isTop5 ? (
-                          <g className="pointer-events-none" data-testid={`geo-top5-label-${feature.id}`}>
-                            <text
-                              x={projectedCentroid[0]}
-                              y={projectedCentroid[1]}
-                              textAnchor="middle"
-                              dominantBaseline="central"
-                              fill="var(--text-primary)"
-                              stroke="var(--bg-card)"
-                              strokeWidth={2.5}
-                              paintOrder="stroke"
-                              fontSize={9}
-                              fontWeight={700}
-                            >
-                              {`${feature.isoCode} · ${formatMapMetric(val)}`}
-                            </text>
-                          </g>
-                        ) : (
-                          (scope !== 'world' || matched) && (
-                            <text
-                              x={projectedCentroid[0]}
-                              y={projectedCentroid[1]}
-                              textAnchor="middle"
-                              dominantBaseline="central"
-                              fill="var(--text-primary)"
-                              fontSize={scope === 'us-states' ? 8.5 : 9}
-                              fontWeight={matched ? 600 : 400}
-                              className="pointer-events-none"
-                            >
-                              {feature.isoCode}
-                            </text>
-                          )
-                        ))}
-                    </g>
-                  );
-                });
               })()}
             </g>
 
@@ -673,16 +753,6 @@ export const OfflineGeoMap: React.FC<OfflineGeoMapProps> = ({
                             stroke="var(--bg-card)"
                             strokeWidth={1.5}
                           />
-                          <text
-                            x={coords[0]}
-                            y={coords[1] - radius - 3}
-                            textAnchor="middle"
-                            fill="var(--text-primary)"
-                            fontSize={9}
-                            fontWeight={600}
-                          >
-                            {formatMapMetric(m.value)}
-                          </text>
                         </g>
                       );
                     })}
@@ -690,27 +760,41 @@ export const OfflineGeoMap: React.FC<OfflineGeoMapProps> = ({
             )}
           </svg>
 
-          {/* Bottom Legend Bar (Theme Token Colour Scale) */}
-          <div className="absolute bottom-2 left-2.5 right-2.5 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-[var(--bg-card)]/90 backdrop-blur-xs border border-[var(--border-subtle)] px-2.5 py-1.5 text-[11px]">
-            <div className="flex items-center gap-1.5">
-              <span className="text-[var(--text-secondary)]">Low</span>
-              <span className="w-3.5 h-2.5 rounded-xs" style={{ background: 'var(--chart-5)' }} />
-              <span className="w-3.5 h-2.5 rounded-xs" style={{ background: 'var(--chart-4)' }} />
-              <span className="w-3.5 h-2.5 rounded-xs" style={{ background: 'var(--chart-3)' }} />
-              <span className="w-3.5 h-2.5 rounded-xs" style={{ background: 'var(--chart-2)' }} />
-              <span className="w-3.5 h-2.5 rounded-xs" style={{ background: 'var(--chart-1)' }} />
-              <span className="text-[var(--text-secondary)]">
-                High ({formatMapMetric(maxValue)})
+          {/* Bottom Legend Bar with Real Numeric Scale Values */}
+          <div
+            data-testid="geo-map-numeric-legend"
+            className="absolute bottom-2 left-2.5 right-2.5 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-[var(--bg-card)]/92 backdrop-blur-xs border border-[var(--border-subtle)] px-2.5 py-1.5 text-[11px]"
+          >
+            <div className="flex flex-wrap items-center gap-2 font-mono">
+              <span className="inline-flex items-center gap-1 text-[var(--text-secondary)]">
+                <span className="w-3 h-2.5 rounded-xs" style={{ background: 'var(--chart-5)' }} />
+                <span>{formatMapMetric(maxValue * 0.12)}</span>
+              </span>
+              <span className="inline-flex items-center gap-1 text-[var(--text-secondary)]">
+                <span className="w-3 h-2.5 rounded-xs" style={{ background: 'var(--chart-4)' }} />
+                <span>{formatMapMetric(maxValue * 0.3)}</span>
+              </span>
+              <span className="inline-flex items-center gap-1 text-[var(--text-secondary)]">
+                <span className="w-3 h-2.5 rounded-xs" style={{ background: 'var(--chart-3)' }} />
+                <span>{formatMapMetric(maxValue * 0.55)}</span>
+              </span>
+              <span className="inline-flex items-center gap-1 text-[var(--text-secondary)]">
+                <span className="w-3 h-2.5 rounded-xs" style={{ background: 'var(--chart-2)' }} />
+                <span>{formatMapMetric(maxValue * 0.8)}</span>
+              </span>
+              <span className="inline-flex items-center gap-1 text-[var(--text-primary)] font-semibold">
+                <span className="w-3 h-2.5 rounded-xs" style={{ background: 'var(--chart-1)' }} />
+                <span>{formatMapMetric(maxValue)}</span>
               </span>
             </div>
 
             {matchResult.matched.length > 0 && (
               <div
                 title={`Top: ${matchResult.matched[0].feature.name} (${formatMapMetric(matchResult.matched[0].value)})`}
-                className="text-[var(--text-secondary)] truncate"
+                className="text-[var(--text-secondary)] truncate font-mono"
               >
                 Top:{' '}
-                <strong className="text-[var(--text-primary)]">
+                <strong className="text-[var(--text-primary)] font-sans">
                   {matchResult.matched[0].feature.name}
                 </strong>{' '}
                 ({formatMapMetric(matchResult.matched[0].value)})

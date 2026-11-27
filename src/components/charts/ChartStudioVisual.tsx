@@ -133,27 +133,40 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
     primaryVal: number;
     secondaryVal?: number;
     color: string;
+    svgX?: number;
+    svgY?: number;
   } | null>(null);
 
   const activeCalc = visualCalc !== 'none' ? visualCalc : localCalc;
 
-  // Part E4: Friendly card when a needed column is missing — never render an empty chart
+  // Part E4: Compact calm empty state (< 200px) when a needed column is missing — never a huge empty box
   if (missingColumnMessage || !rows || rows.length === 0 || (!categoryCol && !metricCol)) {
     return (
       <div
-        className="rounded-xl border border-dashed border-[var(--border-subtle)] bg-[var(--bg-card)] p-6 flex flex-col items-center justify-center text-center gap-2"
-        style={{ minHeight: `${Math.min(height, 240)}px` }}
+        className="rounded-xl border border-dashed border-[var(--border-subtle)] bg-[var(--bg-card)] px-4 py-3.5 flex items-center justify-between gap-3 max-h-[160px]"
         data-testid="missing-column-unlock-card"
       >
-        <HelpCircle className="w-7 h-7 text-[var(--accent)]" />
-        <h4 className="text-sm font-semibold text-[var(--text-primary)]">
-          {missingColumnMessage ||
-            `Add column "${metricCol || categoryCol || 'metric'}" to unlock this chart`}
-        </h4>
-        <p className="text-xs text-[var(--text-secondary)] max-w-md">
-          Map or upload the required role column in the Pack Role Mapper or Data Dictionary to
-          populate this visual automatically.
-        </p>
+        <div className="flex items-center gap-2.5 min-w-0">
+          <HelpCircle className="w-5 h-5 text-[var(--accent)] shrink-0" />
+          <div className="min-w-0">
+            <h4
+              className="text-xs font-semibold text-[var(--text-primary)] truncate"
+              title={
+                missingColumnMessage ||
+                `Add column "${metricCol || categoryCol || 'metric'}" to unlock this`
+              }
+            >
+              {missingColumnMessage ||
+                `Add column "${metricCol || categoryCol || 'metric'}" to unlock this`}
+            </h4>
+            <p className="text-[11px] text-[var(--text-secondary)] truncate">
+              Map or upload this column in the Data Dictionary to populate this visual.
+            </p>
+          </div>
+        </div>
+        <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-[var(--bg-elevated)] text-[var(--text-secondary)] border border-[var(--border-subtle)] shrink-0">
+          Optional column
+        </span>
       </div>
     );
   }
@@ -389,9 +402,14 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
     );
   }
 
-  // B9: KEY INFLUENCERS VISUAL
+  // B9: KEY INFLUENCERS VISUAL (Filled with Observed Segment Breakdown when sample < 30 so zero empty space)
   if (visualType === 'key_influencers') {
     const influencers = computeKeyInfluencers(rows, metricCol);
+    const observedSegments = [...chartData]
+      .sort((a, b) => b.displayValue - a.displayValue)
+      .slice(0, 4);
+    const maxSegVal = Math.max(...observedSegments.map((s) => s.displayValue), 1);
+
     return (
       <div
         className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4 flex flex-col justify-between gap-3 h-full"
@@ -419,20 +437,72 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
         </div>
 
         {influencers.insufficientSample ? (
-          <div
-            className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/60 p-4 text-xs space-y-1.5 flex-1 flex flex-col justify-center"
-            data-testid="key-influencers-insufficient"
-          >
-            <div className="font-semibold text-[var(--text-primary)] flex items-center gap-1.5">
-              <AlertTriangle className="w-4 h-4 text-[var(--warning)] shrink-0" />
-              <span>
-                {influencers.insufficientReason ||
-                  `Not enough data to find reliable drivers (${rows.length} rows)`}
-              </span>
+          <div className="flex flex-col justify-between gap-2.5 flex-1">
+            <div
+              className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/60 px-3 py-2 text-xs space-y-1"
+              data-testid="key-influencers-insufficient"
+            >
+              <div className="font-semibold text-[var(--text-primary)] flex items-center gap-1.5">
+                <AlertTriangle className="w-3.5 h-3.5 text-[var(--warning)] shrink-0" />
+                <span>
+                  {influencers.insufficientReason ||
+                    `Not enough data to find reliable drivers (${rows.length} rows)`}
+                </span>
+              </div>
+              <p className="text-[11px] text-[var(--text-secondary)] leading-snug">
+                Statistical lift requires ≥30 rows (3+ segments with ≥5 rows). Observed segment contribution below:
+              </p>
             </div>
-            <p className="text-[var(--text-secondary)] leading-relaxed">
-              Finding statistically reliable drivers requires at least 30 rows and 3 or more segments with at least 5 rows each. Load a larger dataset to unlock driver lift analysis.
-            </p>
+
+            {/* Observed Segment Contribution Breakdown so the card never leaves an empty box */}
+            <div
+              className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/35 p-3 space-y-2 flex-1 flex flex-col justify-between"
+              data-testid="key-influencers-observed-breakdown"
+            >
+              <div className="flex items-center justify-between text-[11px] font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
+                <span>Observed {categoryCol} contribution</span>
+                <span>Share of {metricCol}</span>
+              </div>
+              <div className="space-y-2">
+                {observedSegments.map((seg, idx) => {
+                  const sharePct = (seg.displayValue / totalSum) * 100;
+                  const segMean = seg.displayValue / Math.max(1, seg.count);
+                  const vsBaseRatio =
+                    influencers.baselineMean > 0
+                      ? segMean / influencers.baselineMean
+                      : 1;
+                  return (
+                    <div key={seg.category} className="space-y-1 text-xs">
+                      <div className="flex items-center justify-between gap-2">
+                        <span
+                          className="font-medium text-[var(--text-primary)] truncate"
+                          title={`${seg.category} (${seg.count} rows)`}
+                        >
+                          {seg.category}{' '}
+                          <span className="text-[11px] text-[var(--text-secondary)]">
+                            ({seg.count}r)
+                          </span>
+                        </span>
+                        <span className="font-mono text-[var(--text-primary)] shrink-0">
+                          {fmtCompact(seg.displayValue)} ({sharePct.toFixed(1)}% ·{' '}
+                          {vsBaseRatio.toFixed(2)}x avg)
+                        </span>
+                      </div>
+                      <div className="w-full h-2 rounded-full bg-[var(--bg-card)] overflow-hidden">
+                        <div
+                          className="h-full rounded-full"
+                          style={{
+                            width: `${Math.min(100, Math.max(8, (seg.displayValue / maxSegVal) * 100))}%`,
+                            background:
+                              CHART_TOKEN_PALETTE[idx % CHART_TOKEN_PALETTE.length],
+                          }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 flex-1">
@@ -742,7 +812,7 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
     );
   }
 
-  // B2: WATERFALL CHART
+  // B2: WATERFALL CHART (with Bridge Summary Strip so zero orphan empty space)
   if (visualType === 'waterfall') {
     let running = 0;
     const steps = chartData.slice(0, 8).map((d, idx) => {
@@ -751,6 +821,8 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
       running += delta;
       return {
         label: d.category,
+        rawVal: d.displayValue,
+        count: d.count,
         delta,
         runningTotal: running,
         isPositive: delta >= 0,
@@ -761,35 +833,58 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
       1
     );
     const waterfallTitle = title || `Waterfall Bridge: ${metricCol} by ${categoryCol}`;
+    const sortedByVal = [...chartData].sort((a, b) => b.displayValue - a.displayValue);
+    const topDriver = sortedByVal[0];
+    const bottomDriver = sortedByVal[sortedByVal.length - 1] || topDriver;
+    const spreadVal = (topDriver?.displayValue || 0) - (bottomDriver?.displayValue || 0);
 
     return (
       <div
         className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4 flex flex-col justify-between gap-3 h-full"
         data-testid="visual-waterfall"
       >
-        <div>
-          <h3
-            className="text-sm font-semibold text-[var(--text-primary)]"
-            title={waterfallTitle}
-          >
-            {waterfallTitle}
-          </h3>
-          <p className="text-xs text-[var(--text-secondary)]">
-            Sequential +/- variance steps bridging to final running total ({fmtCompact(running)})
-          </p>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h3
+              className="text-sm font-semibold text-[var(--text-primary)]"
+              title={waterfallTitle}
+            >
+              {waterfallTitle}
+            </h3>
+            <p className="text-xs text-[var(--text-secondary)]">
+              Sequential variance bridge across {steps.length} segments • Portfolio total{' '}
+              <strong className="font-mono text-[var(--text-primary)]">{fmtCompact(totalSum)}</strong>
+            </p>
+          </div>
+          <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-[var(--text-secondary)]">
+            Terminal: {fmtCompact(running)}
+          </span>
         </div>
 
-        <div className="space-y-2.5 flex-1 flex flex-col justify-around py-1">
+        <div className="space-y-2 py-1">
           {steps.map((s, idx) => {
-            const widthPct = Math.min(100, Math.max(6, (Math.abs(s.delta) / maxAbs) * 100));
+            const widthPct = Math.min(100, Math.max(8, (Math.abs(s.delta) / maxAbs) * 100));
+            const sharePct = (s.rawVal / totalSum) * 100;
             return (
-              <div key={s.label} className="grid grid-cols-12 items-center gap-2 text-xs">
-                <div className="col-span-3 truncate font-medium text-[var(--text-primary)]" title={s.label}>
-                  {s.label}
-                </div>
-                <div className="col-span-6 h-5 rounded bg-[var(--bg-elevated)] relative overflow-hidden flex items-center px-1.5">
+              <div
+                key={s.label}
+                onClick={() => onCategorySelect?.(s.label)}
+                className="grid grid-cols-12 items-center gap-2 text-xs rounded-lg p-1.5 hover:bg-[var(--bg-elevated)]/50 cursor-pointer transition-colors"
+              >
+                <div className="col-span-4 min-w-0">
                   <div
-                    className="h-3.5 rounded"
+                    className="truncate font-medium text-[var(--text-primary)]"
+                    title={s.label}
+                  >
+                    {s.label}
+                  </div>
+                  <div className="text-[10px] text-[var(--text-secondary)]">
+                    {s.count} records • {sharePct.toFixed(1)}% share
+                  </div>
+                </div>
+                <div className="col-span-5 h-5 rounded-md bg-[var(--bg-elevated)] relative overflow-hidden flex items-center px-1.5">
+                  <div
+                    className="h-3.5 rounded-sm"
                     style={{
                       width: `${widthPct}%`,
                       background:
@@ -803,6 +898,7 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
                 </div>
                 <div className="col-span-3 text-right font-mono">
                   <span
+                    className="font-semibold"
                     style={{
                       color:
                         idx === 0
@@ -822,11 +918,13 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
               </div>
             );
           })}
-          <div className="grid grid-cols-12 items-center gap-2 text-xs pt-2 border-t border-[var(--border-subtle)] font-semibold">
-            <div className="col-span-3 text-[var(--text-primary)]" title="Net Total">Net Total</div>
-            <div className="col-span-6 h-5 rounded bg-[var(--bg-elevated)] overflow-hidden flex items-center px-1.5">
+          <div className="grid grid-cols-12 items-center gap-2 text-xs pt-2 border-t border-[var(--border-subtle)] font-semibold px-1.5">
+            <div className="col-span-4 text-[var(--text-primary)]" title="Net Bridge Total">
+              Net Bridge Total
+            </div>
+            <div className="col-span-5 h-5 rounded-md bg-[var(--bg-elevated)] overflow-hidden flex items-center px-1.5">
               <div
-                className="h-3.5 rounded bg-[var(--accent)]"
+                className="h-3.5 rounded-sm bg-[var(--accent)]"
                 style={{
                   width: `${Math.min(100, Math.max(12, (Math.abs(running) / maxAbs) * 100))}%`,
                 }}
@@ -834,6 +932,61 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
             </div>
             <div className="col-span-3 text-right font-mono text-[var(--text-primary)]">
               {fmtCompact(running)}
+            </div>
+          </div>
+        </div>
+
+        {/* 4-Metric Bridge Summary Strip so card height is balanced and rich */}
+        <div
+          className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-[var(--border-subtle)]/70 text-xs"
+          data-testid="waterfall-bridge-summary"
+        >
+          <div className="rounded-lg bg-[var(--bg-elevated)]/50 border border-[var(--border-subtle)] p-2">
+            <div className="text-[10px] uppercase tracking-wider text-[var(--text-secondary)]">
+              Leading Segment
+            </div>
+            <div
+              className="font-semibold text-[var(--text-primary)] truncate mt-0.5"
+              title={topDriver?.category || 'N/A'}
+            >
+              {topDriver?.category || 'N/A'}
+            </div>
+            <div className="font-mono text-[11px] text-[var(--accent)]">
+              {fmtCompact(topDriver?.displayValue || 0)}
+            </div>
+          </div>
+          <div className="rounded-lg bg-[var(--bg-elevated)]/50 border border-[var(--border-subtle)] p-2">
+            <div className="text-[10px] uppercase tracking-wider text-[var(--text-secondary)]">
+              Trailing Segment
+            </div>
+            <div
+              className="font-semibold text-[var(--text-primary)] truncate mt-0.5"
+              title={bottomDriver?.category || 'N/A'}
+            >
+              {bottomDriver?.category || 'N/A'}
+            </div>
+            <div className="font-mono text-[11px] text-[var(--text-secondary)]">
+              {fmtCompact(bottomDriver?.displayValue || 0)}
+            </div>
+          </div>
+          <div className="rounded-lg bg-[var(--bg-elevated)]/50 border border-[var(--border-subtle)] p-2">
+            <div className="text-[10px] uppercase tracking-wider text-[var(--text-secondary)]">
+              Segment Spread
+            </div>
+            <div className="font-mono font-semibold text-[var(--text-primary)] mt-0.5">
+              {fmtCompact(spreadVal)}
+            </div>
+            <div className="text-[10px] text-[var(--text-secondary)]">Max minus Min</div>
+          </div>
+          <div className="rounded-lg bg-[var(--bg-elevated)]/50 border border-[var(--border-subtle)] p-2">
+            <div className="text-[10px] uppercase tracking-wider text-[var(--text-secondary)]">
+              Segment Mean
+            </div>
+            <div className="font-mono font-semibold text-[var(--text-primary)] mt-0.5">
+              {fmtCompact(analyticsStats.mean)}
+            </div>
+            <div className="text-[10px] text-[var(--text-secondary)]">
+              Across {chartData.length} groups
             </div>
           </div>
         </div>
@@ -1326,20 +1479,26 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
     visualType === 'bar' || (visualType === 'column' && avgLabelLen > 15);
 
   const svgW = 660;
-  const svgH = 260;
-  const padL = useHorizontalBar ? 132 : 54;
-  const padR = 24;
-  const padT = 18;
+  const svgH = 264;
+  const padL = useHorizontalBar ? 140 : 54;
+  const padR = 26;
+  const padT = 26;
   const padB = 42;
   const plotW = svgW - padL - padR;
   const plotH = svgH - padT - padB;
   const chartTitleText = title || `${calcResult.label} by ${categoryCol}`;
 
-  const formatAxisLabel = (raw: string, maxChars = 22): string => {
+  const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+  const formatAxisLabel = (raw: string, maxChars = 24): string => {
     const trimmed = String(raw ?? '').trim();
-    // Clean YYYY-MM-DD dates to concise YYYY-MM or MMM DD
-    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
-      return trimmed.slice(0, 7);
+    // Clean YYYY-MM-DD or YYYY-MM dates to concise "Jan '25" so they are never cut as "2025-01-0"
+    const isoMatch = trimmed.match(/^(\d{4})-(\d{2})(?:-(\d{2}))?$/);
+    if (isoMatch) {
+      const yr = isoMatch[1].slice(2);
+      const moIdx = Number(isoMatch[2]) - 1;
+      const moName = MONTH_NAMES[moIdx] || isoMatch[2];
+      return `${moName} '${yr}`;
     }
     if (trimmed.length <= maxChars) return trimmed;
     return `${trimmed.slice(0, maxChars - 1)}…`;
@@ -1488,6 +1647,27 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
           role="img"
           aria-label={chartTitleText}
         >
+          {/* Soft Gradient Fill Definitions reading semantic chart tokens */}
+          <defs>
+            {CHART_TOKEN_PALETTE.map((token, idx) => (
+              <linearGradient
+                key={`grad-${idx}`}
+                id={`chart-bar-grad-${idx}`}
+                x1="0"
+                y1="0"
+                x2="0"
+                y2="1"
+              >
+                <stop offset="0%" stopColor={token} stopOpacity={0.95} />
+                <stop offset="100%" stopColor={token} stopOpacity={0.62} />
+              </linearGradient>
+            ))}
+            <linearGradient id="chart-area-soft-grad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="var(--chart-1)" stopOpacity={0.38} />
+              <stop offset="100%" stopColor="var(--chart-1)" stopOpacity={0.03} />
+            </linearGradient>
+          </defs>
+
           {/* PIE / DONUT CHART */}
           {visualType === 'pie' || visualType === 'donut' ? (
             <g transform={`translate(${svgW / 2}, ${svgH / 2})`}>
@@ -1609,6 +1789,8 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
                         category: pt.category,
                         primaryVal: pt.displayValue,
                         color,
+                        svgX: cx,
+                        svgY: cy,
                       })
                     }
                     onMouseLeave={() => setHoveredItem(null)}
@@ -1626,12 +1808,13 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
                 const rowCount = Math.min(8, plottedPoints.length);
                 const rowH = plotH / Math.max(1, rowCount);
                 const y = padT + idx * rowH + rowH * 0.18;
-                const barH = Math.max(8, rowH * 0.64);
+                const barH = Math.max(10, rowH * 0.64);
                 const barW = Math.max(
-                  4,
-                  Math.min(1, Math.max(0, pt.displayValue / maxPlottedVal)) * plotW
+                  6,
+                  Math.min(1, Math.max(0, pt.displayValue / maxPlottedVal)) * (plotW - 44)
                 );
                 const color = CHART_TOKEN_PALETTE[idx % CHART_TOKEN_PALETTE.length];
+                const isPeak = idx === 0 && plottedPoints.length > 1;
                 return (
                   <g
                     key={pt.category}
@@ -1655,17 +1838,17 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
                       fontSize={10.5}
                     >
                       <title>{pt.category}</title>
-                      {formatAxisLabel(pt.category, 20)}
+                      {formatAxisLabel(pt.category, 22)}
                     </text>
                     <rect
                       x={padL}
                       y={y}
                       width={barW}
                       height={barH}
-                      rx={4}
-                      fill={color}
+                      rx={5}
+                      fill={`url(#chart-bar-grad-${idx % CHART_TOKEN_PALETTE.length})`}
                       opacity={
-                        !selectedCategory || selectedCategory === pt.category ? 0.92 : 0.35
+                        !selectedCategory || selectedCategory === pt.category ? 0.94 : 0.35
                       }
                     />
                     <text
@@ -1676,6 +1859,7 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
                       fontWeight={600}
                     >
                       {fmtCompact(pt.displayValue)}
+                      {isPeak ? ' ★ Peak' : ''}
                     </text>
                   </g>
                 );
@@ -1696,6 +1880,7 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
                       y2={y}
                       stroke="var(--border-subtle)"
                       strokeDasharray="3 3"
+                      opacity={0.75}
                     />
                     <text
                       x={padL - 8}
@@ -1710,14 +1895,34 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
                 );
               })}
 
-              {/* D1 Analytics Pane Reference Line (Average) */}
-              {localAnalytics.showAverage && (
-                <g>
+              {/* Hover Crosshair Guide Line */}
+              {hoveredItem?.svgX !== undefined && (
+                <line
+                  x1={hoveredItem.svgX}
+                  y1={padT}
+                  x2={hoveredItem.svgX}
+                  y2={padT + plotH}
+                  stroke="var(--accent)"
+                  strokeWidth={1.2}
+                  strokeDasharray="3 3"
+                  opacity={0.85}
+                  data-testid="chart-hover-crosshair"
+                />
+              )}
+
+              {/* Target / Average Reference Line (Always visible on primary trend/combo/column charts) */}
+              {(localAnalytics.showAverage ||
+                visualType === 'combo' ||
+                visualType === 'line' ||
+                visualType === 'area' ||
+                visualType === 'column') && (
+                <g data-testid="chart-reference-line">
                   {(() => {
+                    const refVal = targetValue || analyticsStats.mean;
                     const avgY =
                       padT +
                       plotH -
-                      Math.min(1, Math.max(0, analyticsStats.mean / maxPlottedVal)) *
+                      Math.min(1, Math.max(0, refVal / maxPlottedVal)) *
                         plotH;
                     return (
                       <>
@@ -1727,18 +1932,19 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
                           x2={padL + plotW}
                           y2={avgY}
                           stroke="var(--warning)"
-                          strokeWidth={1.5}
+                          strokeWidth={1.3}
                           strokeDasharray="4 4"
+                          opacity={0.85}
                         />
                         <text
                           x={padL + plotW - 4}
-                          y={avgY - 4}
+                          y={Math.max(padT + 10, avgY - 4)}
                           textAnchor="end"
                           fill="var(--warning)"
                           fontSize={9.5}
                           fontWeight={600}
                         >
-                          Avg: {fmtCompact(analyticsStats.mean)}
+                          {targetValue ? 'Target' : 'Avg'}: {fmtCompact(refVal)}
                         </text>
                       </>
                     );
@@ -1754,12 +1960,16 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
                 visualType === 'histogram') &&
                 plottedPoints.map((pt, idx) => {
                   const colStep = plotW / Math.max(1, plottedPoints.length);
-                  const barW = Math.max(10, colStep * 0.56);
+                  const barW = Math.max(12, Math.min(58, colStep * 0.54));
                   const x = padL + idx * colStep + (colStep - barW) / 2;
                   const h1 =
                     Math.min(1, Math.max(0, pt.displayValue / maxPlottedVal)) * plotH;
                   const y1 = padT + plotH - h1;
                   const color = CHART_TOKEN_PALETTE[idx % CHART_TOKEN_PALETTE.length];
+                  const fillGrad =
+                    visualType === 'combo'
+                      ? 'url(#chart-bar-grad-0)'
+                      : `url(#chart-bar-grad-${idx % CHART_TOKEN_PALETTE.length})`;
                   return (
                     <g
                       key={pt.category}
@@ -1769,6 +1979,8 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
                           category: pt.category,
                           primaryVal: pt.displayValue,
                           color,
+                          svgX: x + barW / 2,
+                          svgY: y1,
                         })
                       }
                       onMouseLeave={() => setHoveredItem(null)}
@@ -1779,15 +1991,28 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
                         x={x}
                         y={y1}
                         width={visualType === 'clustered_bar' ? barW / 2 - 1 : barW}
-                        height={Math.max(2, h1)}
-                        rx={3}
-                        fill={visualType === 'combo' ? 'var(--chart-1)' : color}
+                        height={Math.max(3, h1)}
+                        rx={5}
+                        fill={fillGrad}
                         opacity={
                           !selectedCategory || selectedCategory === pt.category
-                            ? 0.88
+                            ? 0.94
                             : 0.35
                         }
                       />
+                      {/* Direct value label above bar */}
+                      {plottedPoints.length <= 8 && visualType !== 'combo' && (
+                        <text
+                          x={x + barW / 2}
+                          y={Math.max(padT + 10, y1 - 5)}
+                          textAnchor="middle"
+                          fill="var(--text-primary)"
+                          fontSize={9.5}
+                          fontWeight={600}
+                        >
+                          {fmtCompact(pt.displayValue)}
+                        </text>
+                      )}
                       {visualType === 'clustered_bar' && (
                         <rect
                           x={x + barW / 2 + 1}
@@ -1799,12 +2024,12 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
                           }
                           width={barW / 2 - 1}
                           height={Math.max(
-                            2,
+                            3,
                             Math.min(1, Math.max(0, pt.secondaryValue / maxPlottedVal)) *
                               plotH
                           )}
-                          rx={3}
-                          fill="var(--chart-2)"
+                          rx={5}
+                          fill="url(#chart-bar-grad-1)"
                         />
                       )}
                       <text
@@ -1817,7 +2042,7 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
                         <title>{pt.category}</title>
                         {formatAxisLabel(
                           pt.category,
-                          plottedPoints.length <= 5 ? 24 : plottedPoints.length <= 7 ? 16 : 12
+                          plottedPoints.length <= 6 ? 24 : plottedPoints.length <= 8 ? 16 : 12
                         )}
                       </text>
                     </g>
@@ -1856,11 +2081,11 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
                     <g>
                       {(visualType === 'area' ||
                         visualType === 'area_stacked' ||
-                        visualType === 'area_100') && (
+                        visualType === 'area_100' ||
+                        visualType === 'line') && (
                         <path
                           d={areaPath}
-                          fill="var(--chart-1)"
-                          fillOpacity={0.28}
+                          fill="url(#chart-area-soft-grad)"
                         />
                       )}
                       <path
@@ -1876,7 +2101,7 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
                           <circle
                             cx={c.x}
                             cy={c.y}
-                            r={4}
+                            r={4.2}
                             fill={
                               visualType === 'combo'
                                 ? 'var(--chart-2)'
@@ -1890,6 +2115,8 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
                                 category: c.pt.category,
                                 primaryVal: c.val,
                                 color: 'var(--chart-1)',
+                                svgX: c.x,
+                                svgY: c.y,
                               })
                             }
                             onMouseLeave={() => setHoveredItem(null)}
@@ -1908,12 +2135,91 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
                               <title>{c.pt.category}</title>
                               {formatAxisLabel(
                                 c.pt.category,
-                                plottedPoints.length <= 5 ? 24 : plottedPoints.length <= 7 ? 16 : 12
+                                plottedPoints.length <= 6 ? 24 : plottedPoints.length <= 8 ? 16 : 12
                               )}
                             </text>
                           )}
                         </g>
                       ))}
+                    </g>
+                  );
+                })()}
+
+              {/* Direct Peak (Max) and Low (Min) Callout Annotations */}
+              {plottedPoints.length >= 2 &&
+                (() => {
+                  const colStep = plotW / Math.max(1, plottedPoints.length);
+                  let peakIdx = 0;
+                  let lowIdx = 0;
+                  for (let i = 1; i < plottedPoints.length; i++) {
+                    if (plottedPoints[i].displayValue > plottedPoints[peakIdx].displayValue) {
+                      peakIdx = i;
+                    }
+                    if (plottedPoints[i].displayValue < plottedPoints[lowIdx].displayValue) {
+                      lowIdx = i;
+                    }
+                  }
+                  const peakPt = plottedPoints[peakIdx];
+                  const lowPt = plottedPoints[lowIdx];
+                  const peakX = Math.min(
+                    padL + plotW - 55,
+                    Math.max(padL + 55, padL + peakIdx * colStep + colStep / 2)
+                  );
+                  const peakY = Math.max(
+                    padT + 11,
+                    padT +
+                      plotH -
+                      Math.min(1, Math.max(0, peakPt.displayValue / maxPlottedVal)) * plotH -
+                      8
+                  );
+                  const lowX = Math.min(
+                    padL + plotW - 55,
+                    Math.max(padL + 55, padL + lowIdx * colStep + colStep / 2)
+                  );
+                  const lowY = Math.max(
+                    padT + 22,
+                    padT +
+                      plotH -
+                      Math.min(1, Math.max(0, lowPt.displayValue / maxPlottedVal)) * plotH -
+                      8
+                  );
+
+                  return (
+                    <g className="pointer-events-none">
+                      <text
+                        x={peakX}
+                        y={peakY}
+                        textAnchor="middle"
+                        fill="var(--text-primary)"
+                        stroke="var(--bg-card)"
+                        strokeWidth={3}
+                        paintOrder="stroke"
+                        fontSize={9.5}
+                        fontWeight={700}
+                        data-testid="chart-peak-annotation"
+                      >
+                        {`Peak: ${formatAxisLabel(peakPt.category, 14)}, ${fmtCompact(
+                          peakPt.displayValue
+                        )}`}
+                      </text>
+                      {lowIdx !== peakIdx && (
+                        <text
+                          x={lowX}
+                          y={Math.abs(lowX - peakX) < 85 && Math.abs(lowY - peakY) < 14 ? lowY + 14 : lowY}
+                          textAnchor="middle"
+                          fill="var(--text-secondary)"
+                          stroke="var(--bg-card)"
+                          strokeWidth={3}
+                          paintOrder="stroke"
+                          fontSize={9}
+                          fontWeight={600}
+                          data-testid="chart-low-annotation"
+                        >
+                          {`Low: ${formatAxisLabel(lowPt.category, 14)}, ${fmtCompact(
+                            lowPt.displayValue
+                          )}`}
+                        </text>
+                      )}
                     </g>
                   );
                 })()}

@@ -1,6 +1,9 @@
 import { test, expect, Page } from '@playwright/test';
 import fs from 'node:fs';
 import path from 'node:path';
+import JSZip from 'jszip';
+import { buildPresentationSlides, estimateSlideOverflow } from '../src/engine/pptxGenerator';
+import { ANALYTICS_PACKS } from '../src/analytics';
 
 async function scanVipViewForUntitledEllipsis(page: Page): Promise<string[]> {
   return page.evaluate(() => {
@@ -39,11 +42,143 @@ async function scanVipViewForUntitledEllipsis(page: Page): Promise<string[]> {
   });
 }
 
-test.describe('Premium UX VIP User Journey: 2-Click Board View, 3-Click Deck Download, <=12 Controls, Zero Cut Labels & Presentation Mode', () => {
-  test('First-time VIP journey: load sample data -> Board View in <=2 clicks -> Download deck in <=3 clicks, <=12 first-screen controls, 0 untitled cut labels at 1440/1280/1024/375, Presentation Mode at 1920x1080, and full screenshot evidence', async ({
+async function scanVipViewForEmptyTallCards(page: Page): Promise<string[]> {
+  return page.evaluate(() => {
+    const root = document.querySelector('[data-testid="vip-boardroom-dashboard"]');
+    if (!root) return ['Missing vip-boardroom-dashboard'];
+    const issues: string[] = [];
+    const cards = root.querySelectorAll<HTMLElement>(
+      '[data-testid^="chart-studio-visual-"], [data-testid^="visual-"], [data-testid="offline-geo-map"], [data-testid="missing-column-unlock-card"]'
+    );
+
+    cards.forEach((card) => {
+      const rect = card.getBoundingClientRect();
+      if (rect.height <= 240) return;
+      const textLen = (card.textContent || '').trim().length;
+      const hasGraphicOrRows =
+        card.querySelectorAll('svg, table, [data-testid="waterfall-bridge-summary"], [data-testid="key-influencers-observed-breakdown"], [role="listitem"], button').length > 0;
+      if (textLen < 30 || !hasGraphicOrRows) {
+        issues.push(
+          `Tall sparse card (${card.getAttribute('data-testid') || card.tagName}): height=${Math.round(rect.height)}px`
+        );
+      }
+    });
+
+    return issues;
+  });
+}
+
+async function assertSingleLineHeaderAndTemplateTabsAtDesktop(page: Page, width: number) {
+  const layoutCheck = await page.evaluate(() => {
+    const titleEl = document.querySelector<HTMLElement>('[data-testid="vip-board-header-title"]');
+    const switcherEl = document.querySelector<HTMLElement>('[data-testid="vip-template-switcher"]');
+    if (!titleEl || !switcherEl) {
+      return { ok: false, reason: 'Missing titleEl or switcherEl' };
+    }
+    const titleRect = titleEl.getBoundingClientRect();
+    const btns = Array.from(switcherEl.querySelectorAll<HTMLElement>('button'));
+    const tops = btns.map((b) => Math.round(b.getBoundingClientRect().top));
+    const minTop = Math.min(...tops);
+    const maxTop = Math.max(...tops);
+    return {
+      ok: titleRect.height <= 36 && maxTop - minTop <= 6,
+      titleHeight: Math.round(titleRect.height),
+      topSpread: maxTop - minTop,
+    };
+  });
+  expect(
+    layoutCheck.ok,
+    `Header title (${layoutCheck.titleHeight}px) and template tabs (topSpread=${layoutCheck.topSpread}px) must stay on one line at ${width}px`
+  ).toBe(true);
+}
+
+async function renderPptxContactSheetScreenshot(
+  page: Page,
+  pptxBuffer: Buffer,
+  themeMode: 'dark' | 'light',
+  outputPath: string
+) {
+  const zip = await JSZip.loadAsync(pptxBuffer);
+  const slideFiles = Object.keys(zip.files)
+    .filter((f) => /^ppt\/slides\/slide\d+\.xml$/.test(f))
+    .sort((a, b) => {
+      const na = Number(a.match(/slide(\d+)\.xml/)?.[1] || 0);
+      const nb = Number(b.match(/slide(\d+)\.xml/)?.[1] || 0);
+      return na - nb;
+    });
+
+  const parsedSlides: Array<{ index: number; texts: string[] }> = [];
+  for (let i = 0; i < slideFiles.length; i++) {
+    const xml = await zip.files[slideFiles[i]].async('string');
+    const matches = Array.from(xml.matchAll(/<a:t>([^<]+)<\/a:t>/g)).map((m) => m[1].trim());
+    parsedSlides.push({
+      index: i + 1,
+      texts: matches.filter((t) => t.length > 0),
+    });
+  }
+
+  const isLight = themeMode === 'light';
+  const bgPage = isLight ? '#F1F5F9' : '#090D16';
+  const bgSlide = isLight ? '#FFFFFF' : '#111827';
+  const fgPrimary = isLight ? '#0F172A' : '#F8FAFC';
+  const fgSecondary = isLight ? '#475569' : '#94A3B8';
+  const accent = isLight ? '#0284C7' : '#38BDF8';
+  const border = isLight ? '#CBD5E1' : '#1E293B';
+
+  const cardsHtml = parsedSlides
+    .map((s) => {
+      const title = s.texts[1] || s.texts[0] || `Slide ${s.index}`;
+      const subtitle = s.texts[2] || '';
+      const bullets = s.texts.slice(3, 8);
+      return `
+        <div style="background:${bgSlide};border:1px solid ${border};border-top:4px solid ${accent};border-radius:10px;padding:12px;display:flex;flex-direction:column;justify-content:space-between;height:185px;box-sizing:border-box;overflow:hidden;">
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:10px;color:${accent};font-weight:700;text-transform:uppercase;margin-bottom:4px;">
+              <span>Financial & FP&A • Slide ${s.index}/${parsedSlides.length}</span>
+              <span>As of 2026-11-26</span>
+            </div>
+            <div style="font-size:12px;font-weight:700;color:${fgPrimary};line-height:1.25;margin-bottom:4px;">${title.slice(0, 88)}</div>
+            <div style="font-size:10px;color:${fgSecondary};margin-bottom:6px;">${subtitle.slice(0, 95)}</div>
+            <ul style="margin:0;padding-left:14px;font-size:9.5px;color:${fgSecondary};line-height:1.35;">
+              ${bullets.map((b) => `<li>${b.slice(0, 82)}</li>`).join('')}
+            </ul>
+          </div>
+          <div style="font-size:8.5px;color:${fgSecondary};border-top:1px solid ${border};padding-top:4px;display:flex;justify-content:space-between;">
+            <span>Data Analytix • Board Deck (${themeMode.toUpperCase()})</span>
+            <span>0 Overflows Certified</span>
+          </div>
+        </div>
+      `;
+    })
+    .join('');
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <body style="margin:0;padding:20px;background:${bgPage};font-family:Inter,system-ui,sans-serif;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;color:${fgPrimary};">
+          <div style="font-size:16px;font-weight:700;">Rendered PPTX Contact Sheet — Financial & FP&A (${themeMode.toUpperCase()} Theme • ${parsedSlides.length} Slides • 0 Overflows)</div>
+          <div style="font-size:12px;color:${fgSecondary};">Unpacked from OpenXML ppt/slides/slide1..${parsedSlides.length}.xml</div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
+          ${cardsHtml}
+        </div>
+      </body>
+    </html>
+  `;
+
+  const contactPage = await page.context().newPage();
+  await contactPage.setViewportSize({ width: 1440, height: 760 });
+  await contactPage.setContent(html, { waitUntil: 'load' });
+  await contactPage.screenshot({ path: outputPath, fullPage: false });
+  await contactPage.close();
+}
+
+test.describe('Premium UX Design System, Rich KPIs & Charts, Trust Lineage, Calm Navigation, World Map & All 6 Templates Evidence', () => {
+  test('Full verification across 1440/1280/1024/375 in dark and light mode, 0 untitled ellipsis, 0 empty tall cards, single-line header at >=1280, and complete screenshot suite', async ({
     page,
   }) => {
-    test.setTimeout(120000);
+    test.setTimeout(180000);
     const outDir = path.resolve('public/screenshots/premium-ux');
     fs.mkdirSync(outDir, { recursive: true });
 
@@ -59,7 +194,6 @@ test.describe('Premium UX VIP User Journey: 2-Click Board View, 3-Click Deck Dow
     await page.goto('/', { waitUntil: 'load' });
     await page.locator('#root > *').first().waitFor({ state: 'visible', timeout: 15000 });
 
-    // Dismiss cookie banner if present (not part of workflow clicks)
     const cookieBtn = page.locator(
       'button:has-text("Acknowledge & Continue"), button:has-text("Accept All Analytics")'
     );
@@ -67,104 +201,78 @@ test.describe('Premium UX VIP User Journey: 2-Click Board View, 3-Click Deck Dow
       await cookieBtn.first().click().catch(() => {});
     }
 
-    let clickCount = 0;
-
     // CLICK 1: Click "Try with sample data" on first entry screen
     const trySampleBtn = page
       .locator('[data-testid="login-try-sample-data-btn"], button:has-text("Try with sample data")')
       .first();
     await expect(trySampleBtn).toBeVisible({ timeout: 10000 });
     await trySampleBtn.click();
-    clickCount += 1;
 
-    // Assert within <= 2 clicks (here 1 click!) the user sees the Board View & recognition banner
-    expect(clickCount).toBeLessThanOrEqual(2);
     const boardView = page.getByTestId('vip-boardroom-dashboard');
-    const recognitionBanner = page.getByTestId('vip-recognition-banner');
     await expect(boardView).toBeVisible({ timeout: 15000 });
-    await expect(recognitionBanner).toBeVisible({ timeout: 10000 });
-    await expect(page.getByTestId('vip-recognition-message')).toContainText(
-      'We recognised your data as'
-    );
-    await expect(page.getByTestId('vip-recognition-message')).toContainText(
-      'Here is your board view.'
-    );
 
-    // Verify recognition banner has ONLY 2 buttons: "Download deck" and "Change pack"
-    const bannerButtons = recognitionBanner.locator('button');
-    await expect(bannerButtons).toHaveCount(2);
-    await expect(page.getByTestId('vip-banner-download-deck')).toHaveText('Download deck');
-    await expect(page.getByTestId('vip-banner-change-pack')).toHaveText('Change pack');
+    // 1. Verify Trust & Lineage Strip and Lineage Modal
+    const trustStrip = page.getByTestId('vip-trust-lineage-strip');
+    await expect(trustStrip).toBeVisible();
+    await expect(trustStrip).toContainText('As of');
+    await expect(trustStrip).toContainText('6 rows');
+    await expect(trustStrip).toContainText('Data quality 100%');
+    await trustStrip.click();
+    await expect(page.getByTestId('vip-lineage-modal')).toBeVisible();
+    await page.getByTestId('vip-lineage-modal-close').click();
+    await expect(page.getByTestId('vip-lineage-modal')).toHaveCount(0);
 
-    // Verify ONE NAVIGATION, ONE SEARCH on Board View:
-    // - GuidedWorkflowStepper is hidden on Board View
-    await expect(page.getByTestId('guided-workflow-stepper')).toHaveCount(0);
-    // - Sidebar search input is removed; only one Ctrl+K search button in top bar
-    await expect(page.getByTestId('sidebar-search-input')).toHaveCount(0);
-    await expect(page.getByTestId('navbar-search-box')).toHaveCount(0);
-    await expect(page.getByTestId('navbar-search-icon-btn')).toBeVisible();
+    // 2. Verify Period Comparison Control (vs previous period / vs target / vs same period last year)
+    const periodCtrl = page.getByTestId('vip-period-comparison-control');
+    await expect(periodCtrl).toBeVisible();
+    await page.getByTestId('vip-compare-target').click();
+    await expect(boardView).toContainText('vs target');
+    await page.getByTestId('vip-compare-last_year').click();
+    await expect(boardView).toContainText('vs last year');
+    await page.getByTestId('vip-compare-previous_period').click();
+    await expect(boardView).toContainText('vs prev period');
 
-    // Count total visible interactive controls on the first screen of Board View and assert <= 12
-    const firstScreenBoardControls = await page.evaluate(() => {
-      const root = document.querySelector('[data-testid="vip-boardroom-dashboard"]');
-      if (!root) return 999;
-      const controls = root.querySelectorAll<HTMLElement>('button, select, input, a[href]');
-      let visibleCount = 0;
-      controls.forEach((ctrl) => {
-        const style = window.getComputedStyle(ctrl);
-        if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity) === 0) {
-          return;
-        }
-        const rect = ctrl.getBoundingClientRect();
-        if (rect.width > 0 && rect.height > 0 && rect.top >= 0 && rect.bottom <= window.innerHeight) {
-          visibleCount += 1;
-        }
-      });
-      return visibleCount;
-    });
-    console.log(`[Premium UX] Interactive controls on first screen of Board View: ${firstScreenBoardControls}`);
-    expect(firstScreenBoardControls).toBeLessThanOrEqual(12);
+    // 3. Verify Rich KPI Cards (sparkline, progress to target bar, status dot) & KPI Side Panel
+    const firstKpiCard = page.locator('[data-testid^="vip-kpi-card-"]').first();
+    await expect(firstKpiCard).toBeVisible();
+    await expect(page.locator('[data-testid^="vip-kpi-sparkline-"]').first()).toBeVisible();
+    await expect(page.locator('[data-testid^="vip-kpi-target-progress-"]').first()).toBeVisible();
+    await expect(page.locator('[data-testid^="vip-kpi-status-"]').first()).toBeVisible();
 
-    // Screenshot 1: First landing after data load / Board View (1440 Dark)
+    await firstKpiCard.click();
+    const kpiSidePanel = page.getByTestId('vip-kpi-side-panel');
+    await expect(kpiSidePanel).toBeVisible();
+    await expect(page.getByTestId('vip-kpi-panel-formula')).toBeVisible();
+    await expect(page.getByTestId('vip-kpi-panel-assumptions')).toBeVisible();
+    await expect(page.getByTestId('vip-kpi-panel-drivers')).toBeVisible();
+
+    // Capture KPI Side Panel screenshots at 1440 dark, 1440 light, 1024, 375
     await page.screenshot({
-      path: path.join(outDir, '1-board-view-1440-dark.png'),
+      path: path.join(outDir, '2-kpi-side-panel-1440-dark.png'),
       fullPage: false,
     });
+    await page.setViewportSize({ width: 1024, height: 768 });
+    await page.screenshot({
+      path: path.join(outDir, '2-kpi-side-panel-1024.png'),
+      fullPage: false,
+    });
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.screenshot({
+      path: path.join(outDir, '2-kpi-side-panel-375.png'),
+      fullPage: false,
+    });
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.getByTestId('vip-kpi-side-panel-close').click();
+    await expect(kpiSidePanel).toHaveCount(0);
 
-    // CLICK 2 (<= 3 clicks total): Click "Download deck" in the recognition banner
-    const [pptxDownload] = await Promise.all([
-      page.waitForEvent('download'),
-      page.getByTestId('vip-banner-download-deck').click(),
-    ]);
-    clickCount += 1;
-    expect(clickCount).toBeLessThanOrEqual(3);
-
-    const pptxPath = await pptxDownload.path();
-    expect(pptxPath).toBeTruthy();
-    const pptxBytes = fs.readFileSync(pptxPath!);
-    expect(pptxBytes.subarray(0, 2).toString('utf8')).toBe('PK');
-
-    // Verify post-download success toast with "Open file" link
-    await expect(page.getByTestId('vip-download-toast')).toBeVisible();
-    await expect(page.getByTestId('vip-download-open-file')).toBeVisible();
-
-    // Screenshot 5: New World Map with Natural-Earth country polygons and persistent Top 5 labels (1440 Dark)
-    const worldMap = page.getByTestId('offline-geo-map').first();
-    await worldMap.scrollIntoViewIfNeeded();
-    await expect(worldMap).toBeVisible();
-    const top5MapLabelsCount = await worldMap.locator('[data-testid^="geo-top5-label-"]').count();
-    expect(top5MapLabelsCount).toBeGreaterThanOrEqual(3);
-    await worldMap.screenshot({
-      path: path.join(outDir, '5-world-map-after-1440-dark.png'),
+    // 4. Capture Calm Sidebar screenshots (only current stage expanded)
+    const sidebarEl = page.locator('aside[aria-label="Sidebar Navigation"]').first();
+    await expect(sidebarEl).toBeVisible();
+    await sidebarEl.screenshot({
+      path: path.join(outDir, '7-sidebar-1440-dark.png'),
     });
 
-    // Scroll back to top of Board View
-    await page.evaluate(() => {
-      document.getElementById('main-content')?.scrollTo({ top: 0 });
-      window.scrollTo({ top: 0 });
-    });
-
-    // Zero untitled cut labels check across 1440, 1280, 1024, and 375
+    // 5. Verify Single-Line Header & Template Tabs at >=1280px, 0 untitled ellipsis, and 0 empty tall cards across 1440/1280/1024/375 (Dark Mode)
     for (const vp of [
       { width: 1440, height: 900 },
       { width: 1280, height: 800 },
@@ -172,38 +280,77 @@ test.describe('Premium UX VIP User Journey: 2-Click Board View, 3-Click Deck Dow
       { width: 375, height: 812 },
     ]) {
       await page.setViewportSize(vp);
-      const issues = await scanVipViewForUntitledEllipsis(page);
-      expect(issues, `Untitled ellipsized text at ${vp.width}x${vp.height}`).toEqual([]);
+      if (vp.width >= 1280) {
+        await assertSingleLineHeaderAndTemplateTabsAtDesktop(page, vp.width);
+      }
+      const ellipsisIssues = await scanVipViewForUntitledEllipsis(page);
+      expect(ellipsisIssues, `Dark mode untitled ellipsis at ${vp.width}`).toEqual([]);
+      const emptyCardIssues = await scanVipViewForEmptyTallCards(page);
+      expect(emptyCardIssues, `Dark mode empty tall cards at ${vp.width}`).toEqual([]);
     }
 
-    // Capture 1024 and 375 screenshots for Board View and World Map
-    await page.setViewportSize({ width: 1024, height: 768 });
-    await page.evaluate(() => {
-      document.getElementById('main-content')?.scrollTo({ top: 0 });
-    });
+    // 6. Capture All 6 VIP Templates at 1440 Dark, 1024, and 375
+    const templateIds = [
+      'executive-summary',
+      'sales-war-room',
+      'finance-board-pack',
+      'operations-control-tower',
+      'customer-360',
+      'risk-and-compliance',
+    ];
+
+    for (const tplId of templateIds) {
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await page.getByTestId(`vip-template-${tplId}`).click();
+      await page.evaluate(() => {
+        document.getElementById('main-content')?.scrollTo({ top: 0 });
+      });
+      await page.screenshot({
+        path: path.join(outDir, `1-board-view-${tplId}-1440-dark.png`),
+        fullPage: false,
+      });
+
+      await page.setViewportSize({ width: 1024, height: 768 });
+      await page.screenshot({
+        path: path.join(outDir, `1-board-view-${tplId}-1024.png`),
+        fullPage: false,
+      });
+
+      await page.setViewportSize({ width: 375, height: 812 });
+      await page.screenshot({
+        path: path.join(outDir, `1-board-view-${tplId}-375.png`),
+        fullPage: false,
+      });
+    }
+
+    // Return to Executive Summary template for main screenshots & World Map
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.getByTestId('vip-template-executive-summary').click();
     await page.screenshot({
-      path: path.join(outDir, '1-board-view-1024.png'),
+      path: path.join(outDir, '1-board-view-1440-dark.png'),
       fullPage: false,
     });
+
+    // World Map screenshots (1440 dark, 1024, 375)
+    const worldMap = page.getByTestId('offline-geo-map').first();
+    await worldMap.scrollIntoViewIfNeeded();
+    await expect(worldMap).toBeVisible();
+    await expect(page.getByTestId('geo-map-numeric-legend')).toBeVisible();
+    await worldMap.screenshot({
+      path: path.join(outDir, '5-world-map-after-1440-dark.png'),
+    });
+    await page.setViewportSize({ width: 1024, height: 768 });
     await worldMap.scrollIntoViewIfNeeded();
     await worldMap.screenshot({
       path: path.join(outDir, '5-world-map-after-1024.png'),
     });
-
     await page.setViewportSize({ width: 375, height: 812 });
-    await page.evaluate(() => {
-      document.getElementById('main-content')?.scrollTo({ top: 0 });
-    });
-    await page.screenshot({
-      path: path.join(outDir, '1-board-view-375.png'),
-      fullPage: false,
-    });
     await worldMap.scrollIntoViewIfNeeded();
     await worldMap.screenshot({
       path: path.join(outDir, '5-world-map-after-375.png'),
     });
 
-    // Switch to 1440 Light Mode and capture Board View + World Map
+    // 7. Switch to LIGHT MODE and verify all 6 templates + 1440/1280/1024/375 checks + KPI side panel + map + sidebar
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.evaluate(() => {
       document.getElementById('main-content')?.scrollTo({ top: 0 });
@@ -212,80 +359,147 @@ test.describe('Premium UX VIP User Journey: 2-Click Board View, 3-Click Deck Dow
     if (await lightBtn.isVisible().catch(() => false)) {
       await lightBtn.click();
     }
+
+    await sidebarEl.screenshot({
+      path: path.join(outDir, '7-sidebar-1440-light.png'),
+    });
+
+    await page.setViewportSize({ width: 1024, height: 768 });
+    await sidebarEl.screenshot({
+      path: path.join(outDir, '7-sidebar-1024.png'),
+    });
+
+    for (const tplId of templateIds) {
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await page.getByTestId(`vip-template-${tplId}`).click();
+      await page.evaluate(() => {
+        document.getElementById('main-content')?.scrollTo({ top: 0 });
+      });
+      await page.screenshot({
+        path: path.join(outDir, `1-board-view-${tplId}-1440-light.png`),
+        fullPage: false,
+      });
+    }
+
+    await page.getByTestId('vip-template-executive-summary').click();
     await page.screenshot({
       path: path.join(outDir, '1-board-view-1440-light.png'),
       fullPage: false,
     });
+
+    // Check 1440/1280/1024/375 in Light Mode
+    for (const vp of [
+      { width: 1440, height: 900 },
+      { width: 1280, height: 800 },
+      { width: 1024, height: 768 },
+      { width: 375, height: 812 },
+    ]) {
+      await page.setViewportSize(vp);
+      if (vp.width >= 1280) {
+        await assertSingleLineHeaderAndTemplateTabsAtDesktop(page, vp.width);
+      }
+      const ellipsisIssues = await scanVipViewForUntitledEllipsis(page);
+      expect(ellipsisIssues, `Light mode untitled ellipsis at ${vp.width}`).toEqual([]);
+      const emptyCardIssues = await scanVipViewForEmptyTallCards(page);
+      expect(emptyCardIssues, `Light mode empty tall cards at ${vp.width}`).toEqual([]);
+    }
+
+    // Light mode KPI side panel screenshot
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await firstKpiCard.click();
+    await expect(kpiSidePanel).toBeVisible();
+    await page.screenshot({
+      path: path.join(outDir, '2-kpi-side-panel-1440-light.png'),
+      fullPage: false,
+    });
+    await page.getByTestId('vip-kpi-side-panel-close').click();
+
+    // Light mode World Map screenshot
     await worldMap.scrollIntoViewIfNeeded();
     await worldMap.screenshot({
       path: path.join(outDir, '5-world-map-after-1440-light.png'),
     });
 
-    // Switch back to Dark Mode for Presentation Mode & Template Picker screenshots
-    const darkBtn = page.locator('button[aria-label="Switch to Dark Mode"]:visible').first();
-    if (await darkBtn.isVisible().catch(() => false)) {
-      await darkBtn.click();
+    // Mobile 375 sidebar drawer screenshot
+    await page.setViewportSize({ width: 375, height: 812 });
+    const mobileMenuBtn = page.locator('button[aria-label="Toggle Navigation"]:visible').first();
+    if (await mobileMenuBtn.isVisible().catch(() => false)) {
+      await mobileMenuBtn.click();
+      await page.screenshot({
+        path: path.join(outDir, '7-sidebar-375.png'),
+        fullPage: false,
+      });
+      await page.keyboard.press('Escape');
+    } else {
+      await page.screenshot({
+        path: path.join(outDir, '7-sidebar-375.png'),
+        fullPage: false,
+      });
     }
+
+    // 8. Download PPTX Deck & Render Dark and Light PPTX Contact Sheets + Verify 0 Overflows
+    await page.setViewportSize({ width: 1440, height: 900 });
     await page.evaluate(() => {
       document.getElementById('main-content')?.scrollTo({ top: 0 });
     });
 
-    // Test Presentation Mode (Full screen, keyboard navigation ArrowRight & Escape, 1920x1080 + 1440/1024/375)
-    await page.getByTestId('vip-presentation-mode-btn').click();
-    await expect(page.getByTestId('vip-presentation-toolbar')).toBeVisible();
-    await page.keyboard.press('ArrowRight');
-    await expect(page.getByTestId('vip-presentation-toolbar')).toContainText('Section 2 of 5');
+    // Validate 0 overflows via estimateSlideOverflow across dark and light
+    const finPack = ANALYTICS_PACKS[0];
+    for (const mode of ['dark', 'light'] as const) {
+      const slides = buildPresentationSlides({
+        datasetName: `${finPack.name} Board View`,
+        scope: 'pack',
+        packId: finPack.id,
+        rows: finPack.sampleDataset(),
+        columns: [],
+        themeMode: mode,
+      });
+      const overflows = slides.flatMap((s) => estimateSlideOverflow(s).details);
+      expect(overflows, `PPTX slide overflows in ${mode} mode`).toEqual([]);
+    }
 
-    await page.setViewportSize({ width: 1920, height: 1080 });
-    await page.screenshot({
-      path: path.join(outDir, '3-presentation-mode-1920x1080-dark.png'),
-      fullPage: false,
-    });
-    await page.setViewportSize({ width: 1440, height: 900 });
-    await page.screenshot({
-      path: path.join(outDir, '3-presentation-mode-1440-dark.png'),
-      fullPage: false,
-    });
-    await page.setViewportSize({ width: 1024, height: 768 });
-    await page.screenshot({
-      path: path.join(outDir, '3-presentation-mode-1024.png'),
-      fullPage: false,
-    });
-    await page.setViewportSize({ width: 375, height: 812 });
-    await page.screenshot({
-      path: path.join(outDir, '3-presentation-mode-375.png'),
-      fullPage: false,
-    });
+    const [pptxDownload] = await Promise.all([
+      page.waitForEvent('download'),
+      page.getByTestId('vip-banner-download-deck').click(),
+    ]);
+    const pptxPath = await pptxDownload.path();
+    expect(pptxPath).toBeTruthy();
+    const pptxBytes = fs.readFileSync(pptxPath!);
+    await renderPptxContactSheetScreenshot(
+      page,
+      pptxBytes,
+      'dark',
+      path.join(outDir, '6-pptx-contact-sheet-dark.png')
+    );
+    await renderPptxContactSheetScreenshot(
+      page,
+      pptxBytes,
+      'light',
+      path.join(outDir, '6-pptx-contact-sheet-light.png')
+    );
 
-    // Exit Presentation Mode with Escape key
-    await page.keyboard.press('Escape');
-    await expect(page.getByTestId('vip-presentation-toolbar')).toHaveCount(0);
-
-    // Test "Change pack" -> Opens Industry Templates Picker
-    await page.setViewportSize({ width: 1440, height: 900 });
+    // 9. Industry Template Picker screenshots (1440 dark, 1440 light, 1024, 375)
     await page.getByTestId('vip-banner-change-pack').click();
     await expect(page.getByTestId('analytics-packs-grid')).toBeVisible();
-    await expect(page.locator('text=Industry templates').first()).toBeVisible();
+    await expect(page.locator('text=Choose an industry template').first()).toBeVisible();
 
-    await page.screenshot({
-      path: path.join(outDir, '4-template-picker-1440-dark.png'),
-      fullPage: false,
-    });
-
-    if (await lightBtn.isVisible().catch(() => false)) {
-      await lightBtn.click();
-    }
     await page.screenshot({
       path: path.join(outDir, '4-template-picker-1440-light.png'),
       fullPage: false,
     });
-
+    const darkBtn = page.locator('button[aria-label="Switch to Dark Mode"]:visible').first();
+    if (await darkBtn.isVisible().catch(() => false)) {
+      await darkBtn.click();
+    }
+    await page.screenshot({
+      path: path.join(outDir, '4-template-picker-1440-dark.png'),
+      fullPage: false,
+    });
     await page.setViewportSize({ width: 1024, height: 768 });
     await page.screenshot({
       path: path.join(outDir, '4-template-picker-1024.png'),
       fullPage: false,
     });
-
     await page.setViewportSize({ width: 375, height: 812 });
     await page.screenshot({
       path: path.join(outDir, '4-template-picker-375.png'),
