@@ -3586,23 +3586,38 @@ export const ExecutiveDashboard: React.FC = () => {
           {/* Grid 2: Waterfall & Gauge */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <WaterfallChart
-              steps={[
-                { label: 'Baseline Gross', value: baselineRev, isTotal: true },
-                { label: 'Volume Expansion', value: Math.round(baselineRev * 0.15) },
-                { label: 'Price Variance', value: Math.round(baselineRev * 0.05) },
-                { label: 'Direct COGS', value: -Math.round(baselineCost * 0.7) },
-                { label: 'Operating OPEX', value: -Math.round(baselineCost * 0.3) },
-                { label: 'Net Profit', value: baselineProfit, isTotal: true }
-              ]}
+              steps={
+                currentCategoryData.length >= 2
+                  ? [
+                      ...currentCategoryData.slice(0, 5).map((c) => ({
+                        label: c.category,
+                        value: Math.round(c.value),
+                      })),
+                      {
+                        label: 'Total',
+                        value: Math.round(
+                          currentCategoryData
+                            .slice(0, 5)
+                            .reduce((acc, c) => acc + c.value, 0)
+                        ),
+                        isTotal: true,
+                      },
+                    ]
+                  : [
+                      { label: 'Gross Revenue', value: baselineRev, isTotal: true },
+                      { label: 'Total Cost', value: -baselineCost },
+                      { label: 'Net Margin', value: baselineProfit, isTotal: true },
+                    ]
+              }
               baseValue={baselineRev}
-              metricName="USD"
+              metricName={selectedTrendMetric || 'USD'}
               onStepClick={handleDrilldown}
             />
 
             <GaugeSpeedometerChart
               value={baselineProfit}
-              target={baselineProfit * 1.25}
-              metricName="Operating Margin"
+              target={Math.max(1, baselineRev)}
+              metricName="Net Margin vs Gross Volume"
               unit="$"
             />
           </div>

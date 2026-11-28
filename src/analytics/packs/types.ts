@@ -187,8 +187,10 @@ export interface ComputedPackKpi {
   formattedValue: string;
   deltaPct: number | null;
   changePercent: number | null;
+  priorYearDeltaPct?: number | null;
   isFavorableDelta: boolean | null;
   sparkline: number[];
+  periodSeries?: Array<{ period: string; value: number }>;
   status: 'available' | 'unavailable' | 'ready';
   missingRoles: Role[];
   reason?: string;

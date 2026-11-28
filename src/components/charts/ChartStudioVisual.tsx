@@ -25,6 +25,7 @@ import {
   computeKeyInfluencers,
   generateSmartNarrative,
 } from '../../engine/chartStudioEngine';
+import { evaluateUnifiedKpiStatus } from '../../analytics/engine';
 import { GeoScopeId } from './geo/geoDataLazy';
 
 const LazyOfflineGeoMap = React.lazy(() => import('./geo/OfflineGeoMap'));
@@ -52,6 +53,9 @@ export interface ChartStudioVisualProps {
   endDateCol?: string;
   progressCol?: string;
   targetValue?: number;
+  favorableDirection?: 'up' | 'down';
+  prevPeriodDeltaPct?: number | null;
+  onSetTargetRequest?: () => void;
   title?: string;
   subtitle?: string;
   height?: number;
@@ -104,6 +108,9 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
   endDateCol,
   progressCol,
   targetValue,
+  favorableDirection = 'up',
+  prevPeriodDeltaPct = null,
+  onSetTargetRequest,
   title,
   subtitle,
   height = 310,
@@ -402,7 +409,7 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
     );
   }
 
-  // B9: KEY INFLUENCERS VISUAL (Filled with Observed Segment Breakdown when sample < 30 so zero empty space)
+  // B9: KEY INFLUENCERS VISUAL (Shrunk to its content in "not enough data" state so zero empty area above table)
   if (visualType === 'key_influencers') {
     const influencers = computeKeyInfluencers(rows, metricCol);
     const observedSegments = [...chartData]
@@ -412,7 +419,9 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
 
     return (
       <div
-        className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4 flex flex-col justify-between gap-3 h-full"
+        className={`rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4 flex flex-col gap-3 ${
+          influencers.insufficientSample ? 'h-auto self-start' : 'justify-between h-full'
+        }`}
         data-testid="visual-key-influencers"
       >
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -437,7 +446,7 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
         </div>
 
         {influencers.insufficientSample ? (
-          <div className="flex flex-col justify-between gap-2.5 flex-1">
+          <div className="flex flex-col gap-2.5">
             <div
               className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/60 px-3 py-2 text-xs space-y-1"
               data-testid="key-influencers-insufficient"
@@ -454,9 +463,9 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
               </p>
             </div>
 
-            {/* Observed Segment Contribution Breakdown so the card never leaves an empty box */}
+            {/* Compact Observed Segment Contribution Breakdown sized tightly to content */}
             <div
-              className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/35 p-3 space-y-2 flex-1 flex flex-col justify-between"
+              className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/35 p-3 space-y-2"
               data-testid="key-influencers-observed-breakdown"
             >
               <div className="flex items-center justify-between text-[11px] font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
@@ -719,22 +728,24 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
     );
   }
 
-  // B5: GANTT TIME PLAN VISUAL
+  // B5: GANTT TIME PLAN VISUAL (uses real displayValue ratios — zero invented modulo percentages)
   if (visualType === 'gantt') {
+    const maxTaskVal = Math.max(...chartData.map((d) => Math.abs(d.displayValue)), 1);
     const tasks = chartData.slice(0, 10).map((d, idx) => {
+      const valueRatioPct = Math.min(100, Math.max(10, Math.round((Math.abs(d.displayValue) / maxTaskVal) * 100)));
       const progress =
         d.progressPct !== undefined
-          ? Math.min(100, Math.max(0, d.progressPct))
-          : Math.min(100, Math.round(35 + ((idx * 17) % 65)));
-      const startOffsetPct = Math.min(65, idx * 8);
-      const durationPct = Math.max(18, Math.min(100 - startOffsetPct, 25 + ((idx * 11) % 35)));
+          ? Math.min(100, Math.max(0, Math.round(d.progressPct)))
+          : valueRatioPct;
+      const startOffsetPct = Math.min(60, Math.round((idx / Math.max(1, chartData.slice(0, 10).length)) * 55));
+      const durationPct = Math.max(18, Math.min(100 - startOffsetPct, valueRatioPct));
       const isMilestone =
         idx === chartData.length - 1 || /milestone|launch|audit|release/i.test(d.category);
       return {
         name: d.category,
         group: d.group || 'Core Workstream',
-        startLabel: d.startDate || `W${idx + 1}`,
-        endLabel: d.endDate || `W${idx + 4}`,
+        startLabel: d.startDate || `P${idx + 1}`,
+        endLabel: d.endDate || `P${idx + 2}`,
         progress,
         startOffsetPct,
         durationPct,
@@ -756,7 +767,7 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
                 {title || `Gantt Schedule & Milestone Plan (${categoryCol})`}
               </h3>
               <p className="text-xs text-[var(--text-secondary)]">
-                Task bars shaded by completion % • Diamonds mark critical milestones
+                Task bars scaled by real {metricCol} volume • Diamonds mark critical milestones
               </p>
             </div>
           </div>
@@ -773,7 +784,7 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
                   {t.name}
                 </div>
                 <div className="text-[10px] text-[var(--text-secondary)] truncate">
-                  {t.startLabel} → {t.endLabel} • {t.progress}% complete
+                  {t.startLabel} → {t.endLabel} • {t.progress}% of peak
                 </div>
               </div>
               <div className="col-span-6 relative h-5 rounded bg-[var(--bg-elevated)] overflow-hidden">
@@ -1175,7 +1186,7 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
     );
   }
 
-  // B7: GAUGE / BULLET / KPI VISUAL / SCORECARD
+  // B7: GAUGE / BULLET / KPI VISUAL / SCORECARD (uses evaluateUnifiedKpiStatus — NEVER invents currentTotal * 1.12)
   if (
     visualType === 'gauge' ||
     visualType === 'bullet' ||
@@ -1185,14 +1196,46 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
     visualType === 'multi_card'
   ) {
     const currentTotal = chartData.reduce((a, b) => a + b.displayValue, 0);
-    const goal = targetValue || Math.round(currentTotal * 1.12) || 100;
-    const attainmentPct = Math.min(150, Math.max(0, (currentTotal / goal) * 100));
-    const statusColor =
-      attainmentPct >= 95
-        ? 'var(--success)'
-        : attainmentPct >= 75
-        ? 'var(--warning)'
-        : 'var(--danger)';
+
+    // Compute real period delta from rows if prevPeriodDeltaPct was not explicitly passed
+    let computedPeriodDelta = prevPeriodDeltaPct;
+    if (computedPeriodDelta === null && rows.length >= 2 && rows[0]) {
+      const dCol =
+        Object.keys(rows[0]).find((c) => /date|month|period|quarter|year|week|day/i.test(c)) || '';
+      if (dCol && dCol in rows[0]) {
+        const byP = new Map<string, number>();
+        for (const r of rows) {
+          const pk = String(r[dCol] ?? '').trim();
+          if (!pk) continue;
+          byP.set(pk, (byP.get(pk) || 0) + toNum(r[metricCol]));
+        }
+        const sortedP = Array.from(byP.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+        if (sortedP.length >= 2) {
+          const prev = sortedP[sortedP.length - 2][1];
+          const last = sortedP[sortedP.length - 1][1];
+          if (Math.abs(prev) > 1e-9) {
+            computedPeriodDelta = ((last - prev) / Math.abs(prev)) * 100;
+          }
+        }
+      }
+    }
+
+    const unifiedGauge = evaluateUnifiedKpiStatus({
+      kpiId: metricCol,
+      actualValue: currentTotal,
+      favorableDirection,
+      packTarget: typeof targetValue === 'number' && targetValue > 0 ? targetValue : null,
+      prevPeriodDeltaPct: computedPeriodDelta,
+      comparisonMode: 'prev_period',
+    });
+
+    const hasRealTarget =
+      unifiedGauge.hasTarget &&
+      unifiedGauge.targetValue !== null &&
+      unifiedGauge.attainmentPct !== null;
+    const attainmentPct = unifiedGauge.attainmentPct ?? 0;
+    const statusColor = unifiedGauge.statusColorToken;
+    const statusText = unifiedGauge.statusLabel;
     const gaugeTitle = title || `${metricCol} Target Attainment`;
 
     return (
@@ -1210,12 +1253,30 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
               {gaugeTitle}
             </h3>
           </div>
-          <span
-            className="text-xs font-semibold px-2 py-0.5 rounded bg-[var(--bg-elevated)] shrink-0"
-            style={{ color: statusColor }}
-          >
-            {attainmentPct.toFixed(1)}% of target
-          </span>
+          {hasRealTarget ? (
+            <span
+              className="text-xs font-semibold px-2 py-0.5 rounded bg-[var(--bg-elevated)] shrink-0"
+              style={{ color: statusColor }}
+              data-testid="gauge-target-badge"
+            >
+              {attainmentPct.toFixed(1)}% of target
+            </span>
+          ) : unifiedGauge.deltaEv.hasDelta ? (
+            <span
+              className="text-xs font-semibold px-2 py-0.5 rounded bg-[var(--bg-elevated)] shrink-0 font-mono"
+              style={{ color: unifiedGauge.deltaEv.colorToken }}
+              data-testid="gauge-delta-badge"
+            >
+              {unifiedGauge.deltaEv.arrow} {unifiedGauge.deltaEv.textLabel}
+            </span>
+          ) : (
+            <span
+              className="text-xs font-medium px-2 py-0.5 rounded bg-[var(--bg-elevated)] text-[var(--text-secondary)] shrink-0"
+              data-testid="gauge-no-target-badge"
+            >
+              No target set
+            </span>
+          )}
         </div>
 
         {visualType === 'gauge' ? (
@@ -1228,26 +1289,20 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
                 strokeWidth="14"
                 strokeLinecap="round"
               />
-              <path
-                d="M 16 80 A 64 64 0 0 1 144 80"
-                fill="none"
-                stroke={statusColor}
-                strokeWidth="14"
-                strokeLinecap="round"
-                strokeDasharray={`${Math.min(201, (attainmentPct / 100) * 201)} 201`}
-              />
-              <line
-                x1="80"
-                y1="80"
-                x2="122"
-                y2="32"
-                stroke="var(--text-primary)"
-                strokeWidth="2.5"
-              />
+              {hasRealTarget && (
+                <path
+                  d="M 16 80 A 64 64 0 0 1 144 80"
+                  fill="none"
+                  stroke={statusColor}
+                  strokeWidth="14"
+                  strokeLinecap="round"
+                  strokeDasharray={`${Math.min(201, (attainmentPct / 100) * 201)} 201`}
+                />
+              )}
               <circle cx="80" cy="80" r="4.5" fill="var(--text-primary)" />
               <text
                 x="80"
-                y="68"
+                y="64"
                 textAnchor="middle"
                 fill="var(--text-primary)"
                 fontSize="14"
@@ -1265,20 +1320,31 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
               </div>
               <div className="text-[var(--text-secondary)]">
                 Target:{' '}
-                <strong className="text-[var(--text-primary)] font-mono">
-                  {fmtCompact(goal)}
-                </strong>
+                {hasRealTarget && unifiedGauge.targetValue !== null ? (
+                  <strong className="text-[var(--text-primary)] font-mono">
+                    {fmtCompact(unifiedGauge.targetValue)}
+                  </strong>
+                ) : onSetTargetRequest ? (
+                  <button
+                    type="button"
+                    data-testid="gauge-set-target-btn"
+                    onClick={onSetTargetRequest}
+                    className="font-medium text-[var(--accent)] hover:underline cursor-pointer"
+                  >
+                    Set a target
+                  </button>
+                ) : (
+                  <span className="text-[var(--text-secondary)]">Not set</span>
+                )}
               </div>
-              <div className="text-[var(--text-secondary)]">
-                Status:{' '}
-                <strong style={{ color: statusColor }}>
-                  {attainmentPct >= 95
-                    ? 'On Track'
-                    : attainmentPct >= 75
-                    ? 'At Risk'
-                    : 'Behind Target'}
-                </strong>
-              </div>
+              {statusText && (
+                <div className="text-[var(--text-secondary)]">
+                  Status:{' '}
+                  <strong style={{ color: statusColor }} data-testid="gauge-status-label">
+                    {statusText}
+                  </strong>
+                </div>
+              )}
             </div>
           </div>
         ) : (
@@ -1287,27 +1353,28 @@ export const ChartStudioVisual: React.FC<ChartStudioVisualProps> = ({
               <span className="text-2xl font-bold font-mono text-[var(--text-primary)]">
                 {fmtCompact(currentTotal)}
               </span>
-              <span className="text-xs text-[var(--text-secondary)]">
-                Target:{' '}
-                <strong className="text-[var(--text-primary)] font-mono">
-                  {fmtCompact(goal)}
-                </strong>
-              </span>
+              {hasRealTarget && unifiedGauge.targetValue !== null ? (
+                <span className="text-xs text-[var(--text-secondary)]">
+                  Target:{' '}
+                  <strong className="text-[var(--text-primary)] font-mono">
+                    {fmtCompact(unifiedGauge.targetValue)}
+                  </strong>
+                </span>
+              ) : (
+                <span className="text-xs text-[var(--text-secondary)]">No target set</span>
+              )}
             </div>
-            <div className="relative h-5 rounded-md bg-[var(--bg-elevated)] overflow-hidden">
-              <div
-                className="h-full rounded-md transition-all"
-                style={{
-                  width: `${Math.min(100, attainmentPct)}%`,
-                  background: statusColor,
-                }}
-              />
-              <div
-                className="absolute top-0 bottom-0 w-1 bg-[var(--text-primary)]"
-                style={{ left: '88%' }}
-                title={`Target: ${fmtCompact(goal)}`}
-              />
-            </div>
+            {hasRealTarget && (
+              <div className="relative h-5 rounded-md bg-[var(--bg-elevated)] overflow-hidden">
+                <div
+                  className="h-full rounded-md transition-all"
+                  style={{
+                    width: `${Math.min(100, attainmentPct)}%`,
+                    background: statusColor,
+                  }}
+                />
+              </div>
+            )}
           </div>
         )}
       </div>

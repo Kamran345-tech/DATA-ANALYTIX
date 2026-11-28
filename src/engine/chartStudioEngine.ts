@@ -523,19 +523,32 @@ export interface SmartNarrativeOutput {
   headline: string;
   bullets: string[];
   fiveLineSummary: string[];
+  direction?: 'up' | 'down' | 'flat';
+  trendDeltaPct?: number | null;
+  statusLabel?: 'On track' | 'Watch' | 'Action needed' | null;
 }
 
 export function generateSmartNarrative(
   rows: Record<string, any>[],
   categoryCol: string,
   metricCol: string,
-  packName = 'Executive'
+  packName = 'Executive',
+  options?: {
+    dateCol?: string;
+    favorableDirection?: 'up' | 'down';
+    targetValue?: number | null;
+    attainmentPct?: number | null;
+    statusLabel?: 'On track' | 'Watch' | 'Action needed' | null;
+  }
 ): SmartNarrativeOutput {
   if (!rows.length || !metricCol) {
     return {
       headline: `${packName} dataset ready for analysis.`,
       bullets: ['Upload or map a metric column to generate automated narrative insights.'],
       fiveLineSummary: ['No rows available for narrative synthesis.'],
+      direction: 'flat',
+      trendDeltaPct: null,
+      statusLabel: null,
     };
   }
 
@@ -546,9 +559,69 @@ export function generateSmartNarrative(
 
   const total = points.reduce((acc, p) => acc + p.value, 0);
   const avg = total / points.length;
-  const first = points[0].value;
-  const last = points[points.length - 1].value;
-  const trendDeltaPct = first !== 0 ? ((last - first) / Math.abs(first)) * 100 : 0;
+
+  // Detect or use provided dateCol so period-over-period change matches the KPI card's time series
+  const resolvedDateCol =
+    options?.dateCol ||
+    (rows[0]
+      ? Object.keys(rows[0]).find((c) => /date|month|period|quarter|year|week|day/i.test(c)) || ''
+      : '');
+
+  const byPeriod = new Map<string, number>();
+  if (resolvedDateCol && rows[0] && resolvedDateCol in rows[0]) {
+    for (const r of rows) {
+      const pKey = String(r[resolvedDateCol] ?? '').trim();
+      if (!pKey) continue;
+      const v = Number(String(r[metricCol] ?? '0').replace(/[^0-9.-]/g, '')) || 0;
+      byPeriod.set(pKey, (byPeriod.get(pKey) || 0) + v);
+    }
+  }
+
+  const sortedPeriods = Array.from(byPeriod.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+
+  let firstVal = points[0].value;
+  let lastVal = points[points.length - 1].value;
+  let prevVal = points.length >= 2 ? points[points.length - 2].value : firstVal;
+  let firstLabel = points[0].label;
+  let lastLabel = points[points.length - 1].label;
+  let prevLabel = points.length >= 2 ? points[points.length - 2].label : firstLabel;
+  let trendDeltaPct = 0;
+
+  if (sortedPeriods.length >= 2) {
+    firstLabel = sortedPeriods[0][0];
+    firstVal = sortedPeriods[0][1];
+    prevLabel = sortedPeriods[sortedPeriods.length - 2][0];
+    prevVal = sortedPeriods[sortedPeriods.length - 2][1];
+    lastLabel = sortedPeriods[sortedPeriods.length - 1][0];
+    lastVal = sortedPeriods[sortedPeriods.length - 1][1];
+    trendDeltaPct = prevVal !== 0 ? ((lastVal - prevVal) / Math.abs(prevVal)) * 100 : 0;
+  } else {
+    trendDeltaPct = firstVal !== 0 ? ((lastVal - firstVal) / Math.abs(firstVal)) * 100 : 0;
+  }
+
+  const absDelta = Math.abs(trendDeltaPct);
+  const direction: 'up' | 'down' | 'flat' =
+    absDelta < 0.5 ? 'flat' : trendDeltaPct > 0 ? 'up' : 'down';
+  const goodDir = options?.favorableDirection || 'up';
+
+  let resolvedStatus: 'On track' | 'Watch' | 'Action needed' | null =
+    options?.statusLabel !== undefined ? options.statusLabel : null;
+
+  if (resolvedStatus === null) {
+    if (typeof options?.attainmentPct === 'number' && Number.isFinite(options.attainmentPct)) {
+      resolvedStatus =
+        options.attainmentPct >= 95
+          ? 'On track'
+          : options.attainmentPct >= 80
+          ? 'Watch'
+          : 'Action needed';
+    } else if (absDelta >= 0.5) {
+      const isFav = goodDir === 'up' ? trendDeltaPct >= 0.5 : trendDeltaPct <= -0.5;
+      resolvedStatus = isFav ? 'On track' : 'Action needed';
+    } else if (sortedPeriods.length >= 2 || points.length >= 2) {
+      resolvedStatus = 'Watch';
+    }
+  }
 
   // Group by category for top/bottom contributor
   const byCategory = new Map<string, number>();
@@ -570,24 +643,42 @@ export function generateSmartNarrative(
       ? `${(n / 1_000).toFixed(1)}K`
       : n.toFixed(1);
 
-  const headline = `${packName}: ${metricCol} totaled ${fmt(total)} (${
-    trendDeltaPct >= 0 ? 'up' : 'down'
-  } ${Math.abs(trendDeltaPct).toFixed(1)}% across ${points.length} records), led by ${topCat[0]} (${topSharePct.toFixed(1)}% share).`;
+  const statusClause = resolvedStatus ? ` [${resolvedStatus}]` : '';
+  const headline = `${packName}: ${metricCol} totaled ${fmt(total)} (${direction} ${absDelta.toFixed(
+    1
+  )}% vs prev period across ${points.length} records)${statusClause}, led by ${topCat[0]} (${topSharePct.toFixed(
+    1
+  )}% share).`;
 
   const fiveLineSummary = [
-    `1. Headline Volume: Total ${metricCol} reached ${fmt(total)} with a period average of ${fmt(avg)} across ${points.length} observations.`,
-    `2. Trajectory: End-to-end movement shifted ${trendDeltaPct >= 0 ? 'up' : 'down'} ${Math.abs(trendDeltaPct).toFixed(1)}% from ${fmt(first)} (${points[0].label}) to ${fmt(last)} (${points[points.length - 1].label}).`,
-    `3. Top Driver: ${topCat[0]} contributed ${fmt(topCat[1])} (${topSharePct.toFixed(1)}% of total ${metricCol}), outperforming the median (${fmt(stats.median)}).`,
-    `4. Tail Exposure: ${bottomCat[0]} recorded the lowest contribution at ${fmt(bottomCat[1])}, creating a ${fmt(topCat[1] - bottomCat[1])} spread below the leader.`,
+    `1. Headline Volume: Total ${metricCol} reached ${fmt(total)} with a record average of ${fmt(
+      avg
+    )} across ${points.length} observations${resolvedStatus ? ` (${resolvedStatus})` : ''}.`,
+    `2. Trajectory: Period movement shifted ${direction} ${absDelta.toFixed(
+      1
+    )}% from ${fmt(prevVal)} (${prevLabel}) to ${fmt(lastVal)} (${lastLabel}).`,
+    `3. Top Driver: ${topCat[0]} contributed ${fmt(topCat[1])} (${topSharePct.toFixed(
+      1
+    )}% of total ${metricCol}), outperforming the median (${fmt(stats.median)}).`,
+    `4. Tail Exposure: ${bottomCat[0]} recorded the lowest contribution at ${fmt(
+      bottomCat[1]
+    )}, creating a ${fmt(topCat[1] - bottomCat[1])} spread below the leader.`,
     topAnomaly
-      ? `5. Anomaly Alert & Forecast: ${topAnomaly.reason}; 3-period projection targets ${fmt(stats.forecastPoints[0]?.forecast ?? last)}.`
-      : `5. Stability & Forecast: Distribution remained within normal variance (σ=${fmt(stats.stdDev)}); next-period forecast projects ${fmt(stats.forecastPoints[0]?.forecast ?? last)}.`,
+      ? `5. Anomaly Alert & Forecast: ${topAnomaly.reason}; 3-period projection targets ${fmt(
+          stats.forecastPoints[0]?.forecast ?? lastVal
+        )}.`
+      : `5. Stability & Forecast: Distribution remained within normal variance (σ=${fmt(
+          stats.stdDev
+        )}); next-period forecast projects ${fmt(stats.forecastPoints[0]?.forecast ?? lastVal)}.`,
   ];
 
   return {
     headline,
     bullets: fiveLineSummary,
     fiveLineSummary,
+    direction,
+    trendDeltaPct: Number(trendDeltaPct.toFixed(2)),
+    statusLabel: resolvedStatus,
   };
 }
 

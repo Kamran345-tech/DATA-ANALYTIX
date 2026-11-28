@@ -9,6 +9,7 @@ import {
   computePareto,
   detectAnomalies,
   evaluateKpiDelta,
+  evaluateUnifiedKpiStatus,
   validateChartTitleAndSeries,
   inferMeasureType,
   MeasureType,
@@ -74,6 +75,7 @@ export interface PresentationBuildOptions {
   qualityReport?: DataQualityReport;
   customVisuals?: VisualConfig[];
   themeMode?: 'dark' | 'light';
+  userTargets?: Record<string, number>;
 }
 
 export interface PresentationSlideKpiItem {
@@ -86,6 +88,9 @@ export interface PresentationSlideKpiItem {
   deltaDirection?: 'up' | 'down' | 'flat';
   deltaTextLabel?: string;
   isFavorable?: boolean | null;
+  statusLabel?: 'On track' | 'Watch' | 'Action needed' | null;
+  targetValue?: number | null;
+  attainmentPct?: number | null;
   measureType?: MeasureType;
   source?: string;
   formulaText?: string;
@@ -493,14 +498,27 @@ export function buildPresentationSlides(
       })),
   ];
 
-  // Build KPI items using shared evaluateKpiDelta (Part A4)
+  // Build KPI items using shared evaluateUnifiedKpiStatus & evaluateKpiDelta
   const packKpiItems: PresentationSlideKpiItem[] = builtDash.computedKpis.map(
     (k) => {
       const goodDir: 'up' | 'down' = k.goodDirection || 'up';
-      const deltaEval = evaluateKpiDelta(
-        hasData && k.status === 'available' ? k.changePercent : null,
-        goodDir
-      );
+      const unifiedEval = evaluateUnifiedKpiStatus({
+        kpiId: k.id,
+        actualValue: hasData && k.status === 'available' ? k.value : null,
+        favorableDirection: goodDir,
+        packTarget: k.target,
+        requiredRoles: k.requiredRoles,
+        measureType: k.measureType,
+        rows,
+        roleMapping: roleMap,
+        userTargets: options.userTargets,
+        allowMappedBudgetColumn: false,
+        prevPeriodDeltaPct:
+          hasData && k.status === 'available' ? k.changePercent : null,
+        priorYearDeltaPct: k.priorYearDeltaPct ?? null,
+        comparisonMode: 'prev_period',
+      });
+      const deltaEval = unifiedEval.deltaEv;
       const missingColNames = (
         k.missingRoles.length > 0 ? k.missingRoles : k.needs
       )
@@ -525,6 +543,12 @@ export function buildPresentationSlides(
           ? `${deltaEval.arrow} ${deltaEval.textLabel}`
           : 'Audited',
         isFavorable: deltaEval.isFavorable,
+        statusLabel:
+          hasData && k.status === 'available' ? unifiedEval.statusLabel : null,
+        targetValue:
+          hasData && k.status === 'available' ? unifiedEval.targetValue : null,
+        attainmentPct:
+          hasData && k.status === 'available' ? unifiedEval.attainmentPct : null,
         measureType:
           k.measureType ||
           inferMeasureType({ columnName: k.label, unit: k.unit }),
@@ -545,7 +569,14 @@ export function buildPresentationSlides(
       ? packKpiItems
       : kpis.map((k) => {
           const rawDelta = hasData ? (k.changePercent ?? k.change ?? null) : null;
-          const deltaEval = evaluateKpiDelta(rawDelta, 'up');
+          const unifiedEval = evaluateUnifiedKpiStatus({
+            kpiId: k.id,
+            actualValue: hasData && typeof k.value === 'number' ? k.value : null,
+            favorableDirection: 'up',
+            prevPeriodDeltaPct: rawDelta,
+            comparisonMode: 'prev_period',
+          });
+          const deltaEval = unifiedEval.deltaEv;
           return {
             id: k.id,
             label: k.name,
@@ -558,6 +589,9 @@ export function buildPresentationSlides(
               ? `${deltaEval.arrow} ${deltaEval.textLabel}`
               : 'Audited',
             isFavorable: deltaEval.isFavorable,
+            statusLabel: hasData ? unifiedEval.statusLabel : null,
+            targetValue: hasData ? unifiedEval.targetValue : null,
+            attainmentPct: hasData ? unifiedEval.attainmentPct : null,
             measureType: inferMeasureType({
               columnName: k.name,
               aggregation:

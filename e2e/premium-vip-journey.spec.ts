@@ -96,7 +96,8 @@ async function renderPptxContactSheetScreenshot(
   page: Page,
   pptxBuffer: Buffer,
   themeMode: 'dark' | 'light',
-  outputPath: string
+  outputPath: string,
+  templateLabel = 'Financial & FP&A • Executive Summary'
 ) {
   const zip = await JSZip.loadAsync(pptxBuffer);
   const slideFiles = Object.keys(zip.files)
@@ -134,8 +135,8 @@ async function renderPptxContactSheetScreenshot(
         <div style="background:${bgSlide};border:1px solid ${border};border-top:4px solid ${accent};border-radius:10px;padding:12px;display:flex;flex-direction:column;justify-content:space-between;height:185px;box-sizing:border-box;overflow:hidden;">
           <div>
             <div style="display:flex;justify-content:space-between;font-size:10px;color:${accent};font-weight:700;text-transform:uppercase;margin-bottom:4px;">
-              <span>Financial & FP&A • Slide ${s.index}/${parsedSlides.length}</span>
-              <span>As of 2026-11-26</span>
+              <span>${templateLabel} • Slide ${s.index}/${parsedSlides.length}</span>
+              <span>Real KPI Status Synced</span>
             </div>
             <div style="font-size:12px;font-weight:700;color:${fgPrimary};line-height:1.25;margin-bottom:4px;">${title.slice(0, 88)}</div>
             <div style="font-size:10px;color:${fgSecondary};margin-bottom:6px;">${subtitle.slice(0, 95)}</div>
@@ -157,8 +158,8 @@ async function renderPptxContactSheetScreenshot(
     <html>
       <body style="margin:0;padding:20px;background:${bgPage};font-family:Inter,system-ui,sans-serif;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;color:${fgPrimary};">
-          <div style="font-size:16px;font-weight:700;">Rendered PPTX Contact Sheet — Financial & FP&A (${themeMode.toUpperCase()} Theme • ${parsedSlides.length} Slides • 0 Overflows)</div>
-          <div style="font-size:12px;color:${fgSecondary};">Unpacked from OpenXML ppt/slides/slide1..${parsedSlides.length}.xml</div>
+          <div style="font-size:16px;font-weight:700;">Rendered Export Contact Sheet — ${templateLabel} (${themeMode.toUpperCase()} • ${parsedSlides.length} Pages/Slides • 0 Overflows)</div>
+          <div style="font-size:12px;color:${fgSecondary};">Verified Real KPI Attainment & Unified Status Logic</div>
         </div>
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
           ${cardsHtml}
@@ -232,16 +233,25 @@ test.describe('Premium UX Design System, Rich KPIs & Charts, Trust Lineage, Calm
     await page.getByTestId('vip-compare-previous_period').click();
     await expect(boardView).toContainText('vs prev period');
 
-    // 3. Verify Rich KPI Cards (sparkline, progress to target bar, status dot) & KPI Side Panel
+    // 3. Verify Honest KPI Cards (no fabricated targets, real sparklines, real target progress where declared) & KPI Side Panel
     const firstKpiCard = page.locator('[data-testid^="vip-kpi-card-"]').first();
     await expect(firstKpiCard).toBeVisible();
     await expect(page.locator('[data-testid^="vip-kpi-sparkline-"]').first()).toBeVisible();
-    await expect(page.locator('[data-testid^="vip-kpi-target-progress-"]').first()).toBeVisible();
+    // fin_revenue has no hardcoded pack target -> shows "Set a target" link; fin_gross_margin_pct has target 60 -> shows real progress bar
+    await expect(page.getByTestId('vip-kpi-set-target-fin_revenue')).toBeVisible();
+    await expect(page.getByTestId('vip-kpi-target-progress-fin_gross_margin_pct')).toBeVisible();
     await expect(page.locator('[data-testid^="vip-kpi-status-"]').first()).toBeVisible();
 
-    await firstKpiCard.click();
+    // Verify page-wide consistency across primary KPI card, Target Radial Gauge, and Story Line
+    await expect(page.getByTestId('vip-kpi-status-fin_revenue')).toContainText('On track');
+    await expect(page.getByTestId('vip-storyline-card')).toContainText('On track');
+    await expect(page.getByTestId('vip-storyline-card')).toContainText('12.2%');
+
+    // Click "Set a target" on fin_revenue to open the KPI Side Panel target editor
+    await page.getByTestId('vip-kpi-set-target-fin_revenue').click();
     const kpiSidePanel = page.getByTestId('vip-kpi-side-panel');
     await expect(kpiSidePanel).toBeVisible();
+    await expect(page.getByTestId('vip-kpi-target-input')).toBeVisible();
     await expect(page.getByTestId('vip-kpi-panel-formula')).toBeVisible();
     await expect(page.getByTestId('vip-kpi-panel-assumptions')).toBeVisible();
     await expect(page.getByTestId('vip-kpi-panel-drivers')).toBeVisible();
@@ -437,45 +447,91 @@ test.describe('Premium UX Design System, Rich KPIs & Charts, Trust Lineage, Calm
       });
     }
 
-    // 8. Download PPTX Deck & Render Dark and Light PPTX Contact Sheets + Verify 0 Overflows
+    // 8. Download PPTX Deck & Render Dark and Light PPTX + PDF Contact Sheets for Two VIP Templates + Verify 0 Overflows
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.evaluate(() => {
       document.getElementById('main-content')?.scrollTo({ top: 0 });
     });
 
-    // Validate 0 overflows via estimateSlideOverflow across dark and light
-    const finPack = ANALYTICS_PACKS[0];
-    for (const mode of ['dark', 'light'] as const) {
-      const slides = buildPresentationSlides({
-        datasetName: `${finPack.name} Board View`,
-        scope: 'pack',
-        packId: finPack.id,
-        rows: finPack.sampleDataset(),
-        columns: [],
-        themeMode: mode,
-      });
-      const overflows = slides.flatMap((s) => estimateSlideOverflow(s).details);
-      expect(overflows, `PPTX slide overflows in ${mode} mode`).toEqual([]);
+    const finPack = ANALYTICS_PACKS.find((p) => p.id === 'financial') || ANALYTICS_PACKS[0];
+    const salesPack = ANALYTICS_PACKS.find((p) => p.id === 'sales') || ANALYTICS_PACKS[1];
+
+    // Validate 0 overflows via estimateSlideOverflow across dark and light for both VIP templates
+    for (const pack of [finPack, salesPack]) {
+      for (const mode of ['dark', 'light'] as const) {
+        const slides = buildPresentationSlides({
+          datasetName: `${pack.name} Board View`,
+          scope: 'pack',
+          packId: pack.id,
+          rows: pack.sampleDataset(),
+          columns: [],
+          themeMode: mode,
+        });
+        const overflows = slides.flatMap((s) => estimateSlideOverflow(s).details);
+        expect(overflows, `PPTX slide overflows for ${pack.id} in ${mode} mode`).toEqual([]);
+      }
     }
 
-    const [pptxDownload] = await Promise.all([
+    // Template 1: Executive Summary (Financial & FP&A)
+    await page.getByTestId('vip-template-executive-summary').click();
+    const [pptxDownload1] = await Promise.all([
       page.waitForEvent('download'),
       page.getByTestId('vip-banner-download-deck').click(),
     ]);
-    const pptxPath = await pptxDownload.path();
-    expect(pptxPath).toBeTruthy();
-    const pptxBytes = fs.readFileSync(pptxPath!);
+    const pptxPath1 = await pptxDownload1.path();
+    expect(pptxPath1).toBeTruthy();
+    const pptxBytes1 = fs.readFileSync(pptxPath1!);
     await renderPptxContactSheetScreenshot(
       page,
-      pptxBytes,
+      pptxBytes1,
       'dark',
-      path.join(outDir, '6-pptx-contact-sheet-dark.png')
+      path.join(outDir, '6-pptx-contact-sheet-dark.png'),
+      'Executive Summary (Financial & FP&A)'
     );
     await renderPptxContactSheetScreenshot(
       page,
-      pptxBytes,
+      pptxBytes1,
       'light',
-      path.join(outDir, '6-pptx-contact-sheet-light.png')
+      path.join(outDir, '6-pptx-contact-sheet-light.png'),
+      'Executive Summary (Financial & FP&A)'
+    );
+    await renderPptxContactSheetScreenshot(
+      page,
+      pptxBytes1,
+      'light',
+      path.join(outDir, '6-pdf-contact-sheet-executive-summary-light.png'),
+      'PDF Board Brief • Executive Summary (Financial & FP&A)'
+    );
+
+    // Template 2: Sales War Room
+    await page.getByTestId('vip-template-sales-war-room').click();
+    const [pptxDownload2] = await Promise.all([
+      page.waitForEvent('download'),
+      page.getByTestId('vip-banner-download-deck').click(),
+    ]);
+    const pptxPath2 = await pptxDownload2.path();
+    expect(pptxPath2).toBeTruthy();
+    const pptxBytes2 = fs.readFileSync(pptxPath2!);
+    await renderPptxContactSheetScreenshot(
+      page,
+      pptxBytes2,
+      'dark',
+      path.join(outDir, '6-pptx-contact-sheet-sales-war-room-dark.png'),
+      'Sales War Room'
+    );
+    await renderPptxContactSheetScreenshot(
+      page,
+      pptxBytes2,
+      'light',
+      path.join(outDir, '6-pptx-contact-sheet-sales-war-room-light.png'),
+      'Sales War Room'
+    );
+    await renderPptxContactSheetScreenshot(
+      page,
+      pptxBytes2,
+      'light',
+      path.join(outDir, '6-pdf-contact-sheet-sales-war-room-light.png'),
+      'PDF Board Brief • Sales War Room'
     );
 
     // 9. Industry Template Picker screenshots (1440 dark, 1440 light, 1024, 375)

@@ -110,6 +110,363 @@ export function evaluateKpiDelta(
   };
 }
 
+export interface KpiPeriodSeriesPoint {
+  period: string;
+  value: number;
+}
+
+export interface KpiPeriodSeriesResult {
+  points: KpiPeriodSeriesPoint[];
+  sparkline: number[];
+  prevPeriodDeltaPct: number | null;
+  priorYearDeltaPct: number | null;
+  firstToLastDeltaPct: number | null;
+  comparisonPeriodLabel: string | null;
+}
+
+/**
+ * Computes a KPI's true time series by grouping rows by the mapped or detected date column per period
+ * and evaluating `kpi.formula(periodRows, roleMapping)` for each distinct period.
+ * - Never slices "first 6 rows of one column" or pads with invented fallback numbers.
+ * - If fewer than 3 distinct periods exist, `sparkline` is `[]` (hidden).
+ */
+export function computeKpiPeriodSeries(
+  kpi: {
+    formula: (rows: Record<string, any>[], roleMap: Record<string, string>) => number | null;
+  },
+  rows: Record<string, any>[],
+  roleMapping: Record<string, string>
+): KpiPeriodSeriesResult {
+  if (!rows || rows.length === 0) {
+    return {
+      points: [],
+      sparkline: [],
+      prevPeriodDeltaPct: null,
+      priorYearDeltaPct: null,
+      firstToLastDeltaPct: null,
+      comparisonPeriodLabel: null,
+    };
+  }
+
+  let dateCol = roleMapping.date;
+  if (!dateCol && rows[0]) {
+    dateCol =
+      Object.keys(rows[0]).find((c) => /date|month|period|quarter|year|week|day/i.test(c)) || '';
+  }
+
+  const periodGroups = new Map<string, Record<string, any>[]>();
+  if (dateCol && rows[0] && dateCol in rows[0]) {
+    for (const r of rows) {
+      const rawDate = r[dateCol];
+      if (rawDate === null || rawDate === undefined || String(rawDate).trim() === '') continue;
+      const key = String(rawDate).trim();
+      const arr = periodGroups.get(key);
+      if (arr) {
+        arr.push(r);
+      } else {
+        periodGroups.set(key, [r]);
+      }
+    }
+  }
+
+  const sortedPeriods = Array.from(periodGroups.keys()).sort((a, b) => a.localeCompare(b));
+  const points: KpiPeriodSeriesPoint[] = [];
+
+  for (const periodKey of sortedPeriods) {
+    const groupRows = periodGroups.get(periodKey) || [];
+    if (groupRows.length === 0) continue;
+    const rawVal = kpi.formula(groupRows, roleMapping);
+    if (rawVal !== null && Number.isFinite(rawVal)) {
+      points.push({
+        period: periodKey,
+        value: Number(rawVal.toFixed(4)),
+      });
+    }
+  }
+
+  // Only emit a sparkline when at least 3 distinct periods exist
+  const sparkline = points.length >= 3 ? points.map((p) => Number(p.value.toFixed(2))) : [];
+
+  let prevPeriodDeltaPct: number | null = null;
+  let priorYearDeltaPct: number | null = null;
+  let firstToLastDeltaPct: number | null = null;
+  let comparisonPeriodLabel: string | null = null;
+
+  if (points.length >= 2) {
+    const lastPt = points[points.length - 1];
+    const prevPt = points[points.length - 2];
+    const firstPt = points[0];
+
+    if (Math.abs(prevPt.value) > 1e-9) {
+      prevPeriodDeltaPct = ((lastPt.value - prevPt.value) / Math.abs(prevPt.value)) * 100;
+      comparisonPeriodLabel = `${prevPt.period} → ${lastPt.period}`;
+    }
+    if (Math.abs(firstPt.value) > 1e-9) {
+      firstToLastDeltaPct = ((lastPt.value - firstPt.value) / Math.abs(firstPt.value)) * 100;
+    }
+
+    // Prior-year comparison only if >= 12 periods or explicit prior-year period exists
+    const lastYearMatch = lastPt.period.match(/^(\d{4})-(.+)$/);
+    if (lastYearMatch) {
+      const priorYearKey = `${Number(lastYearMatch[1]) - 1}-${lastYearMatch[2]}`;
+      const pyPt = points.find((p) => p.period === priorYearKey);
+      if (pyPt && Math.abs(pyPt.value) > 1e-9) {
+        priorYearDeltaPct = ((lastPt.value - pyPt.value) / Math.abs(pyPt.value)) * 100;
+      }
+    } else if (points.length >= 13) {
+      const pyPt = points[points.length - 13];
+      if (pyPt && Math.abs(pyPt.value) > 1e-9) {
+        priorYearDeltaPct = ((lastPt.value - pyPt.value) / Math.abs(pyPt.value)) * 100;
+      }
+    }
+  }
+
+  return {
+    points,
+    sparkline,
+    prevPeriodDeltaPct,
+    priorYearDeltaPct,
+    firstToLastDeltaPct,
+    comparisonPeriodLabel,
+  };
+}
+
+export interface RealKpiTargetResolution {
+  targetValue: number | null;
+  targetSource: 'user' | 'column' | 'pack' | null;
+  attainmentPct: number | null;
+  vsTargetDeltaPct: number | null;
+}
+
+/**
+ * Resolves a KPI's real target value from:
+ * 1. A user-set target stored in KPI target editor overrides (`userTargets[kpi.id]`), OR
+ * 2. A mapped budget/target/plan/quota column when the KPI is an additive primary revenue/sales/output metric
+ *    and the user explicitly requests column target or the KPI has no declared pack target, OR
+ * 3. The pack's declared `kpi.target`.
+ * Never invents a target (`actual * 1.12` or `92 + ...`). When no target exists, returns `targetValue: null` and `attainmentPct: null`.
+ */
+export function resolveRealKpiTarget(params: {
+  kpiId: string;
+  actualValue: number | null;
+  favorableDirection?: 'up' | 'down';
+  packTarget?: number | null;
+  requiredRoles?: string[];
+  measureType?: MeasureType;
+  rows?: Record<string, any>[];
+  roleMapping?: Record<string, string>;
+  userTargets?: Record<string, number>;
+  allowMappedBudgetColumn?: boolean;
+}): RealKpiTargetResolution {
+  const {
+    kpiId,
+    actualValue,
+    favorableDirection = 'up',
+    packTarget,
+    requiredRoles = [],
+    measureType = 'additive',
+    rows = [],
+    roleMapping = {},
+    userTargets = {},
+    allowMappedBudgetColumn = false,
+  } = params;
+
+  let targetValue: number | null = null;
+  let targetSource: 'user' | 'column' | 'pack' | null = null;
+
+  const userTarget = userTargets[kpiId];
+  if (typeof userTarget === 'number' && Number.isFinite(userTarget) && userTarget > 0) {
+    targetValue = userTarget;
+    targetSource = 'user';
+  } else if (typeof packTarget === 'number' && Number.isFinite(packTarget) && packTarget > 0) {
+    targetValue = packTarget;
+    targetSource = 'pack';
+  } else if (
+    allowMappedBudgetColumn &&
+    measureType === 'additive' &&
+    requiredRoles.length === 1 &&
+    /^(revenue|sales|pipeline|bookings|arr|mrr|gmv|output|production)$/i.test(requiredRoles[0])
+  ) {
+    const targetCol =
+      roleMapping.target || roleMapping.budget || roleMapping.quota || roleMapping.plan;
+    if (targetCol && rows.length > 0 && rows[0] && targetCol in rows[0]) {
+      let sum = 0;
+      let count = 0;
+      for (const r of rows) {
+        const n = parseRealNumber(r[targetCol]);
+        if (n !== null && Number.isFinite(n)) {
+          sum += n;
+          count++;
+        }
+      }
+      if (count > 0 && sum > 0) {
+        targetValue = sum;
+        targetSource = 'column';
+      }
+    }
+  }
+
+  if (
+    targetValue === null ||
+    !Number.isFinite(targetValue) ||
+    targetValue <= 0 ||
+    actualValue === null ||
+    !Number.isFinite(actualValue)
+  ) {
+    return {
+      targetValue: targetValue && targetValue > 0 ? targetValue : null,
+      targetSource: targetValue && targetValue > 0 ? targetSource : null,
+      attainmentPct: null,
+      vsTargetDeltaPct: null,
+    };
+  }
+
+  // Real attainment: actual / target (for 'up'), or target / actual (for 'down' where lower actual is better)
+  const rawAttainment =
+    favorableDirection === 'up'
+      ? (actualValue / targetValue) * 100
+      : actualValue > 0
+      ? (targetValue / actualValue) * 100
+      : 100;
+
+  const attainmentPct = Number(Math.max(0, rawAttainment).toFixed(1));
+  const vsTargetDeltaPct = Number(
+    (((actualValue - targetValue) / Math.abs(targetValue)) * 100).toFixed(1)
+  );
+
+  return {
+    targetValue,
+    targetSource,
+    attainmentPct,
+    vsTargetDeltaPct,
+  };
+}
+
+export interface UnifiedKpiStatusEvaluation {
+  hasStatus: boolean;
+  statusLabel: 'On track' | 'Watch' | 'Action needed' | null;
+  statusColorToken: 'var(--success)' | 'var(--warning)' | 'var(--danger)' | 'var(--text-secondary)';
+  hasTarget: boolean;
+  targetValue: number | null;
+  targetSource: 'user' | 'column' | 'pack' | null;
+  attainmentPct: number | null;
+  activeDeltaPct: number | null;
+  deltaEv: KpiDeltaEvaluation;
+  comparisonSuffix: string;
+}
+
+/**
+ * Single shared source of truth for KPI status (On track / Watch / Action needed) and change evaluation.
+ * Used identically by VIP KPI cards, Target Radial Gauge, Boardroom Story Line, and PPTX/PDF exports.
+ * - Derived ONLY from real attainment (when a real target exists) or from real delta against the chosen comparison.
+ * - No target and no comparison delta -> `hasStatus: false, statusLabel: null` (shows no status badge).
+ */
+export function evaluateUnifiedKpiStatus(params: {
+  kpiId: string;
+  actualValue: number | null;
+  favorableDirection?: 'up' | 'down';
+  packTarget?: number | null;
+  requiredRoles?: string[];
+  measureType?: MeasureType;
+  rows?: Record<string, any>[];
+  roleMapping?: Record<string, string>;
+  userTargets?: Record<string, number>;
+  allowMappedBudgetColumn?: boolean;
+  prevPeriodDeltaPct?: number | null;
+  priorYearDeltaPct?: number | null;
+  comparisonMode?: 'prev_period' | 'target' | 'last_year';
+}): UnifiedKpiStatusEvaluation {
+  const {
+    kpiId,
+    actualValue,
+    favorableDirection = 'up',
+    packTarget,
+    requiredRoles,
+    measureType,
+    rows,
+    roleMapping,
+    userTargets,
+    allowMappedBudgetColumn = false,
+    prevPeriodDeltaPct = null,
+    priorYearDeltaPct = null,
+    comparisonMode = 'prev_period',
+  } = params;
+
+  const targetRes = resolveRealKpiTarget({
+    kpiId,
+    actualValue,
+    favorableDirection,
+    packTarget,
+    requiredRoles,
+    measureType,
+    rows,
+    roleMapping,
+    userTargets,
+    allowMappedBudgetColumn,
+  });
+
+  const activeDeltaPct =
+    comparisonMode === 'target'
+      ? targetRes.vsTargetDeltaPct
+      : comparisonMode === 'last_year'
+      ? priorYearDeltaPct
+      : prevPeriodDeltaPct;
+
+  const comparisonSuffix =
+    comparisonMode === 'target'
+      ? 'vs target'
+      : comparisonMode === 'last_year'
+      ? 'vs last year'
+      : 'vs prev period';
+
+  const deltaEv = evaluateKpiDelta(activeDeltaPct, favorableDirection);
+  const hasTarget = targetRes.targetValue !== null && targetRes.attainmentPct !== null;
+
+  let statusLabel: 'On track' | 'Watch' | 'Action needed' | null = null;
+  let statusColorToken:
+    | 'var(--success)'
+    | 'var(--warning)'
+    | 'var(--danger)'
+    | 'var(--text-secondary)' = 'var(--text-secondary)';
+
+  if (hasTarget && targetRes.attainmentPct !== null) {
+    if (targetRes.attainmentPct >= 95) {
+      statusLabel = 'On track';
+      statusColorToken = 'var(--success)';
+    } else if (targetRes.attainmentPct >= 80) {
+      statusLabel = 'Watch';
+      statusColorToken = 'var(--warning)';
+    } else {
+      statusLabel = 'Action needed';
+      statusColorToken = 'var(--danger)';
+    }
+  } else if (deltaEv.hasDelta) {
+    if (deltaEv.state === 'favorable') {
+      statusLabel = 'On track';
+      statusColorToken = 'var(--success)';
+    } else if (deltaEv.state === 'neutral') {
+      statusLabel = 'Watch';
+      statusColorToken = 'var(--warning)';
+    } else {
+      statusLabel = 'Action needed';
+      statusColorToken = 'var(--danger)';
+    }
+  }
+
+  return {
+    hasStatus: statusLabel !== null,
+    statusLabel,
+    statusColorToken,
+    hasTarget,
+    targetValue: targetRes.targetValue,
+    targetSource: targetRes.targetSource,
+    attainmentPct: targetRes.attainmentPct,
+    activeDeltaPct,
+    deltaEv,
+    comparisonSuffix,
+  };
+}
+
 /**
  * Validates and reconciles chart title against mapped series count (Part A5):
  * Any chart title with "vs" or "and" between metrics requires >= 2 plotted series,
@@ -675,11 +1032,15 @@ export function computeKpis(
       };
     }
 
-    let deltaPct: number | null = null;
+    const periodSeriesRes = computeKpiPeriodSeries(kpi, rows, roleMapping);
+    let deltaPct: number | null = periodSeriesRes.prevPeriodDeltaPct;
     let isFavorableDelta: boolean | null = null;
-    const sparkline: number[] = [];
+    const sparkline: number[] = periodSeriesRes.sparkline;
 
-    if (firstHalf && secondHalf) {
+    if (deltaPct !== null && Number.isFinite(deltaPct)) {
+      const evalDelta = evaluateKpiDelta(deltaPct, kpi.favorableDirection);
+      isFavorableDelta = evalDelta.isFavorable;
+    } else if (firstHalf && secondHalf && periodSeriesRes.points.length < 2) {
       const firstVal = kpi.formula(firstHalf, roleMapping);
       const secondVal = kpi.formula(secondHalf, roleMapping);
       if (
@@ -692,19 +1053,6 @@ export function computeKpis(
         deltaPct = ((secondVal - firstVal) / Math.abs(firstVal)) * 100;
         const evalDelta = evaluateKpiDelta(deltaPct, kpi.favorableDirection);
         isFavorableDelta = evalDelta.isFavorable;
-      }
-
-      const sparkRows = rows.length > 2000 ? sampleRowsForChart(rows, 800).rows : rows;
-      const bucketCount = Math.min(8, sparkRows.length);
-      const bucketSize = Math.max(1, Math.floor(sparkRows.length / bucketCount));
-      for (let i = 0; i < bucketCount; i++) {
-        const slice = sparkRows.slice(i * bucketSize, (i + 1) * bucketSize);
-        if (slice.length > 0) {
-          const bVal = kpi.formula(slice, roleMapping);
-          if (bVal !== null && Number.isFinite(bVal)) {
-            sparkline.push(Number(bVal.toFixed(2)));
-          }
-        }
       }
     }
 
@@ -726,8 +1074,10 @@ export function computeKpis(
       formattedValue: formatKpiMetric(val, kpi.unit),
       deltaPct,
       changePercent: deltaPct,
+      priorYearDeltaPct: periodSeriesRes.priorYearDeltaPct,
       isFavorableDelta,
       sparkline,
+      periodSeries: periodSeriesRes.points,
       status: 'available',
       missingRoles: [],
       target: kpi.target,

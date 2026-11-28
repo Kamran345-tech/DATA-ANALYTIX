@@ -45,6 +45,9 @@ import {
   mapRoles,
   computeKpis,
   evaluateKpiDelta,
+  resolveRealKpiTarget,
+  evaluateUnifiedKpiStatus,
+  formatKpiMetric,
 } from '../../analytics';
 import {
   ChartStudioVisualType,
@@ -290,6 +293,33 @@ export const VipBoardroomDashboard: React.FC<VipBoardroomDashboardProps> = ({
   const [comparisonMode, setComparisonMode] = useState<PeriodComparisonMode>('previous_period');
   const [selectedKpiId, setSelectedKpiId] = useState<string | null>(null);
   const [showLineageModal, setShowLineageModal] = useState(false);
+  const [userTargets, setUserTargets] = useState<Record<string, number>>(() => {
+    try {
+      const raw = localStorage.getItem('dataanalytix_kpi_targets_v1');
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  });
+  const [targetInputDraft, setTargetInputDraft] = useState<string>('');
+
+  const handleSaveUserTarget = (kpiId: string, rawVal: string) => {
+    const num = Number(String(rawVal).replace(/[^0-9.-]/g, ''));
+    setUserTargets((prev) => {
+      const next = { ...prev };
+      if (Number.isFinite(num) && num > 0) {
+        next[kpiId] = num;
+      } else {
+        delete next[kpiId];
+      }
+      try {
+        localStorage.setItem('dataanalytix_kpi_targets_v1', JSON.stringify(next));
+      } catch {
+        // ignore storage quota errors
+      }
+      return next;
+    });
+  };
 
   const boardRef = useRef<HTMLDivElement>(null);
   const sectionRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -330,6 +360,27 @@ export const VipBoardroomDashboard: React.FC<VipBoardroomDashboardProps> = ({
     () => computeKpis(activePack, activeRows, roleMap),
     [activePack, activeRows, roleMap]
   );
+
+  useEffect(() => {
+    if (!selectedKpiId) return;
+    const kpi = computedKpis.find((k) => k.id === selectedKpiId);
+    const def = activePack.kpis.find((d) => d.id === selectedKpiId);
+    const targetRes = resolveRealKpiTarget({
+      kpiId: selectedKpiId,
+      actualValue: kpi?.value ?? null,
+      favorableDirection: def?.favorableDirection || 'up',
+      packTarget: def?.target,
+      requiredRoles: def?.requiredRoles,
+      measureType: def?.measureType,
+      rows: activeRows,
+      roleMapping: roleMap,
+      userTargets,
+      allowMappedBudgetColumn: false,
+    });
+    setTargetInputDraft(
+      targetRes.targetValue !== null ? String(targetRes.targetValue) : ''
+    );
+  }, [selectedKpiId, computedKpis, activePack, activeRows, roleMap, userTargets]);
 
   const { categoryCol, dateCol, primaryMetricCol, secondaryMetricCol } = useMemo(() => {
     const cols = activeRows.length > 0 ? Object.keys(activeRows[0]) : [];
@@ -377,15 +428,57 @@ export const VipBoardroomDashboard: React.FC<VipBoardroomDashboardProps> = ({
     return subset.length > 0 ? subset : activeRows;
   }, [activeRows, crossFilterCategory, categoryCol, dateCol]);
 
+  // Primary KPI unified status & target resolution (shared across Hero KPI card, Target Gauge, and Story Line)
+  const primaryHeroKpiEval = useMemo(() => {
+    const kpi = computedKpis[0];
+    if (!kpi) return null;
+    const def = activePack.kpis.find((d) => d.id === kpi.id);
+    const modeMap =
+      comparisonMode === 'target'
+        ? 'target'
+        : comparisonMode === 'last_year'
+        ? 'last_year'
+        : 'prev_period';
+    return evaluateUnifiedKpiStatus({
+      kpiId: kpi.id,
+      actualValue: kpi.value,
+      favorableDirection: def?.favorableDirection || 'up',
+      packTarget: def?.target,
+      requiredRoles: def?.requiredRoles,
+      measureType: def?.measureType,
+      rows: filteredRows,
+      roleMapping: roleMap,
+      userTargets,
+      allowMappedBudgetColumn: false,
+      prevPeriodDeltaPct: kpi.deltaPct,
+      priorYearDeltaPct: kpi.priorYearDeltaPct ?? null,
+      comparisonMode: modeMap,
+    });
+  }, [computedKpis, activePack, comparisonMode, filteredRows, roleMap, userTargets]);
+
   const narrative = useMemo(
     () =>
       generateSmartNarrative(
         filteredRows,
         categoryCol,
         primaryMetricCol,
-        activePack.name
+        activePack.name,
+        {
+          dateCol,
+          favorableDirection: activePack.kpis[0]?.favorableDirection || 'up',
+          targetValue: primaryHeroKpiEval?.targetValue ?? null,
+          attainmentPct: primaryHeroKpiEval?.attainmentPct ?? null,
+          statusLabel: primaryHeroKpiEval?.statusLabel ?? null,
+        }
       ),
-    [filteredRows, categoryCol, primaryMetricCol, activePack.name]
+    [
+      filteredRows,
+      categoryCol,
+      primaryMetricCol,
+      activePack,
+      dateCol,
+      primaryHeroKpiEval,
+    ]
   );
 
   const trendStats = useMemo(() => {
@@ -1282,66 +1375,61 @@ export const VipBoardroomDashboard: React.FC<VipBoardroomDashboardProps> = ({
         aria-label="Key numbers"
         title="Hero Scorecard Metrics"
       >
-        {computedKpis.slice(0, 4).map((kpi, kpiIdx) => {
+        {computedKpis.slice(0, 4).map((kpi) => {
           const def = activePack.kpis.find((d) => d.id === kpi.id);
           const goodDir = def?.favorableDirection || 'up';
 
-          // Mode-adjusted comparison delta
-          const baseDelta = Number.isFinite(kpi.deltaPct) ? (kpi.deltaPct as number) : 4.2;
-          const activeDeltaPct =
+          const modeMap =
             comparisonMode === 'target'
-              ? Number((baseDelta * 0.65 - 1.2).toFixed(1))
+              ? 'target'
               : comparisonMode === 'last_year'
-              ? Number((baseDelta * 1.45 + 2.1).toFixed(1))
-              : baseDelta;
-          const deltaEv = evaluateKpiDelta(activeDeltaPct, goodDir);
-          const comparisonSuffix =
-            comparisonMode === 'target'
-              ? 'vs target'
-              : comparisonMode === 'last_year'
-              ? 'vs last year'
-              : 'vs prev period';
+              ? 'last_year'
+              : 'prev_period';
 
-          const formulaTooltip = `Formula: ${def?.formula || def?.source || 'Verified metric'} · ${
+          const unifiedEval = evaluateUnifiedKpiStatus({
+            kpiId: kpi.id,
+            actualValue: kpi.value,
+            favorableDirection: goodDir,
+            packTarget: def?.target,
+            requiredRoles: def?.requiredRoles,
+            measureType: def?.measureType,
+            rows: filteredRows,
+            roleMapping: roleMap,
+            userTargets,
+            allowMappedBudgetColumn: false,
+            prevPeriodDeltaPct: kpi.deltaPct,
+            priorYearDeltaPct: kpi.priorYearDeltaPct ?? null,
+            comparisonMode: modeMap,
+          });
+
+          const { deltaEv, comparisonSuffix, hasTarget, attainmentPct, targetValue } =
+            unifiedEval;
+
+          const formulaTooltip = `Formula: ${def?.formulaText || def?.source || 'Verified metric'} · ${
             goodDir === 'down' ? 'Lower is better' : 'Higher is better'
           }`;
 
-          // Extract 6-point period series for inline sparkline
-          const sourceColName =
-            (def?.source && roleMap[def.source]) || primaryMetricCol;
-          const rawSeries = activeRows.slice(0, 6).map((r, rIdx) => {
-            const v = Number(String(r[sourceColName] ?? '0').replace(/[^0-9.-]/g, ''));
-            return Number.isFinite(v) && v !== 0 ? v : 100 + ((kpiIdx * 19 + rIdx * 13) % 45);
-          });
-          while (rawSeries.length < 6) {
-            rawSeries.push((rawSeries[rawSeries.length - 1] || 100) * 1.04);
+          // Sparkline built ONLY from the KPI's own per-period time series (group by date column per period using that KPI's formula).
+          // If fewer than 3 distinct periods exist, kpi.sparkline is [] and the sparkline is hidden.
+          const realSeries = Array.isArray(kpi.sparkline) ? kpi.sparkline : [];
+          const hasSparkline = realSeries.length >= 3;
+
+          let sparkPolyline = '';
+          let lastPt = { sx: 80, sy: 12 };
+          if (hasSparkline) {
+            const sMin = Math.min(...realSeries);
+            const sMax = Math.max(...realSeries);
+            const sSpan = sMax - sMin;
+            const sparkCoords = realSeries.map((val, sIdx) => {
+              const sx = 4 + (sIdx / Math.max(1, realSeries.length - 1)) * 76;
+              const sy = sSpan > 1e-9 ? 22 - ((val - sMin) / sSpan) * 16 : 14;
+              return { sx, sy };
+            });
+            sparkPolyline = sparkCoords
+              .map((pt, i) => `${i === 0 ? 'M' : 'L'} ${pt.sx.toFixed(1)} ${pt.sy.toFixed(1)}`)
+              .join(' ');
+            lastPt = sparkCoords[sparkCoords.length - 1] || { sx: 80, sy: 12 };
           }
-          const sMin = Math.min(...rawSeries);
-          const sMax = Math.max(...rawSeries);
-          const sSpan = Math.max(1, sMax - sMin);
-          const sparkCoords = rawSeries.map((val, sIdx) => {
-            const sx = 4 + (sIdx / Math.max(1, rawSeries.length - 1)) * 76;
-            const sy = 22 - ((val - sMin) / sSpan) * 16;
-            return { sx, sy };
-          });
-          const sparkPolyline = sparkCoords
-            .map((pt, i) => `${i === 0 ? 'M' : 'L'} ${pt.sx.toFixed(1)} ${pt.sy.toFixed(1)}`)
-            .join(' ');
-          const lastPt = sparkCoords[sparkCoords.length - 1] || { sx: 80, sy: 12 };
-
-          // Progress to target attainment %
-          const targetAttainmentPct = Math.min(
-            100,
-            Math.max(68, Math.round(92 + (deltaEv.isFavorable ? 4 : -9) - kpiIdx * 2))
-          );
-
-          // Status dot & label (semantic green / amber / red only)
-          const statusInfo =
-            deltaEv.isFavorable && targetAttainmentPct >= 88
-              ? { label: 'On track', color: 'var(--success)' }
-              : targetAttainmentPct >= 78
-              ? { label: 'Watch', color: 'var(--warning)' }
-              : { label: 'Action needed', color: 'var(--danger)' };
 
           const isSelectedCard = selectedKpiId === kpi.id;
 
@@ -1358,14 +1446,16 @@ export const VipBoardroomDashboard: React.FC<VipBoardroomDashboardProps> = ({
                   setSelectedKpiId(kpi.id);
                 }
               }}
-              title={`${kpi.label}: ${kpi.formattedValue} (${deltaEv.textLabel} ${comparisonSuffix}) · ${formulaTooltip} · Click to inspect formula, assumptions, and drivers`}
+              title={`${kpi.label}: ${kpi.formattedValue}${
+                deltaEv.hasDelta ? ` (${deltaEv.textLabel} ${comparisonSuffix})` : ''
+              } · ${formulaTooltip} · Click to inspect formula, assumptions, and drivers`}
               className={`rounded-xl border bg-[var(--bg-card)] p-4 flex flex-col justify-between gap-2.5 cursor-pointer transition-all duration-150 hover:border-[var(--accent)] ${
                 isSelectedCard
                   ? 'border-[var(--accent)] ring-1 ring-[var(--accent)]'
                   : 'border-[var(--border-subtle)]'
               }`}
             >
-              {/* Top Row: KPI Label + Semantic Status Dot & Label */}
+              {/* Top Row: KPI Label + Semantic Status Dot & Label (only when real target or real comparison delta exists) */}
               <div className="flex items-start justify-between gap-2">
                 <span
                   className="text-xs font-semibold uppercase tracking-wide text-[var(--text-secondary)] break-words"
@@ -1373,22 +1463,24 @@ export const VipBoardroomDashboard: React.FC<VipBoardroomDashboardProps> = ({
                 >
                   {kpi.label}
                 </span>
-                <span
-                  data-testid={`vip-kpi-status-${kpi.id}`}
-                  title={`Status: ${statusInfo.label} (${
-                    goodDir === 'down' ? 'Lower is better' : 'Higher is better'
-                  })`}
-                  className="inline-flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded bg-[var(--bg-elevated)] text-[var(--text-primary)] border border-[var(--border-subtle)] shrink-0"
-                >
+                {unifiedEval.hasStatus && unifiedEval.statusLabel && (
                   <span
-                    className="w-1.5 h-1.5 rounded-full shrink-0"
-                    style={{ background: statusInfo.color }}
-                  />
-                  <span>{statusInfo.label}</span>
-                </span>
+                    data-testid={`vip-kpi-status-${kpi.id}`}
+                    title={`Status: ${unifiedEval.statusLabel} (${
+                      goodDir === 'down' ? 'Lower is better' : 'Higher is better'
+                    })`}
+                    className="inline-flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded bg-[var(--bg-elevated)] text-[var(--text-primary)] border border-[var(--border-subtle)] shrink-0"
+                  >
+                    <span
+                      className="w-1.5 h-1.5 rounded-full shrink-0"
+                      style={{ background: unifiedEval.statusColorToken }}
+                    />
+                    <span>{unifiedEval.statusLabel}</span>
+                  </span>
+                )}
               </div>
 
-              {/* Middle Row: Tabular Figure + Inline Sparkline */}
+              {/* Middle Row: Tabular Figure + Inline Sparkline (hidden if < 3 periods) */}
               <div className="flex items-end justify-between gap-2">
                 <div
                   title={String(kpi.formattedValue)}
@@ -1397,68 +1489,105 @@ export const VipBoardroomDashboard: React.FC<VipBoardroomDashboardProps> = ({
                   {kpi.formattedValue}
                 </div>
 
-                <svg
-                  viewBox="0 0 84 26"
-                  className="w-20 h-6 shrink-0 overflow-visible"
-                  data-testid={`vip-kpi-sparkline-${kpi.id}`}
-                  aria-label={`${kpi.label} 6-period trend sparkline`}
-                >
-                  <path
-                    d={sparkPolyline}
-                    fill="none"
-                    stroke={deltaEv.colorToken}
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <circle
-                    cx={lastPt.sx}
-                    cy={lastPt.sy}
-                    r="2.4"
-                    fill={deltaEv.colorToken}
-                  />
-                </svg>
+                {hasSparkline && (
+                  <svg
+                    viewBox="0 0 84 26"
+                    className="w-20 h-6 shrink-0 overflow-visible"
+                    data-testid={`vip-kpi-sparkline-${kpi.id}`}
+                    aria-label={`${kpi.label} ${realSeries.length}-period trend sparkline`}
+                  >
+                    <path
+                      d={sparkPolyline}
+                      fill="none"
+                      stroke={deltaEv.colorToken}
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <circle
+                      cx={lastPt.sx}
+                      cy={lastPt.sy}
+                      r="2.4"
+                      fill={deltaEv.colorToken}
+                    />
+                  </svg>
+                )}
               </div>
 
-              {/* Progress to Target Bar */}
-              <div
-                className="space-y-1"
-                data-testid={`vip-kpi-target-progress-${kpi.id}`}
-                title={`${targetAttainmentPct}% of target benchmark`}
-              >
-                <div className="flex items-center justify-between text-[10px] text-[var(--text-secondary)]">
-                  <span>Progress to target</span>
-                  <span className="font-mono font-semibold text-[var(--text-primary)]">
-                    {targetAttainmentPct}%
-                  </span>
+              {/* Progress to Target Bar (ONLY when a real target exists; otherwise show "Set a target" link) */}
+              {hasTarget && attainmentPct !== null && targetValue !== null ? (
+                <div
+                  className="space-y-1"
+                  data-testid={`vip-kpi-target-progress-${kpi.id}`}
+                  title={`${attainmentPct.toFixed(1)}% of target (${formatKpiMetric(
+                    targetValue,
+                    kpi.unit
+                  )})`}
+                >
+                  <div className="flex items-center justify-between text-[10px] text-[var(--text-secondary)]">
+                    <span>
+                      Target ({formatKpiMetric(targetValue, kpi.unit)})
+                    </span>
+                    <span className="font-mono font-semibold text-[var(--text-primary)]">
+                      {attainmentPct.toFixed(1)}%
+                    </span>
+                  </div>
+                  <div className="w-full h-1.5 rounded-full bg-[var(--bg-elevated)] overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all"
+                      style={{
+                        width: `${Math.min(100, attainmentPct)}%`,
+                        background: unifiedEval.statusColorToken,
+                      }}
+                    />
+                  </div>
                 </div>
-                <div className="w-full h-1.5 rounded-full bg-[var(--bg-elevated)] overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all"
-                    style={{
-                      width: `${targetAttainmentPct}%`,
-                      background: statusInfo.color,
+              ) : (
+                <div className="flex items-center justify-between text-[11px] pt-0.5">
+                  <span className="text-[var(--text-secondary)]">No target set</span>
+                  <button
+                    type="button"
+                    data-testid={`vip-kpi-set-target-${kpi.id}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedKpiId(kpi.id);
                     }}
-                  />
+                    className="text-[11px] font-medium text-[var(--accent)] hover:underline cursor-pointer"
+                  >
+                    Set a target
+                  </button>
                 </div>
-              </div>
+              )}
 
               {/* Footer: Change vs Comparison Period + Formula / Inspect Badge */}
               <div className="flex items-center justify-between text-xs pt-1.5 border-t border-[var(--border-subtle)]/60 gap-2">
-                <span
-                  className="font-semibold flex items-center gap-1 font-mono tabular-nums"
-                  style={{ color: deltaEv.colorToken }}
-                  data-testid={`vip-kpi-dir-arrow-${kpi.id}`}
-                  title={`${deltaEv.arrow} ${deltaEv.textLabel} ${comparisonSuffix} (${
-                    goodDir === 'down' ? 'Lower is better' : 'Higher is better'
-                  })`}
-                >
-                  <span>{deltaEv.arrow}</span>
-                  <span>{deltaEv.textLabel}</span>
-                  <span className="text-[10px] font-sans font-normal text-[var(--text-secondary)]">
-                    {comparisonSuffix}
+                {deltaEv.hasDelta ? (
+                  <span
+                    className="font-semibold flex items-center gap-1 font-mono tabular-nums"
+                    style={{ color: deltaEv.colorToken }}
+                    data-testid={`vip-kpi-dir-arrow-${kpi.id}`}
+                    title={`${deltaEv.arrow} ${deltaEv.textLabel} ${comparisonSuffix} (${
+                      goodDir === 'down' ? 'Lower is better' : 'Higher is better'
+                    })`}
+                  >
+                    <span>{deltaEv.arrow}</span>
+                    <span>{deltaEv.textLabel}</span>
+                    <span className="text-[10px] font-sans font-normal text-[var(--text-secondary)]">
+                      {comparisonSuffix}
+                    </span>
                   </span>
-                </span>
+                ) : (
+                  <span
+                    className="text-[11px] text-[var(--text-secondary)]"
+                    data-testid={`vip-kpi-dir-arrow-${kpi.id}`}
+                  >
+                    {comparisonMode === 'target'
+                      ? 'Set target to compare'
+                      : comparisonMode === 'last_year'
+                      ? 'No prior-year period'
+                      : 'Single period'}
+                  </span>
+                )}
                 <span
                   className="text-[11px] text-[var(--text-secondary)] hover:text-[var(--accent)] inline-flex items-center gap-1 shrink-0"
                   title={formulaTooltip}
@@ -1553,12 +1682,20 @@ export const VipBoardroomDashboard: React.FC<VipBoardroomDashboardProps> = ({
         </div>
 
         <div className="lg:col-span-4 flex flex-col justify-between gap-4">
-          {/* Target Radial Gauge */}
+          {/* Target Radial Gauge (shares exact status, direction, and real target with primary Hero KPI card) */}
           <ChartStudioVisual
             visualType="gauge"
             rows={filteredRows}
             categoryCol={categoryCol}
             metricCol={primaryMetricCol}
+            targetValue={primaryHeroKpiEval?.targetValue ?? undefined}
+            favorableDirection={activePack.kpis[0]?.favorableDirection || 'up'}
+            prevPeriodDeltaPct={computedKpis[0]?.deltaPct ?? null}
+            onSetTargetRequest={() => {
+              if (computedKpis[0]?.id) {
+                setSelectedKpiId(computedKpis[0].id);
+              }
+            }}
             title={`${primaryMetricCol} Target Gauge`}
             height={160}
           />
@@ -1817,7 +1954,7 @@ export const VipBoardroomDashboard: React.FC<VipBoardroomDashboardProps> = ({
         </div>
       )}
 
-      {/* Deliverable 2: KPI Side Panel (Formula, Assumptions, Period Trend, Top Segment Drivers) */}
+      {/* Deliverable 2: KPI Side Panel (Formula, Assumptions, Target Editor, Period Trend, Top Segment Drivers) */}
       {selectedKpiId &&
         (() => {
           const activeKpi =
@@ -1825,7 +1962,28 @@ export const VipBoardroomDashboard: React.FC<VipBoardroomDashboardProps> = ({
           if (!activeKpi) return null;
           const def = activePack.kpis.find((d) => d.id === activeKpi.id) || activePack.kpis[0];
           const goodDir = def?.favorableDirection || 'up';
-          const deltaEv = evaluateKpiDelta(activeKpi.deltaPct, goodDir);
+          const modeMap =
+            comparisonMode === 'target'
+              ? 'target'
+              : comparisonMode === 'last_year'
+              ? 'last_year'
+              : 'prev_period';
+          const panelEval = evaluateUnifiedKpiStatus({
+            kpiId: activeKpi.id,
+            actualValue: activeKpi.value,
+            favorableDirection: goodDir,
+            packTarget: def?.target,
+            requiredRoles: def?.requiredRoles,
+            measureType: def?.measureType,
+            rows: filteredRows,
+            roleMapping: roleMap,
+            userTargets,
+            allowMappedBudgetColumn: false,
+            prevPeriodDeltaPct: activeKpi.deltaPct,
+            priorYearDeltaPct: activeKpi.priorYearDeltaPct ?? null,
+            comparisonMode: modeMap,
+          });
+          const { deltaEv, attainmentPct, targetValue, targetSource } = panelEval;
           const assumptionInfo: { assumption: string; reviewQuestion?: string } = def
             ? getKpiAssumptionDetails(activePack, def)
             : {
@@ -1840,12 +1998,13 @@ export const VipBoardroomDashboard: React.FC<VipBoardroomDashboardProps> = ({
             def?.source ||
             `SUM(${sourceColName})`;
 
-          const periodPoints = activeRows.slice(0, 6).map((r, idx) => ({
-            period: String(r[dateCol] ?? `P${idx + 1}`),
-            val:
-              Number(String(r[sourceColName] ?? '0').replace(/[^0-9.-]/g, '')) ||
-              100 + idx * 12,
-          }));
+          const periodPoints =
+            activeKpi.periodSeries && activeKpi.periodSeries.length > 0
+              ? activeKpi.periodSeries.map((p) => ({
+                  period: p.period,
+                  val: p.value,
+                }))
+              : [];
           const maxPeriodVal = Math.max(...periodPoints.map((p) => Math.abs(p.val)), 1);
 
           return (
@@ -1891,24 +2050,33 @@ export const VipBoardroomDashboard: React.FC<VipBoardroomDashboardProps> = ({
                       <span className="text-3xl font-bold font-mono tabular-nums text-[var(--text-primary)]">
                         {activeKpi.formattedValue}
                       </span>
-                      <span
-                        className="text-xs font-semibold font-mono"
-                        style={{ color: deltaEv.colorToken }}
-                      >
-                        {deltaEv.arrow} {deltaEv.textLabel}
-                      </span>
+                      {deltaEv.hasDelta && (
+                        <span
+                          className="text-xs font-semibold font-mono"
+                          style={{ color: deltaEv.colorToken }}
+                        >
+                          {deltaEv.arrow} {deltaEv.textLabel}
+                        </span>
+                      )}
                     </div>
                     <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[var(--border-subtle)]/70 text-[11px]">
                       <div>
                         <div className="text-[var(--text-secondary)]">vs Prev Period</div>
                         <div className="font-mono font-semibold text-[var(--text-primary)]">
-                          {deltaEv.textLabel}
+                          {activeKpi.deltaPct !== null
+                            ? evaluateKpiDelta(activeKpi.deltaPct, goodDir).textLabel
+                            : 'N/A'}
                         </div>
                       </div>
                       <div>
                         <div className="text-[var(--text-secondary)]">vs Target</div>
-                        <div className="font-mono font-semibold text-[var(--success)]">
-                          94.0% attained
+                        <div
+                          className="font-mono font-semibold"
+                          style={{ color: panelEval.statusColorToken }}
+                        >
+                          {attainmentPct !== null
+                            ? `${attainmentPct.toFixed(1)}% attained`
+                            : 'No target set'}
                         </div>
                       </div>
                       <div>
@@ -1917,6 +2085,57 @@ export const VipBoardroomDashboard: React.FC<VipBoardroomDashboardProps> = ({
                           {goodDir === 'down' ? 'Lower is better' : 'Higher is better'}
                         </div>
                       </div>
+                    </div>
+                  </div>
+
+                  {/* Real KPI Target Editor */}
+                  <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/40 p-3.5 space-y-2 text-xs">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="font-semibold text-[var(--text-primary)]">
+                        Target Benchmark
+                      </div>
+                      {targetSource && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--bg-card)] border border-[var(--border-subtle)] text-[var(--text-secondary)]">
+                          Source: {targetSource === 'user' ? 'User target' : targetSource === 'column' ? 'Mapped budget column' : 'Pack benchmark'}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        step="any"
+                        data-testid="vip-kpi-target-input"
+                        aria-label={`Target value for ${activeKpi.label}`}
+                        value={targetInputDraft}
+                        onChange={(e) => setTargetInputDraft(e.target.value)}
+                        placeholder={
+                          targetValue !== null
+                            ? String(targetValue)
+                            : 'Enter target number...'
+                        }
+                        className="flex-1 px-2.5 py-1.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-card)] text-xs font-mono text-[var(--text-primary)]"
+                      />
+                      <button
+                        type="button"
+                        data-testid="vip-kpi-target-save"
+                        onClick={() => handleSaveUserTarget(activeKpi.id, targetInputDraft)}
+                        className="px-3 py-1.5 rounded-lg bg-[var(--accent)] text-[var(--text-on-accent)] text-xs font-semibold cursor-pointer"
+                      >
+                        Save target
+                      </button>
+                      {userTargets[activeKpi.id] !== undefined && (
+                        <button
+                          type="button"
+                          data-testid="vip-kpi-target-clear"
+                          onClick={() => {
+                            handleSaveUserTarget(activeKpi.id, '');
+                            setTargetInputDraft('');
+                          }}
+                          className="px-2.5 py-1.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-card)] text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] cursor-pointer"
+                        >
+                          Clear
+                        </button>
+                      )}
                     </div>
                   </div>
 
@@ -1962,38 +2181,40 @@ export const VipBoardroomDashboard: React.FC<VipBoardroomDashboardProps> = ({
                   </div>
 
                   {/* Period Trend Breakdown */}
-                  <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/40 p-3.5 space-y-2 text-xs">
-                    <div className="font-semibold text-[var(--text-primary)]">
-                      Period Trend ({dateCol})
-                    </div>
-                    <div className="space-y-1.5">
-                      {periodPoints.map((pt, i) => {
-                        const wPct = Math.min(
-                          100,
-                          Math.max(8, (Math.abs(pt.val) / maxPeriodVal) * 100)
-                        );
-                        return (
-                          <div key={`${pt.period}-${i}`} className="grid grid-cols-12 items-center gap-2">
-                            <span
-                              className="col-span-4 font-mono text-[11px] text-[var(--text-secondary)] truncate"
-                              title={pt.period}
-                            >
-                              {pt.period}
-                            </span>
-                            <div className="col-span-5 h-2 rounded-full bg-[var(--bg-card)] overflow-hidden">
-                              <div
-                                className="h-full rounded-full bg-[var(--chart-1)]"
-                                style={{ width: `${wPct}%` }}
-                              />
+                  {periodPoints.length > 0 && (
+                    <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/40 p-3.5 space-y-2 text-xs">
+                      <div className="font-semibold text-[var(--text-primary)]">
+                        Period Trend ({dateCol})
+                      </div>
+                      <div className="space-y-1.5">
+                        {periodPoints.map((pt, i) => {
+                          const wPct = Math.min(
+                            100,
+                            Math.max(8, (Math.abs(pt.val) / maxPeriodVal) * 100)
+                          );
+                          return (
+                            <div key={`${pt.period}-${i}`} className="grid grid-cols-12 items-center gap-2">
+                              <span
+                                className="col-span-4 font-mono text-[11px] text-[var(--text-secondary)] truncate"
+                                title={pt.period}
+                              >
+                                {pt.period}
+                              </span>
+                              <div className="col-span-5 h-2 rounded-full bg-[var(--bg-card)] overflow-hidden">
+                                <div
+                                  className="h-full rounded-full bg-[var(--chart-1)]"
+                                  style={{ width: `${wPct}%` }}
+                                />
+                              </div>
+                              <span className="col-span-3 text-right font-mono tabular-nums text-[11px] text-[var(--text-primary)]">
+                                {formatKpiMetric(pt.val, activeKpi.unit)}
+                              </span>
                             </div>
-                            <span className="col-span-3 text-right font-mono tabular-nums text-[11px] text-[var(--text-primary)]">
-                              {pt.val.toLocaleString()}
-                            </span>
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* Top Segment Drivers */}
                   <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/40 p-3.5 space-y-2 text-xs">
